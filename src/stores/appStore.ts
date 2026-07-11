@@ -24,6 +24,8 @@ interface AppState {
 
   // ---- 操作 ----
   setDraftDeltas: (deltas: LineDelta[]) => void
+  /** 以不可变方式更新第 index 行 Delta，自动重算 resolvedStates */
+  updateDeltaAt: (index: number, updater: (prev: LineDelta) => LineDelta) => void
   selectLine: (index: number) => void
   toggleLeftSidebar: () => void
   setActiveNavItem: (item: AppState['activeNavItem']) => void
@@ -55,6 +57,13 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ---- 操作 ----
   setDraftDeltas: (deltas) => {
+    set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
+  },
+
+  updateDeltaAt: (index, updater) => {
+    const deltas = [...get().draftDeltas]
+    if (index < 0 || index >= deltas.length) return
+    deltas[index] = updater(deltas[index])
     set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
   },
 
