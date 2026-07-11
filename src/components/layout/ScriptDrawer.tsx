@@ -139,9 +139,7 @@ export default function ScriptDrawer() {
 }
 
 /** 行内变更指示 */
-function ChangeIndicators({ delta }: { delta: (typeof useAppStore extends () => infer S ? S : never) extends { draftDeltas: (infer D)[] } ? D : never }) {
-  // 直接用 delta 判断
-  const d = delta as import('@/core/types').LineDelta
+function ChangeIndicators({ delta: d }: { delta: import('@/core/types').LineDelta }) {
   const indicators: string[] = []
 
   if (d.background !== null) indicators.push('🖼')
