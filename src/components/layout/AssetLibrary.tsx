@@ -1,4 +1,6 @@
+import { useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
+import { DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
 
 type TabId = 'background' | 'sprite' | 'audio'
 
@@ -8,7 +10,6 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'audio', label: '音频' },
 ]
 
-// 占位素材数据（阶段二纯展示，不拖拽）
 const MOCK_ASSETS: Record<TabId, { id: string; label: string; color: string }[]> = {
   background: [
     { id: 'bg_street_dusk', label: '黄昏街道', color: '#4a3728' },
@@ -26,9 +27,9 @@ const MOCK_ASSETS: Record<TabId, { id: string; label: string; color: string }[]>
     { id: 'charlie_happy', label: 'Charlie 开心', color: '#c3b1e1' },
   ],
   audio: [
-    { id: 'bgm_peaceful', label: '宁静', color: '#4a7c59' },
-    { id: 'bgm_lively', label: '活泼', color: '#c9a243' },
-    { id: 'bgm_warm', label: '温暖', color: '#c47e5a' },
+    { id: 'bgm_peaceful', label: '宁静 BGM', color: '#4a7c59' },
+    { id: 'bgm_lively', label: '活泼 BGM', color: '#c9a243' },
+    { id: 'bgm_warm', label: '温暖 BGM', color: '#c47e5a' },
     { id: 'ambient_crickets', label: '虫鸣', color: '#5a6e4a' },
     { id: 'ambient_rain', label: '雨声', color: '#4a6e8a' },
   ],
@@ -38,6 +39,20 @@ export default function AssetLibrary() {
   const tab = useAppStore((s) => s.assetTab)
   const setTab = useAppStore((s) => s.setAssetTab)
   const assets = MOCK_ASSETS[tab]
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent, assetId: string, label: string) => {
+      const data: DragAssetData = { type: tab, assetId, label }
+      e.dataTransfer.setData(DRAG_MIME, JSON.stringify(data))
+      e.dataTransfer.effectAllowed = 'copy'
+      e.currentTarget.classList.add('opacity-50')
+    },
+    [tab],
+  )
+
+  const handleDragEnd = useCallback((e: React.DragEvent) => {
+    e.currentTarget.classList.remove('opacity-50')
+  }, [])
 
   return (
     <aside className="flex w-48 shrink-0 flex-col border-r border-gray-800 bg-gray-950/80">
@@ -71,8 +86,11 @@ export default function AssetLibrary() {
           {assets.map((asset) => (
             <div
               key={asset.id}
-              className="group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 transition-colors hover:bg-gray-800"
-              title={asset.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, asset.id, asset.label)}
+              onDragEnd={handleDragEnd}
+              className="group flex cursor-grab items-center gap-2 rounded-lg px-2 py-2 transition-all hover:bg-gray-800 active:cursor-grabbing"
+              title={`拖拽 ${asset.label} 到舞台或时间轴`}
             >
               {/* 色块占位缩略图 */}
               <div

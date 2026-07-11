@@ -1,6 +1,12 @@
-import { useMemo } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import type { ResolvedLineState } from '@/core/types'
+import type { ResolvedLineState, LineDelta } from '@/core/types'
+import {
+  DRAG_MIME,
+  type DragAssetData,
+  deriveCharacterId,
+  getAudioCategory,
+} from '@/utils/assetHelpers'
 
 // 轨道配置
 interface TrackDef {
@@ -8,6 +14,8 @@ interface TrackDef {
   label: string
   getValue: (s: ResolvedLineState) => string | null
   color: string
+  /** 该轨道接受的素材类型 */
+  acceptAssetType: 'background' | 'audio' | 'sprite' | null
 }
 
 const TRACKS: TrackDef[] = [
@@ -16,18 +24,21 @@ const TRACKS: TrackDef[] = [
     label: '背景',
     getValue: (s) => s.background?.asset_id ?? null,
     color: '#8b5cf6',
+    acceptAssetType: 'background',
   },
   {
     id: 'bgm',
     label: 'BGM',
     getValue: (s) => s.audio.bgm?.asset_id ?? null,
     color: '#22c55e',
+    acceptAssetType: 'audio',
   },
   {
     id: 'ambient',
     label: '环境音',
     getValue: (s) => s.audio.ambient?.asset_id ?? null,
     color: '#3b82f6',
+    acceptAssetType: 'audio',
   },
 ]
 
@@ -36,9 +47,7 @@ interface CharacterTracksResult {
   spans: { charId: string; label: string; start: number; end: number; color: string }[]
 }
 
-function computeCharacterTracks(
-  states: ResolvedLineState[],
-): CharacterTracksResult {
+function computeCharacterTracks(states: ResolvedLineState[]): CharacterTracksResult {
   const allChars = new Set<string>()
   for (const s of states) {
     Object.keys(s.characters).forEach((c) => allChars.add(c))
@@ -67,7 +76,7 @@ function computeCharacterTracks(
         if (spanStart !== -1) {
           spans.push({
             charId: cid,
-            label: ch ? `${cid}` : cid,
+            label: cid,
             start: spanStart,
             end: i - 1,
             color: charColors[cid] ?? '#9ca3af',
@@ -114,6 +123,119 @@ function computeSpans(states: ResolvedLineState[], getValue: TrackDef['getValue'
   return spans
 }
 
+// ========== 拖放单元格组件 ==========
+
+function DropCell({
+  lineIndex,
+  trackId,
+  acceptType,
+  isSelected,
+}: {
+  lineIndex: number
+  trackId: string
+  acceptType: 'background' | 'audio' | 'sprite' | null
+  isSelected: boolean
+}) {
+  const updateDeltaAt = useAppStore((s) => s.updateDeltaAt)
+  const selectLine = useAppStore((s) => s.selectLine)
+  const [dragOver, setDragOver] = useState(false)
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      if (!acceptType) return
+      const raw = e.dataTransfer.types.includes(DRAG_MIME)
+      if (!raw) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+      setDragOver(true)
+    },
+    [acceptType],
+  )
+
+  const handleDragLeave = useCallback(() => setDragOver(false), [])
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setDragOver(false)
+      if (!acceptType) return
+
+      const raw = e.dataTransfer.getData(DRAG_MIME)
+      if (!raw) return
+      let asset: DragAssetData
+      try {
+        asset = JSON.parse(raw)
+      } catch {
+        return
+      }
+
+      selectLine(lineIndex)
+
+      if (acceptType === 'background' && asset.type === 'background') {
+        updateDeltaAt(lineIndex, (prev: LineDelta) => ({
+          ...prev,
+          background: { asset_id: asset.assetId },
+        }))
+      } else if (acceptType === 'audio' && asset.type === 'audio') {
+        const cat = getAudioCategory(asset.assetId)
+        updateDeltaAt(lineIndex, (prev: LineDelta) => {
+          const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
+          if (trackId === 'bgm' && cat === 'bgm') {
+            audio.bgm = { asset_id: asset.assetId, volume: 0.7, loop: true, fade_in_ms: 1000 }
+          } else if (trackId === 'ambient' && cat === 'ambient') {
+            audio.ambient = { asset_id: asset.assetId, volume: 0.4, loop: true, fade_in_ms: 1500 }
+          } else if (cat === 'bgm') {
+            audio.bgm = { asset_id: asset.assetId, volume: 0.7, loop: true, fade_in_ms: 1000 }
+          } else if (cat === 'ambient') {
+            audio.ambient = { asset_id: asset.assetId, volume: 0.4, loop: true, fade_in_ms: 1500 }
+          } else if (cat === 'voice') {
+            audio.voice = asset.assetId
+          } else {
+            audio.se = [...audio.se, asset.assetId]
+          }
+          return { ...prev, audio }
+        })
+      } else if (acceptType === 'sprite' && asset.type === 'sprite') {
+        const charId = deriveCharacterId(asset.assetId)
+        // trackId = "char_alice" → extract "alice"
+        const trackCharId = trackId.startsWith('char_') ? trackId.slice(5) : charId
+        updateDeltaAt(lineIndex, (prev: LineDelta) => ({
+          ...prev,
+          characters: {
+            ...prev.characters,
+            [trackCharId]: {
+              sprite_id: asset.assetId,
+              position_slot: 'center',
+              action: 'show',
+            },
+          },
+        }))
+      }
+    },
+    [lineIndex, trackId, acceptType, updateDeltaAt, selectLine],
+  )
+
+  return (
+    <div
+      className={`shrink-0 border-r border-gray-800/20 transition-colors ${
+        dragOver ? 'ring-1 ring-brand-400 bg-brand-400/15' : ''
+      } ${isSelected ? 'bg-brand-600/5' : ''}`}
+      style={{ width: 120 }}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {dragOver && (
+        <div className="flex h-full items-center justify-center">
+          <span className="text-[10px] text-brand-400">放置</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ========== 主组件 ==========
+
 export default function Timeline() {
   const resolvedStates = useAppStore((s) => s.resolvedStates)
   const selectedIndex = useAppStore((s) => s.selectedLineIndex)
@@ -121,7 +243,6 @@ export default function Timeline() {
 
   const charData = useMemo(() => computeCharacterTracks(resolvedStates), [resolvedStates])
 
-  // SE 和 Voice 点事件
   const seEvents = useMemo(() => {
     return resolvedStates
       .map((s, i) => (s.audio.se.length > 0 ? { index: i, items: s.audio.se } : null))
@@ -141,18 +262,20 @@ export default function Timeline() {
       id: t.id,
       label: t.label,
       color: t.color,
+      acceptAssetType: t.acceptAssetType,
       spans: computeSpans(resolvedStates, t.getValue),
     })),
     ...charData.tracks.map((ct) => ({
       id: `char_${ct.id}`,
       label: `👤 ${ct.label}`,
       color: ct.color,
+      acceptAssetType: 'sprite' as const,
       spans: charData.spans
         .filter((s) => s.charId === ct.id)
         .map((s) => ({ start: s.start, end: s.end, label: '' })),
     })),
-    { id: 'se', label: '🔊 SE', color: '#eab308', spans: [] },
-    { id: 'voice', label: '🎤 语音', color: '#a855f7', spans: [] },
+    { id: 'se', label: '🔊 SE', color: '#eab308', acceptAssetType: null as const, spans: [] },
+    { id: 'voice', label: '🎤 语音', color: '#a855f7', acceptAssetType: null as const, spans: [] },
   ]
 
   const totalTracks = allTracks.length
@@ -212,22 +335,22 @@ export default function Timeline() {
                 className="relative flex border-b border-gray-800/30"
                 style={{ height: trackHeight }}
               >
-                {/* 单元格网格 */}
+                {/* 可拖放的单元格网格 */}
                 {resolvedStates.map((s, i) => (
-                  <div
+                  <DropCell
                     key={s.line_id}
-                    className={`shrink-0 border-r border-gray-800/20 ${
-                      i === selectedIndex ? 'bg-brand-600/5' : ''
-                    }`}
-                    style={{ width: 120 }}
+                    lineIndex={i}
+                    trackId={track.id}
+                    acceptType={track.acceptAssetType}
+                    isSelected={i === selectedIndex}
                   />
                 ))}
 
-                {/* 色块 */}
+                {/* 色块覆盖层 */}
                 {track.spans.map((span, si) => (
                   <div
                     key={si}
-                    className="absolute top-1 bottom-1 rounded-sm px-2 transition-opacity hover:opacity-80"
+                    className="absolute top-1 bottom-1 rounded-sm px-2 transition-opacity hover:opacity-80 pointer-events-none"
                     style={{
                       left: `${(span.start / total) * 100}%`,
                       width: `${((span.end - span.start + 1) / total) * 100}%`,
