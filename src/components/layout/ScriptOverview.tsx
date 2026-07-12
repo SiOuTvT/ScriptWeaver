@@ -2,21 +2,66 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { LineDelta } from '@/core/types'
 
+// --------------- 工具函数 ---------------
+
+let _newLineCounter = 0
+function createEmptyDelta(): LineDelta {
+  _newLineCounter++
+  return {
+    line_id: `new_${Date.now()}_${_newLineCounter}`,
+    speaker: null,
+    dialogue: '',
+    background: null,
+    characters: {},
+    audio: { bgm: null, ambient: null, se: [], voice: null },
+  }
+}
+
+/**
+ * 解析一行文本 → { speaker, dialogue }
+ * 格式：角色显示名: 台词  (冒号+空格分隔)
+ * 无冒号则视为旁白。
+ */
+function parseLine(raw: string, characterConfigs: { charId: string; displayName: string }[]): {
+  speaker: string | null
+  dialogue: string
+} {
+  const colonIdx = raw.indexOf(': ')
+  let speaker: string | null = null
+  let dialogue = raw
+
+  if (colonIdx > 0) {
+    const candidate = raw.slice(0, colonIdx)
+    const matched = characterConfigs.find((c) => c.displayName === candidate)
+    speaker = matched ? matched.charId : candidate
+    dialogue = raw.slice(colonIdx + 2)
+  }
+
+  if (dialogue === '(空行)') dialogue = ''
+
+  return { speaker, dialogue }
+}
+
+// --------------- 组件 ---------------
+
 export default function ScriptOverview() {
   const deltas = useAppStore((s) => s.draftDeltas)
   const resolvedStates = useAppStore((s) => s.resolvedStates)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
   const setDraftDeltas = useAppStore((s) => s.setDraftDeltas)
 
-  // 将 deltas 展平为可编辑文本行
   const [lines, setLines] = useState<string[]>([])
   const [isDirty, setIsDirty] = useState(false)
-  const prevDeltasRef = useRef(deltas)
 
-  // deltas → 文本行（仅在外部 deltas 变化时同步，不覆盖用户编辑）
+  // 用 ref 代替闭包 isDirty，避免 effect 读到过期值
+  const isDirtyRef = useRef(false)
   useEffect(() => {
-    if (prevDeltasRef.current === deltas) return
-    prevDeltasRef.current = deltas
+    isDirtyRef.current = isDirty
+  }, [isDirty])
+
+  // deltas → 文本行（仅在用户没有未保存编辑时同步）
+  useEffect(() => {
+    if (isDirtyRef.current) return
 
     const textLines: string[] = []
     for (let i = 0; i < deltas.length; i++) {
@@ -35,40 +80,31 @@ export default function ScriptOverview() {
       textLines.push(line)
     }
     setLines(textLines)
-    setIsDirty(false)
   }, [deltas, resolvedStates, characterConfigs])
 
-  // 文本行 → deltas（保留原有非对话字段）
+  // 文本行 → deltas
+  //   关键修复：按 lines.length 迭代（而非 deltas.length），
+  //   新增行自动创建空白 delta 作为骨架。
   const applyChanges = useCallback(() => {
-    const newDeltas: LineDelta[] = deltas.map((delta, i) => {
-      const raw = lines[i] ?? ''
-      const colonIdx = raw.indexOf(': ')
+    const newDeltas: LineDelta[] = []
 
-      let speaker: string | null = null
-      let dialogue = raw
+    for (let i = 0; i < lines.length; i++) {
+      const { speaker, dialogue } = parseLine(lines[i], characterConfigs)
 
-      if (colonIdx > 0) {
-        const candidate = raw.slice(0, colonIdx)
-        // 反过来匹配 displayName → charId
-        const matched = characterConfigs.find(
-          (c) => c.displayName === candidate,
-        )
-        speaker = matched ? matched.charId : candidate
-        dialogue = raw.slice(colonIdx + 2)
+      if (i < deltas.length) {
+        // 已有行：保留原有动作/背景字段，仅覆盖 speaker + dialogue
+        newDeltas.push({ ...deltas[i], speaker, dialogue })
+      } else {
+        // 新增行：从空骨架开始
+        newDeltas.push({ ...createEmptyDelta(), speaker, dialogue })
       }
+    }
 
-      if (dialogue === '(空行)') dialogue = ''
-
-      return {
-        ...delta,
-        speaker,
-        dialogue,
-      }
-    })
     setDraftDeltas(newDeltas)
     setIsDirty(false)
   }, [deltas, lines, characterConfigs, setDraftDeltas])
 
+  // 单行编辑
   const handleLineChange = useCallback(
     (index: number, value: string) => {
       setLines((prev) => {
@@ -80,6 +116,13 @@ export default function ScriptOverview() {
     },
     [],
   )
+
+  // textarea 全量编辑
+  const handleTextareaChange = useCallback((value: string) => {
+    const newLines = value.split('\n')
+    setLines(newLines)
+    setIsDirty(true)
+  }, [])
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const lineCountRef = useRef<HTMLDivElement>(null)
@@ -114,7 +157,7 @@ export default function ScriptOverview() {
             剧本总览
           </span>
           <span className="text-[10px] text-gray-600">
-            {deltas.length} 行
+            {lines.length} 行
           </span>
           {isDirty && (
             <span className="rounded bg-yellow-600/20 px-1.5 py-0.5 text-[10px] text-yellow-400">
@@ -162,11 +205,7 @@ export default function ScriptOverview() {
         <textarea
           ref={textareaRef}
           value={fullText}
-          onChange={(e) => {
-            const newLines = e.target.value.split('\n')
-            setLines(newLines)
-            setIsDirty(true)
-          }}
+          onChange={(e) => handleTextareaChange(e.target.value)}
           onScroll={handleScroll}
           placeholder="在此编辑剧本内容...&#10;&#10;格式：角色名: 台词&#10;示例：&#10;alice: 你好，今天天气真好&#10;bob: 是啊，我们去公园走走吧"
           className="flex-1 resize-none bg-transparent px-4 py-3 text-gray-300 placeholder-gray-700 outline-none leading-7"
