@@ -37,6 +37,8 @@ export interface AssetItem {
   height?: number
   /** 音频时长（秒） */
   duration?: number
+  /** 图片/音频的 base64 data URL，用于渲染时直接显示，避免 file:// 安全限制 */
+  dataUrl?: string
   importedAt: string
 }
 

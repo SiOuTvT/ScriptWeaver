@@ -84,6 +84,7 @@ export default function SceneNavPanel() {
           relativePath: f.relativePath,
           width: f.width,
           height: f.height,
+          dataUrl: f.dataUrl,
           importedAt: now,
         }
         addAsset(asset)

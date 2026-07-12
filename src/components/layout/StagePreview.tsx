@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import type { ResolvedLineState, ResolvedCharacterState, LineDelta } from '@/core/types'
+import type { ResolvedLineState, ResolvedCharacterState, LineDelta, AssetItem, CharacterConfig } from '@/core/types'
 import {
   getDragCache,
   type DragAssetData,
@@ -86,6 +86,50 @@ const SPRITE_COLORS: Record<string, string> = {
   happy: '#c3b1e1',
 }
 
+// ===================== 素材图片解析 =====================
+
+/**
+ * 根据 asset_id 解析背景图片 dataUrl。
+ * 优先从 assets 查找真实图片 dataUrl，兜底到 BG_COLORS 色块。
+ */
+function resolveBackgroundUrl(assetId: string | undefined, assets: AssetItem[]): string | undefined {
+  if (!assetId) return undefined
+  const asset = assets.find((a) => a.id === assetId)
+  return asset?.dataUrl
+}
+
+/**
+ * 根据 sprite_id（可能是资产 ID 或表情 ID）解析立绘图片。
+ * 1. 先尝试直接匹配 assets 的 id（拖放导入的立绘直接以 asset.id 作为 sprite_id）
+ * 2. 再尝试通过 CharacterConfig 的表情引用查找
+ * 3. 兜底 SPRITE_COLORS
+ */
+function resolveSpriteImage(
+  spriteId: string,
+  assets: AssetItem[],
+  characterConfigs: CharacterConfig[],
+): { dataUrl?: string; color: string } {
+  // 1. 直接匹配 asset id（拖放场景）
+  const directAsset = assets.find((a) => a.id === spriteId)
+  if (directAsset?.dataUrl) {
+    return { dataUrl: directAsset.dataUrl, color: '#888' }
+  }
+
+  // 2. 通过角色表情引用查找
+  for (const cc of characterConfigs) {
+    const expr = cc.expressions.find((e) => e.id === spriteId)
+    if (expr) {
+      const exprAsset = assets.find((a) => a.id === expr.assetId)
+      if (exprAsset?.dataUrl) {
+        return { dataUrl: exprAsset.dataUrl, color: '#888' }
+      }
+    }
+  }
+
+  // 3. 兜底色块
+  return { color: SPRITE_COLORS[spriteId] ?? '#888' }
+}
+
 // ===================== 组件 =====================
 
 export default function StagePreview() {
@@ -94,6 +138,8 @@ export default function StagePreview() {
   const selectLine = useAppStore((s) => s.selectLine)
   const updateDeltaAt = useAppStore((s) => s.updateDeltaAt)
   const getDisplayName = useAppStore((s) => s.getDisplayName)
+  const assets = useAppStore((s) => s.assets)
+  const characterConfigs = useAppStore((s) => s.characterConfigs)
 
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
   const [fadeKey, setFadeKey] = useState(0)
@@ -255,9 +301,11 @@ export default function StagePreview() {
     )
   }
 
-  const bgStyle = state.background?.asset_id
-    ? BG_COLORS[state.background.asset_id] ?? '#111'
-    : '#111'
+  const bgAssetId = state.background?.asset_id
+  const bgDataUrl = resolveBackgroundUrl(bgAssetId, assets)
+  const bgStyle: React.CSSProperties = bgDataUrl
+    ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? '#111') : '#111' }
 
   return (
     <main className="relative flex flex-1 flex-col">
@@ -271,7 +319,7 @@ export default function StagePreview() {
         {/* 背景层 */}
         <div
           className="absolute inset-0 animate-fade-in"
-          style={{ background: bgStyle }}
+          style={bgStyle}
         >
           {dragOverZone === 'bg' && (
             <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center border-2 border-dashed border-yellow-400 bg-yellow-400/10">
@@ -289,25 +337,40 @@ export default function StagePreview() {
         {Object.entries(state.characters).map(
           ([charId, char]: [string, ResolvedCharacterState]) => {
             const slot = SLOT_POSITIONS[char.position_slot] ?? SLOT_POSITIONS.center
-            const spriteColor = SPRITE_COLORS[char.sprite_id] ?? '#888'
+            const { dataUrl: spriteDataUrl, color: spriteColor } = resolveSpriteImage(
+              char.sprite_id,
+              assets,
+              characterConfigs,
+            )
 
             return (
               <div
                 key={charId}
-                className="pointer-events-none absolute -translate-x-1/2 -translate-y-full animate-slide-up"
+                className="pointer-events-none absolute -translate-x-1/2 -translate-y-full animate-slide-up flex flex-col items-center"
                 style={{ left: slot.x, top: slot.y }}
               >
-                <div
-                  className="flex w-16 flex-col items-center gap-1 rounded-t-lg px-3 pt-6 pb-3 shadow-lg"
-                  style={{ backgroundColor: spriteColor, minHeight: '100px' }}
-                >
-                  <span className="text-center text-[10px] font-medium text-white/80">
-                    {getDisplayName(charId)}
-                  </span>
-                  <span className="text-center text-[9px] text-white/50">
-                    {char.sprite_id}
-                  </span>
-                </div>
+                {spriteDataUrl ? (
+                  /* 真实立绘图片 */
+                  <img
+                    src={spriteDataUrl}
+                    alt={getDisplayName(charId)}
+                    className="max-h-64 w-auto object-contain drop-shadow-lg"
+                    style={{ minHeight: '80px' }}
+                  />
+                ) : (
+                  /* 兜底色块占位 */
+                  <div
+                    className="flex w-16 flex-col items-center gap-1 rounded-t-lg px-3 pt-6 pb-3 shadow-lg"
+                    style={{ backgroundColor: spriteColor, minHeight: '100px' }}
+                  >
+                    <span className="text-center text-[10px] font-medium text-white/80">
+                      {getDisplayName(charId)}
+                    </span>
+                    <span className="text-center text-[9px] text-white/50">
+                      {char.sprite_id}
+                    </span>
+                  </div>
+                )}
                 <div className="mt-1 text-center text-[10px] text-gray-500">
                   [{char.position_slot}]
                 </div>
