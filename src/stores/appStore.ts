@@ -26,6 +26,8 @@ interface AppState {
   setDraftDeltas: (deltas: LineDelta[]) => void
   /** 以不可变方式更新第 index 行 Delta，自动重算 resolvedStates */
   updateDeltaAt: (index: number, updater: (prev: LineDelta) => LineDelta) => void
+  /** 批量更新多行 Delta，仅触发一次 resolvedStates 重算 */
+  batchUpdateDeltas: (updates: { index: number; updater: (prev: LineDelta) => LineDelta }[]) => void
   selectLine: (index: number) => void
   toggleLeftSidebar: () => void
   setActiveNavItem: (item: AppState['activeNavItem']) => void
@@ -64,6 +66,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     const deltas = [...get().draftDeltas]
     if (index < 0 || index >= deltas.length) return
     deltas[index] = updater(deltas[index])
+    set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
+  },
+
+  batchUpdateDeltas: (updates) => {
+    if (updates.length === 0) return
+    const deltas = [...get().draftDeltas]
+    for (const { index, updater } of updates) {
+      if (index < 0 || index >= deltas.length) continue
+      deltas[index] = updater(deltas[index])
+    }
     set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
   },
 
