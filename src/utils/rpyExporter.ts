@@ -61,7 +61,8 @@ export function exportToRpy(
         const transition = state.background?.transition
         if (transition && transition !== 'None') {
           block.push(`scene ${bareId(newBg)}`)
-          block.push(indent(1, `with ${transition}`))
+          // with 语句与 scene 同级缩进，不加额外 indent
+          block.push(`with ${transition}`)
         } else {
           block.push(`scene ${bareId(newBg)}`)
         }
@@ -85,15 +86,8 @@ export function exportToRpy(
     for (const [charId, char] of Object.entries(newChars)) {
       const prev = currentChars[charId]
       if (!prev || prev.sprite_id !== char.sprite_id || prev.position_slot !== char.position_slot) {
-        if (!prev) {
-          // 新出场
-          const atClause = char.position_slot !== 'center' ? ` at ${char.position_slot}` : ''
-          block.push(`show ${charId} ${spriteSuffix(char.sprite_id)}${atClause}`)
-        } else {
-          // 位置或表情变化
-          const atClause = char.position_slot !== 'center' ? ` at ${char.position_slot}` : ''
-          block.push(`show ${charId} ${spriteSuffix(char.sprite_id)}${atClause}`)
-        }
+        // 始终输出 at position（包括 center），确保脚本自文档化
+        block.push(`show ${charId} ${spriteSuffix(char.sprite_id)} at ${char.position_slot}`)
       }
     }
 
