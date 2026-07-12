@@ -1,1 +1,13 @@
-"use strict";const n=require("electron"),o={getVersion:()=>n.ipcRenderer.invoke("app:getVersion"),getPath:e=>n.ipcRenderer.invoke("app:getPath",e),on(e,r){n.ipcRenderer.on(e,(i,...t)=>r(...t))},off(e,r){n.ipcRenderer.removeAllListeners(e)}};n.contextBridge.exposeInMainWorld("electronAPI",o);
+"use strict";
+const electron = require("electron");
+const api = {
+  getVersion: () => electron.ipcRenderer.invoke("app:getVersion"),
+  getPath: (name) => electron.ipcRenderer.invoke("app:getPath", name),
+  on(channel, callback) {
+    electron.ipcRenderer.on(channel, (_event, ...args) => callback(...args));
+  },
+  off(channel, callback) {
+    electron.ipcRenderer.removeAllListeners(channel);
+  }
+};
+electron.contextBridge.exposeInMainWorld("electronAPI", api);
