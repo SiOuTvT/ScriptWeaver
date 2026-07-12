@@ -307,9 +307,8 @@ export function exportDefinitionsRpy(
     lines.push('#   show <角色id> <表情> at <位置>  例如: show alice smile at center')
     lines.push('#   <角色id> "台词"                 例如: alice "Hello"')
     lines.push('#')
-    lines.push('#   注意：当前脚本对话中使用的是 speaker 显示名称（如 "Alice"），')
-    lines.push('#   与 show 命令的角色 ID（如 "alice"）不同。')
-    lines.push('#   如需统一，请在 ScriptWeaver 中将 speaker 改为小写角色 ID。')
+    lines.push('#   注意：definitions.rpy 中 Character 变量名与 script.rpy 中说话人名必须逐字符一致。')
+    lines.push('#   导出器会自动将 speaker（如 "Alice"）映射为对应的角色 ID（如 "alice"）。')
     lines.push('')
   }
 
