@@ -55,21 +55,48 @@ function deserializeProject(json: string): {
 /**
  * 根据相对路径从磁盘重新读取素材文件，生成 dataUrl（仅内存，不入库）。
  * 在浏览器模式下（无 Electron API）直接返回原数组。
+ * 失败的读取会打印 console.error 以便调试。
  */
 async function refreshAssetDataUrls(
   assets: AssetItem[],
   projectRoot: string | null,
 ): Promise<AssetItem[]> {
   const api = window.electronAPI
-  if (!api || !projectRoot) return assets
+  if (!api) {
+    // 浏览器模式：没有 IPC，无法读取磁盘文件
+    return assets
+  }
+  if (!projectRoot) {
+    console.warn('[refreshAssetDataUrls] 缺少 projectRoot，跳过素材刷新')
+    return assets
+  }
 
   const refreshed = await Promise.all(
     assets.map(async (asset) => {
       // 已有 dataUrl 或缺少 relativePath → 跳过
-      if (asset.dataUrl || !asset.relativePath) return asset
-      const result = await api.readAssetFile(asset.relativePath, projectRoot)
-      if (result.success && result.dataUrl) {
-        return { ...asset, dataUrl: result.dataUrl }
+      if (asset.dataUrl) return asset
+      if (!asset.relativePath) {
+        console.warn(`[refreshAssetDataUrls] 素材 "${asset.name}" 缺少 relativePath，跳过`)
+        return asset
+      }
+      try {
+        const result = await api.readAssetFile(asset.relativePath, projectRoot)
+        if (result.success && result.dataUrl) {
+          return { ...asset, dataUrl: result.dataUrl }
+        }
+        console.error(
+          `[refreshAssetDataUrls] 读取失败: "${asset.fileName}"\n` +
+          `  relativePath: ${asset.relativePath}\n` +
+          `  projectRoot: ${projectRoot}\n` +
+          `  error: ${result.error ?? '(无详细信息)'}`,
+        )
+      } catch (err) {
+        console.error(
+          `[refreshAssetDataUrls] IPC 异常: "${asset.fileName}"\n` +
+          `  relativePath: ${asset.relativePath}\n` +
+          `  projectRoot: ${projectRoot}\n` +
+          `  exception: ${err}`,
+        )
       }
       return asset
     }),
@@ -98,22 +125,22 @@ export default function AppLayout() {
 
   // ---- auto-save refs ----
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const snapshotRef = useRef({ deltas: draftDeltas, characterConfigs, assets })
-  snapshotRef.current = { deltas: draftDeltas, characterConfigs, assets }
+  const snapshotRef = useRef({ deltas: draftDeltas, characterConfigs, assets, projectRoot })
+  snapshotRef.current = { deltas: draftDeltas, characterConfigs, assets, projectRoot }
 
   /** 防抖写入 localStorage */
   const debouncedSaveDraft = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
-      const { deltas, characterConfigs: chars, assets: asts } = snapshotRef.current
-      saveDraft(deltas, chars, asts)
+      const { deltas, characterConfigs: chars, assets: asts, projectRoot: root } = snapshotRef.current
+      saveDraft(deltas, chars, asts, root)
     }, DEBOUNCE_MS)
   }, [])
 
   // 监听变化 → 自动存草稿
   useEffect(() => {
     debouncedSaveDraft()
-  }, [draftDeltas, characterConfigs, assets, debouncedSaveDraft])
+  }, [draftDeltas, characterConfigs, assets, projectRoot, debouncedSaveDraft])
 
   // 组件挂载时检查草稿
   useEffect(() => {
@@ -165,7 +192,7 @@ export default function AppLayout() {
 
     if (result.success && result.projectDir) {
       setProjectRoot(result.projectDir)
-      saveDraft(draftDeltas, characterConfigs, assets)
+      saveDraft(draftDeltas, characterConfigs, assets, result.projectDir)
     } else if (result.error) {
       alert(`保存失败：${result.error}`)
     }
@@ -185,7 +212,7 @@ export default function AppLayout() {
           const parsed = deserializeProject(reader.result as string)
           if (parsed) {
             loadProjectData({ ...parsed, projectRoot: null })
-            saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets)
+            saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets, null)
           } else {
             alert('文件格式错误，无法打开')
           }
@@ -213,23 +240,32 @@ export default function AppLayout() {
       ...parsed,
       projectRoot: root,
     })
-    saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets)
+    saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets, root)
     setShowDraftRecovery(false)
 
     // 从磁盘重新读取素材 dataUrl（不依赖 .swproj 中可能残留的旧 base64）
-    refreshAssetDataUrls(parsed.assets, root).then((refreshed) => {
-      useAppStore.getState().setAssets(refreshed)
-    })
+    refreshAssetDataUrls(parsed.assets, root)
+      .then((refreshed) => {
+        useAppStore.getState().setAssets(refreshed)
+      })
+      .catch((err) => {
+        console.error('[handleOpen] 素材刷新失败:', err)
+      })
   }
 
   const handleDraftRecover = () => {
     if (draftInfo) {
-      loadProjectData({ ...draftInfo, projectRoot })
-      // 如果有 projectRoot，从磁盘重新读取素材 dataUrl
-      if (projectRoot) {
-        refreshAssetDataUrls(draftInfo.assets ?? [], projectRoot).then((refreshed) => {
-          useAppStore.getState().setAssets(refreshed)
-        })
+      const root = draftInfo.projectRoot ?? null
+      loadProjectData({ ...draftInfo, projectRoot: root })
+      // 草稿中保存了 projectRoot，可以直接从磁盘重新读取素材 dataUrl
+      if (root) {
+        refreshAssetDataUrls(draftInfo.assets ?? [], root)
+          .then((refreshed) => {
+            useAppStore.getState().setAssets(refreshed)
+          })
+          .catch((err) => {
+            console.error('[handleDraftRecover] 素材刷新失败:', err)
+          })
       }
     }
     setShowDraftRecovery(false)
