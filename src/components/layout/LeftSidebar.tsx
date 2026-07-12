@@ -8,6 +8,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'chapters', label: '场景导航', icon: '📖' },
+  { id: 'script-overview', label: '剧本总览', icon: '📝' },
   { id: 'assets', label: '素材管理', icon: '📦' },
   { id: 'characters', label: '角色管理', icon: '👤' },
   { id: 'export', label: '导出设置', icon: '📤' },
@@ -62,7 +63,7 @@ export default function LeftSidebar() {
 
       {/* 底部版本号 */}
       <div className="border-t border-gray-800 p-2 text-center text-[10px] text-gray-700">
-        {collapsed ? 'v0.2' : 'v0.2.0'}
+        {collapsed ? 'v0.3' : 'v0.3.0'}
       </div>
     </aside>
   )

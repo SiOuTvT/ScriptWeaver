@@ -10,7 +10,7 @@ function uid(prefix = 'id'): string {
   return `${prefix}_${Date.now()}_${_uidCounter}`
 }
 
-export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai'
+export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview'
 
 interface AppState {
   // ---- 数据 ----
@@ -78,7 +78,7 @@ interface AppState {
   getCharacterSprite: (charId: string, expressionId: string) => AssetItem | undefined
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>()(subscribeWithSelector((set, get) => ({
   // ---- 数据（初始化载入 mock） ----
   draftDeltas: MOCK_DELTAS,
   resolvedStates: reduceLines(MOCK_DELTAS),
@@ -231,4 +231,4 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!expr) return undefined
     return get().assets.find((a) => a.id === expr.assetId)
   },
-}))
+})))
