@@ -3,6 +3,7 @@ import { useAppStore } from '@/stores/appStore'
 import type { ResolvedLineState, ResolvedCharacterState, LineDelta } from '@/core/types'
 import {
   DRAG_MIME,
+  getDragCache,
   type DragAssetData,
   deriveCharacterId,
   getAudioCategory,
@@ -15,7 +16,6 @@ const SLOT_POSITIONS: Record<string, { x: string; y: string }> = {
   right: { x: '78%', y: '65%' },
 }
 
-// 背景色映射
 const BG_COLORS: Record<string, string> = {
   bg_street_dusk: 'linear-gradient(180deg, #2d1b2e 0%, #4a3728 60%, #6b4c3b 100%)',
   bg_street_night: 'linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 60%, #2a2a3e 100%)',
@@ -25,7 +25,6 @@ const BG_COLORS: Record<string, string> = {
   bg_school: 'linear-gradient(180deg, #5a5a7a 0%, #4a4a6a 60%, #3a3a5a 100%)',
 }
 
-// 立绘色映射
 const SPRITE_COLORS: Record<string, string> = {
   alice_smile: '#e8a0bf',
   alice_angry: '#d4708a',
@@ -44,69 +43,106 @@ export default function StagePreview() {
   const updateDeltaAt = useAppStore((s) => s.updateDeltaAt)
 
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
-  const prevRef = useRef<ResolvedLineState | null>(null)
   const [fadeKey, setFadeKey] = useState(0)
-  const [dragOverZone, setDragOverZone] = useState<DragOverZone>(null)
-  const [dragAssetType, setDragAssetType] = useState<string | null>(null)
 
-  // 选中行变化时触发交叉淡入淡出
+  // 拖拽区状态 —— 用 ref 做同值守卫，避免无意义 setState
+  const [dragOverZone, _setDragOverZone] = useState<DragOverZone>(null)
+  const [dragAssetType, _setDragAssetType] = useState<string | null>(null)
+  const zoneRef = useRef<DragOverZone>(null)
+  const typeRef = useRef<string | null>(null)
+
+  const setDragOverZone = useCallback((z: DragOverZone) => {
+    if (zoneRef.current !== z) {
+      zoneRef.current = z
+      _setDragOverZone(z)
+    }
+  }, [])
+
+  const setDragAssetType = useCallback((t: string | null) => {
+    if (typeRef.current !== t) {
+      typeRef.current = t
+      _setDragAssetType(t)
+    }
+  }, [])
+
+  // 选中行变化 → 交叉淡入淡出
   useEffect(() => {
-    prevRef.current = state
     setFadeKey((k) => k + 1)
   }, [selectedIndex])
 
-  // —— 拖放处理器 ——
+  // —— 拖放：用 onDragOver 按位置推断目标区 ——
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'copy'
-  }, [])
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      // 先判断是否为我们发起的拖拽
+      const cache = getDragCache()
+      if (!cache) return // 不是本应用的拖拽，不做任何事
 
-  const handleDragEnterZone = useCallback(
-    (zone: DragOverZone, assetType: string) => (e: React.DragEvent) => {
       e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+
+      const rect = e.currentTarget.getBoundingClientRect()
+      const rx = (e.clientX - rect.left) / rect.width  // 0~1
+      const ry = (e.clientY - rect.top) / rect.height
+
+      let zone: DragOverZone = null
+      let aType: string | null = null
+
+      if (cache.type === 'background') {
+        zone = 'bg'
+        aType = 'background'
+      } else if (cache.type === 'sprite') {
+        aType = 'sprite'
+        if (rx < 0.33) zone = 'ch-left'
+        else if (rx > 0.66) zone = 'ch-right'
+        else zone = 'ch-center'
+      } else if (cache.type === 'audio') {
+        aType = 'audio'
+        // 右上角区域 = 音频指示器
+        if (rx > 0.6 && ry < 0.25) zone = 'audio'
+        // 其他位置也允许放置音频（走默认 bgm 行为），用 bg 表示落下方位
+        else zone = 'bg'
+      }
+
       setDragOverZone(zone)
-      setDragAssetType(assetType)
+      setDragAssetType(aType)
     },
-    [],
+    [setDragOverZone, setDragAssetType],
   )
 
-  const handleDragLeaveZone = useCallback(() => {
-    setDragOverZone(null)
-    setDragAssetType(null)
+  const handleDragLeave = useCallback(() => {
+    zoneRef.current = null
+    typeRef.current = null
+    _setDragOverZone(null)
+    _setDragAssetType(null)
   }, [])
 
-  /** 解析拖拽数据并写入 Delta */
   const handleDropOnStage = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
-      setDragOverZone(null)
-      setDragAssetType(null)
+      _setDragOverZone(null)
+      _setDragAssetType(null)
+      zoneRef.current = null
+      typeRef.current = null
 
       const raw = e.dataTransfer.getData(DRAG_MIME)
       if (!raw) return
       let asset: DragAssetData
-      try {
-        asset = JSON.parse(raw)
-      } catch {
-        return
-      }
+      try { asset = JSON.parse(raw) } catch { return }
+
+      const rect = e.currentTarget.getBoundingClientRect()
+      const rx = (e.clientX - rect.left) / rect.width
 
       if (asset.type === 'background') {
-        // 背景素材 → 设置当前行背景
         updateDeltaAt(selectedIndex, (prev: LineDelta) => ({
           ...prev,
           background: { asset_id: asset.assetId },
         }))
       } else if (asset.type === 'sprite') {
-        // 立绘素材 → 添加/更新角色到当前行
         const charId = deriveCharacterId(asset.assetId)
-        const dropX = e.nativeEvent.offsetX
-        const el = e.currentTarget as HTMLElement
-        const ratio = dropX / el.clientWidth
         let slot = 'center'
-        if (ratio < 0.33) slot = 'left'
-        else if (ratio > 0.66) slot = 'right'
+        if (rx < 0.33) slot = 'left'
+        else if (rx > 0.66) slot = 'right'
 
         updateDeltaAt(selectedIndex, (prev: LineDelta) => ({
           ...prev,
@@ -120,19 +156,17 @@ export default function StagePreview() {
           },
         }))
       } else if (asset.type === 'audio') {
-        // 音频素材 → 根据前缀判断轨道
         const cat = getAudioCategory(asset.assetId)
         updateDeltaAt(selectedIndex, (prev: LineDelta) => {
           const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
-          if (cat === 'bgm') {
+          if (cat === 'bgm')
             audio.bgm = { asset_id: asset.assetId, volume: 0.7, loop: true, fade_in_ms: 1000 }
-          } else if (cat === 'ambient') {
+          else if (cat === 'ambient')
             audio.ambient = { asset_id: asset.assetId, volume: 0.4, loop: true, fade_in_ms: 1500 }
-          } else if (cat === 'voice') {
+          else if (cat === 'voice')
             audio.voice = asset.assetId
-          } else {
+          else
             audio.se = [...audio.se, asset.assetId]
-          }
           return { ...prev, audio }
         })
       }
@@ -154,30 +188,22 @@ export default function StagePreview() {
     ? BG_COLORS[state.background.asset_id] ?? '#111'
     : '#111'
 
-  const isBgDrag = dragOverZone === 'bg'
-  const isChDrag = dragOverZone?.startsWith('ch-')
-
   return (
     <main className="relative flex flex-1 flex-col">
-      {/* 舞台画布 */}
       <div
         className="relative flex-1 overflow-hidden bg-gray-950"
         key={fadeKey}
         onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDropOnStage}
       >
         {/* 背景层 */}
         <div
           className="absolute inset-0 animate-fade-in"
           style={{ background: bgStyle }}
-          onDragEnter={handleDragEnterZone('bg', 'background')}
-          onDragLeave={handleDragLeaveZone}
         >
           {dragOverZone === 'bg' && (
-            <div
-              className="absolute inset-0 z-10 flex items-center justify-center border-2 border-dashed border-yellow-400 bg-yellow-400/10 transition-all"
-              onDragLeave={handleDragLeaveZone}
-            >
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center border-2 border-dashed border-yellow-400 bg-yellow-400/10">
               <span className="rounded bg-yellow-400/20 px-4 py-2 text-sm font-semibold text-yellow-300 backdrop-blur-sm">
                 放置背景
               </span>
@@ -185,14 +211,12 @@ export default function StagePreview() {
           )}
         </div>
 
-        {/* 角色放置区域（立绘拖放引导线） */}
+        {/* 立绘拖放引导线（仅 sprite 拖拽时出现） */}
         {dragAssetType === 'sprite' && (
-          <div
-            className="absolute inset-0 z-20 pointer-events-none"
-            onDragLeave={handleDragLeaveZone}
-          >
+          <div className="pointer-events-none absolute inset-0 z-20">
             {(['left', 'center', 'right'] as const).map((slot) => {
               const pos = SLOT_POSITIONS[slot]
+              const active = dragOverZone === `ch-${slot}`
               return (
                 <div
                   key={slot}
@@ -200,8 +224,8 @@ export default function StagePreview() {
                   style={{ left: pos.x, top: '50%' }}
                 >
                   <div
-                    className={`rounded-lg border-2 border-dashed px-6 py-12 transition-all ${
-                      dragOverZone === `ch-${slot}`
+                    className={`rounded-lg border-2 border-dashed px-6 py-12 transition-colors duration-150 ${
+                      active
                         ? 'border-brand-400 bg-brand-400/20'
                         : 'border-gray-600 bg-gray-800/20'
                     }`}
@@ -223,7 +247,7 @@ export default function StagePreview() {
             return (
               <div
                 key={charId}
-                className="absolute -translate-x-1/2 -translate-y-full animate-slide-up"
+                className="pointer-events-none absolute -translate-x-1/2 -translate-y-full animate-slide-up"
                 style={{ left: slot.x, top: slot.y }}
               >
                 <div
@@ -246,7 +270,7 @@ export default function StagePreview() {
         )}
 
         {/* 行号指示器 */}
-        <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
+        <div className="pointer-events-none absolute top-3 left-3 z-20 flex items-center gap-2">
           <span className="rounded bg-gray-900/80 px-2 py-0.5 text-xs font-mono text-gray-400">
             {state.line_id}
           </span>
@@ -257,15 +281,13 @@ export default function StagePreview() {
           )}
         </div>
 
-        {/* 音频状态指示器（同时也是拖放区） */}
+        {/* 音频状态指示器 */}
         <div
-          className={`absolute top-3 right-3 z-20 flex flex-col gap-1 text-right rounded-lg p-2 transition-all ${
+          className={`pointer-events-none absolute top-3 right-3 z-20 flex flex-col gap-1 text-right rounded-lg p-2 transition-all duration-150 ${
             dragOverZone === 'audio'
               ? 'ring-2 ring-blue-400 bg-blue-400/10'
               : ''
           }`}
-          onDragEnter={handleDragEnterZone('audio', 'audio')}
-          onDragLeave={handleDragLeaveZone}
         >
           {state.audio.bgm && (
             <span className="rounded bg-gray-900/80 px-2 py-0.5 text-[10px] text-green-400/70">
@@ -293,7 +315,7 @@ export default function StagePreview() {
         </div>
 
         {/* 台词叠加层 */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6 pt-12">
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6 pt-12">
           {state.speaker && (
             <p className="mb-1 text-sm font-semibold text-brand-400">
               {state.speaker}
