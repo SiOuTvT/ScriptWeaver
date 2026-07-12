@@ -78,7 +78,7 @@ interface AppState {
   getCharacterSprite: (charId: string, expressionId: string) => AssetItem | undefined
 }
 
-export const useAppStore = create<AppState>()(subscribeWithSelector((set, get) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   // ---- 数据（初始化载入 mock） ----
   draftDeltas: MOCK_DELTAS,
   resolvedStates: reduceLines(MOCK_DELTAS),
@@ -231,4 +231,4 @@ export const useAppStore = create<AppState>()(subscribeWithSelector((set, get) =
     if (!expr) return undefined
     return get().assets.find((a) => a.id === expr.assetId)
   },
-})))
+}))

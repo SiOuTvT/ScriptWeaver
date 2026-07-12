@@ -118,7 +118,7 @@ export default function CharacterManager() {
   }, [selectedCharId, selectedChar, deleteCharacter])
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-gray-800 bg-gray-950/80">
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-950/80">
       {/* 标题 */}
       <div className="flex items-center justify-between border-b border-gray-800 px-3 py-2.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -351,7 +351,7 @@ export default function CharacterManager() {
       <div className="border-t border-gray-800 px-3 py-1.5 text-[10px] text-gray-600">
         {characterConfigs.length} 个角色
       </div>
-    </aside>
+    </div>
   )
 }
 
