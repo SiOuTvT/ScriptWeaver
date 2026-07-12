@@ -4,6 +4,9 @@ import ManagementPanel from './ManagementPanel'
 import StagePreview from './StagePreview'
 import ScriptDrawer from './ScriptDrawer'
 import Timeline from './Timeline'
+import ScriptOverview from './ScriptOverview'
+import AssetManager from './AssetManager'
+import CharacterManager from './CharacterManager'
 import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
@@ -52,6 +55,7 @@ export default function AppLayout() {
   const characterConfigs = useAppStore((s) => s.characterConfigs)
   const assets = useAppStore((s) => s.assets)
   const projectRoot = useAppStore((s) => s.projectRoot)
+  const activeNavItem = useAppStore((s) => s.activeNavItem)
   const setDraftDeltas = useAppStore((s) => s.setDraftDeltas)
   const loadProjectData = useAppStore((s) => s.loadProjectData)
   const newProject = useAppStore((s) => s.newProject)
@@ -113,7 +117,6 @@ export default function AppLayout() {
   const handleSave = async () => {
     const api = window.electronAPI
     if (!api) {
-      // 浏览器降级：下载 JSON 文件
       const json = serializeProject(draftDeltas, characterConfigs, assets)
       const blob = new Blob([json], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
@@ -141,7 +144,6 @@ export default function AppLayout() {
   const handleOpen = async () => {
     const api = window.electronAPI
     if (!api) {
-      // 浏览器降级：文件选择器
       const input = document.createElement('input')
       input.type = 'file'
       input.accept = '.swproj,.json'
@@ -197,10 +199,11 @@ export default function AppLayout() {
   }
 
   const totalLines = draftDeltas.length
+  const isChapters = activeNavItem === 'chapters'
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-950">
-      {/* 顶部工具栏 */}
+      {/* ===== 顶部工具栏（所有页面通用） ===== */}
       <header className="flex h-9 shrink-0 items-center justify-between border-b border-gray-800 bg-gray-900/60 px-3">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-gray-300 tracking-wide">
@@ -213,7 +216,7 @@ export default function AppLayout() {
           )}
           {projectRoot && (
             <span className="text-[10px] text-gray-600" title={projectRoot}>
-              📁 已保存
+              已保存
             </span>
           )}
         </div>
@@ -254,18 +257,31 @@ export default function AppLayout() {
         </div>
       </header>
 
-      {/* 主内容区：横向四层 */}
+      {/* ===== 主内容区 ===== */}
       <div className="relative flex flex-1 overflow-hidden">
         <LeftSidebar />
-        <ManagementPanel />
-        <StagePreview />
-        <ScriptDrawer />
+
+        {/* --- 场景导航：完整创作工作区 --- */}
+        {isChapters && (
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="relative flex flex-1 overflow-hidden">
+              <ManagementPanel />
+              <StagePreview />
+              <ScriptDrawer />
+            </div>
+            <Timeline />
+          </div>
+        )}
+
+        {/* --- 其他页面：独立全屏视图 --- */}
+        {activeNavItem === 'script-overview' && <ScriptOverview />}
+        {activeNavItem === 'assets' && <AssetManager />}
+        {activeNavItem === 'characters' && <CharacterManager />}
+        {activeNavItem === 'export' && <ExportPlaceholder />}
+        {activeNavItem === 'ai' && <AIPlaceholder />}
       </div>
 
-      {/* 底部：多轨道时间轴 */}
-      <Timeline />
-
-      {/* 新建确认对话框 */}
+      {/* ===== 新建确认对话框 ===== */}
       {showNewConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-80 rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
@@ -295,7 +311,7 @@ export default function AppLayout() {
         </div>
       )}
 
-      {/* 草稿恢复对话框 */}
+      {/* ===== 草稿恢复对话框 ===== */}
       {showDraftRecovery && draftInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-80 rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
@@ -327,6 +343,28 @@ export default function AppLayout() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/** 导出设置占位页面 */
+function ExportPlaceholder() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-gray-950/50">
+      <span className="text-4xl opacity-30">📤</span>
+      <p className="text-sm text-gray-500">导出设置</p>
+      <p className="text-xs text-gray-600">Ren'Py 导出配置（请使用顶部工具栏导出按钮）</p>
+    </div>
+  )
+}
+
+/** AI 功能占位页面 */
+function AIPlaceholder() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-gray-950/50">
+      <span className="text-4xl opacity-30">🤖</span>
+      <p className="text-sm text-gray-500">AI 功能</p>
+      <p className="text-xs text-gray-600">AI 辅助写作（待实现）</p>
     </div>
   )
 }

@@ -144,7 +144,7 @@ export default function AssetManager() {
   }, [])
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-gray-800 bg-gray-950/80">
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-950/80">
       {/* 标题 */}
       <div className="border-b border-gray-800 px-3 py-2.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -310,6 +310,6 @@ export default function AssetManager() {
           </div>
         </>
       )}
-    </aside>
+    </div>
   )
 }
