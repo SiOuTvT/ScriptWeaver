@@ -12,7 +12,12 @@ import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 
-/** 序列化完整项目数据为 JSON */
+/** 剥离 assets 中的 dataUrl —— 仅内存渲染使用，不入 .swproj / localStorage */
+function stripDataUrls(assets: AssetItem[]): AssetItem[] {
+  return assets.map(({ dataUrl: _, ...rest }) => rest)
+}
+
+/** 序列化完整项目数据为 JSON（不含 dataUrl） */
 function serializeProject(
   deltas: LineDelta[],
   characterConfigs: CharacterConfig[],
@@ -22,7 +27,7 @@ function serializeProject(
     version: 1,
     draftDeltas: deltas,
     characterConfigs,
-    assets,
+    assets: stripDataUrls(assets),
     savedAt: new Date().toISOString(),
   }
   return JSON.stringify(project, null, 2)
@@ -45,6 +50,31 @@ function deserializeProject(json: string): {
   } catch {
     return null
   }
+}
+
+/**
+ * 根据相对路径从磁盘重新读取素材文件，生成 dataUrl（仅内存，不入库）。
+ * 在浏览器模式下（无 Electron API）直接返回原数组。
+ */
+async function refreshAssetDataUrls(
+  assets: AssetItem[],
+  projectRoot: string | null,
+): Promise<AssetItem[]> {
+  const api = window.electronAPI
+  if (!api || !projectRoot) return assets
+
+  const refreshed = await Promise.all(
+    assets.map(async (asset) => {
+      // 已有 dataUrl 或缺少 relativePath → 跳过
+      if (asset.dataUrl || !asset.relativePath) return asset
+      const result = await api.readAssetFile(asset.relativePath, projectRoot)
+      if (result.success && result.dataUrl) {
+        return { ...asset, dataUrl: result.dataUrl }
+      }
+      return asset
+    }),
+  )
+  return refreshed
 }
 
 const DEBOUNCE_MS = 800
@@ -178,17 +208,29 @@ export default function AppLayout() {
       return
     }
 
+    const root = result.projectDir ?? null
     loadProjectData({
       ...parsed,
-      projectRoot: result.projectDir ?? null,
+      projectRoot: root,
     })
     saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets)
     setShowDraftRecovery(false)
+
+    // 从磁盘重新读取素材 dataUrl（不依赖 .swproj 中可能残留的旧 base64）
+    refreshAssetDataUrls(parsed.assets, root).then((refreshed) => {
+      useAppStore.getState().setAssets(refreshed)
+    })
   }
 
   const handleDraftRecover = () => {
     if (draftInfo) {
       loadProjectData({ ...draftInfo, projectRoot })
+      // 如果有 projectRoot，从磁盘重新读取素材 dataUrl
+      if (projectRoot) {
+        refreshAssetDataUrls(draftInfo.assets ?? [], projectRoot).then((refreshed) => {
+          useAppStore.getState().setAssets(refreshed)
+        })
+      }
     }
     setShowDraftRecovery(false)
   }

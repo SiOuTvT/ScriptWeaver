@@ -28,7 +28,7 @@ interface ElectronAPI {
   }>
 
   /** 读取项目的素材文件为 data URL */
-  readAssetFile: (relativePath: string) => Promise<{ success: boolean; dataUrl?: string; error?: string }>
+  readAssetFile: (relativePath: string, projectRoot?: string) => Promise<{ success: boolean; dataUrl?: string; error?: string }>
 
   /** 获取会话临时目录路径 */
   getSessionDir: () => Promise<string>
