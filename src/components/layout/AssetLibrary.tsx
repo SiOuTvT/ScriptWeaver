@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import { DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
+import { DRAG_MIME, setDragCache, type DragAssetData } from '@/utils/assetHelpers'
 
 type TabId = 'background' | 'sprite' | 'audio'
 
@@ -45,6 +45,7 @@ export default function AssetLibrary() {
       const data: DragAssetData = { type: tab, assetId, label }
       e.dataTransfer.setData(DRAG_MIME, JSON.stringify(data))
       e.dataTransfer.effectAllowed = 'copy'
+      setDragCache(data)
       e.currentTarget.classList.add('opacity-50')
     },
     [tab],
@@ -52,6 +53,7 @@ export default function AssetLibrary() {
 
   const handleDragEnd = useCallback((e: React.DragEvent) => {
     e.currentTarget.classList.remove('opacity-50')
+    setDragCache(null)
   }, [])
 
   return (

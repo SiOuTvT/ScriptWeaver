@@ -11,6 +11,21 @@ export interface DragAssetData {
 
 export const DRAG_MIME = 'application/x-scriptweaver-asset'
 
+/**
+ * 模块级缓存：dragover 事件中 getData() 被浏览器安全策略阻止，
+ * 因此在 dragstart 时写入此变量，dragover/drop 时读取。
+ * 拖拽结束后清空。
+ */
+let _currentDragCache: DragAssetData | null = null
+
+export function setDragCache(data: DragAssetData | null): void {
+  _currentDragCache = data
+}
+
+export function getDragCache(): DragAssetData | null {
+  return _currentDragCache
+}
+
 /** 从 sprite_id 推导角色 ID（alice_smile → alice） */
 export function deriveCharacterId(spriteId: string): string {
   const idx = spriteId.lastIndexOf('_')
