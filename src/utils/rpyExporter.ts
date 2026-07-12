@@ -165,13 +165,167 @@ export function exportToRpy(
   return lines.join('\n')
 }
 
-/** 触发生成并下载 .rpy 文件 */
+// --------------- definitions.rpy ---------------
+
+/** 首字母大写 */
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+interface ExportMeta {
+  /** 角色 ID → 显示名称 */
+  charDisplayNames: Record<string, string>
+  /** 所有用到的立绘 sprite_id */
+  sprites: Set<string>
+  /** 所有用到的背景 asset_id */
+  backgrounds: Set<string>
+  /** 所有用到音频的 asset_id */
+  audioAssets: Set<string>
+}
+
+function collectMeta(
+  deltas: LineDelta[],
+  _resolvedStates: ResolvedLineState[],
+): ExportMeta {
+  const charDisplayNames: Record<string, string> = {}
+  const sprites = new Set<string>()
+  const backgrounds = new Set<string>()
+  const audioAssets = new Set<string>()
+
+  for (const delta of deltas) {
+    if (delta.background?.asset_id) backgrounds.add(delta.background.asset_id)
+
+    for (const [charId, char] of Object.entries(delta.characters)) {
+      if (char.sprite_id) sprites.add(char.sprite_id)
+      charDisplayNames[charId] = charDisplayNames[charId] ?? capitalize(charId)
+    }
+
+    const { audio } = delta
+    if (audio.bgm && audio.bgm !== '__CLEAR__' && audio.bgm.asset_id) audioAssets.add(audio.bgm.asset_id)
+    if (audio.ambient && audio.ambient !== '__CLEAR__' && audio.ambient.asset_id) audioAssets.add(audio.ambient.asset_id)
+    for (const seId of audio.se) audioAssets.add(seId)
+    if (audio.voice) audioAssets.add(audio.voice)
+  }
+
+  // 用 speaker 字段微调显示名称（优先用 mock 数据中的大写名称）
+  for (const delta of deltas) {
+    if (!delta.speaker) continue
+    for (const charId of Object.keys(charDisplayNames)) {
+      if (delta.speaker.toLowerCase() === charId.toLowerCase()) {
+        charDisplayNames[charId] = delta.speaker
+      }
+    }
+  }
+
+  return { charDisplayNames, sprites, backgrounds, audioAssets }
+}
+
+/**
+ * 生成 definitions.rpy 内容：
+ *   - position transforms（left / center / right）
+ *   - Character 声明（define）
+ *   - image 声明（立绘 + 背景）
+ *   - 音频素材清单（注释）
+ */
+export function exportDefinitionsRpy(
+  deltas: LineDelta[],
+  resolvedStates: ResolvedLineState[],
+): string {
+  const meta = collectMeta(deltas, resolvedStates)
+  const lines: string[] = []
+
+  lines.push('# ============================================================')
+  lines.push('# ScriptWeaver - definitions.rpy')
+  lines.push('# 角色声明 / image 声明 / position transforms')
+  lines.push('# ============================================================')
+  lines.push('')
+
+  // ---- Position Transforms ----
+  lines.push('# ---- Position Transforms ----')
+  lines.push('transform left:')
+  lines.push('    xalign 0.25')
+  lines.push('    yalign 1.0')
+  lines.push('')
+  lines.push('transform center:')
+  lines.push('    xalign 0.5')
+  lines.push('    yalign 1.0')
+  lines.push('')
+  lines.push('transform right:')
+  lines.push('    xalign 0.75')
+  lines.push('    yalign 1.0')
+  lines.push('')
+
+  // ---- Character 声明 ----
+  if (Object.keys(meta.charDisplayNames).length > 0) {
+    lines.push('# ---- Character 声明 ----')
+    for (const [charId, displayName] of Object.entries(meta.charDisplayNames).sort()) {
+      lines.push(`define ${charId} = Character("${displayName}")`)
+    }
+    lines.push('')
+    lines.push('# 命名约定：')
+    lines.push('#   脚本中使用角色 ID（小写）作为 Character 变量名')
+    lines.push('#   show <角色id> <表情> at <位置>  例如: show alice smile at center')
+    lines.push('#   <角色id> "台词"                 例如: alice "Hello"')
+    lines.push('#')
+    lines.push('#   注意：当前脚本对话中使用的是 speaker 显示名称（如 "Alice"），')
+    lines.push('#   与 show 命令的角色 ID（如 "alice"）不同。')
+    lines.push('#   如需统一，请在 ScriptWeaver 中将 speaker 改为小写角色 ID。')
+    lines.push('')
+  }
+
+  // ---- Image 声明 ----
+  if (meta.sprites.size > 0) {
+    lines.push('# ---- 立绘 Image 声明 ----')
+    for (const spriteId of [...meta.sprites].sort()) {
+      // alice_smile → image alice smile = "..."
+      const charId = spriteId.split('_').slice(0, -1).join('_') || spriteId
+      const expr = spriteSuffix(spriteId)
+      lines.push(`image ${charId} ${expr} = "images/sprites/${spriteId}.png"`)
+    }
+    lines.push('')
+  }
+
+  if (meta.backgrounds.size > 0) {
+    lines.push('# ---- 背景 Image 声明 ----')
+    for (const bgId of [...meta.backgrounds].sort()) {
+      lines.push(`image ${bgId} = "images/bg/${bgId}.jpg"`)
+    }
+    lines.push('')
+  }
+
+  // ---- 音频清单 ----
+  if (meta.audioAssets.size > 0) {
+    lines.push('# ---- 音频素材清单（需放入 game/audio/ 目录） ----')
+    for (const audioId of [...meta.audioAssets].sort()) {
+      lines.push(`#   audio/${audioId}.ogg`)
+    }
+    lines.push('')
+  }
+
+  lines.push('# 素材路径为默认生成，请按实际项目结构调整。')
+  lines.push('')
+
+  return lines.join('\n')
+}
+
+// --------------- 下载 ---------------
+
+/** 触发生成并下载 .rpy 文件（一式两份：definitions.rpy + script.rpy） */
 export function downloadRpy(
   deltas: LineDelta[],
   resolvedStates: ResolvedLineState[],
-  filename: string = 'script.rpy',
+  scriptFilename: string = 'script.rpy',
 ): void {
-  const content = exportToRpy(deltas, resolvedStates)
+  // 先下载 script.rpy
+  const scriptContent = exportToRpy(deltas, resolvedStates)
+  triggerDownload(scriptContent, scriptFilename)
+
+  // 再下载 definitions.rpy
+  const defsContent = exportDefinitionsRpy(deltas, resolvedStates)
+  triggerDownload(defsContent, 'definitions.rpy')
+}
+
+function triggerDownload(content: string, filename: string): void {
   const blob = new Blob([content], { type: 'text/x-renpy;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
