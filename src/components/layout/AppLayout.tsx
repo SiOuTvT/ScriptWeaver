@@ -1,30 +1,44 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import LeftSidebar from './LeftSidebar'
-import AssetLibrary from './AssetLibrary'
+import ManagementPanel from './ManagementPanel'
 import StagePreview from './StagePreview'
 import ScriptDrawer from './ScriptDrawer'
 import Timeline from './Timeline'
 import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
-import type { ProjectFile, LineDelta } from '@/core/types'
+import type { ProjectFile, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 
-/** 序列化项目数据为 JSON */
-function serializeProject(deltas: LineDelta[]): string {
+/** 序列化完整项目数据为 JSON */
+function serializeProject(
+  deltas: LineDelta[],
+  characterConfigs: CharacterConfig[],
+  assets: AssetItem[],
+): string {
   const project: ProjectFile = {
     version: 1,
     draftDeltas: deltas,
+    characterConfigs,
+    assets,
     savedAt: new Date().toISOString(),
   }
   return JSON.stringify(project, null, 2)
 }
 
 /** 反序列化项目 JSON，校验基本结构 */
-function deserializeProject(json: string): LineDelta[] | null {
+function deserializeProject(json: string): {
+  deltas: LineDelta[]
+  characterConfigs: CharacterConfig[]
+  assets: AssetItem[]
+} | null {
   try {
     const data = JSON.parse(json) as ProjectFile
     if (!data.draftDeltas || !Array.isArray(data.draftDeltas)) return null
-    return data.draftDeltas
+    return {
+      deltas: data.draftDeltas,
+      characterConfigs: data.characterConfigs ?? [],
+      assets: data.assets ?? [],
+    }
   } catch {
     return null
   }
@@ -35,50 +49,54 @@ const DEBOUNCE_MS = 800
 export default function AppLayout() {
   const draftDeltas = useAppStore((s) => s.draftDeltas)
   const resolvedStates = useAppStore((s) => s.resolvedStates)
+  const characterConfigs = useAppStore((s) => s.characterConfigs)
+  const assets = useAppStore((s) => s.assets)
+  const projectRoot = useAppStore((s) => s.projectRoot)
   const setDraftDeltas = useAppStore((s) => s.setDraftDeltas)
+  const loadProjectData = useAppStore((s) => s.loadProjectData)
   const newProject = useAppStore((s) => s.newProject)
+  const setProjectRoot = useAppStore((s) => s.setProjectRoot)
 
   // ---- 对话框状态 ----
   const [showNewConfirm, setShowNewConfirm] = useState(false)
   const [showDraftRecovery, setShowDraftRecovery] = useState(false)
-  const [draftInfo, setDraftInfo] = useState<{ deltas: LineDelta[]; savedAt: string } | null>(null)
+  const [draftInfo, setDraftInfo] = useState<Awaited<ReturnType<typeof loadDraft>> | null>(null)
 
   // ---- auto-save refs ----
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const deltasRef = useRef(draftDeltas)
-  deltasRef.current = draftDeltas
+  const snapshotRef = useRef({ deltas: draftDeltas, characterConfigs, assets })
+  snapshotRef.current = { deltas: draftDeltas, characterConfigs, assets }
 
   /** 防抖写入 localStorage */
   const debouncedSaveDraft = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
-      saveDraft(deltasRef.current)
+      const { deltas, characterConfigs: chars, assets: asts } = snapshotRef.current
+      saveDraft(deltas, chars, asts)
     }, DEBOUNCE_MS)
   }, [])
 
-  // 监听 deltas 变化 → 自动存草稿
+  // 监听变化 → 自动存草稿
   useEffect(() => {
     debouncedSaveDraft()
-  }, [draftDeltas, debouncedSaveDraft])
+  }, [draftDeltas, characterConfigs, assets, debouncedSaveDraft])
 
   // 组件挂载时检查草稿
   useEffect(() => {
     const draft = loadDraft()
     if (!draft || draft.deltas.length === 0) return
-    // 仅在当前是默认 mock 数据时弹恢复提示
-    // （如果用户已经打开了一个项目，不弹）
     setDraftInfo(draft)
     setShowDraftRecovery(true)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   // ---- 操作 ----
 
   const handleExport = () => {
-    downloadRpy(draftDeltas, resolvedStates, 'script.rpy')
+    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, 'script.rpy')
   }
 
   const handleNewClick = () => {
-    if (draftDeltas.length === 0) {
+    if (draftDeltas.length === 0 && characterConfigs.length === 0 && assets.length === 0) {
       newProject()
       clearDraft()
       return
@@ -95,8 +113,8 @@ export default function AppLayout() {
   const handleSave = async () => {
     const api = window.electronAPI
     if (!api) {
-      // 降级：浏览器环境下用 Blob 下载
-      const json = serializeProject(draftDeltas)
+      // 浏览器降级：下载 JSON 文件
+      const json = serializeProject(draftDeltas, characterConfigs, assets)
       const blob = new Blob([json], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -106,23 +124,24 @@ export default function AppLayout() {
       URL.revokeObjectURL(url)
       return
     }
-    const result = await api.saveFile({
-      content: serializeProject(draftDeltas),
-      defaultName: 'untitled.swproj',
+
+    const result = await api.saveProject({
+      projectJson: serializeProject(draftDeltas, characterConfigs, assets),
+      projectName: 'untitled',
     })
-    if (result.success) {
-      // 保存成功后同步更新草稿
-      saveDraft(draftDeltas)
+
+    if (result.success && result.projectDir) {
+      setProjectRoot(result.projectDir)
+      saveDraft(draftDeltas, characterConfigs, assets)
     } else if (result.error) {
       alert(`保存失败：${result.error}`)
     }
-    // canceled 静默忽略
   }
 
   const handleOpen = async () => {
     const api = window.electronAPI
     if (!api) {
-      // 降级：浏览器环境下用 file input
+      // 浏览器降级：文件选择器
       const input = document.createElement('input')
       input.type = 'file'
       input.accept = '.swproj,.json'
@@ -131,10 +150,10 @@ export default function AppLayout() {
         if (!file) return
         const reader = new FileReader()
         reader.onload = () => {
-          const deltas = deserializeProject(reader.result as string)
-          if (deltas) {
-            setDraftDeltas(deltas)
-            saveDraft(deltas)
+          const parsed = deserializeProject(reader.result as string)
+          if (parsed) {
+            loadProjectData({ ...parsed, projectRoot: null })
+            saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets)
           } else {
             alert('文件格式错误，无法打开')
           }
@@ -144,24 +163,30 @@ export default function AppLayout() {
       input.click()
       return
     }
-    const result = await api.openFile()
+
+    const result = await api.openProject()
     if (!result.success || !result.content) {
       if (result.error) alert(`打开失败：${result.error}`)
       return
     }
-    const deltas = deserializeProject(result.content)
-    if (!deltas) {
+
+    const parsed = deserializeProject(result.content)
+    if (!parsed) {
       alert('文件格式错误，无法打开')
       return
     }
-    setDraftDeltas(deltas)
-    saveDraft(deltas)
-    setShowDraftRecovery(false) // 已加载项目，不弹恢复
+
+    loadProjectData({
+      ...parsed,
+      projectRoot: result.projectDir ?? null,
+    })
+    saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets)
+    setShowDraftRecovery(false)
   }
 
   const handleDraftRecover = () => {
     if (draftInfo) {
-      setDraftDeltas(draftInfo.deltas)
+      loadProjectData({ ...draftInfo, projectRoot })
     }
     setShowDraftRecovery(false)
   }
@@ -171,6 +196,8 @@ export default function AppLayout() {
     setShowDraftRecovery(false)
   }
 
+  const totalLines = draftDeltas.length
+
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-950">
       {/* 顶部工具栏 */}
@@ -179,9 +206,14 @@ export default function AppLayout() {
           <span className="text-xs font-medium text-gray-300 tracking-wide">
             ScriptWeaver
           </span>
-          {draftDeltas.length > 0 && (
+          {totalLines > 0 && (
             <span className="text-[10px] text-gray-600">
-              {draftDeltas.length} 行
+              {totalLines} 行
+            </span>
+          )}
+          {projectRoot && (
+            <span className="text-[10px] text-gray-600" title={projectRoot}>
+              📁 已保存
             </span>
           )}
         </div>
@@ -225,7 +257,7 @@ export default function AppLayout() {
       {/* 主内容区：横向四层 */}
       <div className="relative flex flex-1 overflow-hidden">
         <LeftSidebar />
-        <AssetLibrary />
+        <ManagementPanel />
         <StagePreview />
         <ScriptDrawer />
       </div>
@@ -241,7 +273,8 @@ export default function AppLayout() {
               新建空白项目
             </h3>
             <p className="mb-5 text-xs leading-relaxed text-gray-400">
-              当前项目中有 {draftDeltas.length} 行内容。
+              当前项目中有 {totalLines} 行内容、{characterConfigs.length} 个角色、
+              {assets.length} 个素材。
               新建后当前数据将丢失，此操作不可撤销。
             </p>
             <div className="flex justify-end gap-2">
@@ -272,6 +305,8 @@ export default function AppLayout() {
             <p className="mb-5 text-xs leading-relaxed text-gray-400">
               检测到上次编辑的草稿数据（
               {draftInfo.deltas.length} 行，
+              {draftInfo.characterConfigs?.length ?? 0} 个角色，
+              {draftInfo.assets?.length ?? 0} 个素材，
               {new Date(draftInfo.savedAt).toLocaleString('zh-CN')}
               ），是否恢复？
             </p>
