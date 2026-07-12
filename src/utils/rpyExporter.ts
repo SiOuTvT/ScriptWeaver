@@ -30,7 +30,7 @@ function indent(level: number, text: string): string {
 export function exportToRpy(
   deltas: LineDelta[],
   resolvedStates: ResolvedLineState[],
-  scriptLabel: string = 'script_weaver_export',
+  scriptLabel: string = 'start',
 ): string {
   if (deltas.length === 0) return '# No content\n'
 
