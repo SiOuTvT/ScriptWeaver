@@ -42,6 +42,44 @@ export function exportToRpy(
   lines.push(`label ${scriptLabel}:`)
   lines.push('')
 
+  // 构建 speaker → charId 映射（解决大小写不一致问题）
+  // speaker 来自 delta.speaker（如 "Alice"），charId 来自 delta.characters 的 key（如 "alice"）
+  const speakerToCharId: Record<string, string> = {}
+  const missingSpeakerWarnings = new Set<string>()
+  for (const delta of deltas) {
+    if (!delta.speaker) continue
+    const charKeys = Object.keys(delta.characters)
+    for (const charId of charKeys) {
+      if (delta.speaker.toLowerCase() === charId.toLowerCase()) {
+        speakerToCharId[delta.speaker] = charId
+      }
+    }
+    // 如果有 speaker 但该行没有任何 characters 指令（当前行恰好没有角色变更），
+    // 则从之前累积的映射中查找（旁白行或纯对话行也可能触发此情况）
+    if (!speakerToCharId[delta.speaker] && charKeys.length === 0) {
+      // 从所有已知角色 ID 中尝试匹配
+      const allCharIds = new Set<string>()
+      for (const d of deltas) {
+        for (const cid of Object.keys(d.characters)) allCharIds.add(cid)
+      }
+      for (const cid of allCharIds) {
+        if (delta.speaker.toLowerCase() === cid.toLowerCase()) {
+          speakerToCharId[delta.speaker] = cid
+        }
+      }
+    }
+    // 仍未匹配的 speaker 记录警告
+    if (!speakerToCharId[delta.speaker]) {
+      missingSpeakerWarnings.add(delta.speaker)
+    }
+  }
+
+  // 输出缺失映射的警告
+  for (const sp of missingSpeakerWarnings) {
+    console.warn(`[RPY Export] Sayer "${sp}" 未匹配到任何角色 ID（delta.characters 的 key），` +
+      `请检查 definitions.rpy 中是否缺少对应的 Character 声明`)
+  }
+
   // 当前行级的追踪状态（用于检测变化）
   let currentBg: string | null = null
   let currentChars: Record<string, { sprite_id: string; position_slot: string }> = {}
@@ -134,9 +172,11 @@ export function exportToRpy(
     }
 
     // ---- 台词 ----
+    // 将 speaker 映射为对应的 charId，确保与 definitions.rpy 的 define 声明一致
     if (state.speaker) {
+      const resolvedSpeaker = speakerToCharId[state.speaker] ?? state.speaker
       const escaped = state.dialogue.replace(/"/g, '\\"')
-      block.push(`${state.speaker} "${escaped}"`)
+      block.push(`${resolvedSpeaker} "${escaped}"`)
     } else {
       const escaped = state.dialogue.replace(/"/g, '\\"')
       block.push(`"${escaped}"`)
