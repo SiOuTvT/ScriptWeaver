@@ -1,13 +1,14 @@
-import { useAppStore } from '@/stores/appStore'
+import { useAppStore, NavItemId } from '@/stores/appStore'
 
 interface NavItem {
-  id: 'chapters' | 'characters' | 'export' | 'ai'
+  id: NavItemId
   label: string
   icon: string
 }
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'chapters', label: '场景导航', icon: '📖' },
+  { id: 'assets', label: '素材管理', icon: '📦' },
   { id: 'characters', label: '角色管理', icon: '👤' },
   { id: 'export', label: '导出设置', icon: '📤' },
   { id: 'ai', label: 'AI 功能', icon: '🤖' },
@@ -61,7 +62,7 @@ export default function LeftSidebar() {
 
       {/* 底部版本号 */}
       <div className="border-t border-gray-800 p-2 text-center text-[10px] text-gray-700">
-        {collapsed ? 'v0.1' : 'v0.1.0'}
+        {collapsed ? 'v0.2' : 'v0.2.0'}
       </div>
     </aside>
   )

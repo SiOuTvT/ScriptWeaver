@@ -71,21 +71,19 @@ const SLOT_POSITIONS: Record<string, { x: string; y: string }> = {
 }
 
 const BG_COLORS: Record<string, string> = {
-  bg_street_dusk: 'linear-gradient(180deg, #2d1b2e 0%, #4a3728 60%, #6b4c3b 100%)',
-  bg_street_night: 'linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 60%, #2a2a3e 100%)',
-  bg_night_sky: 'linear-gradient(180deg, #0d1b2a 0%, #1b2838 50%, #0a1628 100%)',
-  bg_room: 'linear-gradient(180deg, #2a1a10 0%, #3d2b1f 60%, #4a3528 100%)',
-  bg_park: 'linear-gradient(180deg, #4a7c59 0%, #2d5a27 60%, #1a3a18 100%)',
-  bg_school: 'linear-gradient(180deg, #5a5a7a 0%, #4a4a6a 60%, #3a3a5a 100%)',
+  asset_bg_street_dusk: 'linear-gradient(180deg, #2d1b2e 0%, #4a3728 60%, #6b4c3b 100%)',
+  asset_bg_street_night: 'linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 60%, #2a2a3e 100%)',
+  asset_bg_night_sky: 'linear-gradient(180deg, #0d1b2a 0%, #1b2838 50%, #0a1628 100%)',
+  asset_bg_room: 'linear-gradient(180deg, #2a1a10 0%, #3d2b1f 60%, #4a3528 100%)',
+  asset_bg_park: 'linear-gradient(180deg, #4a7c59 0%, #2d5a27 60%, #1a3a18 100%)',
+  asset_bg_school: 'linear-gradient(180deg, #5a5a7a 0%, #4a4a6a 60%, #3a3a5a 100%)',
 }
 
 const SPRITE_COLORS: Record<string, string> = {
-  alice_smile: '#e8a0bf',
-  alice_angry: '#d4708a',
-  bob_normal: '#7ec8e3',
-  bob_smile: '#5da8c9',
-  bob_sad: '#4a9099',
-  charlie_happy: '#c3b1e1',
+  smile: '#e8a0bf',
+  angry: '#d4708a',
+  normal: '#7ec8e3',
+  happy: '#c3b1e1',
 }
 
 // ===================== 组件 =====================
@@ -95,6 +93,7 @@ export default function StagePreview() {
   const resolvedStates = useAppStore((s) => s.resolvedStates)
   const selectLine = useAppStore((s) => s.selectLine)
   const updateDeltaAt = useAppStore((s) => s.updateDeltaAt)
+  const getDisplayName = useAppStore((s) => s.getDisplayName)
 
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
   const [fadeKey, setFadeKey] = useState(0)
@@ -303,10 +302,10 @@ export default function StagePreview() {
                   style={{ backgroundColor: spriteColor, minHeight: '100px' }}
                 >
                   <span className="text-center text-[10px] font-medium text-white/80">
-                    {charId}
+                    {getDisplayName(charId)}
                   </span>
                   <span className="text-center text-[9px] text-white/50">
-                    {char.sprite_id.split('_').pop()}
+                    {char.sprite_id}
                   </span>
                 </div>
                 <div className="mt-1 text-center text-[10px] text-gray-500">

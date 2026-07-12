@@ -1,24 +1,26 @@
 /**
  * localStorage 草稿自动保存/恢复
- * 用于防止意外关闭或忘记手动保存导致数据丢失
+ * 仅存储项目元数据（deltas + configs + assets 信息），不含二进制文件内容。
  */
 
-import type { LineDelta } from '@/core/types'
+import type { LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 
 const DRAFT_KEY = 'scriptweaver_draft'
 
 export interface DraftData {
   deltas: LineDelta[]
+  characterConfigs: CharacterConfig[]
+  assets: AssetItem[]
   savedAt: string
 }
 
-export function saveDraft(deltas: LineDelta[]): void {
-  if (deltas.length === 0) {
-    clearDraft()
-    return
-  }
+export function saveDraft(
+  deltas: LineDelta[],
+  characterConfigs: CharacterConfig[] = [],
+  assets: AssetItem[] = [],
+): void {
   try {
-    const data: DraftData = { deltas, savedAt: new Date().toISOString() }
+    const data: DraftData = { deltas, characterConfigs, assets, savedAt: new Date().toISOString() }
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data))
   } catch {
     // localStorage 不可用时静默失败
