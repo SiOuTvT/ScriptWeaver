@@ -4,13 +4,44 @@ const api = {
   getVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
   getPath: (name: string): Promise<string> => ipcRenderer.invoke('app:getPath', name),
 
-  /** 保存项目文件：弹出原生保存对话框，写入文件 */
-  saveFile: (data: { content: string; defaultName?: string }): Promise<{ success: boolean; filePath?: string; error?: string }> =>
-    ipcRenderer.invoke('dialog:saveFile', data),
+  /** 获取会话临时目录 */
+  getSessionDir: (): Promise<string> => ipcRenderer.invoke('app:getSessionDir'),
 
-  /** 打开项目文件：弹出原生打开对话框，读取文件内容 */
-  openFile: (): Promise<{ success: boolean; content?: string; filePath?: string; error?: string }> =>
-    ipcRenderer.invoke('dialog:openFile'),
+  /** 保存项目：选目录 → 复制素材 → 写 .swproj */
+  saveProject: (data: {
+    projectJson: string
+    projectName?: string
+  }): Promise<{ success: boolean; projectDir?: string; error?: string }> =>
+    ipcRenderer.invoke('dialog:saveProject', data),
+
+  /** 打开项目：选 .swproj → 返回 JSON 内容 + 项目根目录 */
+  openProject: (): Promise<{
+    success: boolean
+    content?: string
+    projectDir?: string
+    error?: string
+  }> => ipcRenderer.invoke('dialog:openProject'),
+
+  /** 导入素材：打开文件选择器，复制到临时目录 */
+  pickAssetFiles: (options?: {
+    filters?: { name: string; extensions: string[] }[]
+  }): Promise<{
+    success: boolean
+    files?: {
+      id: string
+      fileName: string
+      relativePath: string
+      type: string
+      width?: number
+      height?: number
+      dataUrl?: string
+    }[]
+    error?: string
+  }> => ipcRenderer.invoke('dialog:pickAssetFiles', options),
+
+  /** 读取项目的素材文件为 data URL */
+  readAssetFile: (relativePath: string, projectRoot?: string): Promise<{ success: boolean; dataUrl?: string; error?: string }> =>
+    ipcRenderer.invoke('fs:readAssetFile', relativePath, projectRoot),
 
   on(channel: string, callback: (...args: unknown[]) => void) {
     ipcRenderer.on(channel, (_event, ...args) => callback(...args))
@@ -22,7 +53,5 @@ const api = {
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)
-
-// --------------- Type declarations ---------------
 
 export type ElectronAPI = typeof api
