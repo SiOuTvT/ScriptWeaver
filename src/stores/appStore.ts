@@ -23,6 +23,8 @@ interface AppState {
   scriptDrawerPinned: boolean
 
   // ---- 操作 ----
+  /** 新建空白项目（清空所有行数据） */
+  newProject: () => void
   setDraftDeltas: (deltas: LineDelta[]) => void
   /** 以不可变方式更新第 index 行 Delta，自动重算 resolvedStates */
   updateDeltaAt: (index: number, updater: (prev: LineDelta) => LineDelta) => void
@@ -58,6 +60,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   scriptDrawerPinned: false,
 
   // ---- 操作 ----
+  newProject: () => {
+    const empty: LineDelta[] = []
+    set({
+      draftDeltas: empty,
+      resolvedStates: reduceLines(empty),
+      selectedLineIndex: 0,
+    })
+  },
+
   setDraftDeltas: (deltas) => {
     set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
   },
