@@ -116,6 +116,14 @@ export interface LineDelta {
   }
 }
 
+// --------------- 项目文件格式 ---------------
+
+export interface ProjectFile {
+  version: number
+  draftDeltas: LineDelta[]
+  savedAt: string
+}
+
 // --------------- 合并后的完整行状态 ---------------
 
 /**
