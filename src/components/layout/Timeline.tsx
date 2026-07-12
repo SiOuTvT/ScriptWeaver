@@ -105,10 +105,12 @@ const DropCell = memo(function DropCell({
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
       if (!acceptType) return
-      const cache = getDragCache()
-      if (!cache) return
+      // 必须先调用 preventDefault 才能让 drop 事件触发
       e.preventDefault()
       e.dataTransfer.dropEffect = 'copy'
+      const cache = getDragCache()
+      if (!cache) return
+      // 有匹配素材才显示高亮
       elRef.current?.classList.add('ring-1', 'ring-brand-400', 'bg-brand-400/15')
     },
     [acceptType],
@@ -124,10 +126,13 @@ const DropCell = memo(function DropCell({
       elRef.current?.classList.remove('ring-1', 'ring-brand-400', 'bg-brand-400/15')
       if (!acceptType) return
 
-      const raw = e.dataTransfer.getData(DRAG_MIME)
-      if (!raw) return
-      let asset: DragAssetData
-      try { asset = JSON.parse(raw) } catch { return }
+      // 优先用模块级缓存（比 getData 更可靠）
+      let asset = getDragCache()
+      if (!asset) {
+        const raw = e.dataTransfer.getData(DRAG_MIME)
+        if (!raw) return
+        try { asset = JSON.parse(raw) } catch { return }
+      }
 
       selectLine(lineIndex)
 

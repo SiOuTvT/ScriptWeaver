@@ -1,15 +1,69 @@
-import { useRef, useEffect, useState, useCallback } from 'react'
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { ResolvedLineState, ResolvedCharacterState, LineDelta } from '@/core/types'
 import {
-  DRAG_MIME,
   getDragCache,
   type DragAssetData,
   deriveCharacterId,
   getAudioCategory,
 } from '@/utils/assetHelpers'
 
-// 位置槽位定义
+// ===================== 共享坐标判定函数（唯一真理源） =====================
+
+type DragOverZone = 'bg' | 'ch-left' | 'ch-center' | 'ch-right' | 'audio' | null
+
+interface ZoneResult {
+  zone: DragOverZone
+  assetType: string | null
+}
+
+/**
+ * 根据鼠标在容器内的相对位置 + 拖拽素材类型，计算应命中的目标区。
+ * dragOver（视觉指示器）和 drop（实际落点）共用同一函数，杜绝不一致。
+ */
+function computeZone(
+  cache: DragAssetData,
+  rx: number, // 0~1 容器内 X 比例
+  ry: number, // 0~1 容器内 Y 比例
+): ZoneResult {
+  if (cache.type === 'background') {
+    return { zone: 'bg', assetType: 'background' }
+  }
+
+  if (cache.type === 'sprite') {
+    let slot: DragOverZone
+    if (rx < 0.33)        slot = 'ch-left'
+    else if (rx > 0.66)   slot = 'ch-right'
+    else                   slot = 'ch-center'
+    return { zone: slot, assetType: 'sprite' }
+  }
+
+  if (cache.type === 'audio') {
+    // 仅右上角 40%×25% 区域为音频放置区，与视觉指示器一致
+    if (rx > 0.6 && ry < 0.25) {
+      return { zone: 'audio', assetType: 'audio' }
+    }
+    // 不放任何指示器
+    return { zone: null, assetType: null }
+  }
+
+  return { zone: null, assetType: null }
+}
+
+/** 从容器 rect 和鼠标 client 坐标提取 rx/ry */
+function getRelativePos(
+  rect: DOMRect,
+  clientX: number,
+  clientY: number,
+): { rx: number; ry: number } {
+  return {
+    rx: (clientX - rect.left) / rect.width,
+    ry: (clientY - rect.top) / rect.height,
+  }
+}
+
+// ===================== 常量 =====================
+
 const SLOT_POSITIONS: Record<string, { x: string; y: string }> = {
   left: { x: '22%', y: '65%' },
   center: { x: '50%', y: '65%' },
@@ -34,7 +88,7 @@ const SPRITE_COLORS: Record<string, string> = {
   charlie_happy: '#c3b1e1',
 }
 
-type DragOverZone = 'bg' | 'ch-left' | 'ch-center' | 'ch-right' | 'audio' | null
+// ===================== 组件 =====================
 
 export default function StagePreview() {
   const selectedIndex = useAppStore((s) => s.selectedLineIndex)
@@ -45,11 +99,13 @@ export default function StagePreview() {
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
   const [fadeKey, setFadeKey] = useState(0)
 
-  // 拖拽区状态 —— 用 ref 做同值守卫，避免无意义 setState
+  // 拖拽视觉状态
   const [dragOverZone, _setDragOverZone] = useState<DragOverZone>(null)
   const [dragAssetType, _setDragAssetType] = useState<string | null>(null)
   const zoneRef = useRef<DragOverZone>(null)
   const typeRef = useRef<string | null>(null)
+  // 缓存容器 rect，避免 dragOver 每帧都调用 getBoundingClientRect
+  const containerRectRef = useRef<DOMRect | null>(null)
 
   const setDragOverZone = useCallback((z: DragOverZone) => {
     if (zoneRef.current !== z) {
@@ -65,85 +121,71 @@ export default function StagePreview() {
     }
   }, [])
 
+  const resetDragState = useCallback(() => {
+    zoneRef.current = null
+    typeRef.current = null
+    containerRectRef.current = null
+    _setDragOverZone(null)
+    _setDragAssetType(null)
+  }, [])
+
   // 选中行变化 → 交叉淡入淡出
   useEffect(() => {
     setFadeKey((k) => k + 1)
   }, [selectedIndex])
 
-  // —— 拖放：用 onDragOver 按位置推断目标区 ——
+  // =================== 拖放事件 ===================
 
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
-      // 先判断是否为我们发起的拖拽
       const cache = getDragCache()
-      if (!cache) return // 不是本应用的拖拽，不做任何事
+      if (!cache) return
 
       e.preventDefault()
       e.dataTransfer.dropEffect = 'copy'
 
+      // 缓存 container rect，避免每帧重算
       const rect = e.currentTarget.getBoundingClientRect()
-      const rx = (e.clientX - rect.left) / rect.width  // 0~1
-      const ry = (e.clientY - rect.top) / rect.height
-
-      let zone: DragOverZone = null
-      let aType: string | null = null
-
-      if (cache.type === 'background') {
-        zone = 'bg'
-        aType = 'background'
-      } else if (cache.type === 'sprite') {
-        aType = 'sprite'
-        if (rx < 0.33) zone = 'ch-left'
-        else if (rx > 0.66) zone = 'ch-right'
-        else zone = 'ch-center'
-      } else if (cache.type === 'audio') {
-        aType = 'audio'
-        // 右上角区域 = 音频指示器
-        if (rx > 0.6 && ry < 0.25) zone = 'audio'
-        // 其他位置也允许放置音频（走默认 bgm 行为），用 bg 表示落下方位
-        else zone = 'bg'
-      }
+      containerRectRef.current = rect
+      const { rx, ry } = getRelativePos(rect, e.clientX, e.clientY)
+      const { zone, assetType } = computeZone(cache, rx, ry)
 
       setDragOverZone(zone)
-      setDragAssetType(aType)
+      setDragAssetType(assetType)
     },
     [setDragOverZone, setDragAssetType],
   )
 
   const handleDragLeave = useCallback(() => {
-    zoneRef.current = null
-    typeRef.current = null
-    _setDragOverZone(null)
-    _setDragAssetType(null)
-  }, [])
+    resetDragState()
+  }, [resetDragState])
 
   const handleDropOnStage = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
-      _setDragOverZone(null)
-      _setDragAssetType(null)
-      zoneRef.current = null
-      typeRef.current = null
+      resetDragState()
 
-      const raw = e.dataTransfer.getData(DRAG_MIME)
-      if (!raw) return
-      let asset: DragAssetData
-      try { asset = JSON.parse(raw) } catch { return }
+      // 优先从模块级缓存获取（比 getData 可靠）
+      const asset = getDragCache()
+      if (!asset) return
+      if (!state) return
 
-      const rect = e.currentTarget.getBoundingClientRect()
-      const rx = (e.clientX - rect.left) / rect.width
+      // 用 drop 时的实时坐标做最终判定
+      const rect = containerRectRef.current ?? e.currentTarget.getBoundingClientRect()
+      const { rx, ry } = getRelativePos(rect, e.clientX, e.clientY)
+      const { zone } = computeZone(asset, rx, ry)
 
-      if (asset.type === 'background') {
+      // zone 为 null → 不在有效落区，忽略
+      if (!zone) return
+
+      if (zone === 'bg' && asset.type === 'background') {
         updateDeltaAt(selectedIndex, (prev: LineDelta) => ({
           ...prev,
           background: { asset_id: asset.assetId },
         }))
-      } else if (asset.type === 'sprite') {
+      } else if (zone.startsWith('ch-') && asset.type === 'sprite') {
         const charId = deriveCharacterId(asset.assetId)
-        let slot = 'center'
-        if (rx < 0.33) slot = 'left'
-        else if (rx > 0.66) slot = 'right'
-
+        const slot = zone.slice(3) as 'left' | 'center' | 'right'
         updateDeltaAt(selectedIndex, (prev: LineDelta) => ({
           ...prev,
           characters: {
@@ -155,7 +197,7 @@ export default function StagePreview() {
             },
           },
         }))
-      } else if (asset.type === 'audio') {
+      } else if (zone === 'audio' && asset.type === 'audio') {
         const cat = getAudioCategory(asset.assetId)
         updateDeltaAt(selectedIndex, (prev: LineDelta) => {
           const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
@@ -171,10 +213,40 @@ export default function StagePreview() {
         })
       }
     },
-    [selectedIndex, updateDeltaAt],
+    [selectedIndex, updateDeltaAt, resetDragState, state],
   )
 
-  // ===== 渲染 =====
+  // =================== 渲染 ===================
+
+  // Sprite 槽位线（memo 避免每次渲染重建）
+  const spriteSlotGuides = useMemo(() => {
+    if (dragAssetType !== 'sprite') return null
+    return (
+      <div className="pointer-events-none absolute inset-0 z-20">
+        {(['left', 'center', 'right'] as const).map((slot) => {
+          const pos = SLOT_POSITIONS[slot]
+          const active = dragOverZone === `ch-${slot}`
+          return (
+            <div
+              key={slot}
+              className="absolute -translate-x-1/2 flex flex-col items-center"
+              style={{ left: pos.x, top: '50%' }}
+            >
+              <div
+                className={`rounded-lg border-2 border-dashed px-6 py-12 transition-colors duration-150 ${
+                  active
+                    ? 'border-brand-400 bg-brand-400/20'
+                    : 'border-gray-600 bg-gray-800/20'
+                }`}
+              >
+                <span className="text-xs text-gray-400">{slot}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }, [dragAssetType, dragOverZone])
 
   if (!state) {
     return (
@@ -211,32 +283,8 @@ export default function StagePreview() {
           )}
         </div>
 
-        {/* 立绘拖放引导线（仅 sprite 拖拽时出现） */}
-        {dragAssetType === 'sprite' && (
-          <div className="pointer-events-none absolute inset-0 z-20">
-            {(['left', 'center', 'right'] as const).map((slot) => {
-              const pos = SLOT_POSITIONS[slot]
-              const active = dragOverZone === `ch-${slot}`
-              return (
-                <div
-                  key={slot}
-                  className="absolute -translate-x-1/2 flex flex-col items-center"
-                  style={{ left: pos.x, top: '50%' }}
-                >
-                  <div
-                    className={`rounded-lg border-2 border-dashed px-6 py-12 transition-colors duration-150 ${
-                      active
-                        ? 'border-brand-400 bg-brand-400/20'
-                        : 'border-gray-600 bg-gray-800/20'
-                    }`}
-                  >
-                    <span className="text-xs text-gray-400">{slot}</span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        {/* 立绘拖放槽位引导线 */}
+        {spriteSlotGuides}
 
         {/* 角色层 */}
         {Object.entries(state.characters).map(
@@ -281,7 +329,7 @@ export default function StagePreview() {
           )}
         </div>
 
-        {/* 音频状态指示器 */}
+        {/* 音频状态指示器 + 拖放热区 */}
         <div
           className={`pointer-events-none absolute top-3 right-3 z-20 flex flex-col gap-1 text-right rounded-lg p-2 transition-all duration-150 ${
             dragOverZone === 'audio'
