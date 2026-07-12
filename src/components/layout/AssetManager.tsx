@@ -92,15 +92,34 @@ export default function AssetManager() {
       const now = new Date().toISOString()
       Array.from(files).forEach((file) => {
         const id = `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-        const asset: AssetItem = {
-          id,
-          type: tab,
-          name: file.name.replace(/\.[^.]+$/, ''),
-          fileName: file.name,
-          relativePath: '',
-          importedAt: now,
+        // 图片类型用 FileReader 生成 base64 dataUrl，音频跳过（仅 Electron 模式支持）
+        const isImage = file.type.startsWith('image/')
+        if (isImage) {
+          const reader = new FileReader()
+          reader.onload = () => {
+            const asset: AssetItem = {
+              id,
+              type: tab,
+              name: file.name.replace(/\.[^.]+$/, ''),
+              fileName: file.name,
+              relativePath: '',
+              dataUrl: reader.result as string,
+              importedAt: now,
+            }
+            addAsset(asset)
+          }
+          reader.readAsDataURL(file)
+        } else {
+          const asset: AssetItem = {
+            id,
+            type: tab,
+            name: file.name.replace(/\.[^.]+$/, ''),
+            fileName: file.name,
+            relativePath: '',
+            importedAt: now,
+          }
+          addAsset(asset)
         }
-        addAsset(asset)
       })
       e.target.value = ''
     },
@@ -217,8 +236,16 @@ export default function AssetManager() {
                 className="group flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-gray-800/60"
               >
                 {/* 缩略图/图标 */}
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-gray-800 text-xs text-gray-500">
-                  {asset.type === 'audio' ? '🎵' : '🖼'}
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-800">
+                  {asset.dataUrl ? (
+                    <img
+                      src={asset.dataUrl}
+                      alt={asset.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xs text-gray-500">{asset.type === 'audio' ? '🎵' : '🖼'}</span>
+                  )}
                 </div>
 
                 {/* 名称 */}
