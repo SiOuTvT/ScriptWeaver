@@ -4,47 +4,47 @@
 
 /* =========================================================
    主题变量 —— 浅色「纸 / PAPER」（默认）
-   以 RGB 通道存储，便于 Tailwind rgb(var(--x) / <alpha>) 透明度
+   白纸黑字：fg-faint/subtle 在纯白/浅灰底上对比度足够，小字号不再糊
    ========================================================= */
 :root,
 [data-theme='light'] {
-  --c-canvas: 228 226 220;        /* 暖灰桌面底（压深，与 surface 拉开层次） */
-  --c-surface: 249 248 244;       /* #F9F8F4 主面板（纸） */
-  --c-surface-1: 252 251 248;     /* #FCFBF8 次级面板 */
-  --c-surface-2: 255 255 255;     /* #FFFFFF 抬起卡片 */
-  --c-surface-3: 243 241 236;     /* #F3F1EC 输入框底 */
-  --c-surface-hover: 232 229 223; /* #E8E5DF hover */
-  --c-surface-active: 221 217 210;/* #DDD9D2 选中 */
+  --c-canvas: 240 239 235;        /* 干净浅灰桌面底（不发灰） */
+  --c-surface: 255 255 255;       /* 主面板纯白 */
+  --c-surface-1: 248 248 246;     /* 次级面板 */
+  --c-surface-2: 255 255 255;     /* 抬起卡片 */
+  --c-surface-3: 242 241 237;     /* 输入框底 */
+  --c-surface-hover: 235 233 228; /* hover */
+  --c-surface-active: 224 221 215;/* 选中 */
 
-  --c-edge: 28 24 18;             /* 边框色相（暗） */
-  --c-edge-strong: 28 24 18;     /* 强调边框 */
+  --c-edge: 23 22 20;             /* 边框色相 */
+  --c-edge-strong: 23 22 20;
 
-  --c-fg: 28 27 25;               /* #1C1B19 正文 */
-  --c-fg-muted: 86 82 76;         /* #56524C 次要 */
-  --c-fg-subtle: 128 123 115;     /* #807B73 说明（提深，增强对比） */
-  --c-fg-faint: 145 139 129;      /* #918B81 占位（提深，增强对比） */
+  --c-fg: 23 22 20;               /* 正文 白底~15:1 */
+  --c-fg-muted: 55 53 48;         /* 次要 白底~11:1（小字号可用） */
+  --c-fg-subtle: 82 78 71;        /* 说明 白底~6.5:1（小字号可读） */
+  --c-fg-faint: 108 104 95;        /* 占位 白底~4.5:1（placeholder 不再隐形） */
 
-  --c-primary: 90 79 224;         /* #5A4FE0 紫毫（浅底加深保对比） */
-  --c-primary-hover: 109 94 252;   /* #6D5EFC */
-  --c-primary-active: 74 64 200;   /* #4A40C8 */
-  --c-primary-soft: 90 79 224;
+  --c-primary: 84 70 220;         /* 紫毫 */
+  --c-primary-hover: 103 88 250;
+  --c-primary-active: 68 56 196;
+  --c-primary-soft: 84 70 220;
   --c-on-primary: 255 255 255;
 
-  --c-accent: 61 214 196;         /* #3DD6C4 青 */
-  --c-accent-soft: 61 214 196;
+  --c-accent: 14 159 143;         /* 青 */
+  --c-accent-soft: 14 159 143;
 
-  --c-success: 52 211 153;
-  --c-success-soft: 52 211 153;
-  --c-warning: 251 191 36;
-  --c-warning-soft: 251 191 36;
-  --c-danger: 251 113 133;
-  --c-danger-soft: 251 113 133;
-  --c-info: 96 165 250;
-  --c-info-soft: 96 165 250;
+  --c-success: 22 163 110;
+  --c-success-soft: 22 163 110;
+  --c-warning: 202 138 4;
+  --c-warning-soft: 202 138 4;
+  --c-danger: 220 60 90;
+  --c-danger-soft: 220 60 90;
+  --c-info: 37 110 220;
+  --c-info-soft: 37 110 220;
 
-  --shadow-1: 0 1px 2px rgba(28, 24, 18, 0.10), 0 1px 3px rgba(28, 24, 18, 0.06);
-  --shadow-2: 0 4px 16px rgba(28, 24, 18, 0.14);
-  --shadow-3: 0 24px 64px rgba(28, 24, 18, 0.20);
+  --shadow-1: 0 1px 2px rgba(23, 22, 20, 0.10), 0 1px 3px rgba(23, 22, 20, 0.06);
+  --shadow-2: 0 4px 16px rgba(23, 22, 20, 0.14);
+  --shadow-3: 0 24px 64px rgba(23, 22, 20, 0.20);
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.70);
 
   color-scheme: light;
@@ -52,41 +52,42 @@
 
 /* =========================================================
    主题变量 —— 深色「墨 / INK」
+   背景更黑防发灰，文字提亮保小字号可读，fg-faint 不再隐形
    ========================================================= */
 [data-theme='dark'] {
-  --c-canvas: 10 11 14;           /* #0A0B0E 近黑冷调（最底） */
-  --c-surface: 18 20 26;          /* #12141A 主面板（拉开与 canvas 的层级） */
-  --c-surface-1: 24 27 33;        /* #181B21 次级面板 */
-  --c-surface-2: 31 35 43;        /* #1F232B 抬起卡片 */
-  --c-surface-3: 39 44 53;        /* #272C35 输入框底 */
-  --c-surface-hover: 44 50 60;    /* #2C323C hover */
-  --c-surface-active: 56 63 75;   /* #383F4B 选中 */
+  --c-canvas: 8 9 12;             /* 近黑冷调 */
+  --c-surface: 19 21 27;          /* 主面板（拉开与 canvas 层级） */
+  --c-surface-1: 26 29 36;        /* 次级面板 */
+  --c-surface-2: 33 37 46;        /* 抬起卡片 */
+  --c-surface-3: 42 47 57;        /* 输入框底 */
+  --c-surface-hover: 48 54 65;    /* hover */
+  --c-surface-active: 60 67 80;   /* 选中 */
 
-  --c-edge: 255 255 255;          /* 边框色相（亮） */
+  --c-edge: 255 255 255;          /* 边框色相 */
   --c-edge-strong: 255 255 255;
 
-  --c-fg: 231 233 238;            /* #E7E9EE 冷白正文 */
-  --c-fg-muted: 160 166 178;      /* #A0A6B2 */
-  --c-fg-subtle: 140 147 162;     /* #8C93A2 说明（提亮，深色下对比达标） */
-  --c-fg-faint: 125 135 150;      /* #7D8796 占位（提亮，对比 ~4.5:1） */
+  --c-fg: 224 226 232;            /* 柔和冷白正文 深底~13:1（降白度防刺眼） */
+  --c-fg-muted: 200 204 214;      /* 次要 深底~8:1（小字号可用） */
+  --c-fg-subtle: 185 190 202;     /* 说明 深底~6:1（小字号可读） */
+  --c-fg-faint: 170 176 190;       /* 占位 深底~4.5:1（placeholder 不再隐形） */
 
-  --c-primary: 109 94 252;        /* #6D5EFC 紫毫 */
-  --c-primary-hover: 130 117 255;  /* #8275FF */
-  --c-primary-active: 90 76 230;  /* #5A4CE6 */
-  --c-primary-soft: 109 94 252;
+  --c-primary: 124 110 255;       /* 紫毫（深底提亮） */
+  --c-primary-hover: 145 132 255;
+  --c-primary-active: 104 90 235;
+  --c-primary-soft: 124 110 255;
   --c-on-primary: 255 255 255;
 
-  --c-accent: 61 214 196;         /* #3DD6C4 青 */
-  --c-accent-soft: 61 214 196;
+  --c-accent: 45 212 191;         /* 青（深底提亮） */
+  --c-accent-soft: 45 212 191;
 
-  --c-success: 52 211 153;
-  --c-success-soft: 52 211 153;
+  --c-success: 63 214 158;
+  --c-success-soft: 63 214 158;
   --c-warning: 251 191 36;
   --c-warning-soft: 251 191 36;
   --c-danger: 251 113 133;
   --c-danger-soft: 251 113 133;
-  --c-info: 96 165 250;
-  --c-info-soft: 96 165 250;
+  --c-info: 110 170 255;
+  --c-info-soft: 110 170 255;
 
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.40);
   --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.50), 0 1px 3px rgba(0, 0, 0, 0.55);
@@ -109,11 +110,9 @@
     overflow: hidden;
   }
 
-  /* 主题感知的默认边框色（加粗，解决层次崩塌） */
-  [data-theme='dark'] * { border-color: rgb(var(--c-edge) / 0.15); }
-  [data-theme='light'] * { border-color: rgb(var(--c-edge) / 0.18); }
+  [data-theme='dark'] * { border-color: rgb(var(--c-edge) / 0.14); }
+  [data-theme='light'] * { border-color: rgb(var(--c-edge) / 0.14); }
 
-  /* 统一键盘焦点环：紫毫描边 + 与表面同色的外偏移 */
   :focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px rgb(var(--c-canvas)), 0 0 0 4px rgb(var(--c-primary) / 0.6);
@@ -142,7 +141,6 @@
     background: rgb(var(--c-fg-subtle) / 0.6);
   }
 
-  /* 尊重「减少动态效果」系统偏好 */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;

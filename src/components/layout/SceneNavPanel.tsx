@@ -175,7 +175,7 @@ export default function SceneNavPanel() {
           >
             {asset.name}
           </span>
-          <span className="block truncate text-[10px] text-fg-faint">
+          <span className="block truncate text-[10px] text-fg-subtle">
             {asset.fileName}
           </span>
         </div>

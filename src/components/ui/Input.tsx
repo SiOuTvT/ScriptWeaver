@@ -3,7 +3,7 @@ import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'rea
 import { cn } from '@/lib/cn'
 
 const BASE =
-  'w-full rounded-md border bg-surface-3 px-2.5 py-1.5 text-xs text-fg placeholder-fg-faint outline-none transition-colors duration-150 disabled:opacity-50'
+  'w-full rounded-md border bg-surface-3 px-2.5 py-1.5 text-xs text-fg placeholder-fg-subtle outline-none transition-colors duration-150 disabled:opacity-50'
 
 function fieldBorder(error?: boolean) {
   return error

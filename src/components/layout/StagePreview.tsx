@@ -512,7 +512,7 @@ export default function StagePreview() {
                 }}
                 placeholder="说话人"
                 list="speaker-list"
-                className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-faint outline-none transition-colors focus:border-primary/60"
+                className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-subtle outline-none transition-colors focus:border-primary/60"
               />
               <datalist id="speaker-list">
                 {characterConfigs.map((c) => (
@@ -530,12 +530,12 @@ export default function StagePreview() {
                   commitDialogue(localSpeaker, e.target.value)
                 }}
                 placeholder={state.speaker ? `${state.speaker}的台词...` : '旁白或台词...'}
-                className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-faint outline-none transition-colors focus:border-primary/60"
+                className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-subtle outline-none transition-colors focus:border-primary/60"
               />
             </div>
           </div>
           {/* 行信息提示 */}
-          <div className="mt-1.5 text-right text-[9px] text-fg-faint">
+          <div className="mt-1.5 text-right text-[9px] text-fg-subtle">
             {state.line_id} · 快捷输入 · {state.speaker ? `说话人 ${state.speaker}` : '旁白模式'}
           </div>
         </div>
