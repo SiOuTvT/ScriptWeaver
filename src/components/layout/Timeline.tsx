@@ -8,6 +8,7 @@ import {
   deriveCharacterId,
   getAudioCategory,
 } from '@/utils/assetHelpers'
+import { toast } from '@/utils/toast'
 
 // ===================== 轨道配置 =====================
 
@@ -151,6 +152,7 @@ const DropCell = memo(function DropCell({
         updateDeltaAt(lineIndex, (prev: LineDelta) => ({
           ...prev, background: { asset_id: asset.assetId },
         }))
+        toast(`背景已设为 ${asset.name}`, 'success')
       } else if (acceptType === 'audio' && asset.type === 'audio') {
         // 拖到具体轨道上时，trackId 直接决定写入哪个字段，
         // 不依赖 ID 前缀猜测（用户可能用任何文件名导入）
@@ -170,6 +172,7 @@ const DropCell = memo(function DropCell({
           }
           return { ...prev, audio }
         })
+        toast(`音频 ${asset.name} 已应用到 ${trackId}`, 'success')
       } else if (acceptType === 'sprite' && asset.type === 'sprite') {
         const charId = deriveCharacterId(asset.assetId)
         const trackCharId = trackId.startsWith('char_') ? trackId.slice(5) : charId
@@ -188,8 +191,9 @@ const DropCell = memo(function DropCell({
 
         updateDeltaAt(lineIndex, (prev: LineDelta) => ({
           ...prev,
-          characters: { ...prev.characters, [trackCharId]: { sprite_id: asset.assetId, position_slot: 'center', action: 'show' } },
+          characters: { ...prev.characters, [trackCharId]: { sprite_id: 'default', position_slot: 'center', action: 'show' } },
         }))
+        toast(`立绘 ${asset.name} 已添加到 ${trackCharId}`, 'success')
       }
     },
     [lineIndex, trackId, acceptType, updateDeltaAt, selectLine, addCharacter, getCharacter],

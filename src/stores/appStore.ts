@@ -167,8 +167,32 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   deleteCharacter: (charId) => {
     get()._pushHistory()
+    // 级联清理 Delta 中对被删角色的引用
+    const deltas = get().draftDeltas.map((d) => {
+      let changed = false
+      const next = { ...d }
+
+      // 清除说话人（如果匹配该角色 displayName 或 charId）
+      const char = get().characterConfigs.find((c) => c.charId === charId)
+      const displayToMatch = char?.displayName
+      if (next.speaker === displayToMatch || next.speaker === charId) {
+        next.speaker = null
+        changed = true
+      }
+
+      // 清除角色指令
+      if (next.characters && next.characters[charId]) {
+        next.characters = { ...next.characters }
+        delete next.characters[charId]
+        changed = true
+      }
+
+      return changed ? next : d
+    })
     set((s) => ({
       characterConfigs: s.characterConfigs.filter((c) => c.charId !== charId),
+      draftDeltas: deltas,
+      resolvedStates: reduceLines(deltas),
     }))
   },
 
@@ -191,7 +215,49 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   deleteAsset: (id) => {
     get()._pushHistory()
-    set((s) => ({ assets: s.assets.filter((a) => a.id !== id) }))
+    // 级联清理 Delta 中对被删素材的引用
+    const deltas = get().draftDeltas.map((d) => {
+      let changed = false
+      const next = { ...d }
+
+      // 背景引用
+      if (next.background?.asset_id === id) {
+        next.background = null
+        changed = true
+      }
+
+      // 角色 expressions 通过 assetId 引用，这里检查的是角色 sprite_id 情况不直接引用 asset id
+      // 但 characters 中有可能通过表情间接引用（已被 deleteCharacter 处理），这里不做额外清理
+
+      // 音频引用
+      if (next.audio) {
+        const audio = { ...next.audio, se: [...next.audio.se], voice: next.audio.voice }
+        if (audio.bgm && typeof audio.bgm !== 'string' && audio.bgm.asset_id === id) {
+          audio.bgm = null
+          changed = true
+        }
+        if (audio.ambient && typeof audio.ambient !== 'string' && audio.ambient.asset_id === id) {
+          audio.ambient = null
+          changed = true
+        }
+        if (audio.se.includes(id)) {
+          audio.se = audio.se.filter((s) => s !== id)
+          changed = true
+        }
+        if (audio.voice === id) {
+          audio.voice = null
+          changed = true
+        }
+        if (changed) next.audio = audio
+      }
+
+      return changed ? next : d
+    })
+    set((s) => ({
+      assets: s.assets.filter((a) => a.id !== id),
+      draftDeltas: deltas,
+      resolvedStates: reduceLines(deltas),
+    }))
   },
 
   getAsset: (id) => {
