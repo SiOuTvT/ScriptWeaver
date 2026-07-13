@@ -7,6 +7,7 @@ import {
   deriveCharacterId,
   getAudioCategory,
 } from '@/utils/assetHelpers'
+import { toast } from '@/utils/toast'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
 
@@ -138,20 +139,46 @@ export default function StagePreview() {
   const selectLine = useAppStore((s) => s.selectLine)
   const updateDeltaAt = useAppStore((s) => s.updateDeltaAt)
   const getDisplayName = useAppStore((s) => s.getDisplayName)
+  const getCharacter = useAppStore((s) => s.getCharacter)
   const assets = useAppStore((s) => s.assets)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
   const addCharacter = useAppStore((s) => s.addCharacter)
-  const getCharacter = useAppStore((s) => s.getCharacter)
+  const draftDeltas = useAppStore((s) => s.draftDeltas)
 
+  const currentDelta = draftDeltas[selectedIndex] ?? null
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
   const [fadeKey, setFadeKey] = useState(0)
+
+  // 快捷台词编辑本地状态
+  const [localSpeaker, setLocalSpeaker] = useState(currentDelta?.speaker ?? '')
+  const [localDialogue, setLocalDialogue] = useState(currentDelta?.dialogue ?? '')
+  const dialogueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // 选中行变化 → 同步本地状态
+  useEffect(() => {
+    if (currentDelta) {
+      setLocalSpeaker(currentDelta.speaker ?? '')
+      setLocalDialogue(currentDelta.dialogue ?? '')
+    }
+  }, [selectedIndex, currentDelta?.line_id])
+
+  // dialogue 变更 → 防抖写入 store
+  const commitDialogue = useCallback((speaker: string, dialogue: string) => {
+    if (dialogueTimerRef.current) clearTimeout(dialogueTimerRef.current)
+    dialogueTimerRef.current = setTimeout(() => {
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => ({
+        ...prev,
+        speaker: speaker.trim() || null,
+        dialogue: dialogue,
+      }))
+    }, 300)
+  }, [selectedIndex, updateDeltaAt])
 
   // 拖拽视觉状态
   const [dragOverZone, _setDragOverZone] = useState<DragOverZone>(null)
   const [dragAssetType, _setDragAssetType] = useState<string | null>(null)
   const zoneRef = useRef<DragOverZone>(null)
   const typeRef = useRef<string | null>(null)
-  // 缓存容器 rect，避免 dragOver 每帧都调用 getBoundingClientRect
   const containerRectRef = useRef<DOMRect | null>(null)
 
   const setDragOverZone = useCallback((z: DragOverZone) => {
@@ -230,13 +257,13 @@ export default function StagePreview() {
           ...prev,
           background: { asset_id: asset.assetId },
         }))
+        toast(`背景已设为 ${asset.name}`, 'success')
       } else if (zone.startsWith('ch-') && asset.type === 'sprite') {
         const charId = deriveCharacterId(asset.assetId)
         const slot = zone.slice(3) as 'left' | 'center' | 'right'
 
         // 自动创建角色（如果不存在）
         if (!getCharacter(charId)) {
-          // 从素材名称生成 displayName（去掉前缀，首字母大写）
           const rawName = asset.assetId.replace(/^asset_sprite_|^sprite_|^local_/, '').replace(/_/g, ' ')
           const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1)
           addCharacter({
@@ -247,17 +274,20 @@ export default function StagePreview() {
           })
         }
 
+        // sprite_id 统一使用表情 ID（'default'），而非 asset ID
         updateDeltaAt(selectedIndex, (prev: LineDelta) => ({
           ...prev,
           characters: {
             ...prev.characters,
             [charId]: {
-              sprite_id: asset.assetId,
+              sprite_id: 'default',
               position_slot: slot,
               action: 'show',
             },
           },
         }))
+        const slotName = { left: '左', center: '中', right: '右' }[slot]
+        toast(`立绘 ${asset.name} 已放置到 ${slotName} 位`, 'success')
       } else if (zone === 'audio' && asset.type === 'audio') {
         const cat = getAudioCategory(asset.assetId)
         updateDeltaAt(selectedIndex, (prev: LineDelta) => {
@@ -272,6 +302,7 @@ export default function StagePreview() {
             audio.se = [...audio.se, asset.assetId]
           return { ...prev, audio }
         })
+        toast(`音频 ${asset.name} 已应用`, 'success')
       }
     },
     [selectedIndex, updateDeltaAt, resetDragState, state],
@@ -440,16 +471,46 @@ export default function StagePreview() {
           )}
         </div>
 
-        {/* 台词叠加层 */}
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6 pt-12">
-          {state.speaker && (
-            <p className="mb-1 text-sm font-semibold text-brand-400">
-              {state.speaker}
-            </p>
-          )}
-          <p className="text-sm leading-relaxed text-gray-200">
-            {state.dialogue}
-          </p>
+        {/* 快捷台词编辑条 —— 拖入素材后直接在此写台词，无需切视图 */} 
+        <div className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/95 via-black/85 to-transparent p-3 pt-10">
+          <div className="flex items-start gap-2">
+            {/* 说话人选择器 */}
+            <div className="relative shrink-0">
+              <input
+                type="text"
+                value={localSpeaker}
+                onChange={(e) => {
+                  setLocalSpeaker(e.target.value)
+                  commitDialogue(e.target.value, localDialogue)
+                }}
+                placeholder="说话人"
+                list="speaker-list"
+                className="w-24 rounded-md border border-gray-700 bg-gray-900/90 px-2 py-1 text-xs text-gray-200 placeholder-gray-600 outline-none transition-colors focus:border-brand-500"
+              />
+              <datalist id="speaker-list">
+                {characterConfigs.map((c) => (
+                  <option key={c.charId} value={c.displayName}>{c.charId}</option>
+                ))}
+              </datalist>
+            </div>
+            {/* 台词输入 */}
+            <div className="flex-1">
+              <input
+                type="text"
+                value={localDialogue}
+                onChange={(e) => {
+                  setLocalDialogue(e.target.value)
+                  commitDialogue(localSpeaker, e.target.value)
+                }}
+                placeholder={state.speaker ? `${state.speaker}的台词...` : '旁白或台词...'}
+                className="w-full rounded-md border border-gray-700 bg-gray-900/90 px-2 py-1 text-xs text-gray-200 placeholder-gray-600 outline-none transition-colors focus:border-brand-500"
+              />
+            </div>
+          </div>
+          {/* 行信息提示 */}
+          <div className="mt-1.5 text-right text-[9px] text-gray-600">
+            {state.line_id} · 快捷输入 · {state.speaker ? `说话人 ${state.speaker}` : '旁白模式'}
+          </div>
         </div>
 
         {/* 行进度条 */}

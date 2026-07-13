@@ -8,10 +8,12 @@ import ScriptOverview from './ScriptOverview'
 import AssetManager from './AssetManager'
 import CharacterManager from './CharacterManager'
 import AIPanel from './AIPanel'
+import ExportSettings from './ExportSettings'
 import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
+import { subscribe, getToastItems, type ToastItem } from '@/utils/toast'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 
 /** 剥离 assets 中的 dataUrl —— 仅内存渲染使用，不入 .swproj / localStorage */
@@ -124,6 +126,7 @@ export default function AppLayout() {
   const [showNewConfirm, setShowNewConfirm] = useState(false)
   const [showDraftRecovery, setShowDraftRecovery] = useState(false)
   const [draftInfo, setDraftInfo] = useState<Awaited<ReturnType<typeof loadDraft>> | null>(null)
+  const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
 
   // ---- auto-save refs ----
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -150,6 +153,11 @@ export default function AppLayout() {
     if (!draft || draft.deltas.length === 0) return
     setDraftInfo(draft)
     setShowDraftRecovery(true)
+  }, [])
+
+  // Toast 订阅
+  useEffect(() => {
+    return subscribe(setToasts)
   }, [])
 
   // 全局快捷键：Ctrl+Z 撤销 / Ctrl+Y 或 Ctrl+Shift+Z 重做
@@ -381,7 +389,7 @@ export default function AppLayout() {
         {activeNavItem === 'script-overview' && <ScriptOverview />}
         {activeNavItem === 'assets' && <AssetManager />}
         {activeNavItem === 'characters' && <CharacterManager />}
-        {activeNavItem === 'export' && <ExportPlaceholder />}
+        {activeNavItem === 'export' && <ExportSettings />}
         {activeNavItem === 'ai' && <AIPanel />}
       </div>
 
@@ -447,17 +455,22 @@ export default function AppLayout() {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-/** 导出设置占位页面 */
-function ExportPlaceholder() {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-gray-950/50">
-      <span className="text-4xl opacity-30">📤</span>
-      <p className="text-sm text-gray-500">导出设置</p>
-      <p className="text-xs text-gray-600">Ren'Py 导出配置（请使用顶部工具栏导出按钮）</p>
+      {/* ===== Toast 通知容器 ===== */}
+      {toasts.length > 0 && (
+        <div className="pointer-events-none fixed bottom-16 right-4 z-[100] flex flex-col gap-1.5">
+          {toasts.map((t) => {
+            const colors = { success: 'bg-emerald-600/90', info: 'bg-blue-600/90', warning: 'bg-amber-600/90' }
+            return (
+              <div
+                key={t.id}
+                className={`pointer-events-auto animate-slide-up rounded-lg px-3 py-2 text-xs text-white shadow-lg backdrop-blur-sm ${colors[t.type]}`}
+              >
+                {t.message}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

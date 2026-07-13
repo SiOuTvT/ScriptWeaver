@@ -1,0 +1,149 @@
+import { useCallback, useState } from 'react'
+import { useAppStore } from '@/stores/appStore'
+import { downloadRpy, validateExportNames, resolveLookups, formatValidationErrors, exportDefinitionsRpy, exportToRpy } from '@/utils/rpyExporter'
+import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
+
+export default function ExportSettings() {
+  const draftDeltas = useAppStore((s) => s.draftDeltas)
+  const resolvedStates = useAppStore((s) => s.resolvedStates)
+  const characterConfigs = useAppStore((s) => s.characterConfigs)
+  const assets = useAppStore((s) => s.assets)
+
+  const [scriptLabel, setScriptLabel] = useState('start')
+  const [validationResult, setValidationResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const handleValidate = useCallback(() => {
+    const lookups = resolveLookups(draftDeltas, characterConfigs)
+    const errors = validateExportNames(draftDeltas, lookups, characterConfigs)
+    if (errors.length === 0) {
+      setValidationResult({ ok: true, message: '所有引用均有效，无错误。' })
+    } else {
+      setValidationResult({ ok: false, message: formatValidationErrors(errors) })
+    }
+  }, [draftDeltas, characterConfigs])
+
+  const handleExportScript = useCallback(() => {
+    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, DEFAULT_POSITION_SLOTS, `${scriptLabel}.rpy`)
+  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel])
+
+  const handleExportDefs = useCallback(() => {
+    const content = exportDefinitionsRpy(characterConfigs, assets, DEFAULT_POSITION_SLOTS)
+    const blob = new Blob([content], { type: 'text/x-renpy;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'definitions.rpy'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, [characterConfigs, assets])
+
+  const handleExportBoth = useCallback(() => {
+    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, DEFAULT_POSITION_SLOTS, `${scriptLabel}.rpy`)
+    const defs = exportDefinitionsRpy(characterConfigs, assets, DEFAULT_POSITION_SLOTS)
+    const blob = new Blob([defs], { type: 'text/x-renpy;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'definitions.rpy'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel])
+
+  const totalLines = draftDeltas.length
+  const speakerCount = new Set(draftDeltas.map((d) => d.speaker).filter(Boolean)).size
+  const charInScene = characterConfigs.length
+
+  return (
+    <div className="flex flex-1 flex-col overflow-auto bg-gray-950/50 p-6">
+      <h2 className="mb-1 text-sm font-semibold text-gray-200">Ren'Py 导出设置</h2>
+      <p className="mb-5 text-[11px] text-gray-500">配置导出选项并校验脚本完整性</p>
+
+      {/* 项目概况 */}
+      <div className="mb-5 grid grid-cols-3 gap-3">
+        {[
+          { label: '剧本行数', value: totalLines },
+          { label: '出场说话人', value: speakerCount },
+          { label: '角色配置', value: charInScene },
+        ].map((item) => (
+          <div key={item.label} className="rounded-lg border border-gray-800 bg-gray-900/60 px-4 py-3">
+            <p className="text-[10px] text-gray-500">{item.label}</p>
+            <p className="mt-0.5 text-lg font-mono font-semibold text-gray-200">{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Label 设置 */}
+      <div className="mb-5">
+        <label className="mb-1 block text-[11px] font-medium text-gray-400">Ren'Py Script Label</label>
+        <input
+          type="text"
+          value={scriptLabel}
+          onChange={(e) => setScriptLabel(e.target.value)}
+          className="w-48 rounded-md border border-gray-700 bg-gray-900 px-2.5 py-1.5 text-xs text-gray-200 outline-none transition-colors focus:border-brand-500"
+        />
+        <p className="mt-0.5 text-[10px] text-gray-600">导出的脚本将以 label {scriptLabel}: 开头</p>
+      </div>
+
+      {/* 操作按钮 */}
+      <div className="mb-5 flex flex-wrap gap-2">
+        <button
+          onClick={handleValidate}
+          className="rounded-lg border border-gray-700 px-3 py-1.5 text-[11px] text-gray-300 transition-colors hover:bg-gray-800 hover:text-gray-100"
+        >
+          校验引用
+        </button>
+        <button
+          onClick={handleExportScript}
+          className="rounded-lg bg-brand-600/80 px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-brand-500"
+          disabled={totalLines === 0}
+        >
+          导出 script.rpy
+        </button>
+        <button
+          onClick={handleExportDefs}
+          className="rounded-lg border border-gray-700 px-3 py-1.5 text-[11px] text-gray-300 transition-colors hover:bg-gray-800 hover:text-gray-100"
+          disabled={characterConfigs.length === 0}
+        >
+          导出 definitions.rpy
+        </button>
+        <button
+          onClick={handleExportBoth}
+          className="rounded-lg bg-emerald-600/80 px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-emerald-500"
+          disabled={totalLines === 0}
+        >
+          一并导出
+        </button>
+      </div>
+
+      {/* 校验结果 */}
+      {validationResult && (
+        <div className={`rounded-lg border p-4 ${validationResult.ok ? 'border-emerald-700 bg-emerald-900/20' : 'border-red-700 bg-red-900/20'}`}>
+          <pre className="whitespace-pre-wrap text-[10px] leading-relaxed text-gray-300 font-mono">
+            {validationResult.message}
+          </pre>
+        </div>
+      )}
+
+      {/* 空缺引导 */}
+      {totalLines === 0 && (
+        <div className="mt-2 rounded-lg border border-dashed border-gray-700 px-4 py-6 text-center">
+          <p className="text-[11px] text-gray-500">尚未添加任何剧本行。先去场景导航中编写内容再导出。</p>
+        </div>
+      )}
+
+      {/* 导出格式说明 */}
+      <div className="mt-auto pt-6">
+        <h3 className="mb-2 text-[11px] font-medium text-gray-500">导出文件说明</h3>
+        <div className="space-y-1.5 text-[10px] text-gray-600">
+          <p><code className="text-brand-400">script.rpy</code> — Ren'Py 脚本主文件，包含 label/scene/show/hide/台词等</p>
+          <p><code className="text-brand-400">definitions.rpy</code> — 角色声明 + image/transform 定义 + 素材路径清单</p>
+          <p>导出后将文件放入 Ren'Py 项目的 <code className="text-brand-400">game/</code> 目录，素材放入对应子目录即可运行。</p>
+        </div>
+      </div>
+    </div>
+  )
+}
