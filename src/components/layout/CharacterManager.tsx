@@ -112,9 +112,9 @@ export default function CharacterManager() {
   )
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-surface">
+    <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-edge/12 bg-surface shadow-[0_1px_3px_rgba(28,24,18,0.08)]">
       {/* 标题 */}
-      <div className="flex items-center justify-between border-b border-edge/10 px-3 py-2.5">
+      <div className="flex items-center justify-between border-b border-edge/14 bg-surface-1 px-3 py-2.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
           角色管理
         </span>
@@ -162,7 +162,7 @@ export default function CharacterManager() {
             暂无角色，点击"新建"创建
           </div>
         ) : (
-          <div className="divide-y divide-edge/10">
+          <div className="divide-y divide-edge/12">
             {characterConfigs.map((char) => {
               const isSelected = selectedCharId === char.charId
               const exprCount = char.expressions.length

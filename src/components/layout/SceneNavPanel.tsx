@@ -149,7 +149,7 @@ export default function SceneNavPanel() {
         draggable
         onDragStart={(e) => handleDragStart(e, asset)}
         onDragEnd={handleDragEnd}
-        className="group flex cursor-grab items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-hover active:cursor-grabbing active:bg-surface-active"
+        className="group flex cursor-grab items-center gap-2 rounded-md border border-edge/12 px-2 py-1.5 shadow-[0_1px_2px_rgba(28,24,18,0.06)] transition-all hover:border-edge/20 hover:shadow-[0_2px_4px_rgba(28,24,18,0.10)] hover:bg-surface-hover active:cursor-grabbing active:bg-surface-active"
         title={`拖拽到舞台或时间轴使用`}
       >
         {/* 缩略图 */}
@@ -214,9 +214,9 @@ export default function SceneNavPanel() {
   // ---- 整体 ----
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-edge/12 bg-surface">
+    <aside className="flex w-56 shrink-0 flex-col border-r border-edge/18 bg-surface">
       {/* 标题 */}
-      <div className="flex items-baseline gap-1.5 border-b border-edge/10 px-3 py-2.5">
+      <div className="flex items-baseline gap-1.5 border-b border-edge/14 bg-surface-1 px-3 py-2.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
           素材库
         </span>

@@ -355,7 +355,7 @@ export default function AppLayout() {
             保存
           </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
-          <Button variant="primary" size="sm" icon={<FileDown size={14} strokeWidth={1.75} />} onClick={handleExport}>
+          <Button variant="outline" size="sm" icon={<FileDown size={14} strokeWidth={1.75} />} onClick={handleExport}>
             导出 RPY
           </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />

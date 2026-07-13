@@ -167,9 +167,9 @@ export default function AssetManager() {
   const tabLabel = tab === 'audio' ? '音频' : tab === 'sprite' ? '立绘' : '背景'
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-surface">
+    <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-edge/12 bg-surface shadow-[0_1px_3px_rgba(28,24,18,0.08)]">
       {/* 标题 */}
-      <div className="flex items-baseline gap-1.5 border-b border-edge/10 px-3 py-2.5">
+      <div className="flex items-baseline gap-1.5 border-b border-edge/14 bg-surface-1 px-3 py-2.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
           素材管理
         </span>
@@ -228,7 +228,7 @@ export default function AssetManager() {
               <div
                 key={asset.id}
                 onContextMenu={(e) => handleContextMenu(e, asset)}
-                className="group flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-hover"
+                className="group flex items-center gap-2 rounded-md border border-edge/12 px-2 py-1.5 shadow-[0_1px_2px_rgba(28,24,18,0.05)] transition-all hover:border-edge/20 hover:shadow-[0_2px_4px_rgba(28,24,18,0.10)] hover:bg-surface-hover"
               >
                 {/* 缩略图/图标 */}
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-surface-1">
