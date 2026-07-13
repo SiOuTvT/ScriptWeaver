@@ -162,22 +162,22 @@ export default function CharacterManager() {
             暂无角色，点击"新建"创建
           </div>
         ) : (
-          <div className="divide-y divide-edge/12">
+          <div className="space-y-0 p-2">
             {characterConfigs.map((char) => {
               const isSelected = selectedCharId === char.charId
               const exprCount = char.expressions.length
 
               // 角色列表项
               return (
-                <div key={char.charId}>
+                <div key={char.charId} className="mx-2 my-1 rounded-lg border border-edge/12 bg-surface-2/60 shadow-[0_1px_2px_rgba(28,24,18,0.05)] transition-all hover:border-edge/20">
                   <button
                     onClick={() => {
                       setSelectedCharId(isSelected ? null : char.charId)
                       setShowNewForm(false)
                     }}
-                    className={`w-full border-l-2 px-3 py-2 text-left transition-colors ${
+                    className={`w-full rounded-t-lg border-l-2 px-3 py-2.5 text-left transition-colors ${
                       isSelected
-                        ? 'border-l-primary bg-primary/10'
+                        ? 'border-l-primary bg-primary/8'
                         : 'border-l-transparent hover:bg-surface-hover'
                     }`}
                   >
