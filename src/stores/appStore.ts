@@ -10,6 +10,31 @@ function uid(prefix = 'id'): string {
   return `${prefix}_${Date.now()}_${_uidCounter}`
 }
 
+/** 根据已有 deltas 生成下一个行号 line_id（L1, L2, ...） */
+function nextLineId(deltas: LineDelta[]): string {
+  let maxNum = 0
+  for (const d of deltas) {
+    const match = d.line_id.match(/^L(\d+)$/)
+    if (match) {
+      const n = parseInt(match[1], 10)
+      if (n > maxNum) maxNum = n
+    }
+  }
+  return `L${maxNum + 1}`
+}
+
+/** 创建一行空白 Delta */
+function createEmptyDelta(nextId: string): LineDelta {
+  return {
+    line_id: nextId,
+    speaker: null,
+    dialogue: '',
+    background: null,
+    characters: {},
+    audio: { bgm: null, ambient: null, se: [], voice: null },
+  }
+}
+
 export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview'
 
 interface AppState {
@@ -64,6 +89,12 @@ interface AppState {
   /** 以不可变方式更新第 index 行 Delta */
   updateDeltaAt: (index: number, updater: (prev: LineDelta) => LineDelta) => void
   batchUpdateDeltas: (updates: { index: number; updater: (prev: LineDelta) => LineDelta }[]) => void
+
+  /** 行管理：插入 / 删除 / 移动 */
+  insertDeltaAt: (index: number, delta?: LineDelta) => void
+  deleteDeltaAt: (index: number) => void
+  moveDelta: (fromIndex: number, toIndex: number) => void
+
   selectLine: (index: number) => void
   toggleLeftSidebar: () => void
   setActiveNavItem: (item: AppState['activeNavItem']) => void
@@ -188,6 +219,48 @@ export const useAppStore = create<AppState>((set, get) => ({
       deltas[index] = updater(deltas[index])
     }
     set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
+  },
+
+  // ===== 行管理 =====
+
+  insertDeltaAt: (index, delta) => {
+    const deltas = [...get().draftDeltas]
+    const clamped = Math.max(0, Math.min(deltas.length, index))
+    const newDelta = delta ?? createEmptyDelta(nextLineId(deltas))
+    deltas.splice(clamped, 0, newDelta)
+    const newIndex = clamped
+    set({
+      draftDeltas: deltas,
+      resolvedStates: reduceLines(deltas),
+      selectedLineIndex: newIndex,
+    })
+  },
+
+  deleteDeltaAt: (index) => {
+    const deltas = [...get().draftDeltas]
+    if (deltas.length <= 1 || index < 0 || index >= deltas.length) return
+    deltas.splice(index, 1)
+    const prev = get().selectedLineIndex
+    const newIndex = prev >= deltas.length ? deltas.length - 1 : Math.min(prev, deltas.length - 1)
+    set({
+      draftDeltas: deltas,
+      resolvedStates: reduceLines(deltas),
+      selectedLineIndex: newIndex,
+    })
+  },
+
+  moveDelta: (fromIndex, toIndex) => {
+    const deltas = [...get().draftDeltas]
+    if (fromIndex < 0 || fromIndex >= deltas.length) return
+    if (toIndex < 0 || toIndex >= deltas.length) return
+    if (fromIndex === toIndex) return
+    const [removed] = deltas.splice(fromIndex, 1)
+    deltas.splice(toIndex, 0, removed)
+    set({
+      draftDeltas: deltas,
+      resolvedStates: reduceLines(deltas),
+      selectedLineIndex: toIndex,
+    })
   },
 
   selectLine: (index) => set({ selectedLineIndex: index }),

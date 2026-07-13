@@ -10,6 +10,7 @@ import CharacterManager from './CharacterManager'
 import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
+import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 
 /** 剥离 assets 中的 dataUrl —— 仅内存渲染使用，不入 .swproj / localStorage */
@@ -153,7 +154,7 @@ export default function AppLayout() {
   // ---- 操作 ----
 
   const handleExport = () => {
-    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, 'script.rpy')
+    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, DEFAULT_POSITION_SLOTS, 'script.rpy')
   }
 
   const handleNewClick = () => {

@@ -1,19 +1,17 @@
-# 阶段二发现
+# 阶段三改进发现
 
-## 布局方案
-- 使用 CSS Grid 实现四层布局
-- grid-template: 左侧边栏 + 素材库 + 舞台 + 剧本抽屉 (横向) / 时间轴 (底部)
+## 时间轴行管理
+- ScriptOverview 已有 `createEmptyDelta()` 和通过 textarea 添加行的能力
+- 但 Timeline 中没有内联的增删行控件
+- 用户必须切到剧本总览页用 textarea 编辑，或只能操作 mock 数据
 
-## 组件层次
-```
-AppLayout
-├── LeftSidebar        (固定宽 48px 折叠 / 160px 展开)
-├── AssetLibrary       (固定宽 220px，Tab 切换)
-├── StagePreview       (flex:1 核心区域)
-├── ScriptDrawer       (抽屉，0/280/420px)
-└── Timeline           (底部固定高 180px，多轨道)
-```
+## 槽位系统
+- `PositionSlot` 类型定义存在（types.ts），但从未实例化
+- `exportDefinitionsRpy` 硬编码 left/center/right 三个 transform
+- 如果未来增加新槽位（如 far_left, offscreen_right 等），导出不会自动包含
+- 修复方案：定义 DEFAULT_POSITION_SLOTS 常量，导出时遍历生成 transform
 
-## 状态管理
-- 使用 Zustand appStore 管理 UI 状态 + mock 数据
-- 选中行联动通过 selectedLineIndex 驱动
+## line_id 格式
+- Mock 数据：L1, L2, ... L10
+- ScriptOverview 新增：new_{timestamp}_{counter}
+- 统一为 L{max + 1} 格式更清晰
