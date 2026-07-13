@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
 import { setDragCache, DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
+import { playAudioPreview, stopAudioPreview, isAudioPlaying } from '@/utils/audioManager'
 
 type TabId = AssetType
 
@@ -173,6 +174,29 @@ export default function SceneNavPanel() {
             {asset.fileName}
           </span>
         </div>
+
+        {/* 音频预览按钮 */}
+        {!isImg && (
+          <button
+            onMouseDown={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+            }}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              if (isAudioPlaying()) {
+                stopAudioPreview()
+              } else {
+                playAudioPreview(asset)
+              }
+            }}
+            title="点击试听"
+            className="shrink-0 rounded p-1 text-xs text-gray-500 opacity-0 transition-all hover:bg-gray-700 hover:text-blue-400 group-hover:opacity-100"
+          >
+            ▶
+          </button>
+        )}
 
         {/* 拖拽提示 */}  
         <span className="shrink-0 text-[10px] text-gray-700 opacity-0 transition-opacity group-hover:opacity-100">

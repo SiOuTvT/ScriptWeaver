@@ -35,6 +35,17 @@ function createEmptyDelta(nextId: string): LineDelta {
   }
 }
 
+// ==================== 撤销/重做 快照 ====================
+
+interface HistorySnapshot {
+  draftDeltas: LineDelta[]
+  assets: AssetItem[]
+  characterConfigs: CharacterConfig[]
+  selectedLineIndex: number
+}
+
+const MAX_HISTORY = 50
+
 export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview'
 
 interface AppState {
@@ -107,6 +118,15 @@ interface AppState {
   getDisplayName: (charId: string) => string
   /** 根据 charId + 表情 ID 获取对应的素材 */
   getCharacterSprite: (charId: string, expressionId: string) => AssetItem | undefined
+
+  // ===== 撤销/重做 =====
+  _history: HistorySnapshot[]
+  _future: HistorySnapshot[]
+  _pushHistory: () => void
+  undo: () => void
+  redo: () => void
+  canUndo: () => boolean
+  canRedo: () => boolean
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -130,12 +150,14 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ===== 角色 CRUD =====
   addCharacter: (config) => {
+    get()._pushHistory()
     const now = new Date().toISOString()
     const character: CharacterConfig = { ...config, createdAt: now, updatedAt: now }
     set((s) => ({ characterConfigs: [...s.characterConfigs, character] }))
   },
 
   updateCharacter: (charId, patch) => {
+    get()._pushHistory()
     set((s) => ({
       characterConfigs: s.characterConfigs.map((c) =>
         c.charId === charId ? { ...c, ...patch, updatedAt: new Date().toISOString() } : c,
@@ -144,6 +166,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteCharacter: (charId) => {
+    get()._pushHistory()
     set((s) => ({
       characterConfigs: s.characterConfigs.filter((c) => c.charId !== charId),
     }))
@@ -155,16 +178,19 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ===== 素材 CRUD =====
   addAsset: (asset) => {
+    get()._pushHistory()
     set((s) => ({ assets: [...s.assets, asset] }))
   },
 
   updateAsset: (id, patch) => {
+    get()._pushHistory()
     set((s) => ({
       assets: s.assets.map((a) => (a.id === id ? { ...a, ...patch } : a)),
     }))
   },
 
   deleteAsset: (id) => {
+    get()._pushHistory()
     set((s) => ({ assets: s.assets.filter((a) => a.id !== id) }))
   },
 
@@ -174,6 +200,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ===== 项目操作 =====
   newProject: () => {
+    get()._pushHistory()
     const empty: LineDelta[] = []
     set({
       draftDeltas: empty,
@@ -182,10 +209,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       characterConfigs: [],
       projectRoot: null,
       selectedLineIndex: 0,
+      _history: [],
+      _future: [],
     })
   },
 
   setDraftDeltas: (deltas) => {
+    get()._pushHistory()
     set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
   },
 
@@ -197,14 +227,24 @@ export const useAppStore = create<AppState>((set, get) => ({
       characterConfigs: data.characterConfigs,
       projectRoot: data.projectRoot,
       selectedLineIndex: 0,
+      _history: [],
+      _future: [],
     })
   },
 
   setProjectRoot: (root) => set({ projectRoot: root }),
-  setAssets: (assets) => set({ assets }),
-  setCharacterConfigs: (configs) => set({ characterConfigs: configs }),
+
+  setAssets: (assets) => {
+    get()._pushHistory()
+    set({ assets })
+  },
+  setCharacterConfigs: (configs) => {
+    get()._pushHistory()
+    set({ characterConfigs: configs })
+  },
 
   updateDeltaAt: (index, updater) => {
+    get()._pushHistory()
     const deltas = [...get().draftDeltas]
     if (index < 0 || index >= deltas.length) return
     deltas[index] = updater(deltas[index])
@@ -213,6 +253,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   batchUpdateDeltas: (updates) => {
     if (updates.length === 0) return
+    get()._pushHistory()
     const deltas = [...get().draftDeltas]
     for (const { index, updater } of updates) {
       if (index < 0 || index >= deltas.length) continue
@@ -224,6 +265,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // ===== 行管理 =====
 
   insertDeltaAt: (index, delta) => {
+    get()._pushHistory()
     const deltas = [...get().draftDeltas]
     const clamped = Math.max(0, Math.min(deltas.length, index))
     const newDelta = delta ?? createEmptyDelta(nextLineId(deltas))
@@ -237,6 +279,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteDeltaAt: (index) => {
+    get()._pushHistory()
     const deltas = [...get().draftDeltas]
     if (deltas.length <= 1 || index < 0 || index >= deltas.length) return
     deltas.splice(index, 1)
@@ -250,6 +293,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   moveDelta: (fromIndex, toIndex) => {
+    get()._pushHistory()
     const deltas = [...get().draftDeltas]
     if (fromIndex < 0 || fromIndex >= deltas.length) return
     if (toIndex < 0 || toIndex >= deltas.length) return
@@ -304,4 +348,67 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!expr) return undefined
     return get().assets.find((a) => a.id === expr.assetId)
   },
+
+  // ===== 撤销/重做 =====
+  _history: [],
+  _future: [],
+
+  _pushHistory: () => {
+    const s = get()
+    const snap: HistorySnapshot = {
+      draftDeltas: structuredClone(s.draftDeltas),
+      assets: structuredClone(s.assets),
+      characterConfigs: structuredClone(s.characterConfigs),
+      selectedLineIndex: s.selectedLineIndex,
+    }
+    set((st) => ({
+      _history: [...st._history.slice(-MAX_HISTORY + 1), snap],
+      _future: [],
+    }))
+  },
+
+  undo: () => {
+    const s = get()
+    if (s._history.length === 0) return
+    const prev = s._history[s._history.length - 1]
+    const current: HistorySnapshot = {
+      draftDeltas: structuredClone(s.draftDeltas),
+      assets: structuredClone(s.assets),
+      characterConfigs: structuredClone(s.characterConfigs),
+      selectedLineIndex: s.selectedLineIndex,
+    }
+    set({
+      draftDeltas: prev.draftDeltas,
+      resolvedStates: reduceLines(prev.draftDeltas),
+      assets: prev.assets,
+      characterConfigs: prev.characterConfigs,
+      selectedLineIndex: prev.selectedLineIndex,
+      _history: s._history.slice(0, -1),
+      _future: [...s._future, current],
+    })
+  },
+
+  redo: () => {
+    const s = get()
+    if (s._future.length === 0) return
+    const next = s._future[s._future.length - 1]
+    const current: HistorySnapshot = {
+      draftDeltas: structuredClone(s.draftDeltas),
+      assets: structuredClone(s.assets),
+      characterConfigs: structuredClone(s.characterConfigs),
+      selectedLineIndex: s.selectedLineIndex,
+    }
+    set({
+      draftDeltas: next.draftDeltas,
+      resolvedStates: reduceLines(next.draftDeltas),
+      assets: next.assets,
+      characterConfigs: next.characterConfigs,
+      selectedLineIndex: next.selectedLineIndex,
+      _future: s._future.slice(0, -1),
+      _history: [...s._history, current],
+    })
+  },
+
+  canUndo: () => get()._history.length > 0,
+  canRedo: () => get()._future.length > 0,
 }))

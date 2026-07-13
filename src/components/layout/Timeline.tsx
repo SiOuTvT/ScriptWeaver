@@ -111,6 +111,8 @@ const DropCell = memo(function DropCell({
 }) {
   const updateDeltaAt = useAppStore((s) => s.updateDeltaAt)
   const selectLine = useAppStore((s) => s.selectLine)
+  const addCharacter = useAppStore((s) => s.addCharacter)
+  const getCharacter = useAppStore((s) => s.getCharacter)
 
   const elRef = useRef<HTMLDivElement>(null)
 
@@ -150,25 +152,47 @@ const DropCell = memo(function DropCell({
           ...prev, background: { asset_id: asset.assetId },
         }))
       } else if (acceptType === 'audio' && asset.type === 'audio') {
-        const cat = getAudioCategory(asset.assetId)
+        // 拖到具体轨道上时，trackId 直接决定写入哪个字段，
+        // 不依赖 ID 前缀猜测（用户可能用任何文件名导入）
         updateDeltaAt(lineIndex, (prev: LineDelta) => {
           const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
-          if (cat === 'bgm') audio.bgm = { asset_id: asset.assetId, volume: 0.7, loop: true, fade_in_ms: 1000 }
-          else if (cat === 'ambient') audio.ambient = { asset_id: asset.assetId, volume: 0.4, loop: true, fade_in_ms: 1500 }
-          else if (cat === 'voice') audio.voice = asset.assetId
-          else audio.se = [...audio.se, asset.assetId]
+          if (trackId === 'bgm') {
+            audio.bgm = { asset_id: asset.assetId, volume: 0.7, loop: true, fade_in_ms: 1000 }
+          } else if (trackId === 'ambient') {
+            audio.ambient = { asset_id: asset.assetId, volume: 0.4, loop: true, fade_in_ms: 1500 }
+          } else {
+            // 兜底：非标准音频轨道走自动检测
+            const cat = getAudioCategory(asset.assetId)
+            if (cat === 'bgm') audio.bgm = { asset_id: asset.assetId, volume: 0.7, loop: true, fade_in_ms: 1000 }
+            else if (cat === 'ambient') audio.ambient = { asset_id: asset.assetId, volume: 0.4, loop: true, fade_in_ms: 1500 }
+            else if (cat === 'voice') audio.voice = asset.assetId
+            else audio.se = [...audio.se, asset.assetId]
+          }
           return { ...prev, audio }
         })
       } else if (acceptType === 'sprite' && asset.type === 'sprite') {
         const charId = deriveCharacterId(asset.assetId)
         const trackCharId = trackId.startsWith('char_') ? trackId.slice(5) : charId
+
+        // 自动创建角色（如果不存在）
+        if (!getCharacter(trackCharId)) {
+          const rawName = trackCharId.replace(/^local_/, '').replace(/_/g, ' ')
+          const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1)
+          addCharacter({
+            charId: trackCharId,
+            displayName,
+            expressions: [{ id: 'default', label: '默认', assetId: asset.assetId }],
+            defaultExpression: 'default',
+          })
+        }
+
         updateDeltaAt(lineIndex, (prev: LineDelta) => ({
           ...prev,
           characters: { ...prev.characters, [trackCharId]: { sprite_id: asset.assetId, position_slot: 'center', action: 'show' } },
         }))
       }
     },
-    [lineIndex, trackId, acceptType, updateDeltaAt, selectLine],
+    [lineIndex, trackId, acceptType, updateDeltaAt, selectLine, addCharacter, getCharacter],
   )
 
   return (
