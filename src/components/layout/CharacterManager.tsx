@@ -332,7 +332,7 @@ export default function CharacterManager() {
       </div>
 
       {/* 底部统计 */}
-      <div className="border-t border-edge/10 px-3 py-1.5 text-[10px] text-fg-faint">
+      <div className="border-t border-edge/10 px-3 py-1.5 text-[10px] text-fg-subtle">
         {characterConfigs.length} 个角色
       </div>
 

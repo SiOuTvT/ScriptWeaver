@@ -240,7 +240,7 @@ export default function AIPanel() {
             placeholder="例如：Alice 和 Bob 在学校走廊相遇，争吵关于周末去图书馆还是去游乐园的事情..."
             rows={4}
             disabled={loading}
-            className="w-full resize-none rounded-lg border border-edge/15 bg-surface-3 px-3 py-2 text-xs text-fg placeholder-fg-faint outline-none focus:border-primary/60 disabled:opacity-50"
+            className="w-full resize-none rounded-lg border border-edge/15 bg-surface-3 px-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none focus:border-primary/60 disabled:opacity-50"
           />
         </div>
 

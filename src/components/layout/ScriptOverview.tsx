@@ -157,7 +157,7 @@ export default function ScriptOverview() {
           <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
             剧本总览
           </span>
-          <span className="text-[10px] text-fg-faint">
+          <span className="text-[10px] text-fg-subtle">
             {lines.length} 行
           </span>
           {isDirty && (
@@ -179,7 +179,7 @@ export default function ScriptOverview() {
             <Check size={13} strokeWidth={1.75} />
             应用更改
           </button>
-          <span className="text-[10px] text-fg-faint">Ctrl+S</span>
+          <span className="text-[10px] text-fg-subtle">Ctrl+S</span>
         </div>
       </div>
 
@@ -195,7 +195,7 @@ export default function ScriptOverview() {
             {lines.map((_, i) => (
               <div
                 key={i}
-                className="flex h-7 items-center justify-end px-2 text-[11px] text-fg-faint"
+                className="flex h-7 items-center justify-end px-2 text-[11px] text-fg-subtle"
               >
                 {i + 1}
               </div>
@@ -210,13 +210,13 @@ export default function ScriptOverview() {
           onChange={(e) => handleTextareaChange(e.target.value)}
           onScroll={handleScroll}
           placeholder="在此编辑剧本内容...&#10;&#10;格式：角色名: 台词&#10;示例：&#10;alice: 你好，今天天气真好&#10;bob: 是啊，我们去公园走走吧"
-          className="flex-1 resize-none bg-transparent px-4 py-3 text-fg-muted leading-7 outline-none placeholder-fg-faint"
+          className="flex-1 resize-none bg-transparent px-4 py-3 text-fg-muted leading-7 outline-none placeholder-fg-subtle"
           spellCheck={false}
         />
       </div>
 
       {/* 底部提示 */}
-      <div className="flex items-center justify-between border-t border-edge/10 px-4 py-1.5 text-[10px] text-fg-faint">
+      <div className="flex items-center justify-between border-t border-edge/10 px-4 py-1.5 text-[10px] text-fg-subtle">
         <span>格式：角色名: 台词（角色名匹配角色管理中的显示名）</span>
         <span>Ctrl+S 保存 · 编辑后点击「应用更改」同步到项目</span>
       </div>

@@ -37,7 +37,7 @@ export default function ScriptDrawer() {
             <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
               剧本流
             </span>
-            <span className="rounded-full bg-surface-1 px-1.5 py-0.5 text-[10px] text-fg-faint">
+            <span className="rounded-full bg-surface-1 px-1.5 py-0.5 text-[10px] text-fg-subtle">
               {deltas.length}
             </span>
           </div>
@@ -49,7 +49,7 @@ export default function ScriptDrawer() {
               className={`rounded p-1 transition-colors ${
                 pinned
                   ? 'bg-primary/15 text-primary'
-                  : 'text-fg-faint hover:bg-surface-hover hover:text-fg-muted'
+                  : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
               }`}
             >
               <Pin size={15} strokeWidth={1.75} />
@@ -58,7 +58,7 @@ export default function ScriptDrawer() {
             {!pinned && (
               <button
                 onClick={toggleOpen}
-                className="rounded p-1 text-fg-faint transition-colors hover:bg-surface-hover hover:text-fg-muted"
+                className="rounded p-1 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
                 title="关闭剧本流"
               >
                 <X size={15} strokeWidth={1.75} />
@@ -83,7 +83,7 @@ export default function ScriptDrawer() {
               >
                 {/* 行号 + 角色 */}
                 <div className="mb-0.5 flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-fg-faint">
+                  <span className="text-[11px] font-mono text-fg-subtle">
                     {delta.line_id}
                   </span>
                   <span className="text-xs font-medium text-fg-muted">
@@ -96,7 +96,7 @@ export default function ScriptDrawer() {
                 {/* 台词 */}
                 <p
                   className={`text-xs leading-relaxed ${
-                    isSelected ? 'text-fg' : 'text-fg-faint'
+                    isSelected ? 'text-fg' : 'text-fg-subtle'
                   }`}
                 >
                   {delta.dialogue}

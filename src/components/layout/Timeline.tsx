@@ -601,15 +601,15 @@ export default function Timeline() {
       )}
 
       <div className="flex items-center justify-between border-b border-edge/10 px-3 py-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">时间轴</span>
-        <span className="text-[10px] text-fg-faint">{total} 行 · {totalTracks} 轨</span>
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-fg-muted">时间轴</span>
+        <span className="text-[10px] text-fg-subtle">{total} 行 · {totalTracks} 轨</span>
       </div>
 
       <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + 60}px` }}>
         {/* 轨道标签列 */}
         <div className="shrink-0 border-r border-edge/10 bg-canvas/50">
           {allTracks.map((track) => (
-            <div key={track.id} className="flex items-center border-b border-edge/10 px-2 text-[10px] text-fg-subtle"
+            <div key={track.id} className="flex items-center border-b border-edge/10 px-2 text-[10px] text-fg-muted"
               style={{ height: trackHeight }}>{track.label}</div>
           ))}
         </div>
@@ -637,7 +637,7 @@ export default function Timeline() {
                       className={`flex-1 text-[11px] font-mono transition-colors ${
                         i === selectedIndex
                           ? 'text-primary'
-                          : 'text-fg-faint group-hover:text-fg-muted'
+                          : 'text-fg-subtle group-hover:text-fg'
                       }`}
                     >
                       {s.line_id}
