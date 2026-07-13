@@ -381,7 +381,7 @@ export default function StagePreview() {
   return (
     <main className="relative flex flex-1 flex-col">
       <div
-        className="relative flex-1 overflow-hidden bg-canvas"
+        className="relative flex-1 overflow-hidden rounded-lg border border-edge/16 bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
         key={fadeKey}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
