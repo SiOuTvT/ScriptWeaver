@@ -140,6 +140,8 @@ export default function StagePreview() {
   const getDisplayName = useAppStore((s) => s.getDisplayName)
   const assets = useAppStore((s) => s.assets)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
+  const addCharacter = useAppStore((s) => s.addCharacter)
+  const getCharacter = useAppStore((s) => s.getCharacter)
 
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
   const [fadeKey, setFadeKey] = useState(0)
@@ -231,6 +233,20 @@ export default function StagePreview() {
       } else if (zone.startsWith('ch-') && asset.type === 'sprite') {
         const charId = deriveCharacterId(asset.assetId)
         const slot = zone.slice(3) as 'left' | 'center' | 'right'
+
+        // 自动创建角色（如果不存在）
+        if (!getCharacter(charId)) {
+          // 从素材名称生成 displayName（去掉前缀，首字母大写）
+          const rawName = asset.assetId.replace(/^asset_sprite_|^sprite_|^local_/, '').replace(/_/g, ' ')
+          const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1)
+          addCharacter({
+            charId,
+            displayName,
+            expressions: [{ id: 'default', label: '默认', assetId: asset.assetId }],
+            defaultExpression: 'default',
+          })
+        }
+
         updateDeltaAt(selectedIndex, (prev: LineDelta) => ({
           ...prev,
           characters: {

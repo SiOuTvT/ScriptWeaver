@@ -7,6 +7,7 @@ import Timeline from './Timeline'
 import ScriptOverview from './ScriptOverview'
 import AssetManager from './AssetManager'
 import CharacterManager from './CharacterManager'
+import AIPanel from './AIPanel'
 import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
@@ -149,6 +150,30 @@ export default function AppLayout() {
     if (!draft || draft.deltas.length === 0) return
     setDraftInfo(draft)
     setShowDraftRecovery(true)
+  }, [])
+
+  // 全局快捷键：Ctrl+Z 撤销 / Ctrl+Y 或 Ctrl+Shift+Z 重做
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // 在输入框/文本域中不拦截（保留原生撤销功能）
+      const target = e.target as HTMLElement
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        useAppStore.getState().undo()
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault()
+        useAppStore.getState().redo()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
   }, [])
 
   // ---- 操作 ----
@@ -357,7 +382,7 @@ export default function AppLayout() {
         {activeNavItem === 'assets' && <AssetManager />}
         {activeNavItem === 'characters' && <CharacterManager />}
         {activeNavItem === 'export' && <ExportPlaceholder />}
-        {activeNavItem === 'ai' && <AIPlaceholder />}
+        {activeNavItem === 'ai' && <AIPanel />}
       </div>
 
       {/* ===== 新建确认对话框 ===== */}
@@ -433,17 +458,6 @@ function ExportPlaceholder() {
       <span className="text-4xl opacity-30">📤</span>
       <p className="text-sm text-gray-500">导出设置</p>
       <p className="text-xs text-gray-600">Ren'Py 导出配置（请使用顶部工具栏导出按钮）</p>
-    </div>
-  )
-}
-
-/** AI 功能占位页面 */
-function AIPlaceholder() {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-gray-950/50">
-      <span className="text-4xl opacity-30">🤖</span>
-      <p className="text-sm text-gray-500">AI 功能</p>
-      <p className="text-xs text-gray-600">AI 辅助写作（待实现）</p>
     </div>
   )
 }

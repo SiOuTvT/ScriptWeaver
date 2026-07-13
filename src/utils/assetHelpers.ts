@@ -34,9 +34,18 @@ export function deriveCharacterId(spriteId: string): string {
 
 /** 从 audio asset_id 判断所属轨道类别 */
 export function getAudioCategory(audioId: string): 'bgm' | 'ambient' | 'se' | 'voice' {
-  if (audioId.startsWith('bgm_')) return 'bgm'
-  if (audioId.startsWith('ambient_')) return 'ambient'
-  if (audioId.startsWith('se_')) return 'se'
-  if (audioId.startsWith('v_') || audioId.startsWith('voice_')) return 'voice'
+  // 支持两种 ID 格式：
+  //   模板数据：asset_audio_bgm_peaceful → 匹配 _bgm_
+  //   直接 ID：  bgm_peaceful → 匹配 startsWith('bgm_')
+  if (audioId.startsWith('bgm_') || audioId.includes('_bgm_')) return 'bgm'
+  if (audioId.startsWith('ambient_') || audioId.includes('_ambient_')) return 'ambient'
+  if (audioId.startsWith('se_') || audioId.includes('_se_')) return 'se'
+  if (
+    audioId.startsWith('v_') ||
+    audioId.startsWith('voice_') ||
+    audioId.includes('_v_') ||
+    audioId.includes('_voice_')
+  )
+    return 'voice'
   return 'se'
 }
