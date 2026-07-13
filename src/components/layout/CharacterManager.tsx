@@ -329,8 +329,6 @@ export default function CharacterManager() {
           </div>
         )}
       </div>
-
-        </div>
       </div>
 
       {/* 底部统计 */}
