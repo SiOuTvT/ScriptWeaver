@@ -27,7 +27,7 @@ export default function LeftSidebar() {
 
   return (
     <aside
-      className={`${width} flex shrink-0 flex-col border-r border-edge/10 bg-canvas transition-all duration-200`}
+      className={`${width} flex shrink-0 flex-col border-r border-edge/10 bg-surface/70 backdrop-blur-md transition-all duration-200`}
     >
       {/* 折叠按钮 */}
       <button
@@ -50,9 +50,9 @@ export default function LeftSidebar() {
               className={`flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm transition-all ${
                 collapsed ? 'justify-center' : ''
               } ${
-                isActive
-                  ? 'bg-primary/15 text-primary'
-                  : 'text-fg-faint hover:bg-surface-hover hover:text-fg-muted'
+              isActive
+                ? 'border-l-2 border-l-primary bg-primary/15 text-primary'
+                : 'border-l-2 border-l-transparent text-fg-faint hover:bg-surface-hover hover:text-fg-muted'
               }`}
             >
               <span className="shrink-0">{item.icon}</span>

@@ -9,6 +9,7 @@ import {
 } from '@/utils/assetHelpers'
 import { toast } from '@/utils/toast'
 import { Music, AudioLines, Megaphone, Volume2 } from 'lucide-react'
+import { Skeleton } from '@/components/ui'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
 
@@ -130,6 +131,27 @@ function resolveSpriteImage(
 
   // 3. 兜底色块
   return { color: SPRITE_COLORS[spriteId] ?? '#888' }
+}
+
+// 背景图解码检测：在图片加载完成前展示骨架屏
+function useImageLoaded(url?: string): boolean {
+  const [loaded, setLoaded] = useState(false)
+  useEffect(() => {
+    if (!url) {
+      setLoaded(false)
+      return
+    }
+    let active = true
+    const img = new Image()
+    img.onload = () => active && setLoaded(true)
+    img.onerror = () => active && setLoaded(true)
+    img.src = url
+    if (img.complete) setLoaded(true)
+    return () => {
+      active = false
+    }
+  }, [url])
+  return loaded
 }
 
 // ===================== 组件 =====================
@@ -351,6 +373,7 @@ export default function StagePreview() {
 
   const bgAssetId = state.background?.asset_id
   const bgDataUrl = resolveBackgroundUrl(bgAssetId, assets)
+  const bgLoaded = useImageLoaded(bgDataUrl)
   const bgStyle: React.CSSProperties = bgDataUrl
     ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? '#111') : '#111' }
@@ -369,6 +392,9 @@ export default function StagePreview() {
           className="absolute inset-0 animate-fade-in"
           style={bgStyle}
         >
+          {bgDataUrl && !bgLoaded && (
+            <Skeleton className="absolute inset-0" />
+          )}
           {dragOverZone === 'bg' && (
             <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center border-2 border-dashed border-warning/60 bg-warning/10">
               <span className="rounded bg-warning/20 px-4 py-2 text-sm font-semibold text-warning backdrop-blur-sm">
