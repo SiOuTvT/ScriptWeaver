@@ -79,6 +79,9 @@ electron.ipcMain.handle("app:getPath", (_event, name) => {
 electron.ipcMain.handle("app:getSessionDir", () => {
   return getSessionDir();
 });
+electron.ipcMain.on("app:setNativeTheme", (_event, theme) => {
+  electron.nativeTheme.themeSource = theme;
+});
 electron.ipcMain.handle("dialog:saveProject", async (_event, data) => {
   if (!mainWindow) return { success: false, error: "No active window" };
   const result = await electron.dialog.showOpenDialog(mainWindow, {

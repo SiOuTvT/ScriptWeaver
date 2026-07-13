@@ -1,9 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  // 主题切换：依据 <html data-theme="dark"> 触发 dark: 变体（主要用于边缘微调，主色走语义 token）
+  darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
+        // 保留原 brand 调色板，过渡期不破坏尚未重构的组件
         brand: {
           50: '#f0f4ff',
           100: '#dbe4ff',
@@ -17,13 +20,82 @@ export default {
           900: '#364fc7',
           950: '#2b3fa0',
         },
+
+        // ===== 语义化设计 token（双主题共用，值由 CSS 变量驱动） =====
+        'on-primary': 'rgb(var(--c-on-primary) / <alpha-value>)',
+
+        // 背景层级（墨/纸 明度差制造纵深）
+        canvas: 'rgb(var(--c-canvas) / <alpha-value>)',
+        surface: {
+          DEFAULT: 'rgb(var(--c-surface) / <alpha-value>)',
+          '1': 'rgb(var(--c-surface-1) / <alpha-value>)',
+          '2': 'rgb(var(--c-surface-2) / <alpha-value>)',
+          '3': 'rgb(var(--c-surface-3) / <alpha-value>)',
+          hover: 'rgb(var(--c-surface-hover) / <alpha-value>)',
+          active: 'rgb(var(--c-surface-active) / <alpha-value>)',
+        },
+
+        // 边框（低透明，靠 alpha 控制强弱）
+        edge: {
+          DEFAULT: 'rgb(var(--c-edge) / <alpha-value>)',
+          strong: 'rgb(var(--c-edge-strong) / <alpha-value>)',
+        },
+
+        // 文字
+        fg: {
+          DEFAULT: 'rgb(var(--c-fg) / <alpha-value>)',
+          muted: 'rgb(var(--c-fg-muted) / <alpha-value>)',
+          subtle: 'rgb(var(--c-fg-subtle) / <alpha-value>)',
+          faint: 'rgb(var(--c-fg-faint) / <alpha-value>)',
+        },
+
+        // 品牌主色「紫毫 Violet」
+        primary: {
+          DEFAULT: 'rgb(var(--c-primary) / <alpha-value>)',
+          hover: 'rgb(var(--c-primary-hover) / <alpha-value>)',
+          active: 'rgb(var(--c-primary-active) / <alpha-value>)',
+          soft: 'rgb(var(--c-primary-soft) / 0.14)',
+        },
+
+        // 辅色「青 Cyan」
+        accent: {
+          DEFAULT: 'rgb(var(--c-accent) / <alpha-value>)',
+          soft: 'rgb(var(--c-accent-soft) / 0.12)',
+        },
+
+        // 语义状态色
+        success: { DEFAULT: 'rgb(var(--c-success) / <alpha-value>)', soft: 'rgb(var(--c-success-soft) / 0.12)' },
+        warning: { DEFAULT: 'rgb(var(--c-warning) / <alpha-value>)', soft: 'rgb(var(--c-warning-soft) / 0.12)' },
+        danger: { DEFAULT: 'rgb(var(--c-danger) / <alpha-value>)', soft: 'rgb(var(--c-danger-soft) / 0.12)' },
+        info: { DEFAULT: 'rgb(var(--c-info) / <alpha-value>)', soft: 'rgb(var(--c-info-soft) / 0.12)' },
+      },
+      borderRadius: {
+        xs: '4px',
+        sm: '6px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+      },
+      boxShadow: {
+        '1': 'var(--shadow-1)',
+        '2': 'var(--shadow-2)',
+        '3': 'var(--shadow-3)',
+        'inset-top': 'var(--shadow-inset-top)',
       },
       fontFamily: {
         sans: [
+          'Inter',
           '"PingFang SC"',
           '"Microsoft YaHei"',
           '"Noto Sans SC"',
           'sans-serif',
+        ],
+        mono: [
+          '"JetBrains Mono"',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'monospace',
         ],
       },
       animation: {

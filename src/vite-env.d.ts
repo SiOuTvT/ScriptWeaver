@@ -33,6 +33,9 @@ interface ElectronAPI {
   /** 获取会话临时目录路径 */
   getSessionDir: () => Promise<string>
 
+  /** 同步原生窗口主题（标题栏等） */
+  setNativeTheme: (theme: 'dark' | 'light') => void
+
   on: (channel: string, callback: (...args: unknown[]) => void) => void
   off: (channel: string, callback: (...args: unknown[]) => void) => void
 }

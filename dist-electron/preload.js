@@ -5,6 +5,8 @@ const api = {
   getPath: (name) => electron.ipcRenderer.invoke("app:getPath", name),
   /** 获取会话临时目录 */
   getSessionDir: () => electron.ipcRenderer.invoke("app:getSessionDir"),
+  /** 同步原生窗口主题（标题栏等），fire-and-forget */
+  setNativeTheme: (theme) => electron.ipcRenderer.send("app:setNativeTheme", theme),
   /** 保存项目：选目录 → 复制素材 → 写 .swproj */
   saveProject: (data) => electron.ipcRenderer.invoke("dialog:saveProject", data),
   /** 打开项目：选 .swproj → 返回 JSON 内容 + 项目根目录 */

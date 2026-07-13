@@ -48,6 +48,9 @@ const MAX_HISTORY = 50
 
 export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview'
 
+/** 主题模式 */
+export type ThemeMode = 'dark' | 'light'
+
 interface AppState {
   // ---- 数据 ----
   draftDeltas: LineDelta[]
@@ -65,6 +68,11 @@ interface AppState {
   // ---- 左侧边栏 ----
   leftSidebarCollapsed: boolean
   activeNavItem: NavItemId | null
+
+  // ---- 主题 ----
+  theme: ThemeMode
+  setTheme: (t: ThemeMode) => void
+  toggleTheme: () => void
 
   // ---- 剧本抽屉 ----
   scriptDrawerOpen: boolean
@@ -139,6 +147,12 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ---- 选中 ----
   selectedLineIndex: 0,
+
+  // ---- 主题（持久化到 localStorage，默认深色「墨」） ----
+  theme:
+    (typeof localStorage !== 'undefined' &&
+      (localStorage.getItem('sw-theme') as ThemeMode | null)) ||
+    'dark',
 
   // ---- 左侧边栏 ----
   leftSidebarCollapsed: false,
@@ -377,6 +391,26 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   toggleLeftSidebar: () =>
     set((s) => ({ leftSidebarCollapsed: !s.leftSidebarCollapsed })),
+
+  // ---- 主题 ----
+  setTheme: (t) => {
+    try {
+      localStorage.setItem('sw-theme', t)
+    } catch {
+      /* 隐私模式下存储失败，忽略 */
+    }
+    set({ theme: t })
+  },
+
+  toggleTheme: () => {
+    const next: ThemeMode = get().theme === 'dark' ? 'light' : 'dark'
+    try {
+      localStorage.setItem('sw-theme', next)
+    } catch {
+      /* 忽略 */
+    }
+    set({ theme: next })
+  },
 
   setActiveNavItem: (item) => set({ activeNavItem: item }),
 
