@@ -217,7 +217,8 @@ export default function AssetManager() {
       />
 
       {/* 素材列表 */}
-      <div className="flex-1 overflow-y-auto p-1.5">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1 py-8 text-[10px] text-fg-faint">
             {search ? '没有匹配的素材' : '暂无素材，点击上方按钮导入'}
@@ -294,6 +295,7 @@ export default function AssetManager() {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {/* 底部统计 */}
