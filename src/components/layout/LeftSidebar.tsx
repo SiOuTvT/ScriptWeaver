@@ -1,18 +1,20 @@
 import { useAppStore, NavItemId } from '@/stores/appStore'
+import { BookOpen, FileText, Images, Users, Download, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 interface NavItem {
   id: NavItemId
   label: string
-  icon: string
+  icon: ReactNode
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'chapters', label: '场景导航', icon: '📖' },
-  { id: 'script-overview', label: '剧本总览', icon: '📝' },
-  { id: 'assets', label: '素材管理', icon: '📦' },
-  { id: 'characters', label: '角色管理', icon: '👤' },
-  { id: 'export', label: '导出设置', icon: '📤' },
-  { id: 'ai', label: 'AI 功能', icon: '🤖' },
+  { id: 'chapters', label: '场景导航', icon: <BookOpen size={18} strokeWidth={1.75} /> },
+  { id: 'script-overview', label: '剧本总览', icon: <FileText size={18} strokeWidth={1.75} /> },
+  { id: 'assets', label: '素材管理', icon: <Images size={18} strokeWidth={1.75} /> },
+  { id: 'characters', label: '角色管理', icon: <Users size={18} strokeWidth={1.75} /> },
+  { id: 'export', label: '导出设置', icon: <Download size={18} strokeWidth={1.75} /> },
+  { id: 'ai', label: 'AI 功能', icon: <Sparkles size={18} strokeWidth={1.75} /> },
 ]
 
 export default function LeftSidebar() {
@@ -25,14 +27,15 @@ export default function LeftSidebar() {
 
   return (
     <aside
-      className={`${width} flex shrink-0 flex-col border-r border-gray-800 bg-gray-950 transition-all duration-200`}
+      className={`${width} flex shrink-0 flex-col border-r border-edge/10 bg-canvas transition-all duration-200`}
     >
       {/* 折叠按钮 */}
       <button
         onClick={toggle}
-        className="flex h-12 items-center justify-center border-b border-gray-800 text-gray-500 transition-colors hover:bg-gray-900 hover:text-gray-300"
+        className="flex h-12 items-center justify-center border-b border-edge/10 text-fg-faint transition-colors hover:bg-surface-hover hover:text-fg-muted"
+        title={collapsed ? '展开侧栏' : '收起侧栏'}
       >
-        <span className="text-sm">{collapsed ? '▶' : '◀'}</span>
+        {collapsed ? <ChevronRight size={16} strokeWidth={1.75} /> : <ChevronLeft size={16} strokeWidth={1.75} />}
       </button>
 
       {/* 导航项 */}
@@ -48,21 +51,19 @@ export default function LeftSidebar() {
                 collapsed ? 'justify-center' : ''
               } ${
                 isActive
-                  ? 'bg-brand-600/20 text-brand-400'
-                  : 'text-gray-500 hover:bg-gray-800 hover:text-gray-300'
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-fg-faint hover:bg-surface-hover hover:text-fg-muted'
               }`}
             >
-              <span className="text-base leading-none">{item.icon}</span>
-              {!collapsed && (
-                <span className="truncate text-xs">{item.label}</span>
-              )}
+              <span className="shrink-0">{item.icon}</span>
+              {!collapsed && <span className="truncate text-xs">{item.label}</span>}
             </button>
           )
         })}
       </nav>
 
       {/* 底部版本号 */}
-      <div className="border-t border-gray-800 p-2 text-center text-[10px] text-gray-700">
+      <div className="border-t border-edge/10 p-2 text-center text-[10px] text-fg-faint">
         {collapsed ? 'v0.3' : 'v0.3.0'}
       </div>
     </aside>

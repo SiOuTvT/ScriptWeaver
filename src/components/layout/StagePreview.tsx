@@ -8,6 +8,7 @@ import {
   getAudioCategory,
 } from '@/utils/assetHelpers'
 import { toast } from '@/utils/toast'
+import { Music, AudioLines, Megaphone, Volume2 } from 'lucide-react'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
 
@@ -327,11 +328,11 @@ export default function StagePreview() {
               <div
                 className={`rounded-lg border-2 border-dashed px-6 py-12 transition-colors duration-150 ${
                   active
-                    ? 'border-brand-400 bg-brand-400/20'
-                    : 'border-gray-600 bg-gray-800/20'
+                    ? 'border-primary bg-primary/20'
+                    : 'border-edge-strong/20 bg-surface-1/20'
                 }`}
               >
-                <span className="text-xs text-gray-400">{slot}</span>
+                <span className="text-xs text-fg-subtle">{slot}</span>
               </div>
             </div>
           )
@@ -342,7 +343,7 @@ export default function StagePreview() {
 
   if (!state) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-gray-600">
+      <div className="flex flex-1 items-center justify-center text-sm text-fg-faint">
         暂无数据
       </div>
     )
@@ -357,7 +358,7 @@ export default function StagePreview() {
   return (
     <main className="relative flex flex-1 flex-col">
       <div
-        className="relative flex-1 overflow-hidden bg-gray-950"
+        className="relative flex-1 overflow-hidden bg-canvas"
         key={fadeKey}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -369,8 +370,8 @@ export default function StagePreview() {
           style={bgStyle}
         >
           {dragOverZone === 'bg' && (
-            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center border-2 border-dashed border-yellow-400 bg-yellow-400/10">
-              <span className="rounded bg-yellow-400/20 px-4 py-2 text-sm font-semibold text-yellow-300 backdrop-blur-sm">
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center border-2 border-dashed border-warning/60 bg-warning/10">
+              <span className="rounded bg-warning/20 px-4 py-2 text-sm font-semibold text-warning backdrop-blur-sm">
                 放置背景
               </span>
             </div>
@@ -418,7 +419,7 @@ export default function StagePreview() {
                     </span>
                   </div>
                 )}
-                <div className="mt-1 text-center text-[10px] text-gray-500">
+                <div className="mt-1 text-center text-[10px] text-fg-faint">
                   [{char.position_slot}]
                 </div>
               </div>
@@ -428,11 +429,11 @@ export default function StagePreview() {
 
         {/* 行号指示器 */}
         <div className="pointer-events-none absolute top-3 left-3 z-20 flex items-center gap-2">
-          <span className="rounded bg-gray-900/80 px-2 py-0.5 text-xs font-mono text-gray-400">
+          <span className="rounded bg-surface-2/80 px-2 py-0.5 text-xs font-mono text-fg-subtle">
             {state.line_id}
           </span>
           {state.background?.transition && (
-            <span className="rounded bg-brand-600/30 px-1.5 py-0.5 text-[10px] text-brand-400">
+            <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] text-primary">
               {state.background.transition}
             </span>
           )}
@@ -442,32 +443,32 @@ export default function StagePreview() {
         <div
           className={`pointer-events-none absolute top-3 right-3 z-20 flex flex-col gap-1 text-right rounded-lg p-2 transition-all duration-150 ${
             dragOverZone === 'audio'
-              ? 'ring-2 ring-blue-400 bg-blue-400/10'
+              ? 'ring-2 ring-info bg-info/10'
               : ''
           }`}
         >
           {state.audio.bgm && (
-            <span className="rounded bg-gray-900/80 px-2 py-0.5 text-[10px] text-green-400/70">
-              ♪ {state.audio.bgm.asset_id}
+            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[10px] text-success">
+              <Music size={10} strokeWidth={1.75} /> {state.audio.bgm.asset_id}
             </span>
           )}
           {state.audio.ambient && (
-            <span className="rounded bg-gray-900/80 px-2 py-0.5 text-[10px] text-blue-400/70">
-              ♫ {state.audio.ambient.asset_id}
+            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[10px] text-info">
+              <AudioLines size={10} strokeWidth={1.75} /> {state.audio.ambient.asset_id}
             </span>
           )}
           {state.audio.se.length > 0 && (
-            <span className="rounded bg-gray-900/80 px-2 py-0.5 text-[10px] text-yellow-400/70">
-              🔊 {state.audio.se.join(', ')}
+            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[10px] text-warning">
+              <Megaphone size={10} strokeWidth={1.75} /> {state.audio.se.join(', ')}
             </span>
           )}
           {state.audio.voice && (
-            <span className="rounded bg-gray-900/80 px-2 py-0.5 text-[10px] text-purple-400/70">
-              🎤 {state.audio.voice}
+            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[10px] text-purple-400">
+              <Volume2 size={10} strokeWidth={1.75} /> {state.audio.voice}
             </span>
           )}
           {dragOverZone === 'audio' && (
-            <span className="text-[10px] text-blue-300">放置音频</span>
+            <span className="text-[10px] text-info">放置音频</span>
           )}
         </div>
 
@@ -485,7 +486,7 @@ export default function StagePreview() {
                 }}
                 placeholder="说话人"
                 list="speaker-list"
-                className="w-24 rounded-md border border-gray-700 bg-gray-900/90 px-2 py-1 text-xs text-gray-200 placeholder-gray-600 outline-none transition-colors focus:border-brand-500"
+                className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-faint outline-none transition-colors focus:border-primary/60"
               />
               <datalist id="speaker-list">
                 {characterConfigs.map((c) => (
@@ -503,12 +504,12 @@ export default function StagePreview() {
                   commitDialogue(localSpeaker, e.target.value)
                 }}
                 placeholder={state.speaker ? `${state.speaker}的台词...` : '旁白或台词...'}
-                className="w-full rounded-md border border-gray-700 bg-gray-900/90 px-2 py-1 text-xs text-gray-200 placeholder-gray-600 outline-none transition-colors focus:border-brand-500"
+                className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-faint outline-none transition-colors focus:border-primary/60"
               />
             </div>
           </div>
           {/* 行信息提示 */}
-          <div className="mt-1.5 text-right text-[9px] text-gray-600">
+          <div className="mt-1.5 text-right text-[9px] text-fg-faint">
             {state.line_id} · 快捷输入 · {state.speaker ? `说话人 ${state.speaker}` : '旁白模式'}
           </div>
         </div>
@@ -520,7 +521,7 @@ export default function StagePreview() {
               key={i}
               onClick={() => selectLine(i)}
               className={`flex-1 transition-colors hover:opacity-80 ${
-                i === selectedIndex ? 'bg-brand-500' : 'bg-gray-800'
+                i === selectedIndex ? 'bg-primary' : 'bg-surface-1'
               }`}
               title={`跳转到 ${resolvedStates[i].line_id}`}
             />

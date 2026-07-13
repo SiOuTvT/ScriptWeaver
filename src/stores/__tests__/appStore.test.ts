@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { useAppStore } from '@/stores/appStore'
 import type { LineDelta, AssetItem, CharacterConfig } from '@/core/types'
 

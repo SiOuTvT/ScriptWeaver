@@ -1,13 +1,15 @@
 import { useState, useCallback, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
+import { Tabs, Input, Button, ConfirmDialog } from '@/components/ui'
+import { Image as ImageIcon, User, Music, Plus, Search, Pencil, Trash2 } from 'lucide-react'
 
 type TabId = AssetType
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'background', label: '背景' },
-  { id: 'sprite', label: '立绘' },
-  { id: 'audio', label: '音频' },
+const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  { id: 'background', label: '背景', icon: <ImageIcon size={14} strokeWidth={1.75} /> },
+  { id: 'sprite', label: '立绘', icon: <User size={14} strokeWidth={1.75} /> },
+  { id: 'audio', label: '音频', icon: <Music size={14} strokeWidth={1.75} /> },
 ]
 
 export default function AssetManager() {
@@ -22,6 +24,7 @@ export default function AssetManager() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<AssetItem | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 按 tab 过滤
@@ -141,17 +144,15 @@ export default function AssetManager() {
     setEditName('')
   }, [editingId, editName, updateAsset])
 
-  // 删除
-  const handleDelete = useCallback(
+  // 删除（先校验引用，再弹确认框）
+  const requestDelete = useCallback(
     (asset: AssetItem) => {
       const refs = getRefs(asset.id)
       if (refs.length > 0) {
         alert(`无法删除素材 "${asset.name}"，它被以下角色表情引用：\n${refs.join('\n')}\n\n请先在角色管理中解除引用。`)
         return
       }
-      if (confirm(`确定要删除素材 "${asset.name}" 吗？此操作不可撤销。`)) {
-        deleteAsset(asset.id)
-      }
+      setPendingDelete(asset)
       setContextMenu(null)
     },
     [deleteAsset, getRefs],
@@ -163,23 +164,27 @@ export default function AssetManager() {
     setContextMenu({ id: asset.id, x: e.clientX, y: e.clientY })
   }, [])
 
+  const tabLabel = tab === 'audio' ? '音频' : tab === 'sprite' ? '立绘' : '背景'
+
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-950/80">
+    <div className="flex flex-1 flex-col overflow-hidden bg-canvas/80">
       {/* 标题 */}
-      <div className="border-b border-gray-800 px-3 py-2.5">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+      <div className="flex items-baseline gap-1.5 border-b border-edge/10 px-3 py-2.5">
+        <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
           素材管理
         </span>
       </div>
 
       {/* 导入按钮 */}
-      <div className="border-b border-gray-800 px-2 py-2">
-        <button
+      <div className="border-b border-edge/10 px-2 py-2">
+        <Button
+          variant="outline"
+          block
+          icon={<Plus size={14} strokeWidth={1.75} />}
           onClick={handleImport}
-          className="w-full rounded-md border border-dashed border-gray-600 px-2 py-1.5 text-[11px] text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-300"
         >
-          + 导入{tab === 'audio' ? '音频' : '图片'}
-        </button>
+          导入{tabLabel}
+        </Button>
         <input
           ref={fileInputRef}
           type="file"
@@ -191,40 +196,30 @@ export default function AssetManager() {
       </div>
 
       {/* 搜索 */}
-      <div className="border-b border-gray-800 px-2 py-1.5">
-        <input
-          type="text"
+      <div className="border-b border-edge/10 px-2 py-1.5">
+        <Input
           placeholder="搜索素材..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-md border border-gray-700 bg-gray-900 px-2 py-1 text-[11px] text-gray-300 placeholder-gray-600 outline-none focus:border-brand-500/50"
+          prefix={<Search size={12} strokeWidth={1.75} />}
         />
       </div>
 
       {/* Tab 切换 */}
-      <div className="flex border-b border-gray-800">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => {
-              setTab(t.id)
-              setSearch('')
-            }}
-            className={`flex-1 py-1.5 text-[11px] transition-colors ${
-              tab === t.id
-                ? 'border-b-2 border-brand-500 bg-gray-900/50 text-brand-400'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900/30'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        items={TABS}
+        value={tab}
+        onChange={(id) => {
+          setTab(id)
+          setSearch('')
+        }}
+        size="sm"
+      />
 
       {/* 素材列表 */}
       <div className="flex-1 overflow-y-auto p-1.5">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-1 py-8 text-[10px] text-gray-600">
+          <div className="flex flex-col items-center justify-center gap-1 py-8 text-[10px] text-fg-faint">
             {search ? '没有匹配的素材' : '暂无素材，点击上方按钮导入'}
           </div>
         ) : (
@@ -233,10 +228,10 @@ export default function AssetManager() {
               <div
                 key={asset.id}
                 onContextMenu={(e) => handleContextMenu(e, asset)}
-                className="group flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-gray-800/60"
+                className="group flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-hover"
               >
                 {/* 缩略图/图标 */}
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-800">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-surface-1">
                   {asset.dataUrl ? (
                     <img
                       src={asset.dataUrl}
@@ -244,7 +239,9 @@ export default function AssetManager() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <span className="text-xs text-gray-500">{asset.type === 'audio' ? '🎵' : '🖼'}</span>
+                    <span className="text-fg-subtle">
+                      {asset.type === 'audio' ? <Music size={16} strokeWidth={1.75} /> : <ImageIcon size={16} strokeWidth={1.75} />}
+                    </span>
                   )}
                 </div>
 
@@ -261,17 +258,17 @@ export default function AssetManager() {
                         if (e.key === 'Escape') setEditingId(null)
                       }}
                       autoFocus
-                      className="w-full rounded border border-brand-500 bg-gray-900 px-1 py-0.5 text-[11px] text-gray-200 outline-none"
+                      className="w-full rounded border border-primary bg-surface-3 px-1 py-0.5 text-[11px] text-fg outline-none"
                     />
                   ) : (
                     <span
-                      className="block truncate text-[11px] text-gray-400 group-hover:text-gray-200 cursor-default"
+                      className="block truncate text-[11px] text-fg-muted group-hover:text-fg"
                       title={asset.name}
                     >
                       {asset.name}
                     </span>
                   )}
-                  <span className="block truncate text-[10px] text-gray-600">
+                  <span className="block truncate text-[10px] text-fg-faint">
                     {asset.fileName}
                   </span>
                 </div>
@@ -280,17 +277,17 @@ export default function AssetManager() {
                 <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
                     onClick={() => startRename(asset)}
-                    className="rounded p-0.5 text-gray-500 hover:bg-gray-700 hover:text-gray-300"
+                    className="rounded p-1 text-fg-subtle transition-colors hover:bg-surface-active hover:text-fg"
                     title="重命名"
                   >
-                    ✏
+                    <Pencil size={13} strokeWidth={1.75} />
                   </button>
                   <button
-                    onClick={() => handleDelete(asset)}
-                    className="rounded p-0.5 text-gray-500 hover:bg-red-900/30 hover:text-red-400"
+                    onClick={() => requestDelete(asset)}
+                    className="rounded p-1 text-fg-subtle transition-colors hover:bg-danger/12 hover:text-danger"
                     title="删除"
                   >
-                    ✕
+                    <Trash2 size={13} strokeWidth={1.75} />
                   </button>
                 </div>
               </div>
@@ -300,8 +297,8 @@ export default function AssetManager() {
       </div>
 
       {/* 底部统计 */}
-      <div className="border-t border-gray-800 px-2 py-1.5 text-[10px] text-gray-600">
-        {filtered.length} 个{tab === 'audio' ? '音频' : '素材'}
+      <div className="border-t border-edge/10 px-2 py-1.5 text-[10px] text-fg-faint">
+        {filtered.length} 个{tabLabel}
         {search && ` · 共 ${assets.filter((a) => a.type === tab).length}`}
       </div>
 
@@ -314,7 +311,7 @@ export default function AssetManager() {
             onContextMenu={(e) => { e.preventDefault(); setContextMenu(null) }}
           />
           <div
-            className="fixed z-50 rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-xl"
+            className="fixed z-50 rounded-lg border border-edge-strong/20 bg-surface-2 py-1 shadow-2"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
             <button
@@ -322,22 +319,40 @@ export default function AssetManager() {
                 const asset = assets.find((a) => a.id === contextMenu.id)
                 if (asset) startRename(asset)
               }}
-              className="block w-full px-3 py-1.5 text-left text-[11px] text-gray-300 hover:bg-gray-800"
+              className="block w-full px-3 py-1.5 text-left text-[11px] text-fg-muted transition-colors hover:bg-surface-hover"
             >
               重命名
             </button>
             <button
               onClick={() => {
                 const asset = assets.find((a) => a.id === contextMenu.id)
-                if (asset) handleDelete(asset)
+                if (asset) requestDelete(asset)
               }}
-              className="block w-full px-3 py-1.5 text-left text-[11px] text-red-400 hover:bg-gray-800"
+              className="block w-full px-3 py-1.5 text-left text-[11px] text-danger transition-colors hover:bg-surface-hover"
             >
               删除
             </button>
           </div>
         </>
       )}
+
+      {/* 删除确认框 */}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="删除素材"
+        confirmText="删除"
+        tone="danger"
+        onConfirm={() => {
+          if (pendingDelete) deleteAsset(pendingDelete.id)
+          setPendingDelete(null)
+        }}
+        onCancel={() => setPendingDelete(null)}
+        message={
+          pendingDelete ? (
+            <>确定要删除素材「{pendingDelete.name}」吗？此操作不可撤销。</>
+          ) : null
+        }
+      />
     </div>
   )
 }

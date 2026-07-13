@@ -7,6 +7,8 @@ export interface DragAssetData {
   type: 'background' | 'sprite' | 'audio'
   assetId: string
   label: string
+  /** 素材显示名，用于 toast 等提示文案 */
+  name: string
 }
 
 export const DRAG_MIME = 'application/x-scriptweaver-asset'

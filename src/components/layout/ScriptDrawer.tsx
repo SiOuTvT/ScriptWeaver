@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
+import { Pin, X, Image as ImageIcon, Music, AudioLines, Volume2, Megaphone, DoorOpen, VolumeX } from 'lucide-react'
+import type { LineDelta } from '@/core/types'
 
 export default function ScriptDrawer() {
   const deltas = useAppStore((s) => s.draftDeltas)
@@ -27,15 +29,15 @@ export default function ScriptDrawer() {
     <>
       {/* 抽屉本体 */}
       <aside
-        className={`${width} ${visibility} flex shrink-0 flex-col border-l border-gray-800 bg-gray-950 transition-all duration-300 overflow-hidden`}
+        className={`${width} ${visibility} flex shrink-0 flex-col border-l border-edge/10 bg-canvas transition-all duration-300 overflow-hidden`}
       >
         {/* 头部 */}
-        <div className="flex items-center justify-between border-b border-gray-800 px-3 py-2.5">
+        <div className="flex items-center justify-between border-b border-edge/10 px-3 py-2.5">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
               剧本流
             </span>
-            <span className="rounded-full bg-gray-800 px-1.5 py-0.5 text-[10px] text-gray-500">
+            <span className="rounded-full bg-surface-1 px-1.5 py-0.5 text-[10px] text-fg-faint">
               {deltas.length}
             </span>
           </div>
@@ -44,21 +46,22 @@ export default function ScriptDrawer() {
             <button
               onClick={togglePin}
               title={pinned ? '取消钉住' : '钉住面板'}
-              className={`rounded p-1 text-sm transition-colors ${
+              className={`rounded p-1 transition-colors ${
                 pinned
-                  ? 'text-brand-400 bg-brand-600/20'
-                  : 'text-gray-600 hover:text-gray-400 hover:bg-gray-800'
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-fg-faint hover:bg-surface-hover hover:text-fg-muted'
               }`}
             >
-              📌
+              <Pin size={15} strokeWidth={1.75} />
             </button>
             {/* 关闭按钮（钉住时隐藏） */}
             {!pinned && (
               <button
                 onClick={toggleOpen}
-                className="rounded p-1 text-sm text-gray-600 transition-colors hover:bg-gray-800 hover:text-gray-400"
+                className="rounded p-1 text-fg-faint transition-colors hover:bg-surface-hover hover:text-fg-muted"
+                title="关闭剧本流"
               >
-                ✕
+                <X size={15} strokeWidth={1.75} />
               </button>
             )}
           </div>
@@ -74,16 +77,16 @@ export default function ScriptDrawer() {
               <button
                 key={delta.line_id}
                 onClick={() => selectLine(i)}
-                className={`w-full border-b border-gray-800/50 px-3 py-3 text-left transition-colors hover:bg-gray-900 ${
-                  isSelected ? 'bg-brand-600/10 border-l-2 border-l-brand-500' : ''
+                className={`w-full border-b border-edge/10 px-3 py-3 text-left transition-colors hover:bg-surface-hover ${
+                  isSelected ? 'border-l-2 border-l-primary bg-primary/10' : ''
                 }`}
               >
                 {/* 行号 + 角色 */}
                 <div className="mb-0.5 flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-gray-600">
+                  <span className="text-[11px] font-mono text-fg-faint">
                     {delta.line_id}
                   </span>
-                  <span className="text-xs font-medium text-gray-300">
+                  <span className="text-xs font-medium text-fg-muted">
                     {delta.speaker ?? '旁白'}
                   </span>
                   {/* 变更指示 */}
@@ -93,7 +96,7 @@ export default function ScriptDrawer() {
                 {/* 台词 */}
                 <p
                   className={`text-xs leading-relaxed ${
-                    isSelected ? 'text-gray-200' : 'text-gray-500'
+                    isSelected ? 'text-fg' : 'text-fg-faint'
                   }`}
                 >
                   {delta.dialogue}
@@ -103,18 +106,18 @@ export default function ScriptDrawer() {
                 {isSelected && (
                   <div className="mt-1.5 flex flex-wrap gap-1">
                     {resolved.background && (
-                      <span className="rounded bg-gray-800 px-1 py-0.5 text-[10px] text-gray-500">
-                        🖼 {resolved.background.asset_id}
+                      <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[10px] text-fg-subtle">
+                        <ImageIcon size={10} strokeWidth={1.75} /> {resolved.background.asset_id}
                       </span>
                     )}
                     {resolved.audio.bgm && (
-                      <span className="rounded bg-gray-800 px-1 py-0.5 text-[10px] text-gray-500">
-                        ♪ {resolved.audio.bgm.asset_id}
+                      <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[10px] text-fg-subtle">
+                        <Music size={10} strokeWidth={1.75} /> {resolved.audio.bgm.asset_id}
                       </span>
                     )}
                     {resolved.audio.ambient && (
-                      <span className="rounded bg-gray-800 px-1 py-0.5 text-[10px] text-gray-500">
-                        ♫ {resolved.audio.ambient.asset_id}
+                      <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[10px] text-fg-subtle">
+                        <AudioLines size={10} strokeWidth={1.75} /> {resolved.audio.ambient.asset_id}
                       </span>
                     )}
                   </div>
@@ -129,7 +132,7 @@ export default function ScriptDrawer() {
       {!open && (
         <button
           onClick={toggleOpen}
-          className="absolute top-4 right-4 z-20 rounded-lg border border-gray-700 bg-gray-900/90 px-3 py-1.5 text-xs text-gray-400 shadow-lg backdrop-blur transition-colors hover:bg-gray-800 hover:text-gray-200"
+          className="absolute top-4 right-4 z-20 rounded-lg border border-edge-strong/20 bg-surface-2/90 px-3 py-1.5 text-xs text-fg-muted shadow-2 backdrop-blur transition-colors hover:bg-surface-hover hover:text-fg"
         >
           剧本
         </button>
@@ -139,29 +142,24 @@ export default function ScriptDrawer() {
 }
 
 /** 行内变更指示 */
-function ChangeIndicators({ delta: d }: { delta: import('@/core/types').LineDelta }) {
-  const indicators: string[] = []
+function ChangeIndicators({ delta: d }: { delta: LineDelta }) {
+  const indicators: React.ReactNode[] = []
+  const push = (key: string, node: React.ReactNode) => indicators.push(<span key={key}>{node}</span>)
 
-  if (d.background !== null) indicators.push('🖼')
+  if (d.background !== null) push('bg', <ImageIcon size={11} strokeWidth={1.75} />)
   if (Object.keys(d.characters).length > 0) {
     const actions = Object.values(d.characters)
-    if (actions.some((c) => c.action === 'show')) indicators.push('👤')
-    if (actions.some((c) => c.action === 'hide' || c.action === '__CLEAR__')) indicators.push('🚪')
+    if (actions.some((c) => c.action === 'show')) push('ch', <ImageIcon size={11} strokeWidth={1.75} className="text-primary" />)
+    if (actions.some((c) => c.action === 'hide' || c.action === '__CLEAR__')) push('hide', <DoorOpen size={11} strokeWidth={1.75} />)
   }
-  if (d.audio.bgm === '__CLEAR__') indicators.push('🔇')
-  else if (d.audio.bgm && d.audio.bgm !== null) indicators.push('♪')
-  if (d.audio.ambient === '__CLEAR__') indicators.push('🔇')
-  else if (d.audio.ambient && d.audio.ambient !== null) indicators.push('♫')
-  if (d.audio.se.length > 0) indicators.push('🔊')
-  if (d.audio.voice) indicators.push('🎤')
+  if (d.audio.bgm === '__CLEAR__') push('bgm-off', <VolumeX size={11} strokeWidth={1.75} />)
+  else if (d.audio.bgm && d.audio.bgm !== null) push('bgm', <Music size={11} strokeWidth={1.75} />)
+  if (d.audio.ambient === '__CLEAR__') push('amb-off', <VolumeX size={11} strokeWidth={1.75} />)
+  else if (d.audio.ambient && d.audio.ambient !== null) push('amb', <AudioLines size={11} strokeWidth={1.75} />)
+  if (d.audio.se.length > 0) push('se', <Megaphone size={11} strokeWidth={1.75} />)
+  if (d.audio.voice) push('voice', <Volume2 size={11} strokeWidth={1.75} />)
 
   if (indicators.length === 0) return null
 
-  return (
-    <span className="flex gap-0.5 text-[10px]">
-      {indicators.map((icon, idx) => (
-        <span key={idx}>{icon}</span>
-      ))}
-    </span>
-  )
+  return <span className="flex items-center gap-0.5 text-fg-subtle">{indicators}</span>
 }

@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
+import { Button, Input, ConfirmDialog } from '@/components/ui'
+import { Image as ImageIcon, X, ChevronDown, ChevronRight } from 'lucide-react'
 import type { CharacterConfig, ExpressionRef, AssetItem } from '@/core/types'
 
 const CHAR_ID_REGEX = /^[a-z][a-z0-9_]*$/
@@ -19,6 +21,7 @@ export default function CharacterManager() {
   const [newCharId, setNewCharId] = useState('')
   const [newDisplayName, setNewDisplayName] = useState('')
   const [newCharIdError, setNewCharIdError] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
   const selectedChar = selectedCharId
     ? characterConfigs.find((c) => c.charId === selectedCharId)
@@ -108,25 +111,16 @@ export default function CharacterManager() {
     [selectedCharId, selectedChar, updateCharacter],
   )
 
-  // 删除角色
-  const handleDeleteCharacter = useCallback(() => {
-    if (!selectedCharId) return
-    if (confirm(`确定要删除角色 "${selectedChar?.displayName ?? selectedCharId}" 吗？`)) {
-      deleteCharacter(selectedCharId)
-      setSelectedCharId(null)
-    }
-  }, [selectedCharId, selectedChar, deleteCharacter])
-
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-950/80">
+    <div className="flex flex-1 flex-col overflow-hidden bg-canvas/80">
       {/* 标题 */}
-      <div className="flex items-center justify-between border-b border-gray-800 px-3 py-2.5">
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+      <div className="flex items-center justify-between border-b border-edge/10 px-3 py-2.5">
+        <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
           角色管理
         </span>
         <button
           onClick={() => setShowNewForm(!showNewForm)}
-          className="rounded px-2 py-0.5 text-[10px] font-medium text-brand-400 transition-colors hover:bg-brand-600/20"
+          className="rounded px-2 py-0.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15"
         >
           + 新建
         </button>
@@ -134,41 +128,28 @@ export default function CharacterManager() {
 
       {/* 新建角色表单 */}
       {showNewForm && (
-        <div className="border-b border-gray-800 p-2 space-y-2">
-          <div>
-            <input
-              type="text"
-              placeholder="变量名 (如 alice)"
-              value={newCharId}
-              onChange={(e) => { setNewCharId(e.target.value); setNewCharIdError('') }}
-              className="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[11px] text-gray-300 placeholder-gray-600 outline-none focus:border-brand-500/50"
-            />
-            {newCharIdError && (
-              <p className="mt-0.5 text-[10px] text-red-400">{newCharIdError}</p>
-            )}
-          </div>
-          <input
-            type="text"
+        <div className="space-y-2 border-b border-edge/10 p-2">
+          <Input
+            placeholder="变量名 (如 alice)"
+            value={newCharId}
+            onChange={(e) => { setNewCharId(e.target.value); setNewCharIdError('') }}
+            error={!!newCharIdError}
+            hint={newCharIdError || undefined}
+          />
+          <Input
             placeholder="显示名 (如 Alice)"
             value={newDisplayName}
             onChange={(e) => setNewDisplayName(e.target.value)}
-            className="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[11px] text-gray-300 placeholder-gray-600 outline-none focus:border-brand-500/50"
           />
           <div className="flex gap-1">
-            <button
-              onClick={handleCreate}
-              className="flex-1 rounded bg-brand-600 py-1 text-[10px] font-medium text-white transition-colors hover:bg-brand-500"
-            >
+            <Button variant="primary" block onClick={handleCreate}>
               创建
-            </button>
-            <button
-              onClick={() => { setShowNewForm(false); setNewCharIdError('') }}
-              className="rounded px-3 py-1 text-[10px] text-gray-400 transition-colors hover:bg-gray-800"
-            >
+            </Button>
+            <Button variant="ghost" onClick={() => { setShowNewForm(false); setNewCharIdError('') }}>
               取消
-            </button>
+            </Button>
           </div>
-          <p className="text-[10px] text-gray-600">
+          <p className="text-[10px] text-fg-faint">
             变量名仅允许小写字母开头 + 数字/下划线，如 alice, hero_1
           </p>
         </div>
@@ -177,11 +158,11 @@ export default function CharacterManager() {
       {/* 角色列表 */}
       <div className="flex-1 overflow-y-auto">
         {characterConfigs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-1 py-8 text-[10px] text-gray-600">
+          <div className="flex flex-col items-center justify-center gap-1 py-8 text-[10px] text-fg-faint">
             暂无角色，点击"新建"创建
           </div>
         ) : (
-          <div className="divide-y divide-gray-800/50">
+          <div className="divide-y divide-edge/10">
             {characterConfigs.map((char) => {
               const isSelected = selectedCharId === char.charId
               const exprCount = char.expressions.length
@@ -194,10 +175,10 @@ export default function CharacterManager() {
                       setSelectedCharId(isSelected ? null : char.charId)
                       setShowNewForm(false)
                     }}
-                    className={`w-full px-3 py-2 text-left transition-colors ${
+                    className={`w-full border-l-2 px-3 py-2 text-left transition-colors ${
                       isSelected
-                        ? 'bg-brand-600/10 border-l-2 border-brand-500'
-                        : 'hover:bg-gray-800/50 border-l-2 border-transparent'
+                        ? 'border-l-primary bg-primary/10'
+                        : 'border-l-transparent hover:bg-surface-hover'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -209,22 +190,22 @@ export default function CharacterManager() {
                         />
                       )}
                       <div className="min-w-0 flex-1">
-                        <span className="block truncate text-[11px] font-medium text-gray-300">
+                        <span className="block truncate text-[11px] font-medium text-fg-muted">
                           {char.displayName}
                         </span>
-                        <span className="block text-[10px] text-gray-600">
+                        <span className="block text-[10px] text-fg-faint">
                           {char.charId} · {exprCount} 表情
                         </span>
                       </div>
-                      <span className="text-[10px] text-gray-600">
-                        {isSelected ? '▲' : '►'}
+                      <span className="text-[10px] text-fg-faint">
+                        {isSelected ? <ChevronDown size={14} strokeWidth={1.75} /> : <ChevronRight size={14} strokeWidth={1.75} />}
                       </span>
                     </div>
                   </button>
 
                   {/* 角色详情 */}
                   {isSelected && (
-                    <div className="border-t border-gray-800/30 bg-gray-900/40 px-3 py-2 space-y-2">
+                    <div className="space-y-2 border-t border-edge/10 bg-surface-1/40 px-3 py-2">
                       {/* 变量名（只读） */}
                       <Field label="变量名" value={char.charId} readOnly />
 
@@ -237,7 +218,7 @@ export default function CharacterManager() {
 
                       {/* 对话框颜色 */}
                       <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">
+                        <label className="mb-0.5 block text-[10px] text-fg-subtle">
                           对话框颜色
                         </label>
                         <div className="flex items-center gap-1">
@@ -245,25 +226,24 @@ export default function CharacterManager() {
                             type="color"
                             value={char.dialogueColor || '#888888'}
                             onChange={(e) => handleUpdateField('dialogueColor', e.target.value)}
-                            className="h-6 w-8 rounded border border-gray-700 bg-transparent cursor-pointer"
+                            className="h-6 w-8 cursor-pointer rounded border border-edge/15 bg-transparent"
                           />
-                          <input
-                            type="text"
+                          <Input
                             value={char.dialogueColor || ''}
                             onChange={(e) => handleUpdateField('dialogueColor', e.target.value)}
                             placeholder="#888888"
-                            className="flex-1 rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[10px] text-gray-400 placeholder-gray-600 outline-none focus:border-brand-500/50"
+                            className="flex-1"
                           />
                         </div>
                       </div>
 
                       {/* 表情管理 */}
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-[10px] text-gray-500">表情列表</label>
+                        <div className="mb-1 flex items-center justify-between">
+                          <label className="text-[10px] text-fg-subtle">表情列表</label>
                           <button
                             onClick={() => setShowExprPicker(!showExprPicker)}
-                            className="text-[10px] text-brand-400 hover:text-brand-300"
+                            className="text-[10px] text-primary transition-colors hover:text-primary-hover"
                           >
                             + 添加表情
                           </button>
@@ -271,9 +251,9 @@ export default function CharacterManager() {
 
                         {/* 表情选择器 */}
                         {showExprPicker && (
-                          <div className="mb-2 max-h-40 overflow-y-auto rounded border border-gray-700 bg-gray-900 p-1">
+                          <div className="mb-2 max-h-40 overflow-y-auto rounded border border-edge/15 bg-surface-2 p-1">
                             {spriteAssets.length === 0 ? (
-                              <p className="p-2 text-[10px] text-gray-600">
+                              <p className="p-2 text-[10px] text-fg-faint">
                                 请先在素材管理中导入立绘图片
                               </p>
                             ) : (
@@ -286,13 +266,13 @@ export default function CharacterManager() {
                                     onClick={() => handleAddExpression(asset)}
                                     className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-[10px] transition-colors ${
                                       alreadyUsed
-                                        ? 'text-gray-600 cursor-not-allowed'
-                                        : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+                                        ? 'cursor-not-allowed text-fg-faint'
+                                        : 'text-fg-muted hover:bg-surface-hover'
                                     }`}
                                   >
-                                    <span className="text-xs">🖼</span>
+                                    <ImageIcon size={14} strokeWidth={1.75} className="shrink-0 text-fg-subtle" />
                                     <span className="truncate">{asset.name}</span>
-                                    {alreadyUsed && <span className="text-[9px] text-gray-600 ml-auto">已使用</span>}
+                                    {alreadyUsed && <span className="ml-auto text-[9px] text-fg-faint">已使用</span>}
                                   </button>
                                 )
                               })
@@ -302,7 +282,7 @@ export default function CharacterManager() {
 
                         {/* 已有表情列表 */}
                         {char.expressions.length === 0 ? (
-                          <p className="text-[10px] text-gray-600 italic">暂无表情</p>
+                          <p className="text-[10px] italic text-fg-faint">暂无表情</p>
                         ) : (
                           <div className="space-y-1">
                             {char.expressions.map((expr) => {
@@ -310,19 +290,20 @@ export default function CharacterManager() {
                               return (
                                 <div
                                   key={expr.id}
-                                  className="flex items-center gap-2 rounded bg-gray-800/40 px-2 py-1"
+                                  className="flex items-center gap-2 rounded bg-surface-1/40 px-2 py-1"
                                 >
-                                  <span className="text-[10px] text-gray-500 w-12 shrink-0 truncate" title={expr.id}>
+                                  <span className="w-12 shrink-0 truncate text-[10px] text-fg-subtle" title={expr.id}>
                                     {expr.id}
                                   </span>
-                                  <span className="flex-1 truncate text-[10px] text-gray-400">
+                                  <span className="flex-1 truncate text-[10px] text-fg-muted">
                                     {asset?.name ?? '(素材已删除)'}
                                   </span>
                                   <button
                                     onClick={() => handleRemoveExpression(expr.id)}
-                                    className="shrink-0 text-[10px] text-gray-600 hover:text-red-400"
+                                    className="shrink-0 text-fg-faint transition-colors hover:text-danger"
+                                    title="移除表情"
                                   >
-                                    ✕
+                                    <X size={13} strokeWidth={1.75} />
                                   </button>
                                 </div>
                               )
@@ -332,12 +313,13 @@ export default function CharacterManager() {
                       </div>
 
                       {/* 删除角色 */}
-                      <button
-                        onClick={handleDeleteCharacter}
-                        className="w-full rounded border border-red-800/50 py-1 text-[10px] text-red-400 transition-colors hover:bg-red-900/20 hover:text-red-300"
+                      <Button
+                        variant="danger"
+                        block
+                        onClick={() => setPendingDelete(char.charId)}
                       >
                         删除角色
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -348,9 +330,30 @@ export default function CharacterManager() {
       </div>
 
       {/* 底部统计 */}
-      <div className="border-t border-gray-800 px-3 py-1.5 text-[10px] text-gray-600">
+      <div className="border-t border-edge/10 px-3 py-1.5 text-[10px] text-fg-faint">
         {characterConfigs.length} 个角色
       </div>
+
+      {/* 删除确认框 */}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="删除角色"
+        confirmText="删除"
+        tone="danger"
+        onConfirm={() => {
+          if (pendingDelete) {
+            deleteCharacter(pendingDelete)
+            setSelectedCharId(null)
+          }
+          setPendingDelete(null)
+        }}
+        onCancel={() => setPendingDelete(null)}
+        message={
+          pendingDelete ? (
+            <>确定要删除角色「{pendingDelete}」吗？此操作不可撤销。</>
+          ) : null
+        }
+      />
     </div>
   )
 }
@@ -369,17 +372,12 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[10px] text-gray-500 mb-0.5">{label}</label>
-      <input
-        type="text"
+      <label className="mb-0.5 block text-[10px] text-fg-subtle">{label}</label>
+      <Input
         value={value}
         readOnly={readOnly}
         onChange={(e) => onChange?.(e.target.value)}
-        className={`w-full rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[11px] outline-none ${
-          readOnly
-            ? 'text-gray-500 cursor-not-allowed'
-            : 'text-gray-300 placeholder-gray-600 focus:border-brand-500/50'
-        }`}
+        className={readOnly ? 'text-fg-faint' : ''}
       />
     </div>
   )
