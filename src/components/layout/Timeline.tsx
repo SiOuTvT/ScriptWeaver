@@ -246,7 +246,7 @@ const SpanBlock = memo(function SpanBlock({
         borderLeft: `2px solid ${color}`,
       }}
     >
-      <span className="truncate text-[9px] leading-5 text-white/70">
+      <span className="truncate text-[10px] leading-5 text-fg">
         {span.label}
       </span>
     </div>
