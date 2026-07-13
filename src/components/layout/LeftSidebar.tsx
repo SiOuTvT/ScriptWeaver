@@ -27,7 +27,7 @@ export default function LeftSidebar() {
 
   return (
     <aside
-      className={`${width} flex shrink-0 flex-col border-r border-edge/10 bg-surface/70 backdrop-blur-md transition-all duration-200`}
+      className={`${width} flex shrink-0 flex-col border-r border-edge/12 bg-surface transition-all duration-200`}
     >
       {/* 折叠按钮 */}
       <button

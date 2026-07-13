@@ -328,7 +328,7 @@ export default function AppLayout() {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-canvas text-fg">
       {/* ===== 顶部工具栏（所有页面通用） ===== */}
-      <header className="flex h-9 shrink-0 items-center justify-between border-b border-edge/10 bg-surface/70 px-3 backdrop-blur-md">
+      <header className="flex h-11 shrink-0 items-center justify-between border-b border-edge/10 bg-surface/70 px-3 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-fg tracking-wide">
             ScriptWeaver
@@ -375,7 +375,7 @@ export default function AppLayout() {
         {/* --- 场景导航：完整创作工作区 --- */}
         {isChapters && (
           <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="relative flex flex-1 overflow-hidden">
+            <div className="relative flex flex-1 gap-2 overflow-hidden p-2">
               <ManagementPanel />
               <StagePreview />
               <ScriptDrawer />

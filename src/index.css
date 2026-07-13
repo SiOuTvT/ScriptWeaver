@@ -8,21 +8,21 @@
    ========================================================= */
 :root,
 [data-theme='light'] {
-  --c-canvas: 242 241 236;        /* #F2F1EC 暖白背板 */
-  --c-surface: 247 246 242;       /* #F7F6F2 主面板 */
-  --c-surface-1: 251 250 247;     /* #FBFAF7 次级面板 */
+  --c-canvas: 236 235 229;        /* 暖灰桌面底（压深，让纸面更凸出） */
+  --c-surface: 249 248 244;       /* #F9F8F4 主面板（纸） */
+  --c-surface-1: 252 251 248;     /* #FCFBF8 次级面板 */
   --c-surface-2: 255 255 255;     /* #FFFFFF 抬起卡片 */
-  --c-surface-3: 244 242 237;     /* #F4F2ED 输入框底 */
-  --c-surface-hover: 236 233 227; /* #ECE9E3 hover */
-  --c-surface-active: 226 222 215;/* #E2DED7 选中 */
+  --c-surface-3: 243 241 236;     /* #F3F1EC 输入框底 */
+  --c-surface-hover: 232 229 223; /* #E8E5DF hover */
+  --c-surface-active: 221 217 210;/* #DDD9D2 选中 */
 
   --c-edge: 28 24 18;             /* 边框色相（暗） */
-  --c-edge-strong: 28 24 18;      /* 强调边框 */
+  --c-edge-strong: 28 24 18;     /* 强调边框 */
 
   --c-fg: 28 27 25;               /* #1C1B19 正文 */
   --c-fg-muted: 86 82 76;         /* #56524C 次要 */
-  --c-fg-subtle: 138 133 124;     /* #8A857C 说明 */
-  --c-fg-faint: 170 164 154;      /* #AAA49A 占位 */
+  --c-fg-subtle: 128 123 115;     /* #807B73 说明（提深，增强对比） */
+  --c-fg-faint: 145 139 129;      /* #918B81 占位（提深，增强对比） */
 
   --c-primary: 90 79 224;         /* #5A4FE0 紫毫（浅底加深保对比） */
   --c-primary-hover: 109 94 252;   /* #6D5EFC */
@@ -42,9 +42,9 @@
   --c-info: 96 165 250;
   --c-info-soft: 96 165 250;
 
-  --shadow-1: 0 1px 2px rgba(28, 24, 18, 0.06), 0 1px 3px rgba(28, 24, 18, 0.04);
-  --shadow-2: 0 4px 16px rgba(28, 24, 18, 0.10);
-  --shadow-3: 0 24px 64px rgba(28, 24, 18, 0.16);
+  --shadow-1: 0 1px 2px rgba(28, 24, 18, 0.08), 0 1px 3px rgba(28, 24, 18, 0.05);
+  --shadow-2: 0 4px 16px rgba(28, 24, 18, 0.12);
+  --shadow-3: 0 24px 64px rgba(28, 24, 18, 0.18);
   --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.70);
 
   color-scheme: light;
@@ -54,21 +54,21 @@
    主题变量 —— 深色「墨 / INK」
    ========================================================= */
 [data-theme='dark'] {
-  --c-canvas: 10 11 14;           /* #0A0B0E 近黑冷调 */
-  --c-surface: 15 17 21;          /* #0F1115 主面板 */
-  --c-surface-1: 20 22 27;        /* #14161B 次级面板 */
-  --c-surface-2: 25 28 34;        /* #191C22 抬起卡片 */
-  --c-surface-3: 31 35 43;        /* #1F232B 输入框底 */
-  --c-surface-hover: 38 43 52;    /* #262B34 hover */
-  --c-surface-active: 50 56 67;   /* #323843 选中 */
+  --c-canvas: 10 11 14;           /* #0A0B0E 近黑冷调（最底） */
+  --c-surface: 18 20 26;          /* #12141A 主面板（拉开与 canvas 的层级） */
+  --c-surface-1: 24 27 33;        /* #181B21 次级面板 */
+  --c-surface-2: 31 35 43;        /* #1F232B 抬起卡片 */
+  --c-surface-3: 39 44 53;        /* #272C35 输入框底 */
+  --c-surface-hover: 44 50 60;    /* #2C323C hover */
+  --c-surface-active: 56 63 75;   /* #383F4B 选中 */
 
   --c-edge: 255 255 255;          /* 边框色相（亮） */
   --c-edge-strong: 255 255 255;
 
   --c-fg: 231 233 238;            /* #E7E9EE 冷白正文 */
   --c-fg-muted: 160 166 178;      /* #A0A6B2 */
-  --c-fg-subtle: 113 119 134;     /* #717786 */
-  --c-fg-faint: 75 85 99;         /* #4B5563 */
+  --c-fg-subtle: 140 147 162;     /* #8C93A2 说明（提亮，深色下对比达标） */
+  --c-fg-faint: 125 135 150;      /* #7D8796 占位（提亮，对比 ~4.5:1） */
 
   --c-primary: 109 94 252;        /* #6D5EFC 紫毫 */
   --c-primary-hover: 130 117 255;  /* #8275FF */
@@ -88,10 +88,10 @@
   --c-info: 96 165 250;
   --c-info-soft: 96 165 250;
 
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40);
-  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.50);
-  --shadow-3: 0 16px 48px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.40);
-  --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.40);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.50), 0 1px 3px rgba(0, 0, 0, 0.55);
+  --shadow-3: 0 16px 48px rgba(0, 0, 0, 0.60), 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
   color-scheme: dark;
 }
@@ -110,8 +110,8 @@
   }
 
   /* 主题感知的默认边框色（被组件的 border-edge-* 工具类覆盖） */
-  [data-theme='dark'] * { border-color: rgb(var(--c-edge) / 0.08); }
-  [data-theme='light'] * { border-color: rgb(var(--c-edge) / 0.12); }
+  [data-theme='dark'] * { border-color: rgb(var(--c-edge) / 0.10); }
+  [data-theme='light'] * { border-color: rgb(var(--c-edge) / 0.14); }
 
   /* 统一键盘焦点环：紫毫描边 + 与表面同色的外偏移 */
   :focus-visible {
