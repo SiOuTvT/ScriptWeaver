@@ -43,6 +43,14 @@ const TRACKS: TrackDef[] = [
   },
 ]
 
+// 角色专属颜色（立绘轨道与语音轨道共用，保证同一角色颜色一致）
+const CHAR_COLORS: Record<string, string> = {
+  alice: '#f472b6', bob: '#38bdf8', charlie: '#a78bfa',
+}
+function getCharColor(charId: string): string {
+  return CHAR_COLORS[charId] ?? '#9ca3af'
+}
+
 // ===================== 角色辅助 =====================
 
 interface CharacterTracksResult {
@@ -54,12 +62,8 @@ function computeCharacterTracks(states: ResolvedLineState[]): CharacterTracksRes
   const allChars = new Set<string>()
   for (const s of states) Object.keys(s.characters).forEach((c) => allChars.add(c))
 
-  const charColors: Record<string, string> = {
-    alice: '#f472b6', bob: '#38bdf8', charlie: '#a78bfa',
-  }
-
   const tracks = Array.from(allChars).map((id) => ({
-    id, label: id, color: charColors[id] ?? '#9ca3af',
+    id, label: id, color: getCharColor(id),
   }))
 
   const spans: CharacterTracksResult['spans'] = []
@@ -75,12 +79,12 @@ function computeCharacterTracks(states: ResolvedLineState[]): CharacterTracksRes
           spanSlot = states[i].characters[cid].position_slot
         }
       } else if (spanStart !== -1) {
-        spans.push({ charId: cid, label: cid, start: spanStart, end: i - 1, color: charColors[cid] ?? '#9ca3af', sprite_id: spanSprite, position_slot: spanSlot })
+        spans.push({ charId: cid, label: cid, start: spanStart, end: i - 1, color: getCharColor(cid), sprite_id: spanSprite, position_slot: spanSlot })
         spanStart = -1
       }
     }
     if (spanStart !== -1)
-      spans.push({ charId: cid, label: cid, start: spanStart, end: states.length - 1, color: charColors[cid] ?? '#9ca3af', sprite_id: spanSprite, position_slot: spanSlot })
+      spans.push({ charId: cid, label: cid, start: spanStart, end: states.length - 1, color: getCharColor(cid), sprite_id: spanSprite, position_slot: spanSlot })
   }
   return { tracks, spans }
 }
@@ -260,6 +264,7 @@ interface ResizeState {
   spanStart: number
   spanEnd: number
   edge: 'left' | 'right'
+  charId?: string    // 立绘色块归属的角色
   ghostLeft: number  // px
   ghostWidth: number // px
   targetLine: number
@@ -295,10 +300,11 @@ const DraggableSpan = memo(function DraggableSpan({
         spanStart: span.start,
         spanEnd: span.end,
         edge,
+        charId: span.charId,
         startClientX: e.clientX,
       })
     },
-    [trackId, span.start, span.end, trackRowEl, onResizeStart],
+    [trackId, span.start, span.end, span.charId, trackRowEl, onResizeStart],
   )
 
   return (
@@ -363,6 +369,16 @@ export default function Timeline() {
 
   const charData = useMemo(() => computeCharacterTracks(resolvedStates), [resolvedStates])
 
+  // speaker 显示名 → charId（用于语音轨道按说话角色着色 / 标注）
+  const speakerMap = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of characterConfigs) {
+      m.set(c.charId.toLowerCase(), c.charId)
+      m.set(c.displayName.toLowerCase(), c.charId)
+    }
+    return m
+  }, [characterConfigs])
+
   const seEvents = useMemo(() =>
     resolvedStates
       .map((s, i) => (s.audio.se.length > 0 ? { index: i, items: s.audio.se } : null))
@@ -390,15 +406,19 @@ export default function Timeline() {
       trackType: 'static' as const,
       trackDef: t,
     })),
-    ...charData.tracks.map((ct) => ({
-      id: `char_${ct.id}`, label: `👤 ${ct.label}`, color: ct.color,
+    // 所有角色合并到一条「立绘」轨道，用角色专属颜色区分，避免角色多时轨道行爆炸
+    {
+      id: 'characters', label: '立绘', color: '#ec4899',
       acceptAssetType: 'sprite' as const,
-      spans: charData.spans.filter((s) => s.charId === ct.id).map((s) => ({
-        start: s.start, end: s.end, label: charDisplayName(ct.id),
+      spans: charData.spans.map((s) => ({
+        start: s.start, end: s.end,
+        label: charDisplayName(s.charId),
+        color: s.color,
+        charId: s.charId,
       })),
-      trackType: 'char' as const,
-      charId: ct.id,
-    })),
+      trackType: 'sprite-merged' as const,
+      trackDef: undefined,
+    },
     { id: 'se', label: 'SE', color: '#eab308', acceptAssetType: null, spans: [], trackType: 'static' as const, trackDef: undefined },
     { id: 'voice', label: '语音', color: '#a855f7', acceptAssetType: null, spans: [], trackType: 'static' as const, trackDef: undefined },
   ], [resolvedStates, charData, assetName, charDisplayName])
@@ -538,8 +558,8 @@ export default function Timeline() {
             }
           }
         }
-      } else if (track.trackType === 'char' && 'charId' in track) {
-        const charId = track.charId
+      } else if (track.trackType === 'sprite-merged' && rs.charId) {
+        const charId = rs.charId
         const anchorState = resolvedStates[rs.spanStart]
         const charState = anchorState.characters[charId]
         if (!charState) { setResizeState(null); return }
@@ -622,6 +642,11 @@ export default function Timeline() {
       <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + 60}px` }}>
         {/* 轨道标签列 */}
         <div className="shrink-0 border-r border-edge/10 bg-canvas/50">
+          {/* 占位行：对齐右边行号 header（48px 高） */}
+          <div className="flex items-center border-b border-edge/10 px-2 text-[10px] font-semibold text-fg-subtle"
+            style={{ height: 48 }}>
+            轨道
+          </div>
           {allTracks.map((track) => (
             <div key={track.id} className="flex items-center gap-1.5 border-b border-edge/10 px-2 text-[10px] text-fg-muted"
               style={{ height: trackHeight }}>
@@ -726,7 +751,7 @@ export default function Timeline() {
                     key={si}
                     span={span}
                     total={total}
-                    color={track.color}
+                    color={span.color ?? track.color}
                     trackId={track.id}
                     trackRowEl={trackRowRefs.current.get(track.id) ?? null}
                     onResizeStart={handleResizeStart}
@@ -741,13 +766,27 @@ export default function Timeline() {
                     title={ev.items.map(assetName).join(', ')}>{assetName(ev.items[0])}</div>
                 ))}
 
-                {/* Voice 点事件 */}
-                {track.id === 'voice' && voiceEvents.map((ev) => (
-                  <div key={`voice-${ev.index}`}
-                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 border-purple-500 bg-purple-500/15 px-1 text-[9px] text-fg-muted"
-                    style={{ left: total > 0 ? `${(ev.index / total) * 100}%` : '0%', width: total > 0 ? `${(1 / total) * 100}%` : '0%', minWidth: 30 }}
-                    title={assetName(ev.voice)}>{assetName(ev.voice)}</div>
-                ))}
+                {/* Voice 点事件：按说话角色着色 + 标注角色名 */}
+                {track.id === 'voice' && voiceEvents.map((ev) => {
+                  const sp = resolvedStates[ev.index]?.speaker
+                  const charId = sp ? speakerMap.get(sp.toLowerCase()) : undefined
+                  const vColor = charId ? getCharColor(charId) : '#a855f7'
+                  const who = charId ? charDisplayName(charId) : (sp ?? '')
+                  return (
+                    <div key={`voice-${ev.index}`}
+                      className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[9px] text-fg"
+                      style={{
+                        left: total > 0 ? `${(ev.index / total) * 100}%` : '0%',
+                        width: total > 0 ? `${(1 / total) * 100}%` : '0%',
+                        minWidth: 30,
+                        backgroundColor: vColor + '22',
+                        borderLeftColor: vColor,
+                      }}
+                      title={`${who ? who + ' · ' : ''}${assetName(ev.voice)}`}>
+                      {who || assetName(ev.voice)}
+                    </div>
+                  )
+                })}
               </div>
             ))}
           </div>
