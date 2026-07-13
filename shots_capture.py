@@ -11,50 +11,32 @@ with sync_playwright() as p:
     page.wait_for_load_state('networkidle')
     page.wait_for_timeout(800)
 
-    # 1 深色 场景导航工作区
+    # 1 深色 场景导航（默认）
     page.screenshot(path='shots/01_dark_chapters.png')
 
     # 2 切浅色
-    page.click('button[aria-label*="切换"]')
-    page.wait_for_timeout(700)
+    page.evaluate("document.documentElement.setAttribute('data-theme','light')")
+    page.wait_for_timeout(500)
     page.screenshot(path='shots/02_light_chapters.png')
 
-    # 3 浅色 素材管理
-    page.click('text=素材管理')
+    # 用 JS 找侧栏按钮并点击（按 data 属性或位置，绕过编码问题）
+    def click_sidebar_item(page, index):
+        page.evaluate(f"""
+            const btns = document.querySelectorAll('aside button');
+            if (btns[{index}]) btns[{index}].click();
+        """)
+
+    # 3 素材管理 (第3个nav项 = aside内第3个button，index从折叠按钮算起=2...不对，折叠是单独button)
+    # 实际结构：aside > [折叠button] + [nav > [6个button]] + [版本号div]
+    # nav 内的 button 索引: 0=场景导航,1=剧本总览,2=素材管理,3=角色管理,4=导出设置,5=AI功能
+    click_sidebar_item(page, 2)  # 素材管理
     page.wait_for_timeout(500)
     page.screenshot(path='shots/03_light_assets.png')
 
-    # 4 浅色 角色管理
-    page.click('text=角色管理')
+    # 4 角色管理
+    click_sidebar_item(page, 3)
     page.wait_for_timeout(500)
     page.screenshot(path='shots/04_light_characters.png')
-
-    # 5 浅色 导出设置
-    page.click('text=导出设置')
-    page.wait_for_timeout(500)
-    page.screenshot(path='shots/05_light_export.png')
-
-    # 6 浅色 AI
-    page.click('text=AI 功能')
-    page.wait_for_timeout(500)
-    page.screenshot(path='shots/06_light_ai.png')
-
-    # 7 浅色 剧本总览
-    page.click('text=剧本总览')
-    page.wait_for_timeout(500)
-    page.screenshot(path='shots/07_light_overview.png')
-
-    # 8 回深色 素材管理
-    page.click('button[aria-label*="切换"]')
-    page.wait_for_timeout(600)
-    page.click('text=素材管理')
-    page.wait_for_timeout(500)
-    page.screenshot(path='shots/08_dark_assets.png')
-
-    # 9 深色 角色管理
-    page.click('text=角色管理')
-    page.wait_for_timeout(500)
-    page.screenshot(path='shots/09_dark_characters.png')
 
     browser.close()
     print('DONE')
