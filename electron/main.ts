@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, nativeTheme } from 'electron'
 import path from 'path'
 import fs from 'fs'
 
@@ -98,6 +98,11 @@ ipcMain.handle('app:getPath', (_event, name: Parameters<typeof app.getPath>[0]) 
 
 ipcMain.handle('app:getSessionDir', () => {
   return getSessionDir()
+})
+
+// --------------- 原生主题同步 ---------------
+ipcMain.on('app:setNativeTheme', (_event, theme: 'dark' | 'light') => {
+  nativeTheme.themeSource = theme
 })
 
 // --------------- 保存项目 ---------------

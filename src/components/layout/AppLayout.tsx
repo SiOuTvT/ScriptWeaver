@@ -14,6 +14,7 @@ import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 import { subscribe, getToastItems, type ToastItem } from '@/utils/toast'
+import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown } from 'lucide-react'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 
 /** 剥离 assets 中的 dataUrl —— 仅内存渲染使用，不入 .swproj / localStorage */
@@ -159,6 +160,16 @@ export default function AppLayout() {
   useEffect(() => {
     return subscribe(setToasts)
   }, [])
+
+  // ---- 主题：应用到 <html data-theme> 并同步 Electron 原生标题栏 ----
+  const theme = useAppStore((s) => s.theme)
+  const toggleTheme = useAppStore((s) => s.toggleTheme)
+  useEffect(() => {
+    const root = document.documentElement
+    root.setAttribute('data-theme', theme)
+    root.style.colorScheme = theme
+    window.electronAPI?.setNativeTheme?.(theme)
+  }, [theme])
 
   // 全局快捷键：Ctrl+Z 撤销 / Ctrl+Y 或 Ctrl+Shift+Z 重做
   useEffect(() => {
@@ -314,20 +325,20 @@ export default function AppLayout() {
   const isChapters = activeNavItem === 'chapters'
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-950">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-canvas text-fg">
       {/* ===== 顶部工具栏（所有页面通用） ===== */}
-      <header className="flex h-9 shrink-0 items-center justify-between border-b border-gray-800 bg-gray-900/60 px-3">
+      <header className="flex h-9 shrink-0 items-center justify-between border-b border-edge/10 bg-surface/70 px-3 backdrop-blur-md">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-300 tracking-wide">
+          <span className="text-xs font-medium text-fg tracking-wide">
             ScriptWeaver
           </span>
           {totalLines > 0 && (
-            <span className="text-[10px] text-gray-600">
+            <span className="text-[10px] text-fg-faint">
               {totalLines} 行
             </span>
           )}
           {projectRoot && (
-            <span className="text-[10px] text-gray-600" title={projectRoot}>
+            <span className="text-[10px] text-fg-faint" title={projectRoot}>
               已保存
             </span>
           )}
@@ -336,35 +347,43 @@ export default function AppLayout() {
           <button
             onClick={handleNewClick}
             title="新建空白项目"
-            className="flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-200"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
           >
-            <span className="text-sm leading-none">📄</span>
+            <FilePlus size={14} strokeWidth={1.75} />
             <span>新建</span>
           </button>
           <button
             onClick={handleOpen}
             title="打开项目文件"
-            className="flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-200"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
           >
-            <span className="text-sm leading-none">📂</span>
+            <FolderOpen size={14} strokeWidth={1.75} />
             <span>打开</span>
           </button>
           <button
             onClick={handleSave}
             title="保存项目到文件"
-            className="flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-200"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
           >
-            <span className="text-sm leading-none">💾</span>
+            <Save size={14} strokeWidth={1.75} />
             <span>保存</span>
           </button>
-          <span className="mx-0.5 h-4 w-px bg-gray-700" />
+          <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
           <button
             onClick={handleExport}
             title="导出 Ren'Py 脚本"
-            className="flex items-center gap-1 rounded-md bg-brand-600/80 px-2.5 py-1 text-[11px] font-medium text-white transition-colors hover:bg-brand-500"
+            className="flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-on-primary transition-colors hover:bg-primary-hover active:bg-primary-active"
           >
-            <span className="text-sm leading-none">📥</span>
+            <FileDown size={14} strokeWidth={1.75} />
             <span>导出 RPY</span>
+          </button>
+          <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+            className="flex h-7 w-7 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg active:scale-95"
+          >
+            {theme === 'dark' ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
           </button>
         </div>
       </header>
@@ -396,11 +415,11 @@ export default function AppLayout() {
       {/* ===== 新建确认对话框 ===== */}
       {showNewConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-80 rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
-            <h3 className="mb-2 text-sm font-semibold text-gray-200">
+          <div className="w-80 rounded-lg border border-edge-strong/20 bg-surface-2 p-6 shadow-3">
+            <h3 className="mb-2 text-sm font-semibold text-fg">
               新建空白项目
             </h3>
-            <p className="mb-5 text-xs leading-relaxed text-gray-400">
+            <p className="mb-5 text-xs leading-relaxed text-fg-muted">
               当前项目中有 {totalLines} 行内容、{characterConfigs.length} 个角色、
               {assets.length} 个素材。
               新建后当前数据将丢失，此操作不可撤销。
@@ -408,13 +427,13 @@ export default function AppLayout() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowNewConfirm(false)}
-                className="rounded-lg px-3 py-1.5 text-xs text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-300"
+                className="rounded-md px-3 py-1.5 text-xs text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
               >
                 取消
               </button>
               <button
                 onClick={handleNewConfirm}
-                className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-500"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover active:bg-primary-active"
               >
                 确认新建
               </button>
@@ -426,11 +445,11 @@ export default function AppLayout() {
       {/* ===== 草稿恢复对话框 ===== */}
       {showDraftRecovery && draftInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-80 rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
-            <h3 className="mb-2 text-sm font-semibold text-gray-200">
+          <div className="w-80 rounded-lg border border-edge-strong/20 bg-surface-2 p-6 shadow-3">
+            <h3 className="mb-2 text-sm font-semibold text-fg">
               发现未保存的草稿
             </h3>
-            <p className="mb-5 text-xs leading-relaxed text-gray-400">
+            <p className="mb-5 text-xs leading-relaxed text-fg-muted">
               检测到上次编辑的草稿数据（
               {draftInfo.deltas.length} 行，
               {draftInfo.characterConfigs?.length ?? 0} 个角色，
@@ -441,13 +460,13 @@ export default function AppLayout() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={handleDraftDiscard}
-                className="rounded-lg px-3 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-400"
+                className="rounded-md px-3 py-1.5 text-xs text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg-muted"
               >
                 丢弃草稿
               </button>
               <button
                 onClick={handleDraftRecover}
-                className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-500"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover active:bg-primary-active"
               >
                 恢复草稿
               </button>
@@ -457,13 +476,21 @@ export default function AppLayout() {
       )}
       {/* ===== Toast 通知容器 ===== */}
       {toasts.length > 0 && (
-        <div className="pointer-events-none fixed bottom-16 right-4 z-[100] flex flex-col gap-1.5">
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none fixed bottom-16 right-4 z-[100] flex flex-col gap-1.5"
+        >
           {toasts.map((t) => {
-            const colors = { success: 'bg-emerald-600/90', info: 'bg-blue-600/90', warning: 'bg-amber-600/90' }
+            const colors = {
+              success: 'bg-success/90',
+              info: 'bg-info/90',
+              warning: 'bg-warning/90',
+            }
             return (
               <div
                 key={t.id}
-                className={`pointer-events-auto animate-slide-up rounded-lg px-3 py-2 text-xs text-white shadow-lg backdrop-blur-sm ${colors[t.type]}`}
+                className={`pointer-events-auto animate-slide-up rounded-md px-3 py-2 text-xs text-white shadow-2 backdrop-blur-md ${colors[t.type]}`}
               >
                 {t.message}
               </div>

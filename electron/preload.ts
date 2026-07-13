@@ -7,6 +7,9 @@ const api = {
   /** 获取会话临时目录 */
   getSessionDir: (): Promise<string> => ipcRenderer.invoke('app:getSessionDir'),
 
+  /** 同步原生窗口主题（标题栏等），fire-and-forget */
+  setNativeTheme: (theme: 'dark' | 'light'): void => ipcRenderer.send('app:setNativeTheme', theme),
+
   /** 保存项目：选目录 → 复制素材 → 写 .swproj */
   saveProject: (data: {
     projectJson: string
