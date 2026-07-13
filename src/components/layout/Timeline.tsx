@@ -246,7 +246,7 @@ const SpanBlock = memo(function SpanBlock({
         borderLeft: `2px solid ${color}`,
       }}
     >
-      <span className="truncate text-[9px] leading-5 text-gray-400">
+      <span className="truncate text-[9px] leading-5 text-white/70">
         {span.label}
       </span>
     </div>
@@ -314,14 +314,14 @@ const DraggableSpan = memo(function DraggableSpan({
           borderLeft: `2px solid ${color}`,
         }}
       >
-        <span className="truncate text-[9px] leading-5 text-gray-400 px-1">
+        <span className="truncate text-[9px] leading-5 text-white/70 px-1">
           {span.label}
         </span>
       </div>
 
       {/* 左拖拽手柄 */}
       <div
-        className="absolute left-0 -ml-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-l hover:bg-white/20 active:bg-brand-400/40"
+        className="absolute left-0 -ml-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-l hover:bg-white/20 active:bg-white/40"
         style={{ minWidth: 6 }}
         onMouseDown={handleMouseDown('left')}
         title="拖拽调整起始行"
@@ -329,7 +329,7 @@ const DraggableSpan = memo(function DraggableSpan({
 
       {/* 右拖拽手柄 */}
       <div
-        className="absolute right-0 -mr-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-r hover:bg-white/20 active:bg-brand-400/40"
+        className="absolute right-0 -mr-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-r hover:bg-white/20 active:bg-white/40"
         style={{ minWidth: 6 }}
         onMouseDown={handleMouseDown('right')}
         title="拖拽调整结束行"
