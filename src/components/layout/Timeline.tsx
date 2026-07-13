@@ -314,6 +314,9 @@ export default function Timeline() {
   const selectedIndex = useAppStore((s) => s.selectedLineIndex)
   const selectLine = useAppStore((s) => s.selectLine)
   const batchUpdateDeltas = useAppStore((s) => s.batchUpdateDeltas)
+  const insertDeltaAt = useAppStore((s) => s.insertDeltaAt)
+  const deleteDeltaAt = useAppStore((s) => s.deleteDeltaAt)
+  const moveDelta = useAppStore((s) => s.moveDelta)
 
   const charData = useMemo(() => computeCharacterTracks(resolvedStates), [resolvedStates])
 
@@ -570,7 +573,7 @@ export default function Timeline() {
         <span className="text-[10px] text-gray-600">{total} 行 · {totalTracks} 轨</span>
       </div>
 
-      <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + 40}px` }}>
+      <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + 60}px` }}>
         {/* 轨道标签列 */}
         <div className="shrink-0 border-r border-gray-800 bg-gray-950/50">
           {allTracks.map((track) => (
@@ -582,14 +585,74 @@ export default function Timeline() {
         {/* 轨道内容 */}
         <div className="flex-1 overflow-x-auto">
           <div className="relative" style={{ minWidth: `${total * cellWidth}px` }}>
-            {/* 行号 */}
-            <div className="flex border-b border-gray-800/50" style={{ height: 20 }}>
-              {resolvedStates.map((s, i) => (
-                <button key={s.line_id} onClick={() => selectLine(i)}
-                  className={`flex shrink-0 items-center justify-center border-r border-gray-800/30 text-[10px] font-mono transition-colors ${
-                    i === selectedIndex ? 'bg-brand-600/30 text-brand-400' : 'text-gray-600 hover:bg-gray-900'
-                  }`} style={{ width: cellWidth }}>{s.line_id}</button>
-              ))}
+            {/* 行号 + 行操作按钮 */}
+            <div className="flex border-b border-gray-800/50" style={{ height: 48 }}>
+              {resolvedStates.map((s, i) => {
+                const isLast = i === resolvedStates.length - 1
+                const isFirst = i === 0
+                const onlyOne = resolvedStates.length <= 1
+                return (
+                  <div
+                    key={s.line_id}
+                    className={`group relative flex shrink-0 flex-col border-r border-gray-800/30 ${
+                      i === selectedIndex ? 'bg-brand-600/15' : ''
+                    }`}
+                    style={{ width: cellWidth }}
+                  >
+                    {/* 行号按钮 */}
+                    <button
+                      onClick={() => selectLine(i)}
+                      className={`flex-1 text-[11px] font-mono transition-colors ${
+                        i === selectedIndex
+                          ? 'text-brand-400'
+                          : 'text-gray-500 group-hover:text-gray-300'
+                      }`}
+                    >
+                      {s.line_id}
+                    </button>
+
+                    {/* 行操作按钮（hover 出现） */}
+                    <div className="flex h-5 items-center justify-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 bg-gray-900/60">
+                      {/* 上移 */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); moveDelta(i, i - 1) }}
+                        disabled={isFirst}
+                        title="上移一行"
+                        className={`rounded px-0.5 text-[9px] leading-none transition-colors ${
+                          isFirst ? 'text-gray-700 cursor-default' : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                        }`}
+                      >▲</button>
+
+                      {/* 插入（在当前行后） */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); insertDeltaAt(i + 1) }}
+                        title="在下方插入新行"
+                        className="rounded px-1 text-[10px] font-bold leading-none text-gray-400 hover:text-green-400 hover:bg-gray-700 transition-colors"
+                      >+</button>
+
+                      {/* 删除 */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteDeltaAt(i) }}
+                        disabled={onlyOne}
+                        title={onlyOne ? '至少保留一行' : '删除此行'}
+                        className={`rounded px-0.5 text-[9px] leading-none transition-colors ${
+                          onlyOne ? 'text-gray-700 cursor-default' : 'text-gray-400 hover:text-red-400 hover:bg-gray-700'
+                        }`}
+                      >✕</button>
+
+                      {/* 下移 */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); moveDelta(i, i + 1) }}
+                        disabled={isLast}
+                        title="下移一行"
+                        className={`rounded px-0.5 text-[9px] leading-none transition-colors ${
+                          isLast ? 'text-gray-700 cursor-default' : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                        }`}
+                      >▼</button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
 
             {/* 轨道行 */}

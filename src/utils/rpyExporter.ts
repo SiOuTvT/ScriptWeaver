@@ -286,6 +286,7 @@ export function exportToRpy(
 export function exportDefinitionsRpy(
   characterConfigs: CharacterConfig[],
   assets: AssetItem[],
+  positionSlots?: { id: string; anchor_x: number; anchor_y: number; anchor_point: string }[],
 ): string {
   const lines: string[] = []
 
@@ -295,20 +296,18 @@ export function exportDefinitionsRpy(
   lines.push('# ============================================================')
   lines.push('')
 
-  // ---- Position Transforms ----
-  lines.push('# ---- Position Transforms ----')
-  lines.push('transform left:')
-  lines.push('    xalign 0.25')
-  lines.push('    yalign 1.0')
-  lines.push('')
-  lines.push('transform center:')
-  lines.push('    xalign 0.5')
-  lines.push('    yalign 1.0')
-  lines.push('')
-  lines.push('transform right:')
-  lines.push('    xalign 0.75')
-  lines.push('    yalign 1.0')
-  lines.push('')
+  // ---- Position Transforms（从槽位配置生成，非硬编码） ----
+  const slots = positionSlots ?? []
+  if (slots.length > 0) {
+    lines.push('# ---- Position Transforms ----')
+    for (const slot of slots) {
+      lines.push(`transform ${slot.id}:`)
+      lines.push(`    xalign ${slot.anchor_x}`)
+      // anchor_point='center' 时角色居中于坐标点；'bottom' 为标准立绘底部对齐
+      lines.push(`    yalign ${slot.anchor_y}`)
+      lines.push('')
+    }
+  }
 
   // ---- Character 声明 ----
   if (characterConfigs.length > 0) {
@@ -372,6 +371,7 @@ export function downloadRpy(
   resolvedStates: ResolvedLineState[],
   characterConfigs: CharacterConfig[] = [],
   assets: AssetItem[] = [],
+  positionSlots?: { id: string; anchor_x: number; anchor_y: number; anchor_point: string }[],
   scriptFilename: string = 'script.rpy',
 ): void {
   // Step 1: 构建映射表
@@ -388,7 +388,7 @@ export function downloadRpy(
   const scriptContent = exportToRpy(deltas, resolvedStates, lookups)
   triggerDownload(scriptContent, scriptFilename)
 
-  const defsContent = exportDefinitionsRpy(characterConfigs, assets)
+  const defsContent = exportDefinitionsRpy(characterConfigs, assets, positionSlots)
   triggerDownload(defsContent, 'definitions.rpy')
 }
 
