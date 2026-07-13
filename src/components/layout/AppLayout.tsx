@@ -15,6 +15,7 @@ import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 import { subscribe, getToastItems, type ToastItem } from '@/utils/toast'
 import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown } from 'lucide-react'
+import { Button, IconButton, ConfirmDialog } from '@/components/ui'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 
 /** 剥离 assets 中的 dataUrl —— 仅内存渲染使用，不入 .swproj / localStorage */
@@ -343,48 +344,27 @@ export default function AppLayout() {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={handleNewClick}
-            title="新建空白项目"
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
-          >
-            <FilePlus size={14} strokeWidth={1.75} />
-            <span>新建</span>
-          </button>
-          <button
-            onClick={handleOpen}
-            title="打开项目文件"
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
-          >
-            <FolderOpen size={14} strokeWidth={1.75} />
-            <span>打开</span>
-          </button>
-          <button
-            onClick={handleSave}
-            title="保存项目到文件"
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
-          >
-            <Save size={14} strokeWidth={1.75} />
-            <span>保存</span>
-          </button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" icon={<FilePlus size={14} strokeWidth={1.75} />} onClick={handleNewClick}>
+            新建
+          </Button>
+          <Button variant="ghost" size="sm" icon={<FolderOpen size={14} strokeWidth={1.75} />} onClick={handleOpen}>
+            打开
+          </Button>
+          <Button variant="ghost" size="sm" icon={<Save size={14} strokeWidth={1.75} />} onClick={handleSave}>
+            保存
+          </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
-          <button
-            onClick={handleExport}
-            title="导出 Ren'Py 脚本"
-            className="flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-on-primary transition-colors hover:bg-primary-hover active:bg-primary-active"
-          >
-            <FileDown size={14} strokeWidth={1.75} />
-            <span>导出 RPY</span>
-          </button>
+          <Button variant="primary" size="sm" icon={<FileDown size={14} strokeWidth={1.75} />} onClick={handleExport}>
+            导出 RPY
+          </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
-          <button
+          <IconButton
+            icon={theme === 'dark' ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
+            aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
             onClick={toggleTheme}
             title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg active:scale-95"
-          >
-            {theme === 'dark' ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
-          </button>
+          />
         </div>
       </header>
 
@@ -413,66 +393,39 @@ export default function AppLayout() {
       </div>
 
       {/* ===== 新建确认对话框 ===== */}
-      {showNewConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-80 rounded-lg border border-edge-strong/20 bg-surface-2 p-6 shadow-3">
-            <h3 className="mb-2 text-sm font-semibold text-fg">
-              新建空白项目
-            </h3>
-            <p className="mb-5 text-xs leading-relaxed text-fg-muted">
-              当前项目中有 {totalLines} 行内容、{characterConfigs.length} 个角色、
-              {assets.length} 个素材。
-              新建后当前数据将丢失，此操作不可撤销。
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowNewConfirm(false)}
-                className="rounded-md px-3 py-1.5 text-xs text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleNewConfirm}
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover active:bg-primary-active"
-              >
-                确认新建
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showNewConfirm}
+        title="新建空白项目"
+        confirmText="确认新建"
+        onConfirm={handleNewConfirm}
+        onCancel={() => setShowNewConfirm(false)}
+        message={
+          <>
+            当前项目中有 {totalLines} 行内容、{characterConfigs.length} 个角色、
+            {assets.length} 个素材。新建后当前数据将丢失，此操作不可撤销。
+          </>
+        }
+      />
 
       {/* ===== 草稿恢复对话框 ===== */}
-      {showDraftRecovery && draftInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-80 rounded-lg border border-edge-strong/20 bg-surface-2 p-6 shadow-3">
-            <h3 className="mb-2 text-sm font-semibold text-fg">
-              发现未保存的草稿
-            </h3>
-            <p className="mb-5 text-xs leading-relaxed text-fg-muted">
+      {draftInfo && (
+        <ConfirmDialog
+          open={showDraftRecovery}
+          title="发现未保存的草稿"
+          confirmText="恢复草稿"
+          onConfirm={handleDraftRecover}
+          onCancel={handleDraftDiscard}
+          message={
+            <>
               检测到上次编辑的草稿数据（
               {draftInfo.deltas.length} 行，
               {draftInfo.characterConfigs?.length ?? 0} 个角色，
               {draftInfo.assets?.length ?? 0} 个素材，
               {new Date(draftInfo.savedAt).toLocaleString('zh-CN')}
               ），是否恢复？
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={handleDraftDiscard}
-                className="rounded-md px-3 py-1.5 text-xs text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg-muted"
-              >
-                丢弃草稿
-              </button>
-              <button
-                onClick={handleDraftRecover}
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover active:bg-primary-active"
-              >
-                恢复草稿
-              </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
       )}
       {/* ===== Toast 通知容器 ===== */}
       {toasts.length > 0 && (
