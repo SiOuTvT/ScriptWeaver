@@ -159,8 +159,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeNavItem: 'chapters',
 
   // ---- 剧本抽屉 ----
-  scriptDrawerOpen: false,
-  scriptDrawerPinned: false,
+  scriptDrawerOpen: true,
+  scriptDrawerPinned: true,
 
   // ===== 角色 CRUD =====
   addCharacter: (config) => {

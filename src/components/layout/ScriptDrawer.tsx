@@ -29,10 +29,10 @@ export default function ScriptDrawer() {
     <>
       {/* 抽屉本体 */}
       <aside
-        className={`${width} ${visibility} flex shrink-0 flex-col border-l border-edge/10 bg-canvas transition-all duration-300 overflow-hidden`}
+        className={`${width} ${visibility} flex shrink-0 flex-col border-l border-edge/12 bg-surface transition-all duration-300 overflow-hidden`}
       >
         {/* 头部 */}
-        <div className="flex items-center justify-between border-b border-edge/10 px-3 py-2.5">
+        <div className="flex items-center justify-between border-b border-edge/12 px-3 py-2.5">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
               剧本流

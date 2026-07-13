@@ -167,7 +167,7 @@ export default function AssetManager() {
   const tabLabel = tab === 'audio' ? '音频' : tab === 'sprite' ? '立绘' : '背景'
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-surface/70 backdrop-blur-md">
+    <div className="flex flex-1 flex-col overflow-hidden bg-surface">
       {/* 标题 */}
       <div className="flex items-baseline gap-1.5 border-b border-edge/10 px-3 py-2.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">

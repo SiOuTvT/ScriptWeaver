@@ -214,7 +214,7 @@ export default function SceneNavPanel() {
   // ---- 整体 ----
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-edge/10 bg-surface/70 backdrop-blur-md">
+    <aside className="flex w-56 shrink-0 flex-col border-r border-edge/12 bg-surface">
       {/* 标题 */}
       <div className="flex items-baseline gap-1.5 border-b border-edge/10 px-3 py-2.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
