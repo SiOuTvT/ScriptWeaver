@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
+import { Check } from 'lucide-react'
 import type { LineDelta } from '@/core/types'
 
 // --------------- 工具函数 ---------------
@@ -149,18 +150,18 @@ export default function ScriptOverview() {
   const fullText = lines.join('\n')
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-950">
+    <div className="flex flex-1 flex-col overflow-hidden bg-canvas">
       {/* 头部 */}
-      <div className="flex items-center justify-between border-b border-gray-800 px-4 py-2.5">
+      <div className="flex items-center justify-between border-b border-edge/10 px-4 py-2.5">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
             剧本总览
           </span>
-          <span className="text-[10px] text-gray-600">
+          <span className="text-[10px] text-fg-faint">
             {lines.length} 行
           </span>
           {isDirty && (
-            <span className="rounded bg-yellow-600/20 px-1.5 py-0.5 text-[10px] text-yellow-400">
+            <span className="rounded bg-warning/15 px-1.5 py-0.5 text-[10px] text-warning">
               已修改
             </span>
           )}
@@ -169,15 +170,16 @@ export default function ScriptOverview() {
           <button
             onClick={applyChanges}
             disabled={!isDirty}
-            className={`rounded-md px-3 py-1 text-[11px] font-medium transition-colors ${
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium transition-colors ${
               isDirty
-                ? 'bg-brand-600 text-white hover:bg-brand-500'
-                : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                ? 'bg-primary text-on-primary hover:bg-primary-hover'
+                : 'cursor-not-allowed bg-surface-1 text-fg-faint'
             }`}
           >
+            <Check size={13} strokeWidth={1.75} />
             应用更改
           </button>
-          <span className="text-[10px] text-gray-600">Ctrl+S</span>
+          <span className="text-[10px] text-fg-faint">Ctrl+S</span>
         </div>
       </div>
 
@@ -186,14 +188,14 @@ export default function ScriptOverview() {
         {/* 行号列 */}
         <div
           ref={lineCountRef}
-          className="shrink-0 overflow-hidden bg-gray-900/50 border-r border-gray-800 select-none"
+          className="shrink-0 select-none overflow-hidden border-r border-edge/10 bg-surface-1/50"
           style={{ width: 48 }}
         >
           <div className="py-3">
             {lines.map((_, i) => (
               <div
                 key={i}
-                className="flex items-center justify-end px-2 h-7 text-[11px] text-gray-600"
+                className="flex h-7 items-center justify-end px-2 text-[11px] text-fg-faint"
               >
                 {i + 1}
               </div>
@@ -208,13 +210,13 @@ export default function ScriptOverview() {
           onChange={(e) => handleTextareaChange(e.target.value)}
           onScroll={handleScroll}
           placeholder="在此编辑剧本内容...&#10;&#10;格式：角色名: 台词&#10;示例：&#10;alice: 你好，今天天气真好&#10;bob: 是啊，我们去公园走走吧"
-          className="flex-1 resize-none bg-transparent px-4 py-3 text-gray-300 placeholder-gray-700 outline-none leading-7"
+          className="flex-1 resize-none bg-transparent px-4 py-3 text-fg-muted leading-7 outline-none placeholder-fg-faint"
           spellCheck={false}
         />
       </div>
 
       {/* 底部提示 */}
-      <div className="border-t border-gray-800 px-4 py-1.5 text-[10px] text-gray-600 flex items-center justify-between">
+      <div className="flex items-center justify-between border-t border-edge/10 px-4 py-1.5 text-[10px] text-fg-faint">
         <span>格式：角色名: 台词（角色名匹配角色管理中的显示名）</span>
         <span>Ctrl+S 保存 · 编辑后点击「应用更改」同步到项目</span>
       </div>

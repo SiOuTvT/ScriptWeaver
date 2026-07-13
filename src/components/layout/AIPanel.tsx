@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
+import { Button } from '@/components/ui'
+import { Settings, Sparkles, Loader2 } from 'lucide-react'
 import type { LineDelta } from '@/core/types'
 
 const STORAGE_KEY = 'scriptweaver_ai_config'
@@ -158,64 +160,62 @@ export default function AIPanel() {
   }, [config])
 
   return (
-    <div className="flex flex-1 flex-col bg-gray-950/50">
+    <div className="flex flex-1 flex-col bg-canvas/50">
       {/* Header */}
-      <div className="shrink-0 border-b border-gray-800 px-4 py-3">
+      <div className="shrink-0 border-b border-edge/10 px-4 py-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-200">AI 辅助写作</h2>
+          <h2 className="text-sm font-semibold text-fg">AI 辅助写作</h2>
           <button
             onClick={() => setShowConfig(!showConfig)}
-            className="rounded px-2 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-400"
+            className="flex items-center gap-1 rounded px-2 py-0.5 text-[11px] text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg-muted"
           >
-            ⚙ 设置
+            <Settings size={14} strokeWidth={1.75} />
+            设置
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 space-y-4 overflow-y-auto p-4">
         {/* Config section */}
         {showConfig && (
-          <div className="rounded-lg border border-gray-700 bg-gray-900 p-4 space-y-3">
+          <div className="space-y-3 rounded-lg border border-edge/15 bg-surface-2 p-4">
             <label className="block">
-              <span className="text-[11px] text-gray-400">API 端点</span>
+              <span className="text-[11px] text-fg-subtle">API 端点</span>
               <input
                 type="text"
                 value={config.endpoint}
                 onChange={(e) => setConfig({ ...config, endpoint: e.target.value })}
-                className="mt-1 w-full rounded border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-brand-500/50"
+                className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-primary/60"
               />
             </label>
             <label className="block">
-              <span className="text-[11px] text-gray-400">API Key</span>
+              <span className="text-[11px] text-fg-subtle">API Key</span>
               <input
                 type="password"
                 value={config.apiKey}
                 onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
                 placeholder="sk-..."
-                className="mt-1 w-full rounded border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-brand-500/50"
+                className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-primary/60"
               />
             </label>
             <label className="block">
-              <span className="text-[11px] text-gray-400">模型</span>
+              <span className="text-[11px] text-fg-subtle">模型</span>
               <input
                 type="text"
                 value={config.model}
                 onChange={(e) => setConfig({ ...config, model: e.target.value })}
-                className="mt-1 w-full rounded border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-brand-500/50"
+                className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-primary/60"
               />
             </label>
-            <button
-              onClick={saveConfigCb}
-              className="w-full rounded bg-brand-600 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-500"
-            >
+            <Button variant="primary" block onClick={saveConfigCb}>
               保存设置
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Context info */}
-        <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-3">
-          <div className="flex gap-4 text-[11px] text-gray-500">
+        <div className="rounded-lg border border-edge/10 bg-surface-2/50 p-3">
+          <div className="flex gap-4 text-[11px] text-fg-subtle">
             <span>当前 {draftDeltas.length} 行</span>
             <span>{characterConfigs.length} 个角色</span>
             <span>{assets.filter((a) => a.type === 'background').length} 个背景</span>
@@ -224,14 +224,14 @@ export default function AIPanel() {
 
         {/* Error */}
         {error && (
-          <div className="rounded-lg border border-red-800/50 bg-red-900/20 p-3">
-            <p className="text-[12px] text-red-400">{error}</p>
+          <div className="rounded-lg border border-danger/40 bg-danger/10 p-3">
+            <p className="text-[12px] text-danger">{error}</p>
           </div>
         )}
 
         {/* Prompt input */}
         <div className="space-y-2">
-          <label className="block text-[11px] text-gray-400">
+          <label className="block text-[11px] text-fg-subtle">
             描述想要的场景或剧情
           </label>
           <textarea
@@ -240,42 +240,39 @@ export default function AIPanel() {
             placeholder="例如：Alice 和 Bob 在学校走廊相遇，争吵关于周末去图书馆还是去游乐园的事情..."
             rows={4}
             disabled={loading}
-            className="w-full resize-none rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-brand-500/50 disabled:opacity-50"
+            className="w-full resize-none rounded-lg border border-edge/15 bg-surface-3 px-3 py-2 text-xs text-fg placeholder-fg-faint outline-none focus:border-primary/60 disabled:opacity-50"
           />
         </div>
 
         {/* Actions */}
         <div className="flex gap-2">
-          <button
+          <Button
+            variant="primary"
             onClick={generate}
             disabled={loading || !prompt.trim() || !config.apiKey.trim()}
-            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
-                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <Loader2 size={14} strokeWidth={1.75} className="animate-spin" />
                 生成中...
               </>
             ) : (
               <>
-                <span>✨</span>
+                <Sparkles size={14} strokeWidth={1.75} />
                 生成剧本
               </>
             )}
-          </button>
+          </Button>
           {loading && (
-            <button
-              onClick={cancel}
-              className="rounded-lg border border-gray-700 px-3 py-2 text-xs text-gray-400 transition-colors hover:bg-gray-800"
-            >
+            <Button variant="outline" onClick={cancel}>
               取消
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Tips */}
-        <div className="rounded-lg border border-gray-800/50 bg-gray-900/30 p-3">
-          <p className="text-[11px] text-gray-600 leading-relaxed">
+        <div className="rounded-lg border border-edge/10 bg-surface-2/30 p-3">
+          <p className="text-[11px] leading-relaxed text-fg-faint">
             提示：生成的剧本会被追加到当前时间轴末尾。你可以描述剧情走向、人物关系、场景氛围等。
             模型会自动匹配现有角色和背景，必要时会新增。
             支持 OpenAI 兼容的 API 端点（如 OpenAI、Azure、本地模型等）。

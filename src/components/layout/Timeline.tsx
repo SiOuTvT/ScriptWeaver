@@ -1,4 +1,5 @@
 import { useMemo, useCallback, useRef, memo, useState, useEffect } from 'react'
+import { ChevronUp, ChevronDown, X, Plus } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import type { ResolvedLineState, LineDelta } from '@/core/types'
 import {
@@ -124,27 +125,30 @@ const DropCell = memo(function DropCell({
       e.dataTransfer.dropEffect = 'copy'
       const cache = getDragCache()
       if (!cache) return
-      elRef.current?.classList.add('ring-1', 'ring-brand-400', 'bg-brand-400/15')
+      elRef.current?.classList.add('ring-1', 'ring-primary', 'bg-primary/15')
     },
     [acceptType],
   )
 
   const handleDragLeave = useCallback(() => {
-    elRef.current?.classList.remove('ring-1', 'ring-brand-400', 'bg-brand-400/15')
-  }, [])
+      elRef.current?.classList.remove('ring-1', 'ring-primary', 'bg-primary/15')
+    }, [])
+
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
-      elRef.current?.classList.remove('ring-1', 'ring-brand-400', 'bg-brand-400/15')
+      elRef.current?.classList.remove('ring-1', 'ring-primary', 'bg-primary/15')
       if (!acceptType) return
 
       let asset = getDragCache()
       if (!asset) {
         const raw = e.dataTransfer.getData(DRAG_MIME)
-        if (!raw) return
-        try { asset = JSON.parse(raw) } catch { return }
+        if (raw) {
+          try { asset = JSON.parse(raw) } catch { /* ignore */ }
+        }
       }
+      if (!asset) return
 
       selectLine(lineIndex)
 
@@ -202,7 +206,7 @@ const DropCell = memo(function DropCell({
   return (
     <div
       ref={elRef}
-      className={`shrink-0 border-r border-gray-800/20 ${isSelected ? 'bg-brand-600/5' : ''}`}
+      className={`shrink-0 border-r border-edge/10 ${isSelected ? 'bg-primary/5' : ''}`}
       style={{ width: 120 }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -381,8 +385,8 @@ export default function Timeline() {
       trackType: 'char' as const,
       charId: ct.id,
     })),
-    { id: 'se', label: '🔊 SE', color: '#eab308', acceptAssetType: null as const, spans: [], trackType: 'static' as const, trackDef: undefined },
-    { id: 'voice', label: '🎤 语音', color: '#a855f7', acceptAssetType: null as const, spans: [], trackType: 'static' as const, trackDef: undefined },
+    { id: 'se', label: 'SE', color: '#eab308', acceptAssetType: null, spans: [], trackType: 'static' as const, trackDef: undefined },
+    { id: 'voice', label: '语音', color: '#a855f7', acceptAssetType: null, spans: [], trackType: 'static' as const, trackDef: undefined },
   ], [resolvedStates, charData])
 
   const totalTracks = allTracks.length
@@ -576,11 +580,11 @@ export default function Timeline() {
   }, [resizeState, total, allTracks, resolvedStates, draftDeltas, batchUpdateDeltas])
 
   return (
-    <div className="flex shrink-0 flex-col border-t border-gray-800 bg-gray-950 relative">
+    <div className="flex shrink-0 flex-col border-t border-edge/10 bg-canvas relative">
       {/* 拖拽预览浮层 */}
       {resizeState && (
         <div
-          className="pointer-events-none absolute z-50 rounded-sm border-2 border-brand-400 bg-brand-400/20"
+          className="pointer-events-none absolute z-50 rounded-sm border-2 border-primary bg-primary/20"
           style={{
             top: 0,
             left: resizeState.ghostLeft,
@@ -588,7 +592,7 @@ export default function Timeline() {
             height: '100%',
           }}
         >
-          <span className="absolute top-1 left-2 text-[10px] font-mono text-brand-300">
+          <span className="absolute top-1 left-2 text-[10px] font-mono text-primary-hover">
             {resizeState.edge === 'left'
               ? `← L${resizeState.targetLine + 1}`
               : `L${resizeState.targetLine + 1} →`}
@@ -596,16 +600,16 @@ export default function Timeline() {
         </div>
       )}
 
-      <div className="flex items-center justify-between border-b border-gray-800 px-3 py-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">时间轴</span>
-        <span className="text-[10px] text-gray-600">{total} 行 · {totalTracks} 轨</span>
+      <div className="flex items-center justify-between border-b border-edge/10 px-3 py-1.5">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">时间轴</span>
+        <span className="text-[10px] text-fg-faint">{total} 行 · {totalTracks} 轨</span>
       </div>
 
       <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + 60}px` }}>
         {/* 轨道标签列 */}
-        <div className="shrink-0 border-r border-gray-800 bg-gray-950/50">
+        <div className="shrink-0 border-r border-edge/10 bg-canvas/50">
           {allTracks.map((track) => (
-            <div key={track.id} className="flex items-center border-b border-gray-800/50 px-2 text-[10px] text-gray-500"
+            <div key={track.id} className="flex items-center border-b border-edge/10 px-2 text-[10px] text-fg-subtle"
               style={{ height: trackHeight }}>{track.label}</div>
           ))}
         </div>
@@ -614,7 +618,7 @@ export default function Timeline() {
         <div className="flex-1 overflow-x-auto">
           <div className="relative" style={{ minWidth: `${total * cellWidth}px` }}>
             {/* 行号 + 行操作按钮 */}
-            <div className="flex border-b border-gray-800/50" style={{ height: 48 }}>
+            <div className="flex border-b border-edge/10" style={{ height: 48 }}>
               {resolvedStates.map((s, i) => {
                 const isLast = i === resolvedStates.length - 1
                 const isFirst = i === 0
@@ -622,8 +626,8 @@ export default function Timeline() {
                 return (
                   <div
                     key={s.line_id}
-                    className={`group relative flex shrink-0 flex-col border-r border-gray-800/30 ${
-                      i === selectedIndex ? 'bg-brand-600/15' : ''
+                    className={`group relative flex shrink-0 flex-col border-r border-edge/10 ${
+                      i === selectedIndex ? 'bg-primary/15' : ''
                     }`}
                     style={{ width: cellWidth }}
                   >
@@ -632,51 +636,51 @@ export default function Timeline() {
                       onClick={() => selectLine(i)}
                       className={`flex-1 text-[11px] font-mono transition-colors ${
                         i === selectedIndex
-                          ? 'text-brand-400'
-                          : 'text-gray-500 group-hover:text-gray-300'
+                          ? 'text-primary'
+                          : 'text-fg-faint group-hover:text-fg-muted'
                       }`}
                     >
                       {s.line_id}
                     </button>
 
                     {/* 行操作按钮（hover 出现） */}
-                    <div className="flex h-5 items-center justify-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 bg-gray-900/60">
+                    <div className="flex h-5 items-center justify-center gap-0.5 bg-surface-2/60 opacity-0 transition-opacity group-hover:opacity-100">
                       {/* 上移 */}
                       <button
                         onClick={(e) => { e.stopPropagation(); moveDelta(i, i - 1) }}
                         disabled={isFirst}
                         title="上移一行"
-                        className={`rounded px-0.5 text-[9px] leading-none transition-colors ${
-                          isFirst ? 'text-gray-700 cursor-default' : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                        className={`flex h-4 w-4 items-center justify-center rounded transition-colors ${
+                          isFirst ? 'cursor-default text-fg-faint' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
                         }`}
-                      >▲</button>
+                      ><ChevronUp size={12} strokeWidth={1.75} /></button>
 
                       {/* 插入（在当前行后） */}
                       <button
                         onClick={(e) => { e.stopPropagation(); insertDeltaAt(i + 1) }}
                         title="在下方插入新行"
-                        className="rounded px-1 text-[10px] font-bold leading-none text-gray-400 hover:text-green-400 hover:bg-gray-700 transition-colors"
-                      >+</button>
+                        className="flex h-4 w-4 items-center justify-center rounded text-fg-subtle transition-colors hover:bg-surface-hover hover:text-success"
+                      ><Plus size={12} strokeWidth={1.75} /></button>
 
                       {/* 删除 */}
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteDeltaAt(i) }}
                         disabled={onlyOne}
                         title={onlyOne ? '至少保留一行' : '删除此行'}
-                        className={`rounded px-0.5 text-[9px] leading-none transition-colors ${
-                          onlyOne ? 'text-gray-700 cursor-default' : 'text-gray-400 hover:text-red-400 hover:bg-gray-700'
+                        className={`flex h-4 w-4 items-center justify-center rounded transition-colors ${
+                          onlyOne ? 'cursor-default text-fg-faint' : 'text-fg-subtle hover:bg-surface-hover hover:text-danger'
                         }`}
-                      >✕</button>
+                      ><X size={12} strokeWidth={1.75} /></button>
 
                       {/* 下移 */}
                       <button
                         onClick={(e) => { e.stopPropagation(); moveDelta(i, i + 1) }}
                         disabled={isLast}
                         title="下移一行"
-                        className={`rounded px-0.5 text-[9px] leading-none transition-colors ${
-                          isLast ? 'text-gray-700 cursor-default' : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                        className={`flex h-4 w-4 items-center justify-center rounded transition-colors ${
+                          isLast ? 'cursor-default text-fg-faint' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
                         }`}
-                      >▼</button>
+                      ><ChevronDown size={12} strokeWidth={1.75} /></button>
                     </div>
                   </div>
                 )
@@ -688,7 +692,7 @@ export default function Timeline() {
               <div
                 key={track.id}
                 ref={setTrackRowRef(track.id)}
-                className="relative flex border-b border-gray-800/30"
+                className="relative flex border-b border-edge/10"
                 style={{ height: trackHeight }}
               >
                 {resolvedStates.map((s, i) => (
@@ -712,7 +716,7 @@ export default function Timeline() {
                 {/* SE 点事件 */}
                 {track.id === 'se' && seEvents.map((ev) => (
                   <div key={`se-${ev.index}`}
-                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center rounded-sm bg-yellow-600/30 px-1 text-[9px] text-yellow-400/80"
+                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center rounded-sm bg-warning/20 px-1 text-[9px] text-warning"
                     style={{ left: total > 0 ? `${(ev.index / total) * 100}%` : '0%', width: total > 0 ? `${(1 / total) * 100}%` : '0%', minWidth: 30 }}
                     title={ev.items.join(', ')}>{ev.items[0]}</div>
                 ))}
