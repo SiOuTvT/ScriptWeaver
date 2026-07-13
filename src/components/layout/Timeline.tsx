@@ -240,9 +240,9 @@ const SpanBlock = memo(function SpanBlock({
     <div
       className="absolute top-1 bottom-1 rounded-sm px-2 select-none"
       style={{
-        left: spanPct(span.start, total),
-        width: spanPct(span.end - span.start + 1, total),
-        backgroundColor: color + '33',
+          left: spanPct(span.start, total),
+          width: spanPct(span.end - span.start + 1, total),
+          backgroundColor: color + '55',
         borderLeft: `2px solid ${color}`,
       }}
     >
@@ -310,18 +310,18 @@ const DraggableSpan = memo(function DraggableSpan({
       <div
         className="pointer-events-none absolute inset-x-2 top-1 bottom-1 rounded-sm"
         style={{
-          backgroundColor: color + '33',
+          backgroundColor: color + '55',
           borderLeft: `2px solid ${color}`,
         }}
       >
-        <span className="truncate text-[9px] leading-5 text-white/70 px-1">
+        <span className="truncate px-1.5 text-[10px] leading-5 text-fg" title={span.label}>
           {span.label}
         </span>
       </div>
 
       {/* 左拖拽手柄 */}
       <div
-        className="absolute left-0 -ml-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-l hover:bg-white/20 active:bg-white/40"
+        className="absolute left-0 -ml-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-l hover:bg-fg/15 active:bg-fg/25"
         style={{ minWidth: 6 }}
         onMouseDown={handleMouseDown('left')}
         title="拖拽调整起始行"
@@ -329,7 +329,7 @@ const DraggableSpan = memo(function DraggableSpan({
 
       {/* 右拖拽手柄 */}
       <div
-        className="absolute right-0 -mr-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-r hover:bg-white/20 active:bg-white/40"
+        className="absolute right-0 -mr-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-r hover:bg-fg/15 active:bg-fg/25"
         style={{ minWidth: 6 }}
         onMouseDown={handleMouseDown('right')}
         title="拖拽调整结束行"
@@ -349,6 +349,17 @@ export default function Timeline() {
   const insertDeltaAt = useAppStore((s) => s.insertDeltaAt)
   const deleteDeltaAt = useAppStore((s) => s.deleteDeltaAt)
   const moveDelta = useAppStore((s) => s.moveDelta)
+  const getAsset = useAppStore((s) => s.getAsset)
+  const characterConfigs = useAppStore((s) => s.characterConfigs)
+
+  const assetName = useCallback(
+    (id: string | null) => (id ? (getAsset(id)?.name ?? id) : ''),
+    [getAsset],
+  )
+  const charDisplayName = useCallback(
+    (charId: string) => characterConfigs.find((c) => c.charId === charId)?.displayName ?? charId,
+    [characterConfigs],
+  )
 
   const charData = useMemo(() => computeCharacterTracks(resolvedStates), [resolvedStates])
 
@@ -372,7 +383,10 @@ export default function Timeline() {
     ...TRACKS.map((t) => ({
       id: t.id, label: t.label, color: t.color,
       acceptAssetType: t.acceptAssetType,
-      spans: computeSpans(resolvedStates, t.getValue),
+      spans: computeSpans(resolvedStates, t.getValue).map((sp) => ({
+        ...sp,
+        label: assetName(sp.label),
+      })),
       trackType: 'static' as const,
       trackDef: t,
     })),
@@ -380,14 +394,14 @@ export default function Timeline() {
       id: `char_${ct.id}`, label: `👤 ${ct.label}`, color: ct.color,
       acceptAssetType: 'sprite' as const,
       spans: charData.spans.filter((s) => s.charId === ct.id).map((s) => ({
-        start: s.start, end: s.end, label: s.sprite_id,
+        start: s.start, end: s.end, label: charDisplayName(ct.id),
       })),
       trackType: 'char' as const,
       charId: ct.id,
     })),
     { id: 'se', label: 'SE', color: '#eab308', acceptAssetType: null, spans: [], trackType: 'static' as const, trackDef: undefined },
     { id: 'voice', label: '语音', color: '#a855f7', acceptAssetType: null, spans: [], trackType: 'static' as const, trackDef: undefined },
-  ], [resolvedStates, charData])
+  ], [resolvedStates, charData, assetName, charDisplayName])
 
   const totalTracks = allTracks.length
 
@@ -609,8 +623,11 @@ export default function Timeline() {
         {/* 轨道标签列 */}
         <div className="shrink-0 border-r border-edge/10 bg-canvas/50">
           {allTracks.map((track) => (
-            <div key={track.id} className="flex items-center border-b border-edge/10 px-2 text-[10px] text-fg-muted"
-              style={{ height: trackHeight }}>{track.label}</div>
+            <div key={track.id} className="flex items-center gap-1.5 border-b border-edge/10 px-2 text-[10px] text-fg-muted"
+              style={{ height: trackHeight }}>
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: track.color }} />
+              <span className="truncate">{track.label}</span>
+            </div>
           ))}
         </div>
 
@@ -634,13 +651,16 @@ export default function Timeline() {
                     {/* 行号按钮 */}
                     <button
                       onClick={() => selectLine(i)}
-                      className={`flex-1 text-[11px] font-mono transition-colors ${
+                      className={`flex w-full flex-col items-center justify-center gap-0.5 px-1 transition-colors ${
                         i === selectedIndex
                           ? 'text-primary'
                           : 'text-fg-subtle group-hover:text-fg'
                       }`}
                     >
-                      {s.line_id}
+                      <span className="font-mono leading-none text-[11px]">{s.line_id}</span>
+                      <span className="w-full truncate text-center text-[9px] leading-tight text-fg-subtle">
+                        {s.speaker ? `${s.speaker}：${s.dialogue}` : s.dialogue}
+                      </span>
                     </button>
 
                     {/* 行操作按钮（hover 出现） */}
@@ -716,17 +736,17 @@ export default function Timeline() {
                 {/* SE 点事件 */}
                 {track.id === 'se' && seEvents.map((ev) => (
                   <div key={`se-${ev.index}`}
-                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center rounded-sm bg-warning/20 px-1 text-[9px] text-warning"
+                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 border-warning bg-warning/15 px-1 text-[9px] text-fg-muted"
                     style={{ left: total > 0 ? `${(ev.index / total) * 100}%` : '0%', width: total > 0 ? `${(1 / total) * 100}%` : '0%', minWidth: 30 }}
-                    title={ev.items.join(', ')}>{ev.items[0]}</div>
+                    title={ev.items.map(assetName).join(', ')}>{assetName(ev.items[0])}</div>
                 ))}
 
                 {/* Voice 点事件 */}
                 {track.id === 'voice' && voiceEvents.map((ev) => (
                   <div key={`voice-${ev.index}`}
-                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center rounded-sm bg-purple-600/30 px-1 text-[9px] text-purple-400/80"
+                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 border-purple-500 bg-purple-500/15 px-1 text-[9px] text-fg-muted"
                     style={{ left: total > 0 ? `${(ev.index / total) * 100}%` : '0%', width: total > 0 ? `${(1 / total) * 100}%` : '0%', minWidth: 30 }}
-                    title={ev.voice}>{ev.voice}</div>
+                    title={assetName(ev.voice)}>{assetName(ev.voice)}</div>
                 ))}
               </div>
             ))}
