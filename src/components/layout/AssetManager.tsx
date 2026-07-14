@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
+import { hashAssetColor } from '@/utils/charColor'
 import { Tabs, Input, Button, ConfirmDialog } from '@/components/ui'
 import { Image as ImageIcon, User, Music, Plus, Search, Pencil, Trash2 } from 'lucide-react'
 
@@ -245,6 +246,23 @@ export default function AssetManager() {
                     </span>
                   )}
                 </div>
+
+                {/* 素材色块：点开即可取色，控制时间轴/总览 */}
+                <label
+                  title="素材色（时间轴 / 总览通用）"
+                  className="relative flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-surface-hover"
+                >
+                  <span
+                    className="pointer-events-none h-3.5 w-3.5 rounded-full border border-edge/30"
+                    style={{ backgroundColor: asset.color || hashAssetColor(asset.id) }}
+                  />
+                  <input
+                    type="color"
+                    value={asset.color || '#888888'}
+                    onChange={(e) => updateAsset(asset.id, { color: e.target.value })}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  />
+                </label>
 
                 {/* 名称 */}
                 <div className="min-w-0 flex-1">
