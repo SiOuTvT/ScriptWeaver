@@ -73,9 +73,11 @@ export default function ScriptOverview() {
   const [activeScene, setActiveScene] = useState<number | null>(null)
   const [activeLine, setActiveLine] = useState<number | null>(null)
   const [outlineCollapsed, setOutlineCollapsed] = useState(false)
+  const [viewMode, setViewMode] = useState<'cards' | 'tree'>('cards')
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<(HTMLDivElement | null)[]>([])
+  const treeRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const charDisp = useCallback(
     (id: string | null) => {
@@ -145,6 +147,25 @@ export default function ScriptOverview() {
     return out
   }, [cards])
 
+  // 每场景聚合：出现的角色（彩色叶子）+ 素材计数，用于剧情树
+  const sceneDetails = useMemo(() => {
+    return scenes.map((sc) => {
+      const chars = new Map<string, string>() // charId -> color
+      let bgCount = 0
+      let audioCount = 0
+      for (let i = sc.start; i <= sc.end; i++) {
+        const c = cards[i]
+        if (!c) continue
+        c.characters.forEach((ch) => {
+          if (!chars.has(ch.charId)) chars.set(ch.charId, ch.color)
+        })
+        if (c.backgroundName) bgCount++
+        if (c.bgm || c.ambient || c.se.length > 0 || c.voice) audioCount++
+      }
+      return { chars: [...chars.entries()], bgCount, audioCount }
+    })
+  }, [scenes, cards])
+
   // 统计概览
   const stats = useMemo(() => {
     const words = cards.reduce((sum, c) => sum + (c.dialogue?.length ?? 0), 0)
@@ -207,13 +228,17 @@ export default function ScriptOverview() {
   const scrollToLine = useCallback((i: number) => {
     cardRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [])
+  const scrollToScene = useCallback((idx: number) => {
+    treeRefs.current[idx]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [])
 
   const handleSceneClick = useCallback(
     (idx: number) => {
       setActiveScene(idx)
-      scrollToLine(scenes[idx].start)
+      if (viewMode === 'tree') scrollToScene(idx)
+      else scrollToLine(scenes[idx].start)
     },
-    [scenes, scrollToLine],
+    [scenes, scrollToLine, scrollToScene, viewMode],
   )
 
   return (
@@ -238,14 +263,27 @@ export default function ScriptOverview() {
           )}
           <span className="rounded bg-surface-1 px-1.5 py-0.5 text-[10px] text-fg-faint">只读预览</span>
         </div>
-        <div className="relative">
-          <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="搜索角色 / 台词…"
-            className="w-56 rounded-md border border-edge/10 bg-surface-3 py-1 pl-8 pr-3 text-[12px] text-fg placeholder-fg-faint outline-none focus:border-primary/40"
-          />
+        <div className="flex items-center gap-3">
+          {/* 视图切换：卡片流 / 剧情树 */}
+          <div className="flex items-center rounded-md border border-edge/10 bg-surface-3 p-0.5 text-[11px]">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`rounded px-2 py-0.5 transition-colors ${viewMode === 'cards' ? 'bg-surface-2 font-medium text-fg shadow-1' : 'text-fg-subtle hover:text-fg'}`}
+            >卡片</button>
+            <button
+              onClick={() => setViewMode('tree')}
+              className={`rounded px-2 py-0.5 transition-colors ${viewMode === 'tree' ? 'bg-surface-2 font-medium text-fg shadow-1' : 'text-fg-subtle hover:text-fg'}`}
+            >剧情树</button>
+          </div>
+          <div className="relative">
+            <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="搜索角色 / 台词…"
+              className="w-56 rounded-md border border-edge/10 bg-surface-3 py-1 pl-8 pr-3 text-[12px] text-fg placeholder-fg-faint outline-none focus:border-primary/40"
+            />
+          </div>
         </div>
       </div>
 
@@ -319,111 +357,175 @@ export default function ScriptOverview() {
             })}
         </div>
 
-        {/* ---- 卡片流（C） ---- */}
+        {/* ---- 卡片流（C） / 剧情树 ---- */}
         <div ref={scrollRef} className="min-w-0 flex-1 overflow-y-auto px-8 py-5">
-          <div className="flex flex-col gap-3">
-            {filtered.length === 0 && (
-              <div className="py-20 text-center text-[12px] text-fg-faint">没有匹配的行</div>
-            )}
-            {filtered.map((c) => {
-              const isNarration = !c.speakerId
-              const isActiveCard = c.index === activeLine
-              const accent = c.speakerColor ?? 'rgb(var(--c-fg-faint))'
-              return (
-                <div
-                  key={c.lineId}
-                  ref={(el) => {
-                    cardRefs.current[c.index] = el
-                  }}
-                  className={`rounded-lg border border-edge/10 bg-surface-2 p-3 shadow-1 transition-shadow hover:shadow-2 ${
-                    isActiveCard ? 'ring-1 ring-primary/50' : ''
-                  }`}
-                  style={{ borderLeft: `3px solid ${isNarration ? 'transparent' : accent}` }}
-                >
-                  {/* 头部：说话人胶囊 / 旁白 */}
-                  <div className="mb-1.5 flex items-center gap-2">
-                    {isNarration ? (
-                      <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] font-medium text-fg-subtle">
-                        旁白
-                      </span>
-                    ) : (
-                      <span
-                        className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                        style={{ background: rgba(accent, 0.16), color: accent }}
-                      >
-                        <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
-                        {c.speakerName}
-                      </span>
+          {viewMode === 'tree' ? (
+            /* 剧情树：竖向工作流，场景节点 + 角色叶子 */
+            <div className="mx-auto max-w-3xl">
+              {scenes.map((sc, idx) => {
+                const d = sceneDetails[idx]
+                const isActive =
+                  activeScene === idx ||
+                  (activeLine !== null && activeLine >= sc.start && activeLine <= sc.end)
+                const bgColor = sc.bgId ? resolveAssetColor(sc.bgId, assets) : null
+                return (
+                  <div key={idx} className="relative pb-3">
+                    {idx < scenes.length - 1 && (
+                      <div className="absolute left-[15px] top-9 bottom-0 w-px bg-edge/20" />
                     )}
-                    <span className="text-[10px] text-fg-faint">L{c.index + 1}</span>
-                  </div>
-
-                  {/* 台词正文 */}
-                  <p
-                    className={`text-[15px] leading-[1.7] ${
-                      c.dialogue ? 'text-fg' : 'text-fg-faint italic'
-                    }`}
-                  >
-                    {c.dialogue || '(空行)'}
-                  </p>
-
-                  {/* 素材 chip 行 */}
-                  {(c.characters.length > 0 ||
-                    c.backgroundName ||
-                    c.bgm ||
-                    c.ambient ||
-                    c.se.length > 0 ||
-                    c.voice) && (
-                    <div className="mt-2 flex flex-wrap gap-1.5 border-t border-edge/10 pt-2">
-                      {c.characters.map((ch) => (
+                    <div
+                      ref={(el) => {
+                        treeRefs.current[idx] = el
+                      }}
+                      onClick={() => handleSceneClick(idx)}
+                      className={`relative flex cursor-pointer gap-3 rounded-lg border bg-surface-2 p-3 transition-all hover:shadow-1 ${
+                        isActive ? 'border-primary/40 ring-1 ring-primary/30' : 'border-edge/10'
+                      }`}
+                    >
+                      {/* 节点圆点（场景背景色） */}
+                      <div className="relative z-10 mt-0.5 shrink-0">
                         <span
-                          key={ch.charId}
-                          className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted"
+                          className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-edge/20"
+                          style={{ background: bgColor ? bgColor + '22' : 'rgb(var(--c-surface-3))' }}
                         >
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: ch.color }} />
-                          {ICON.char} {ch.name}
-                          {ch.expr && <span className="text-fg-faint">· {ch.expr}</span>}
+                          <span className="h-3 w-3 rounded-full" style={{ background: bgColor ?? 'rgb(var(--c-fg-faint))' }} />
                         </span>
-                      ))}
-                      {c.backgroundName && (
-                        <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.backgroundId, assets) }} />
-                          {ICON.bg} {c.backgroundName}
-                        </span>
-                      )}
-                      {c.bgm && (
-                        <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.bgmId, assets) }} />
-                          {ICON.bgm} {c.bgm}
-                        </span>
-                      )}
-                      {c.ambient && (
-                        <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.ambientId, assets) }} />
-                          {ICON.ambient} {c.ambient}
-                        </span>
-                      )}
-                      {c.se.map((s, k) => (
-                        <span
-                          key={k}
-                          className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted"
-                        >
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.seIds[k], assets) }} />
-                          {ICON.se} {s}
-                        </span>
-                      ))}
-                      {c.voice && (
-                        <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.voiceId, assets) }} />
-                          {ICON.voice} {c.voice}
-                        </span>
-                      )}
+                      </div>
+                      {/* 节点内容 */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate text-[13px] font-medium text-fg">{sc.label}</span>
+                          <span className="rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-faint">L{sc.start + 1}–L{sc.end + 1}</span>
+                          <span className="rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-faint">{sc.lineCount} 行</span>
+                          {d.audioCount > 0 && (
+                            <span className="rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-faint">🎵 {d.audioCount}</span>
+                          )}
+                        </div>
+                        {/* 角色叶子 */}
+                        {d.chars.length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {d.chars.map(([cid, color]) => (
+                              <span
+                                key={cid}
+                                className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted"
+                              >
+                                <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+                                {charDisp(cid) ?? cid}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filtered.length === 0 && (
+                <div className="py-20 text-center text-[12px] text-fg-faint">没有匹配的行</div>
+              )}
+              {filtered.map((c) => {
+                const isNarration = !c.speakerId
+                const isActiveCard = c.index === activeLine
+                const accent = c.speakerColor ?? 'rgb(var(--c-fg-faint))'
+                return (
+                  <div
+                    key={c.lineId}
+                    ref={(el) => {
+                      cardRefs.current[c.index] = el
+                    }}
+                    className={`rounded-lg border border-edge/10 bg-surface-2 p-2.5 shadow-1 transition-shadow hover:shadow-2 ${
+                      isActiveCard ? 'ring-1 ring-primary/50' : ''
+                    }`}
+                    style={{ borderLeft: `3px solid ${isNarration ? 'transparent' : accent}` }}
+                  >
+                    {/* 头部：说话人胶囊 / 旁白 */}
+                    <div className="mb-1 flex items-center gap-2">
+                      {isNarration ? (
+                        <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] font-medium text-fg-subtle">
+                          旁白
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                          style={{ background: rgba(accent, 0.16), color: accent }}
+                        >
+                          <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
+                          {c.speakerName}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-fg-faint">L{c.index + 1}</span>
+                    </div>
+
+                    {/* 台词正文 */}
+                    <p
+                      className={`text-[14px] leading-[1.55] ${
+                        c.dialogue ? 'text-fg' : 'text-fg-faint italic'
+                      }`}
+                    >
+                      {c.dialogue || '(空行)'}
+                    </p>
+
+                    {/* 素材 chip 行 */}
+                    {(c.characters.length > 0 ||
+                      c.backgroundName ||
+                      c.bgm ||
+                      c.ambient ||
+                      c.se.length > 0 ||
+                      c.voice) && (
+                      <div className="mt-1.5 flex flex-wrap gap-1 border-t border-edge/10 pt-1.5">
+                        {c.characters.map((ch) => (
+                          <span
+                            key={ch.charId}
+                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: ch.color }} />
+                            {ICON.char} {ch.name}
+                            {ch.expr && <span className="text-fg-faint">· {ch.expr}</span>}
+                          </span>
+                        ))}
+                        {c.backgroundName && (
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.backgroundId, assets) }} />
+                            {ICON.bg} {c.backgroundName}
+                          </span>
+                        )}
+                        {c.bgm && (
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.bgmId, assets) }} />
+                            {ICON.bgm} {c.bgm}
+                          </span>
+                        )}
+                        {c.ambient && (
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.ambientId, assets) }} />
+                            {ICON.ambient} {c.ambient}
+                          </span>
+                        )}
+                        {c.se.map((s, k) => (
+                          <span
+                            key={k}
+                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.seIds[k], assets) }} />
+                            {ICON.se} {s}
+                          </span>
+                        ))}
+                        {c.voice && (
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.voiceId, assets) }} />
+                            {ICON.voice} {c.voice}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
