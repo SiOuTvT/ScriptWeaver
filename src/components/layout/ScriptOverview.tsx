@@ -165,7 +165,7 @@ export default function ScriptOverview() {
   )
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-canvas">
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-canvas">
       {/* ============ 头部 ============ */}
       <div className="flex items-center justify-between gap-3 border-b border-edge/10 px-4 py-2.5">
         <div className="flex items-center gap-3">
