@@ -38,5 +38,18 @@ with sync_playwright() as p:
     page.wait_for_timeout(500)
     page.screenshot(path='shots/04_light_characters.png')
 
+    # 5 剧本总览（按文本点击，绕过索引漂移）
+    page.evaluate("""() => {
+        const btn = [...document.querySelectorAll('aside button')].find(b=>b.textContent.includes('总览'));
+        if(btn) btn.click();
+    }""")
+    page.wait_for_timeout(600)
+    page.screenshot(path='shots/05_light_overview.png')
+
+    # 6 总览 深色
+    page.evaluate("document.documentElement.setAttribute('data-theme','dark')")
+    page.wait_for_timeout(500)
+    page.screenshot(path='shots/06_dark_overview.png')
+
     browser.close()
     print('DONE')
