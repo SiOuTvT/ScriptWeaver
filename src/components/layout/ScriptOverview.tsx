@@ -1,6 +1,6 @@
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import { Search } from 'lucide-react'
+import { Search, ChevronRight } from 'lucide-react'
 
 // ===================== 颜色辅助 =====================
 const KNOWN_CHAR_COLORS: Record<string, string> = {
@@ -63,6 +63,16 @@ const ICON = {
   char: '👤',
 }
 
+// 顶部统计小胶囊
+function StatChip({ label, value }: { label: string; value: number }) {
+  return (
+    <span className="inline-flex items-baseline gap-0.5 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-faint">
+      <span className="font-semibold text-fg-muted">{value}</span>
+      {label}
+    </span>
+  )
+}
+
 export default function ScriptOverview() {
   const resolvedStates = useAppStore((s) => s.resolvedStates)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
@@ -70,6 +80,8 @@ export default function ScriptOverview() {
 
   const [search, setSearch] = useState('')
   const [activeScene, setActiveScene] = useState<number | null>(null)
+  const [activeLine, setActiveLine] = useState<number | null>(null)
+  const [outlineCollapsed, setOutlineCollapsed] = useState(false)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -138,6 +150,17 @@ export default function ScriptOverview() {
     return out
   }, [cards])
 
+  // 统计概览
+  const stats = useMemo(() => {
+    const words = cards.reduce((sum, c) => sum + (c.dialogue?.length ?? 0), 0)
+    return {
+      lines: cards.length,
+      scenes: scenes.length,
+      characters: characterConfigs.length,
+      words,
+    }
+  }, [cards, scenes, characterConfigs])
+
   // 过滤
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -151,6 +174,40 @@ export default function ScriptOverview() {
       return hay.includes(q)
     })
   }, [cards, search, activeScene, scenes])
+
+  // 滚动联动：标记离视口中心最近的卡片为当前行
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+    let raf = 0
+    const compute = () => {
+      raf = 0
+      const cRect = container.getBoundingClientRect()
+      const center = cRect.top + container.clientHeight / 2
+      let best: number | null = null
+      let bestDist = Infinity
+      cardRefs.current.forEach((el, i) => {
+        if (!el) return
+        const r = el.getBoundingClientRect()
+        const c = r.top + r.height / 2
+        const d = Math.abs(c - center)
+        if (d < bestDist) {
+          bestDist = d
+          best = i
+        }
+      })
+      if (best !== null) setActiveLine(best)
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(compute)
+    }
+    compute()
+    container.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      container.removeEventListener('scroll', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [filtered])
 
   const scrollToLine = useCallback((i: number) => {
     cardRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -170,7 +227,12 @@ export default function ScriptOverview() {
       <div className="flex items-center justify-between gap-3 border-b border-edge/10 px-4 py-2.5">
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">剧本总览</span>
-          <span className="text-[10px] text-fg-subtle">{cards.length} 行</span>
+          <div className="flex items-center gap-1">
+            <StatChip label="行" value={stats.lines} />
+            <StatChip label="场景" value={stats.scenes} />
+            <StatChip label="角色" value={stats.characters} />
+            <StatChip label="字" value={stats.words} />
+          </div>
           {activeScene !== null && (
             <button
               onClick={() => setActiveScene(null)}
@@ -198,14 +260,22 @@ export default function ScriptOverview() {
         <div className="flex w-3 shrink-0 flex-col border-r border-edge/10 bg-surface-1/40">
           {cards.map((c) => {
             const inFilter = filtered.includes(c)
-            const bg = c.speakerColor ?? 'rgb(var(--c-fg-faint))'
+            const isActive = c.index === activeLine
             return (
               <button
                 key={c.index}
                 onClick={() => scrollToLine(c.index)}
                 title={`L${c.index + 1}${c.speakerName ? ' · ' + c.speakerName : ' · 旁白'}`}
-                className="group relative flex-1 border-b border-edge/5 transition-opacity"
-                style={{ opacity: inFilter ? 1 : 0.18, background: c.speakerColor ? rgba(c.speakerColor, 0.85) : 'transparent' }}
+                className="group relative flex-1 border-b border-edge/5 transition-all"
+                style={{
+                  opacity: inFilter ? 1 : 0.18,
+                  background: c.speakerColor
+                    ? rgba(c.speakerColor, isActive ? 1 : 0.85)
+                    : isActive
+                      ? 'rgba(255,255,255,0.14)'
+                      : 'transparent',
+                  boxShadow: isActive ? 'inset 0 0 0 2px rgba(255,255,255,0.9)' : undefined,
+                }}
               >
                 {!c.speakerColor && <span className="absolute inset-x-0 bottom-0 h-px bg-fg-faint/30" />}
               </button>
@@ -213,29 +283,45 @@ export default function ScriptOverview() {
           })}
         </div>
 
-        {/* ---- 大纲树（B）：按场景分组 ---- */}
+        {/* ---- 大纲树（B）：可折叠根节点 + 按场景分组 ---- */}
         <div className="w-72 shrink-0 overflow-y-auto border-r border-edge/10 bg-surface-1/30 py-2">
-          <div className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">大纲 · 场景</div>
-          {scenes.map((sc, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleSceneClick(idx)}
-              className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-surface-hover ${
-                activeScene === idx ? 'bg-surface-active' : ''
-              }`}
-            >
-              <span
-                className="h-3 w-3 shrink-0 rounded-sm border border-edge/20"
-                style={{ background: sc.bgId ? 'rgb(var(--c-accent) / 0.5)' : 'transparent' }}
-              />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] text-fg">{sc.label}</span>
-                <span className="block text-[11px] text-fg-faint">
-                  L{sc.start + 1}–L{sc.end + 1} · {sc.lineCount} 行
-                </span>
-              </span>
-            </button>
-          ))}
+          <button
+            onClick={() => setOutlineCollapsed((v) => !v)}
+            className="flex w-full items-center gap-1.5 px-3 pb-1.5 text-left"
+          >
+            <ChevronRight
+              size={12}
+              className={`text-fg-subtle transition-transform ${outlineCollapsed ? '' : 'rotate-90'}`}
+            />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">大纲 · 场景</span>
+            <span className="ml-auto text-[10px] text-fg-faint">{scenes.length}</span>
+          </button>
+          {!outlineCollapsed &&
+            scenes.map((sc, idx) => {
+              const isActiveScene =
+                activeScene === idx ||
+                (activeLine !== null && activeLine >= sc.start && activeLine <= sc.end)
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleSceneClick(idx)}
+                  className={`flex w-full items-center gap-2 px-3 py-2 pl-7 text-left transition-colors hover:bg-surface-hover ${
+                    isActiveScene ? 'bg-surface-active' : ''
+                  }`}
+                >
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-sm border border-edge/20"
+                    style={{ background: sc.bgId ? 'rgb(var(--c-accent) / 0.5)' : 'transparent' }}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] text-fg">{sc.label}</span>
+                    <span className="block text-[11px] text-fg-faint">
+                      L{sc.start + 1}–L{sc.end + 1} · {sc.lineCount} 行
+                    </span>
+                  </span>
+                </button>
+              )
+            })}
         </div>
 
         {/* ---- 卡片流（C） ---- */}
@@ -246,6 +332,7 @@ export default function ScriptOverview() {
             )}
             {filtered.map((c) => {
               const isNarration = !c.speakerId
+              const isActiveCard = c.index === activeLine
               const accent = c.speakerColor ?? 'rgb(var(--c-fg-faint))'
               return (
                 <div
@@ -253,7 +340,9 @@ export default function ScriptOverview() {
                   ref={(el) => {
                     cardRefs.current[c.index] = el
                   }}
-                  className="rounded-lg border border-edge/10 bg-surface-2 p-3 shadow-1 transition-shadow hover:shadow-2"
+                  className={`rounded-lg border border-edge/10 bg-surface-2 p-3 shadow-1 transition-shadow hover:shadow-2 ${
+                    isActiveCard ? 'ring-1 ring-primary/50' : ''
+                  }`}
                   style={{ borderLeft: `3px solid ${isNarration ? 'transparent' : accent}` }}
                 >
                   {/* 头部：说话人胶囊 / 旁白 */}
