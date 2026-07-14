@@ -3,6 +3,7 @@ import { useAppStore } from '@/stores/appStore'
 import { Button, Input, ConfirmDialog } from '@/components/ui'
 import { Image as ImageIcon, X, ChevronDown, ChevronRight } from 'lucide-react'
 import type { CharacterConfig, ExpressionRef, AssetItem } from '@/core/types'
+import { hashCharColor } from '@/utils/charColor'
 
 const CHAR_ID_REGEX = /^[a-z][a-z0-9_]*$/
 
@@ -170,38 +171,45 @@ export default function CharacterManager() {
 
               // 角色列表项
               return (
-                <div key={char.charId} className="mx-2 my-1 rounded-lg border border-edge/12 bg-surface-2/60 shadow-[0_1px_2px_rgba(28,24,18,0.05)] transition-all hover:border-edge/20">
+                <div key={char.charId} className="mx-2 my-1 flex items-stretch overflow-hidden rounded-lg border border-edge/12 bg-surface-2/60 shadow-[0_1px_2px_rgba(28,24,18,0.05)] transition-all hover:border-edge/20">
+                  {/* 角色色块：点开即可取色，控制时间轴/总览/对话框 */}
+                  <label
+                    title="角色色（时间轴 / 总览 / 对话框通用）"
+                    className="relative flex w-8 shrink-0 cursor-pointer items-center justify-center border-r border-edge/10 hover:bg-surface-hover"
+                  >
+                    <span
+                      className="pointer-events-none h-3.5 w-3.5 rounded-full border border-edge/30"
+                      style={{ backgroundColor: char.dialogueColor || hashCharColor(char.charId) }}
+                    />
+                    <input
+                      type="color"
+                      value={char.dialogueColor || '#888888'}
+                      onChange={(e) => updateCharacter(char.charId, { dialogueColor: e.target.value })}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    />
+                  </label>
                   <button
                     onClick={() => {
                       setSelectedCharId(isSelected ? null : char.charId)
                       setShowNewForm(false)
                     }}
-                    className={`w-full rounded-t-lg border-l-2 px-3 py-2.5 text-left transition-colors ${
+                    className={`flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 text-left transition-colors ${
                       isSelected
-                        ? 'border-l-primary bg-primary/8'
-                        : 'border-l-transparent hover:bg-surface-hover'
+                        ? 'bg-primary/8'
+                        : 'hover:bg-surface-hover'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      {/* 颜色指示器 */}
-                      {char.dialogueColor && (
-                        <div
-                          className="h-2.5 w-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: char.dialogueColor }}
-                        />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <span className="block truncate text-[11px] font-medium text-fg-muted">
-                          {char.displayName}
-                        </span>
-                        <span className="block text-[10px] text-fg-faint">
-                          {char.charId} · {exprCount} 表情
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-fg-faint">
-                        {isSelected ? <ChevronDown size={14} strokeWidth={1.75} /> : <ChevronRight size={14} strokeWidth={1.75} />}
+                    <div className="min-w-0 flex-1">
+                      <span className="block truncate text-[11px] font-medium text-fg-muted">
+                        {char.displayName}
+                      </span>
+                      <span className="block text-[10px] text-fg-faint">
+                        {char.charId} · {exprCount} 表情
                       </span>
                     </div>
+                    <span className="text-[10px] text-fg-faint">
+                      {isSelected ? <ChevronDown size={14} strokeWidth={1.75} /> : <ChevronRight size={14} strokeWidth={1.75} />}
+                    </span>
                   </button>
 
                   {/* 角色详情 */}
@@ -217,10 +225,10 @@ export default function CharacterManager() {
                         onChange={(v) => handleUpdateField('displayName', v)}
                       />
 
-                      {/* 对话框颜色 */}
+                      {/* 角色色（时间轴 / 总览 / 对话框通用） */}
                       <div>
                         <label className="mb-0.5 block text-[10px] text-fg-subtle">
-                          对话框颜色
+                          角色色（时间轴 / 总览 / 对话框通用）
                         </label>
                         <div className="flex items-center gap-1">
                           <input

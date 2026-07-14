@@ -3,21 +3,7 @@ import { useAppStore } from '@/stores/appStore'
 import { Search, ChevronRight } from 'lucide-react'
 
 // ===================== 颜色辅助 =====================
-const KNOWN_CHAR_COLORS: Record<string, string> = {
-  alice: '#f472b6',
-  bob: '#38bdf8',
-  charlie: '#a78bfa',
-}
-const CHAR_PALETTE = [
-  '#f472b6', '#38bdf8', '#a78bfa', '#34d399',
-  '#fbbf24', '#fb7185', '#22d3ee', '#c084fc',
-]
-function charColor(id: string): string {
-  if (KNOWN_CHAR_COLORS[id]) return KNOWN_CHAR_COLORS[id]
-  let h = 0
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0
-  return CHAR_PALETTE[h % CHAR_PALETTE.length]
-}
+import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '')
   const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h
@@ -39,6 +25,10 @@ interface CardData {
   dialogue: string
   backgroundId: string | null
   backgroundName: string | null
+  bgmId: string | null
+  ambientId: string | null
+  seIds: string[]
+  voiceId: string | null
   characters: { charId: string; name: string; color: string; expr: string }[]
   bgm: string | null
   ambient: string | null
@@ -76,6 +66,7 @@ function StatChip({ label, value }: { label: string; value: number }) {
 export default function ScriptOverview() {
   const resolvedStates = useAppStore((s) => s.resolvedStates)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
+  const assets = useAppStore((s) => s.assets)
   const getAsset = useAppStore((s) => s.getAsset)
 
   const [search, setSearch] = useState('')
@@ -108,11 +99,11 @@ export default function ScriptOverview() {
   // 解析所有卡片数据
   const cards = useMemo<CardData[]>(() => {
     return resolvedStates.map((st, i) => {
-      const speakerColor = st.speaker ? charColor(st.speaker) : null
+      const speakerColor = st.speaker ? resolveCharColor(st.speaker, characterConfigs) : null
       const characters = Object.entries(st.characters).map(([charId, cs]) => ({
         charId,
         name: charDisp(charId) ?? charId,
-        color: charColor(charId),
+        color: resolveCharColor(charId, characterConfigs),
         expr: resolveExpr(charId, cs.sprite_id),
       }))
       const bgmId = typeof st.audio.bgm === 'object' && st.audio.bgm ? st.audio.bgm.asset_id : null
@@ -125,6 +116,10 @@ export default function ScriptOverview() {
         dialogue: st.dialogue,
         backgroundId: st.background?.asset_id ?? null,
         backgroundName: st.background ? getAsset(st.background.asset_id)?.name ?? st.background.asset_id : null,
+        bgmId: bgmId ?? null,
+        ambientId: st.audio.ambient ? st.audio.ambient.asset_id : null,
+        seIds: st.audio.se,
+        voiceId: st.voice ?? null,
         characters,
         bgm: bgmId ? getAsset(bgmId)?.name ?? bgmId : null,
         ambient: st.audio.ambient ? getAsset(st.audio.ambient.asset_id)?.name ?? st.audio.ambient.asset_id : null,
@@ -311,7 +306,7 @@ export default function ScriptOverview() {
                 >
                   <span
                     className="h-3 w-3 shrink-0 rounded-sm border border-edge/20"
-                    style={{ background: sc.bgId ? 'rgb(var(--c-accent) / 0.5)' : 'transparent' }}
+                    style={{ background: sc.bgId ? resolveAssetColor(sc.bgId, assets) + '80' : 'transparent' }}
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] text-fg">{sc.label}</span>
@@ -392,16 +387,19 @@ export default function ScriptOverview() {
                       ))}
                       {c.backgroundName && (
                         <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.backgroundId, assets) }} />
                           {ICON.bg} {c.backgroundName}
                         </span>
                       )}
                       {c.bgm && (
                         <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.bgmId, assets) }} />
                           {ICON.bgm} {c.bgm}
                         </span>
                       )}
                       {c.ambient && (
                         <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.ambientId, assets) }} />
                           {ICON.ambient} {c.ambient}
                         </span>
                       )}
@@ -410,11 +408,13 @@ export default function ScriptOverview() {
                           key={k}
                           className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted"
                         >
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.seIds[k], assets) }} />
                           {ICON.se} {s}
                         </span>
                       ))}
                       {c.voice && (
                         <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.voiceId, assets) }} />
                           {ICON.voice} {c.voice}
                         </span>
                       )}

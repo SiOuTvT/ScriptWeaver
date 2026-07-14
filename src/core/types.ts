@@ -39,6 +39,8 @@ export interface AssetItem {
   duration?: number
   /** 图片/音频的 base64 data URL，用于渲染时直接显示，避免 file:// 安全限制 */
   dataUrl?: string
+  /** 素材专属显示色（hex），可选，用于时间轴/总览着色 */
+  color?: string
   importedAt: string
 }
 

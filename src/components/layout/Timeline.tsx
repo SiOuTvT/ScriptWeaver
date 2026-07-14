@@ -1,7 +1,8 @@
 import { useMemo, useCallback, useRef, memo, useState, useEffect } from 'react'
 import { ChevronUp, ChevronDown, X, Plus } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
-import type { ResolvedLineState, LineDelta } from '@/core/types'
+import type { ResolvedLineState, LineDelta, CharacterConfig } from '@/core/types'
+import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
 import {
   DRAG_MIME,
   getDragCache,
@@ -43,14 +44,6 @@ const TRACKS: TrackDef[] = [
   },
 ]
 
-// 角色专属颜色（立绘轨道与语音轨道共用，保证同一角色颜色一致）
-const CHAR_COLORS: Record<string, string> = {
-  alice: '#f472b6', bob: '#38bdf8', charlie: '#a78bfa',
-}
-function getCharColor(charId: string): string {
-  return CHAR_COLORS[charId] ?? '#9ca3af'
-}
-
 // ===================== 角色辅助 =====================
 
 interface CharacterTracksResult {
@@ -58,12 +51,15 @@ interface CharacterTracksResult {
   spans: { charId: string; label: string; start: number; end: number; color: string; sprite_id: string; position_slot: string }[]
 }
 
-function computeCharacterTracks(states: ResolvedLineState[]): CharacterTracksResult {
+function computeCharacterTracks(
+  states: ResolvedLineState[],
+  characterConfigs: CharacterConfig[],
+): CharacterTracksResult {
   const allChars = new Set<string>()
   for (const s of states) Object.keys(s.characters).forEach((c) => allChars.add(c))
 
   const tracks = Array.from(allChars).map((id) => ({
-    id, label: id, color: getCharColor(id),
+    id, label: id, color: resolveCharColor(id, characterConfigs),
   }))
 
   const spans: CharacterTracksResult['spans'] = []
@@ -79,12 +75,12 @@ function computeCharacterTracks(states: ResolvedLineState[]): CharacterTracksRes
           spanSlot = states[i].characters[cid].position_slot
         }
       } else if (spanStart !== -1) {
-        spans.push({ charId: cid, label: cid, start: spanStart, end: i - 1, color: getCharColor(cid), sprite_id: spanSprite, position_slot: spanSlot })
+        spans.push({ charId: cid, label: cid, start: spanStart, end: i - 1, color: resolveCharColor(cid, characterConfigs), sprite_id: spanSprite, position_slot: spanSlot })
         spanStart = -1
       }
     }
     if (spanStart !== -1)
-      spans.push({ charId: cid, label: cid, start: spanStart, end: states.length - 1, color: getCharColor(cid), sprite_id: spanSprite, position_slot: spanSlot })
+      spans.push({ charId: cid, label: cid, start: spanStart, end: states.length - 1, color: resolveCharColor(cid, characterConfigs), sprite_id: spanSprite, position_slot: spanSlot })
   }
   return { tracks, spans }
 }
@@ -225,6 +221,10 @@ interface SpanData {
   start: number
   end: number
   label: string
+  /** 素材 ID（用于解析素材专属色） */
+  assetId?: string
+  /** 片段颜色（素材色或轨道色） */
+  color?: string
 }
 
 function spanPct(val: number, total: number): string {
@@ -356,6 +356,7 @@ export default function Timeline() {
   const deleteDeltaAt = useAppStore((s) => s.deleteDeltaAt)
   const moveDelta = useAppStore((s) => s.moveDelta)
   const getAsset = useAppStore((s) => s.getAsset)
+  const assets = useAppStore((s) => s.assets)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
 
   const assetName = useCallback(
@@ -367,7 +368,10 @@ export default function Timeline() {
     [characterConfigs],
   )
 
-  const charData = useMemo(() => computeCharacterTracks(resolvedStates), [resolvedStates])
+  const charData = useMemo(
+    () => computeCharacterTracks(resolvedStates, characterConfigs),
+    [resolvedStates, characterConfigs],
+  )
 
   // speaker 显示名 → charId（用于语音轨道按说话角色着色 / 标注）
   const speakerMap = useMemo(() => {
@@ -401,7 +405,9 @@ export default function Timeline() {
       acceptAssetType: t.acceptAssetType,
       spans: computeSpans(resolvedStates, t.getValue).map((sp) => ({
         ...sp,
+        assetId: sp.label,
         label: assetName(sp.label),
+        color: resolveAssetColor(sp.label, assets),
       })),
       trackType: 'static' as const,
       trackDef: t,
@@ -758,19 +764,27 @@ export default function Timeline() {
                   />
                 ))}
 
-                {/* SE 点事件 */}
-                {track.id === 'se' && seEvents.map((ev) => (
+                {/* SE 点事件：按素材专属色着色 */}
+                {track.id === 'se' && seEvents.map((ev) => {
+                  const seColor = resolveAssetColor(ev.items[0], assets)
+                  return (
                   <div key={`se-${ev.index}`}
-                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 border-warning bg-warning/15 px-1 text-[9px] text-fg-muted"
-                    style={{ left: total > 0 ? `${(ev.index / total) * 100}%` : '0%', width: total > 0 ? `${(1 / total) * 100}%` : '0%', minWidth: 30 }}
+                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[9px] text-fg"
+                    style={{ left: total > 0 ? `${(ev.index / total) * 100}%` : '0%', width: total > 0 ? `${(1 / total) * 100}%` : '0%', minWidth: 30, backgroundColor: seColor + '22', borderLeftColor: seColor }}
                     title={ev.items.map(assetName).join(', ')}>{assetName(ev.items[0])}</div>
-                ))}
+                  )
+                })}
 
-                {/* Voice 点事件：按说话角色着色 + 标注角色名 */}
+                {/* Voice 点事件：优先用语音素材色，否则按说话角色着色 + 标注角色名 */}
                 {track.id === 'voice' && voiceEvents.map((ev) => {
                   const sp = resolvedStates[ev.index]?.speaker
                   const charId = sp ? speakerMap.get(sp.toLowerCase()) : undefined
-                  const vColor = charId ? getCharColor(charId) : '#a855f7'
+                  const voiceAsset = ev.voice ? assets.find((a) => a.id === ev.voice) : null
+                  const vColor = voiceAsset?.color
+                    ? voiceAsset.color
+                    : charId
+                      ? resolveCharColor(charId, characterConfigs)
+                      : '#a855f7'
                   const who = charId ? charDisplayName(charId) : (sp ?? '')
                   return (
                     <div key={`voice-${ev.index}`}
