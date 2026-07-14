@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import { Search, ChevronRight } from 'lucide-react'
+import { Search, ChevronRight, Music, Image as ImageIcon, Workflow, List } from 'lucide-react'
 
 // ===================== 颜色辅助 =====================
 import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
@@ -265,15 +265,15 @@ export default function ScriptOverview() {
         </div>
         <div className="flex items-center gap-3">
           {/* 视图切换：卡片流 / 剧情树 */}
-          <div className="flex items-center rounded-md border border-edge/10 bg-surface-3 p-0.5 text-[11px]">
+          <div className="flex items-center rounded-lg border border-edge/10 bg-surface-3 p-0.5 text-[11px] shadow-inset-top">
             <button
               onClick={() => setViewMode('cards')}
-              className={`rounded px-2 py-0.5 transition-colors ${viewMode === 'cards' ? 'bg-surface-2 font-medium text-fg shadow-1' : 'text-fg-subtle hover:text-fg'}`}
-            >卡片</button>
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition-all ${viewMode === 'cards' ? 'bg-surface-2 font-medium text-fg shadow-1' : 'text-fg-subtle hover:text-fg'}`}
+            ><List size={13} strokeWidth={2} />卡片</button>
             <button
               onClick={() => setViewMode('tree')}
-              className={`rounded px-2 py-0.5 transition-colors ${viewMode === 'tree' ? 'bg-surface-2 font-medium text-fg shadow-1' : 'text-fg-subtle hover:text-fg'}`}
-            >剧情树</button>
+              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition-all ${viewMode === 'tree' ? 'bg-surface-2 font-medium text-fg shadow-1' : 'text-fg-subtle hover:text-fg'}`}
+            ><Workflow size={13} strokeWidth={2} />剧情树</button>
           </div>
           <div className="relative">
             <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-subtle" />
@@ -360,63 +360,110 @@ export default function ScriptOverview() {
         {/* ---- 卡片流（C） / 剧情树 ---- */}
         <div ref={scrollRef} className="min-w-0 flex-1 overflow-y-auto px-8 py-5">
           {viewMode === 'tree' ? (
-            /* 剧情树：竖向工作流，场景节点 + 角色叶子 */
-            <div className="mx-auto max-w-3xl">
+            /* 剧情树：竖向时间轴工作流 */
+            <div className="mx-auto max-w-3xl pb-12">
               {scenes.map((sc, idx) => {
                 const d = sceneDetails[idx]
                 const isActive =
                   activeScene === idx ||
                   (activeLine !== null && activeLine >= sc.start && activeLine <= sc.end)
                 const bgColor = sc.bgId ? resolveAssetColor(sc.bgId, assets) : null
+                const railColor = bgColor ?? 'rgb(var(--c-edge-strong) / 0.35)'
                 return (
-                  <div key={idx} className="relative pb-3">
-                    {idx < scenes.length - 1 && (
-                      <div className="absolute left-[15px] top-9 bottom-0 w-px bg-edge/20" />
-                    )}
-                    <div
-                      ref={(el) => {
-                        treeRefs.current[idx] = el
-                      }}
+                  <div
+                    key={idx}
+                    className="relative flex animate-fade-in gap-4 pb-4"
+                    style={{ animationDelay: `${idx * 45}ms` }}
+                  >
+                    {/* 时间轴轨道 + 编号节点 */}
+                    <div className="relative flex w-9 shrink-0 flex-col items-center">
+                      {idx < scenes.length - 1 && (
+                        <div className="absolute top-9 bottom-[-16px] w-px bg-gradient-to-b from-edge/25 to-edge/5" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleSceneClick(idx)}
+                        title={`跳到场景 ${idx + 1}`}
+                        className="z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-[12px] font-semibold tabular-nums transition-transform hover:scale-110"
+                        style={{
+                          borderColor: railColor,
+                          background: bgColor ? bgColor + '1f' : 'rgb(var(--c-surface-3))',
+                          color: bgColor ?? 'rgb(var(--c-fg-muted))',
+                          boxShadow: isActive ? `0 0 0 4px ${bgColor ?? 'rgb(var(--c-primary) / 0.25)'}` : undefined,
+                        }}
+                      >
+                        {idx + 1}
+                      </button>
+                    </div>
+
+                    {/* 场景卡 */}
+                    <button
+                      type="button"
                       onClick={() => handleSceneClick(idx)}
-                      className={`relative flex cursor-pointer gap-3 rounded-lg border bg-surface-2 p-3 transition-all hover:shadow-1 ${
-                        isActive ? 'border-primary/40 ring-1 ring-primary/30' : 'border-edge/10'
+                      className={`group relative flex-1 overflow-hidden rounded-xl border bg-surface-2 p-3.5 text-left shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 ${
+                        isActive ? 'border-primary/30 ring-2 ring-primary/30' : 'border-edge/10'
                       }`}
                     >
-                      {/* 节点圆点（场景背景色） */}
-                      <div className="relative z-10 mt-0.5 shrink-0">
+                      {/* 顶部色条 */}
+                      {bgColor && (
                         <span
-                          className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-edge/20"
-                          style={{ background: bgColor ? bgColor + '22' : 'rgb(var(--c-surface-3))' }}
-                        >
-                          <span className="h-3 w-3 rounded-full" style={{ background: bgColor ?? 'rgb(var(--c-fg-faint))' }} />
-                        </span>
-                      </div>
-                      {/* 节点内容 */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="truncate text-[13px] font-medium text-fg">{sc.label}</span>
-                          <span className="rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-faint">L{sc.start + 1}–L{sc.end + 1}</span>
-                          <span className="rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-faint">{sc.lineCount} 行</span>
-                          {d.audioCount > 0 && (
-                            <span className="rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-faint">🎵 {d.audioCount}</span>
-                          )}
-                        </div>
-                        {/* 角色叶子 */}
-                        {d.chars.length > 0 && (
-                          <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {d.chars.map(([cid, color]) => (
-                              <span
-                                key={cid}
-                                className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted"
-                              >
-                                <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
-                                {charDisp(cid) ?? cid}
+                          className="absolute inset-x-0 top-0 h-0.5"
+                          style={{ background: `linear-gradient(90deg, ${bgColor}, ${bgColor}00)` }}
+                        />
+                      )}
+
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="truncate text-[15px] font-semibold tracking-tight text-fg">
+                            {sc.label}
+                          </h3>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-fg-faint">
+                            <span className="font-mono tabular-nums">L{sc.start + 1}–L{sc.end + 1}</span>
+                            <span className="h-1 w-1 rounded-full bg-fg-faint/40" />
+                            <span>{sc.lineCount} 行</span>
+                            {d.audioCount > 0 && (
+                              <span className="inline-flex items-center gap-1 text-accent">
+                                <Music size={12} strokeWidth={2} />{d.audioCount}
                               </span>
-                            ))}
+                            )}
+                            {d.bgCount > 0 && (
+                              <span className="inline-flex items-center gap-1 text-fg-subtle">
+                                <ImageIcon size={12} strokeWidth={2} />{d.bgCount}
+                              </span>
+                            )}
                           </div>
-                        )}
+                        </div>
+
+                        {/* 背景色预览 */}
+                        <div
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-edge/10"
+                          style={{ background: bgColor ? bgColor + '14' : 'rgb(var(--c-surface-3))' }}
+                        >
+                          <span
+                            className="h-4 w-4 rounded-full"
+                            style={{ background: bgColor ?? 'rgb(var(--c-fg-faint))' }}
+                          />
+                        </div>
                       </div>
-                    </div>
+
+                      {/* 角色叶子 */}
+                      {d.chars.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-edge/10 pt-3">
+                          {d.chars.map(([cid, color]) => (
+                            <span
+                              key={cid}
+                              className="inline-flex items-center gap-1.5 rounded-full bg-surface-3/60 px-2 py-0.5 text-[11px] text-fg-muted ring-1 ring-edge/5"
+                            >
+                              <span
+                                className="h-2 w-2 rounded-full"
+                                style={{ background: color, boxShadow: `0 0 0 2px ${color}22` }}
+                              />
+                              {charDisp(cid) ?? cid}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </button>
                   </div>
                 )
               })}
