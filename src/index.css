@@ -30,6 +30,10 @@
   --c-primary-soft: 84 70 220;
   --c-on-primary: 255 255 255;
 
+  /* 签名信号色「琥珀 Signal」—— 浅底沉为烧橙，仅作指示/描边，不做大块填充 */
+  --c-signal: 199 124 8;
+  --c-signal-soft: 199 124 8;
+
   --c-accent: 14 159 143;         /* 青 */
   --c-accent-soft: 14 159 143;
 
@@ -76,6 +80,10 @@
   --c-primary-active: 104 90 235;
   --c-primary-soft: 124 110 255;
   --c-on-primary: 255 255 255;
+
+  /* 签名信号色「琥珀 Signal」—— 深底提亮发光，仅作指示/描边 */
+  --c-signal: 245 176 65;
+  --c-signal-soft: 245 176 65;
 
   --c-accent: 45 212 191;         /* 青（深底提亮） */
   --c-accent-soft: 45 212 191;
@@ -149,4 +157,75 @@
       scroll-behavior: auto !important;
     }
   }
+}
+
+/* =========================================================
+   设计系统组件层 —— 「墨仪 INK INSTRUMENT」精密写作仪器语言
+   ========================================================= */
+@layer components {
+  /* 等宽眉标：章节号 / 面板标题 / 数据标签 —— 科技味来源 */
+  .eyebrow {
+    font-family: var(--font-mono, ui-monospace, 'JetBrains Mono', monospace);
+    font-size: 10px;
+    line-height: 1.4;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgb(var(--c-fg-faint));
+    font-weight: 500;
+  }
+
+  /* 信号指示点：唯一暖色灵魂，用于激活/在线/焦点 */
+  .signal-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: rgb(var(--c-signal));
+    box-shadow: 0 0 0 3px rgb(var(--c-signal) / 0.16);
+  }
+  .signal-dot--pulse {
+    animation: pulse-signal 2s ease-in-out infinite;
+  }
+
+  /* 发丝分隔线 */
+  .hairline {
+    border-color: rgb(var(--c-edge) / 0.10);
+  }
+
+  /* 面板：抬起卡片基底 */
+  .panel {
+    background: rgb(var(--c-surface));
+    border: 1px solid rgb(var(--c-edge) / 0.10);
+    border-radius: 12px;
+    box-shadow: var(--shadow-1);
+  }
+
+  /* 激活项左侧信号光条（2px 琥珀，替代大块高亮，克制高级） */
+  .signal-bar::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10%;
+    bottom: 10%;
+    width: 2px;
+    border-radius: 9999px;
+    background: rgb(var(--c-signal));
+    box-shadow: 0 0 8px rgb(var(--c-signal) / 0.6);
+  }
+}
+
+/* 全局极轻颗粒噪点：叠在 canvas 上，≤3% 不糊字，制造纸/金属手感 */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+@keyframes pulse-signal {
+  0%, 100% { box-shadow: 0 0 0 3px rgb(var(--c-signal) / 0.16); opacity: 1; }
+  50% { box-shadow: 0 0 0 5px rgb(var(--c-signal) / 0.06); opacity: 0.7; }
 }

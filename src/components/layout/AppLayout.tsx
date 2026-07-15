@@ -327,20 +327,26 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-canvas text-fg">
+      {/* 全局极轻颗粒质感叠层（≤3%，不糊字） */}
+      <div className="grain-overlay" aria-hidden />
+
       {/* ===== 顶部工具栏（所有页面通用） ===== */}
-      <header className="flex h-11 shrink-0 items-center justify-between border-b border-edge/10 bg-surface/70 px-3 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-fg tracking-wide">
-            ScriptWeaver
+      <header className="relative z-10 flex h-12 shrink-0 items-center justify-between border-b border-edge/10 bg-surface/70 px-4 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <span className="signal-dot signal-dot--pulse" aria-hidden />
+          <span className="text-sm font-semibold tracking-tight text-fg">
+            Script<span className="font-light text-fg-muted">Weaver</span>
           </span>
+          <span className="hidden h-4 w-px bg-edge-strong/15 sm:block" />
+          <span className="eyebrow hidden sm:block">Visual Novel Studio</span>
           {totalLines > 0 && (
-            <span className="text-[10px] text-fg-faint">
-              {totalLines} 行
+            <span className="font-mono text-[10px] tabular-nums text-fg-faint">
+              {totalLines.toString().padStart(3, '0')} 行
             </span>
           )}
           {projectRoot && (
-            <span className="text-[10px] text-fg-faint" title={projectRoot}>
-              已保存
+            <span className="flex items-center gap-1.5 text-[10px] text-fg-faint" title={projectRoot}>
+              <span className="signal-dot" /> 已保存
             </span>
           )}
         </div>
