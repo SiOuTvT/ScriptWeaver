@@ -175,7 +175,7 @@ export default function SceneNavPanel() {
           >
             {asset.name}
           </span>
-          <span className="block truncate text-[10px] text-fg-subtle">
+          <span className="block truncate text-[11px] text-fg-subtle">
             {asset.fileName}
           </span>
         </div>
@@ -219,7 +219,7 @@ export default function SceneNavPanel() {
       <div className="flex items-center gap-2 border-b border-edge/14 bg-surface-1 px-3 py-2.5">
         <span className="signal-dot" />
         <span className="eyebrow">素材库 · Assets</span>
-        <span className="ml-auto text-[10px] text-fg-faint">拖拽至舞台</span>
+        <span className="ml-auto text-[11px] text-fg-faint">拖拽至舞台</span>
       </div>
 
       {/* 导入按钮 */}
@@ -266,7 +266,7 @@ export default function SceneNavPanel() {
       {/* 素材列表（可拖拽） */}
       <div className="flex-1 overflow-y-auto p-1.5">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-1 py-8 text-[10px] text-fg-faint">
+          <div className="flex flex-col items-center justify-center gap-1 py-8 text-[11px] text-fg-faint">
             {search ? '没有匹配的素材' : '暂无素材，点击上方导入'}
           </div>
         ) : (
@@ -277,7 +277,7 @@ export default function SceneNavPanel() {
       </div>
 
       {/* 底部计数 */}
-      <div className="shrink-0 border-t border-edge/10 px-2 py-1.5 text-[10px] text-fg-faint">
+      <div className="shrink-0 border-t border-edge/10 px-2 py-1.5 text-[11px] text-fg-faint">
         {filtered.length} 个{tab === 'audio' ? '音频' : tab === 'sprite' ? '立绘' : '背景'}
         {search && ` · 共 ${assets.filter((a) => a.type === tab).length}`}
       </div>

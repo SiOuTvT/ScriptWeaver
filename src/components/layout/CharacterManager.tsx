@@ -150,14 +150,14 @@ export default function CharacterManager() {
                 <Button variant="primary" block onClick={handleCreate}>创建</Button>
                 <Button variant="ghost" onClick={() => { setShowNewForm(false); setNewCharIdError('') }}>取消</Button>
               </div>
-              <p className="text-[10px] text-fg-faint">
+              <p className="text-[11px] text-fg-faint">
                 变量名仅允许小写字母开头 + 数字/下划线，如 alice, hero_1
               </p>
             </div>
           )}
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
             {characterConfigs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-1 py-8 text-[10px] text-fg-faint">
+              <div className="flex flex-col items-center justify-center gap-1 py-8 text-[11px] text-fg-faint">
                 暂无角色，点击"新建"创建
               </div>
             ) : (
@@ -183,7 +183,7 @@ export default function CharacterManager() {
                         <span className="block truncate text-[11px] font-medium text-fg-muted">
                           {char.displayName}
                         </span>
-                        <span className="block text-[10px] text-fg-faint">
+                        <span className="block text-[11px] text-fg-faint">
                           {char.charId} · {exprCount} 表情
                         </span>
                       </div>
@@ -207,7 +207,7 @@ export default function CharacterManager() {
                 />
                 <div>
                   <div className="text-sm font-semibold text-fg">{selectedChar.displayName}</div>
-                  <div className="font-mono text-[10px] text-fg-faint">{selectedChar.charId}</div>
+                  <div className="font-mono text-[11px] text-fg-faint">{selectedChar.charId}</div>
                 </div>
               </div>
 
@@ -220,7 +220,7 @@ export default function CharacterManager() {
                   onChange={(v) => handleUpdateField('displayName', v)}
                 />
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-[10px] text-fg-subtle">
+                  <label className="mb-1 block text-[11px] text-fg-subtle">
                     角色色（时间轴 / 总览 / 对话框通用）
                   </label>
                   <div className="flex items-center gap-2">
@@ -246,7 +246,7 @@ export default function CharacterManager() {
                   <span className="eyebrow">表情列表 · Expressions</span>
                   <button
                     onClick={() => setShowExprPicker(!showExprPicker)}
-                    className="text-[10px] text-signal transition-opacity hover:opacity-80"
+                    className="text-[11px] text-signal transition-opacity hover:opacity-80"
                   >
                     + 添加表情
                   </button>
@@ -255,7 +255,7 @@ export default function CharacterManager() {
                 {showExprPicker && (
                   <div className="mb-2 max-h-40 overflow-y-auto rounded border border-edge/15 bg-surface-2 p-1">
                     {spriteAssets.length === 0 ? (
-                      <p className="p-2 text-[10px] text-fg-faint">请先在素材管理中导入立绘图片</p>
+                      <p className="p-2 text-[11px] text-fg-faint">请先在素材管理中导入立绘图片</p>
                     ) : (
                       spriteAssets.map((asset) => {
                         const alreadyUsed = selectedChar.expressions.some((e) => e.assetId === asset.id)
@@ -264,13 +264,13 @@ export default function CharacterManager() {
                             key={asset.id}
                             disabled={alreadyUsed}
                             onClick={() => handleAddExpression(asset)}
-                            className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-[10px] transition-colors ${
+                            className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-[11px] transition-colors ${
                               alreadyUsed ? 'cursor-not-allowed text-fg-faint' : 'text-fg-muted hover:bg-surface-hover'
                             }`}
                           >
                             <ImageIcon size={14} strokeWidth={1.75} className="shrink-0 text-fg-subtle" />
                             <span className="truncate">{asset.name}</span>
-                            {alreadyUsed && <span className="ml-auto text-[10px] text-fg-faint">已使用</span>}
+                            {alreadyUsed && <span className="ml-auto text-[11px] text-fg-faint">已使用</span>}
                           </button>
                         )
                       })
@@ -279,7 +279,7 @@ export default function CharacterManager() {
                 )}
 
                 {selectedChar.expressions.length === 0 ? (
-                  <p className="text-[10px] italic text-fg-faint">暂无表情</p>
+                  <p className="text-[11px] italic text-fg-faint">暂无表情</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-1.5">
                     {selectedChar.expressions.map((expr) => {
@@ -289,10 +289,10 @@ export default function CharacterManager() {
                           key={expr.id}
                           className="flex items-center gap-2 rounded-md border border-edge/10 bg-surface-1/50 px-2 py-1.5"
                         >
-                          <span className="w-14 shrink-0 truncate font-mono text-[10px] text-fg-subtle" title={expr.id}>
+                          <span className="w-14 shrink-0 truncate font-mono text-[11px] text-fg-subtle" title={expr.id}>
                             {expr.id}
                           </span>
-                          <span className="min-w-0 flex-1 truncate text-[10px] text-fg-muted">
+                          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">
                             {asset?.name ?? '(素材已删除)'}
                           </span>
                           <button
@@ -368,7 +368,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-0.5 block text-[10px] text-fg-subtle">{label}</label>
+      <label className="mb-0.5 block text-[11px] text-fg-subtle">{label}</label>
       <Input
         value={value}
         readOnly={readOnly}

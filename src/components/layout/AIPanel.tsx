@@ -232,7 +232,7 @@ export default function AIPanel() {
         {/* 错误 */}
         {error && (
           <div className="panel border-danger/40 p-3">
-            <p className="text-[12px] text-danger">{error}</p>
+            <p className="t-caption text-danger">{error}</p>
           </div>
         )}
 

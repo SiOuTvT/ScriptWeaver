@@ -49,7 +49,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         />
       </div>
       {hint && (
-        <span className={cn('text-[10px]', error ? 'text-danger' : 'text-fg-faint')}>
+        <span className={cn('text-[11px]', error ? 'text-danger' : 'text-fg-faint')}>
           {hint}
         </span>
       )}
@@ -83,7 +83,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         {...rest}
       />
       {hint && (
-        <span className={cn('text-[10px]', error ? 'text-danger' : 'text-fg-faint')}>
+        <span className={cn('text-[11px]', error ? 'text-danger' : 'text-fg-faint')}>
           {hint}
         </span>
       )}

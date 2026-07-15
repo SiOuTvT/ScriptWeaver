@@ -56,7 +56,7 @@ const ICON = {
 // 顶部统计小胶囊
 function StatChip({ label, value }: { label: string; value: number }) {
   return (
-    <span className="inline-flex items-baseline gap-0.5 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-faint">
+    <span className="inline-flex items-baseline gap-0.5 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-faint">
       <span className="font-semibold text-fg-muted">{value}</span>
       {label}
     </span>
@@ -256,12 +256,12 @@ export default function ScriptOverview() {
           {activeScene !== null && (
             <button
               onClick={() => setActiveScene(null)}
-              className="rounded bg-signal-soft px-2 py-0.5 text-[10px] font-medium text-signal hover:bg-signal/20"
+              className="rounded bg-signal-soft px-2 py-0.5 text-[11px] font-medium text-signal hover:bg-signal/20"
             >
               返回全部场景 ✕
             </button>
           )}
-          <span className="rounded bg-surface-1 px-1.5 py-0.5 text-[10px] text-fg-faint">只读预览</span>
+          <span className="rounded bg-surface-1 px-1.5 py-0.5 text-[11px] text-fg-faint">只读预览</span>
         </div>
         <div className="flex items-center gap-3">
           {/* 视图切换：卡片流 / 剧情树 */}
@@ -326,8 +326,8 @@ export default function ScriptOverview() {
               size={12}
               className={`text-fg-subtle transition-transform ${outlineCollapsed ? '' : 'rotate-90'}`}
             />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">大纲 · 场景</span>
-            <span className="ml-auto text-[10px] text-fg-faint">{scenes.length}</span>
+            <span className="text-[11px] font-medium text-fg-muted">大纲 · 场景</span>
+            <span className="ml-auto text-[11px] text-fg-faint">{scenes.length}</span>
           </button>
           {!outlineCollapsed &&
             scenes.map((sc, idx) => {
@@ -504,7 +504,7 @@ export default function ScriptOverview() {
                           {c.speakerName}
                         </span>
                       )}
-                      <span className="text-[10px] text-fg-faint">L{c.index + 1}</span>
+                      <span className="text-[11px] text-fg-faint">L{c.index + 1}</span>
                     </div>
 
                     {/* 台词正文 */}
@@ -535,19 +535,19 @@ export default function ScriptOverview() {
                           </span>
                         ))}
                         {c.backgroundName && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted">
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.backgroundId, assets) }} />
                             {ICON.bg} {c.backgroundName}
                           </span>
                         )}
                         {c.bgm && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted">
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.bgmId, assets) }} />
                             {ICON.bgm} {c.bgm}
                           </span>
                         )}
                         {c.ambient && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted">
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.ambientId, assets) }} />
                             {ICON.ambient} {c.ambient}
                           </span>
@@ -562,7 +562,7 @@ export default function ScriptOverview() {
                           </span>
                         ))}
                         {c.voice && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted">
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted">
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.voiceId, assets) }} />
                             {ICON.voice} {c.voice}
                           </span>

@@ -73,7 +73,7 @@ export default function ExportSettings() {
             <span className="signal-dot" />
             <span className="eyebrow">Export · Ren'Py</span>
           </div>
-          <h2 className="mt-1.5 text-base font-semibold tracking-tight text-fg">Ren'Py 导出设置</h2>
+          <h2 className="t-h2 mt-1.5">Ren'Py 导出设置</h2>
           <p className="mt-0.5 t-subtitle">配置导出选项并校验脚本完整性</p>
         </header>
 

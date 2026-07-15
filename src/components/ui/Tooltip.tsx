@@ -25,7 +25,7 @@ export default function Tooltip({ content, side = 'top', children, className }: 
       <span
         role="tooltip"
         className={cn(
-          'pointer-events-none absolute z-[300] whitespace-nowrap rounded-md border border-edge-strong/15 bg-surface-2 px-2 py-1 text-[10px] text-fg-muted shadow-2',
+          'pointer-events-none absolute z-[300] whitespace-nowrap rounded-md border border-edge-strong/15 bg-surface-2 px-2 py-1 text-[11px] text-fg-muted shadow-2',
           'opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
           SIDE[side],
         )}
