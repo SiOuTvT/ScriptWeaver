@@ -527,7 +527,7 @@ export default function ScriptOverview() {
                         {c.characters.map((ch) => (
                           <span
                             key={ch.charId}
-                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted"
+                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted"
                           >
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: ch.color }} />
                             {ICON.char} {ch.name}
@@ -555,7 +555,7 @@ export default function ScriptOverview() {
                         {c.se.map((s, k) => (
                           <span
                             key={k}
-                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[10px] text-fg-muted"
+                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted"
                           >
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.seIds[k], assets) }} />
                             {ICON.se} {s}
