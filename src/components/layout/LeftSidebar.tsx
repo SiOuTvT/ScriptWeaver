@@ -9,12 +9,12 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'chapters', label: '场景导航', icon: <BookOpen size={18} strokeWidth={1.75} /> },
-  { id: 'script-overview', label: '剧本总览', icon: <FileText size={18} strokeWidth={1.75} /> },
-  { id: 'assets', label: '素材管理', icon: <Images size={18} strokeWidth={1.75} /> },
-  { id: 'characters', label: '角色管理', icon: <Users size={18} strokeWidth={1.75} /> },
-  { id: 'export', label: '导出设置', icon: <Download size={18} strokeWidth={1.75} /> },
-  { id: 'ai', label: 'AI 功能', icon: <Sparkles size={18} strokeWidth={1.75} /> },
+  { id: 'chapters', label: '场景导航', code: '01', icon: <BookOpen size={18} strokeWidth={1.75} /> },
+  { id: 'script-overview', label: '剧本总览', code: '02', icon: <FileText size={18} strokeWidth={1.75} /> },
+  { id: 'assets', label: '素材管理', code: '03', icon: <Images size={18} strokeWidth={1.75} /> },
+  { id: 'characters', label: '角色管理', code: '04', icon: <Users size={18} strokeWidth={1.75} /> },
+  { id: 'export', label: '导出设置', code: '05', icon: <Download size={18} strokeWidth={1.75} /> },
+  { id: 'ai', label: 'AI 功能', code: '06', icon: <Sparkles size={18} strokeWidth={1.75} /> },
 ]
 
 export default function LeftSidebar() {
@@ -23,11 +23,11 @@ export default function LeftSidebar() {
   const setActive = useAppStore((s) => s.setActiveNavItem)
   const toggle = useAppStore((s) => s.toggleLeftSidebar)
 
-  const width = collapsed ? 'w-12' : 'w-40'
+  const width = collapsed ? 'w-12' : 'w-44'
 
   return (
     <aside
-      className={`${width} flex shrink-0 flex-col border-r border-edge/18 bg-surface transition-all duration-200`}
+      className={`${width} flex shrink-0 flex-col border-r border-edge/12 bg-surface transition-all duration-200`}
     >
       {/* 折叠按钮 */}
       <button
@@ -39,7 +39,7 @@ export default function LeftSidebar() {
       </button>
 
       {/* 导航项 */}
-      <nav className="flex flex-1 flex-col gap-1 p-1">
+      <nav className="flex flex-1 flex-col gap-0.5 p-2">
         {NAV_ITEMS.map((item) => {
           const isActive = activeItem === item.id
           return (
@@ -47,23 +47,30 @@ export default function LeftSidebar() {
               key={item.id}
               onClick={() => setActive(item.id)}
               title={collapsed ? item.label : undefined}
-              className={`flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm transition-all ${
+              className={`group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm transition-all ${
                 collapsed ? 'justify-center' : ''
               } ${
-              isActive
-                ? 'border-l-2 border-l-primary bg-primary/15 text-primary'
-                : 'border-l-2 border-l-transparent text-fg-faint hover:bg-surface-hover hover:text-fg-muted'
+                isActive
+                  ? 'signal-bar bg-primary/[0.08] text-fg'
+                  : 'text-fg-faint hover:bg-surface-hover hover:text-fg-muted'
               }`}
             >
               <span className="shrink-0">{item.icon}</span>
-              {!collapsed && <span className="truncate text-xs">{item.label}</span>}
+              {!collapsed && (
+                <>
+                  <span className="truncate text-xs">{item.label}</span>
+                  <span className="ml-auto font-mono text-[10px] tabular-nums text-fg-faint/70">
+                    {item.code}
+                  </span>
+                </>
+              )}
             </button>
           )
         })}
       </nav>
 
       {/* 底部版本号 */}
-      <div className="border-t border-edge/10 p-2 text-center text-[10px] text-fg-faint">
+      <div className="border-t border-edge/10 p-2 text-center font-mono text-[10px] text-fg-faint">
         {collapsed ? 'v0.3' : 'v0.3.0'}
       </div>
     </aside>

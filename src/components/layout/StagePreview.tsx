@@ -350,7 +350,7 @@ export default function StagePreview() {
               <div
                 className={`rounded-lg border-2 border-dashed px-6 py-12 transition-colors duration-150 ${
                   active
-                    ? 'border-primary bg-primary/20'
+                    ? 'border-signal bg-signal/20'
                     : 'border-edge-strong/20 bg-surface-1/20'
                 }`}
               >
@@ -459,7 +459,7 @@ export default function StagePreview() {
             {state.line_id}
           </span>
           {state.background?.transition && (
-            <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] text-primary">
+            <span className="rounded bg-signal/15 px-1.5 py-0.5 text-[10px] text-signal">
               {state.background.transition}
             </span>
           )}
@@ -512,7 +512,7 @@ export default function StagePreview() {
                 }}
                 placeholder="说话人"
                 list="speaker-list"
-                className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-subtle outline-none transition-colors focus:border-primary/60"
+                className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
               />
               <datalist id="speaker-list">
                 {characterConfigs.map((c) => (
@@ -530,7 +530,7 @@ export default function StagePreview() {
                   commitDialogue(localSpeaker, e.target.value)
                 }}
                 placeholder={state.speaker ? `${state.speaker}的台词...` : '旁白或台词...'}
-                className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-subtle outline-none transition-colors focus:border-primary/60"
+                className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
               />
             </div>
           </div>

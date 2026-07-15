@@ -164,7 +164,10 @@ export default function AIPanel() {
       {/* Header */}
       <div className="shrink-0 border-b border-edge/10 px-4 py-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-fg">AI 辅助写作</h2>
+          <div className="flex items-center gap-2">
+            <span className="signal-dot" />
+            <span className="eyebrow">AI 辅助写作 · Assistant</span>
+          </div>
           <button
             onClick={() => setShowConfig(!showConfig)}
             className="flex items-center gap-1 rounded px-2 py-0.5 text-[11px] text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg-muted"
@@ -185,7 +188,7 @@ export default function AIPanel() {
                 type="text"
                 value={config.endpoint}
                 onChange={(e) => setConfig({ ...config, endpoint: e.target.value })}
-                className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-primary/60"
+                className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
               />
             </label>
             <label className="block">
@@ -195,7 +198,7 @@ export default function AIPanel() {
                 value={config.apiKey}
                 onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
                 placeholder="sk-..."
-                className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-primary/60"
+                className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
               />
             </label>
             <label className="block">
@@ -204,7 +207,7 @@ export default function AIPanel() {
                 type="text"
                 value={config.model}
                 onChange={(e) => setConfig({ ...config, model: e.target.value })}
-                className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-primary/60"
+                className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
               />
             </label>
             <Button variant="primary" block onClick={saveConfigCb}>
@@ -240,7 +243,7 @@ export default function AIPanel() {
             placeholder="例如：Alice 和 Bob 在学校走廊相遇，争吵关于周末去图书馆还是去游乐园的事情..."
             rows={4}
             disabled={loading}
-            className="w-full resize-none rounded-lg border border-edge/15 bg-surface-3 px-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none focus:border-primary/60 disabled:opacity-50"
+            className="w-full resize-none rounded-lg border border-edge/15 bg-surface-3 px-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none focus:border-signal/60 disabled:opacity-50"
           />
         </div>
 

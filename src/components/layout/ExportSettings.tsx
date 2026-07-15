@@ -60,8 +60,14 @@ export default function ExportSettings() {
 
   return (
     <div className="flex flex-1 flex-col overflow-auto bg-canvas p-6">
-      <h2 className="mb-1 text-sm font-semibold text-fg">Ren'Py 导出设置</h2>
-      <p className="mb-5 text-[11px] text-fg-subtle">配置导出选项并校验脚本完整性</p>
+      <div className="mb-5">
+        <div className="flex items-center gap-2">
+          <span className="signal-dot" />
+          <span className="eyebrow">Export · Ren'Py</span>
+        </div>
+        <h2 className="mt-1 text-base font-semibold tracking-tight text-fg">Ren'Py 导出设置</h2>
+        <p className="mt-0.5 text-[11px] text-fg-subtle">配置导出选项并校验脚本完整性</p>
+      </div>
 
       {/* 项目概况 */}
       <div className="mb-5 grid grid-cols-3 gap-3">
@@ -84,7 +90,7 @@ export default function ExportSettings() {
           type="text"
           value={scriptLabel}
           onChange={(e) => setScriptLabel(e.target.value)}
-          className="w-48 rounded-md border border-edge/15 bg-surface-3 px-2.5 py-1.5 text-xs text-fg outline-none transition-colors focus:border-primary/60"
+          className="w-48 rounded-md border border-edge/15 bg-surface-3 px-2.5 py-1.5 text-xs text-fg outline-none transition-colors focus:border-signal/60"
         />
         <p className="mt-0.5 text-[10px] text-fg-faint">导出的脚本将以 label {scriptLabel}: 开头</p>
       </div>
@@ -125,9 +131,9 @@ export default function ExportSettings() {
       <div className="mt-auto pt-6">
         <h3 className="mb-2 text-[11px] font-medium text-fg-subtle">导出文件说明</h3>
         <div className="space-y-1.5 text-[10px] text-fg-faint">
-          <p><code className="text-primary">script.rpy</code> — Ren'Py 脚本主文件，包含 label/scene/show/hide/台词等</p>
-          <p><code className="text-primary">definitions.rpy</code> — 角色声明 + image/transform 定义 + 素材路径清单</p>
-          <p>导出后将文件放入 Ren'Py 项目的 <code className="text-primary">game/</code> 目录，素材放入对应子目录即可运行。</p>
+          <p><code className="text-signal">script.rpy</code> — Ren'Py 脚本主文件，包含 label/scene/show/hide/台词等</p>
+          <p><code className="text-signal">definitions.rpy</code> — 角色声明 + image/transform 定义 + 素材路径清单</p>
+          <p>导出后将文件放入 Ren'Py 项目的 <code className="text-signal">game/</code> 目录，素材放入对应子目录即可运行。</p>
         </div>
       </div>
     </div>
