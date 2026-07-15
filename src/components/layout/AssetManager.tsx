@@ -218,100 +218,163 @@ export default function AssetManager() {
 
       {/* 素材列表 */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-1 py-8 text-[10px] text-fg-faint">
-            {search ? '没有匹配的素材' : '暂无素材，点击上方按钮导入'}
-          </div>
-        ) : (
-          <div className="space-y-0.5">
-            {filtered.map((asset) => (
-              <div
-                key={asset.id}
-                onContextMenu={(e) => handleContextMenu(e, asset)}
-                className="group flex items-center gap-2 rounded-md border border-edge/12 px-2 py-1.5 shadow-[0_1px_2px_rgba(28,24,18,0.05)] transition-all hover:border-edge/20 hover:shadow-[0_2px_4px_rgba(28,24,18,0.10)] hover:bg-surface-hover"
-              >
-                {/* 缩略图/图标 */}
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-surface-1">
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-1 py-10 text-[10px] text-fg-faint">
+              {search ? '没有匹配的素材' : '暂无素材，点击上方按钮导入'}
+            </div>
+          ) : tab === 'audio' ? (
+            /* 音频：紧凑列表行 */
+            <div className="space-y-0.5">
+              {filtered.map((asset) => (
+                <div
+                  key={asset.id}
+                  onContextMenu={(e) => handleContextMenu(e, asset)}
+                  className="group flex items-center gap-2 rounded-md border border-edge/12 px-2 py-1.5 transition-all hover:border-edge/20 hover:bg-surface-hover"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-surface-1 text-fg-subtle">
+                    <Music size={16} strokeWidth={1.75} />
+                  </div>
+                  <label
+                    title="素材色（时间轴 / 总览通用）"
+                    className="relative flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-surface-hover"
+                  >
+                    <span
+                      className="pointer-events-none h-3.5 w-3.5 rounded-full border border-edge/30"
+                      style={{ backgroundColor: asset.color || hashAssetColor(asset.id) }}
+                    />
+                    <input
+                      type="color"
+                      value={asset.color || '#888888'}
+                      onChange={(e) => updateAsset(asset.id, { color: e.target.value })}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    />
+                  </label>
+                  <div className="min-w-0 flex-1">
+                    {editingId === asset.id ? (
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onBlur={commitRename}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitRename()
+                          if (e.key === 'Escape') setEditingId(null)
+                        }}
+                        autoFocus
+                        className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[11px] text-fg outline-none"
+                      />
+                    ) : (
+                      <span
+                        className="block truncate text-[11px] text-fg-muted group-hover:text-fg"
+                        title={asset.name}
+                      >
+                        {asset.name}
+                      </span>
+                    )}
+                    <span className="block truncate text-[10px] text-fg-subtle">{asset.fileName}</span>
+                  </div>
+                  <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      onClick={() => startRename(asset)}
+                      className="rounded p-1 text-fg-subtle transition-colors hover:bg-surface-active hover:text-fg"
+                      title="重命名"
+                    >
+                      <Pencil size={13} strokeWidth={1.75} />
+                    </button>
+                    <button
+                      onClick={() => requestDelete(asset)}
+                      className="rounded p-1 text-fg-subtle transition-colors hover:bg-danger/12 hover:text-danger"
+                      title="删除"
+                    >
+                      <Trash2 size={13} strokeWidth={1.75} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* 图片：缩略图网格 */
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {filtered.map((asset) => (
+                <div
+                  key={asset.id}
+                  onContextMenu={(e) => handleContextMenu(e, asset)}
+                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-edge/12 bg-surface-2 transition-all hover:border-edge/25 hover:shadow-[0_4px_14px_rgba(28,24,18,0.14)]"
+                >
                   {asset.dataUrl ? (
                     <img
                       src={asset.dataUrl}
                       alt={asset.name}
-                      className="h-full w-full object-cover"
+                      className="absolute inset-0 h-full w-full object-cover"
                     />
                   ) : (
-                    <span className="text-fg-subtle">
-                      {asset.type === 'audio' ? <Music size={16} strokeWidth={1.75} /> : <ImageIcon size={16} strokeWidth={1.75} />}
-                    </span>
+                    <div className="flex h-full w-full items-center justify-center text-fg-subtle">
+                      {asset.type === 'sprite' ? <User size={30} strokeWidth={1.5} /> : <ImageIcon size={30} strokeWidth={1.5} />}
+                    </div>
                   )}
-                </div>
 
-                {/* 素材色块：点开即可取色，控制时间轴/总览 */}
-                <label
-                  title="素材色（时间轴 / 总览通用）"
-                  className="relative flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-surface-hover"
-                >
-                  <span
-                    className="pointer-events-none h-3.5 w-3.5 rounded-full border border-edge/30"
-                    style={{ backgroundColor: asset.color || hashAssetColor(asset.id) }}
-                  />
-                  <input
-                    type="color"
-                    value={asset.color || '#888888'}
-                    onChange={(e) => updateAsset(asset.id, { color: e.target.value })}
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  />
-                </label>
-
-                {/* 名称 */}
-                <div className="min-w-0 flex-1">
-                  {editingId === asset.id ? (
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      onBlur={commitRename}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') commitRename()
-                        if (e.key === 'Escape') setEditingId(null)
-                      }}
-                      autoFocus
-                      className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[11px] text-fg outline-none"
-                    />
-                  ) : (
+                  {/* 色点 */}
+                  <label
+                    title="素材色（时间轴 / 总览通用）"
+                    className="absolute left-1.5 top-1.5 flex h-5 w-5 cursor-pointer items-center justify-center rounded hover:bg-black/20"
+                  >
                     <span
-                      className="block truncate text-[11px] text-fg-muted group-hover:text-fg"
-                      title={asset.name}
-                    >
-                      {asset.name}
-                    </span>
-                  )}
-                  <span className="block truncate text-[10px] text-fg-subtle">
-                    {asset.fileName}
-                  </span>
-                </div>
+                      className="pointer-events-none h-3 w-3 rounded-full border border-white/50 shadow"
+                      style={{ backgroundColor: asset.color || hashAssetColor(asset.id) }}
+                    />
+                    <input
+                      type="color"
+                      value={asset.color || '#888888'}
+                      onChange={(e) => updateAsset(asset.id, { color: e.target.value })}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    />
+                  </label>
 
-                {/* 操作按钮 */}
-                <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    onClick={() => startRename(asset)}
-                    className="rounded p-1 text-fg-subtle transition-colors hover:bg-surface-active hover:text-fg"
-                    title="重命名"
-                  >
-                    <Pencil size={13} strokeWidth={1.75} />
-                  </button>
-                  <button
-                    onClick={() => requestDelete(asset)}
-                    className="rounded p-1 text-fg-subtle transition-colors hover:bg-danger/12 hover:text-danger"
-                    title="删除"
-                  >
-                    <Trash2 size={13} strokeWidth={1.75} />
-                  </button>
+                  {/* hover 操作 */}
+                  <div className="absolute right-1.5 top-1.5 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      onClick={() => startRename(asset)}
+                      className="rounded bg-black/40 p-1 text-white/90 backdrop-blur transition-colors hover:bg-black/60"
+                      title="重命名"
+                    >
+                      <Pencil size={13} strokeWidth={1.75} />
+                    </button>
+                    <button
+                      onClick={() => requestDelete(asset)}
+                      className="rounded bg-black/40 p-1 text-white/90 backdrop-blur transition-colors hover:bg-danger/70"
+                      title="删除"
+                    >
+                      <Trash2 size={13} strokeWidth={1.75} />
+                    </button>
+                  </div>
+
+                  {/* 底部名称 */}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent px-2 pb-1.5 pt-5">
+                    {editingId === asset.id ? (
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onBlur={commitRename}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitRename()
+                          if (e.key === 'Escape') setEditingId(null)
+                        }}
+                        autoFocus
+                        className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[11px] text-fg outline-none"
+                      />
+                    ) : (
+                      <span className="block truncate text-[11px] font-medium text-white" title={asset.name}>
+                        {asset.name}
+                      </span>
+                    )}
+                    <span className="block truncate text-[9px] text-white/70">{asset.fileName}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
