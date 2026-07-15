@@ -270,7 +270,7 @@ export default function CharacterManager() {
                           >
                             <ImageIcon size={14} strokeWidth={1.75} className="shrink-0 text-fg-subtle" />
                             <span className="truncate">{asset.name}</span>
-                            {alreadyUsed && <span className="ml-auto text-[9px] text-fg-faint">已使用</span>}
+                            {alreadyUsed && <span className="ml-auto text-[10px] text-fg-faint">已使用</span>}
                           </button>
                         )
                       })
