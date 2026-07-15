@@ -8,8 +8,8 @@
    ========================================================= */
 :root,
 [data-theme='light'] {
-  /* 字体栈：拉丁 Inter + 中文 Noto Sans SC（思源黑体），比系统雅黑精致统一 */
-  --font-sans: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* 字体栈：拉丁 Noto Sans + 中文 Noto Sans SC（同族，最和谐中性、无海报味） */
+  --font-sans: 'Noto Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --c-canvas: 240 239 235;        /* 干净浅灰桌面底（不发灰） */
@@ -135,8 +135,7 @@
     color: rgb(var(--c-fg));
     font-family: var(--font-sans);
     font-size: 13px;
-    line-height: 1.5;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }

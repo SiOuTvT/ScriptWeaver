@@ -90,7 +90,7 @@ export default {
       },
       fontFamily: {
         sans: [
-          'Inter',
+          'Noto Sans',
           'Noto Sans SC',
           '"PingFang SC"',
           '"Microsoft YaHei"',
