@@ -13,7 +13,7 @@ import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
-import { subscribe, getToastItems, type ToastItem } from '@/utils/toast'
+import { subscribe, getToastItems, toast, type ToastItem } from '@/utils/toast'
 import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown } from 'lucide-react'
 import { Button, IconButton, ConfirmDialog } from '@/components/ui'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
@@ -126,8 +126,6 @@ export default function AppLayout() {
 
   // ---- 对话框状态 ----
   const [showNewConfirm, setShowNewConfirm] = useState(false)
-  const [showDraftRecovery, setShowDraftRecovery] = useState(false)
-  const [draftInfo, setDraftInfo] = useState<Awaited<ReturnType<typeof loadDraft>> | null>(null)
   const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
 
   // ---- auto-save refs ----
@@ -149,13 +147,27 @@ export default function AppLayout() {
     debouncedSaveDraft()
   }, [draftDeltas, characterConfigs, assets, projectRoot, debouncedSaveDraft])
 
-  // 组件挂载时检查草稿
+  // 组件挂载时静默恢复自动保存的草稿（无需每次弹窗询问）
+  const restoreDraft = useCallback(
+    (draft: ReturnType<typeof loadDraft>) => {
+      if (!draft) return
+      const root = draft.projectRoot ?? null
+      loadProjectData({ ...draft, projectRoot: root })
+      if (root) {
+        refreshAssetDataUrls(draft.assets ?? [], root)
+          .then((refreshed) => useAppStore.getState().setAssets(refreshed))
+          .catch((err) => console.error('[restoreDraft] 素材刷新失败:', err))
+      }
+    },
+    [loadProjectData],
+  )
+
   useEffect(() => {
     const draft = loadDraft()
     if (!draft || draft.deltas.length === 0) return
-    setDraftInfo(draft)
-    setShowDraftRecovery(true)
-  }, [])
+    restoreDraft(draft)
+    toast('已自动恢复上次草稿', 'info')
+  }, [restoreDraft])
 
   // Toast 订阅
   useEffect(() => {
@@ -299,29 +311,6 @@ export default function AppLayout() {
       })
   }
 
-  const handleDraftRecover = () => {
-    if (draftInfo) {
-      const root = draftInfo.projectRoot ?? null
-      loadProjectData({ ...draftInfo, projectRoot: root })
-      // 草稿中保存了 projectRoot，可以直接从磁盘重新读取素材 dataUrl
-      if (root) {
-        refreshAssetDataUrls(draftInfo.assets ?? [], root)
-          .then((refreshed) => {
-            useAppStore.getState().setAssets(refreshed)
-          })
-          .catch((err) => {
-            console.error('[handleDraftRecover] 素材刷新失败:', err)
-          })
-      }
-    }
-    setShowDraftRecovery(false)
-  }
-
-  const handleDraftDiscard = () => {
-    clearDraft()
-    setShowDraftRecovery(false)
-  }
-
   const totalLines = draftDeltas.length
   const isChapters = activeNavItem === 'chapters'
 
@@ -415,26 +404,6 @@ export default function AppLayout() {
         }
       />
 
-      {/* ===== 草稿恢复对话框 ===== */}
-      {draftInfo && (
-        <ConfirmDialog
-          open={showDraftRecovery}
-          title="发现未保存的草稿"
-          confirmText="恢复草稿"
-          onConfirm={handleDraftRecover}
-          onCancel={handleDraftDiscard}
-          message={
-            <>
-              检测到上次编辑的草稿数据（
-              {draftInfo.deltas.length} 行，
-              {draftInfo.characterConfigs?.length ?? 0} 个角色，
-              {draftInfo.assets?.length ?? 0} 个素材，
-              {new Date(draftInfo.savedAt).toLocaleString('zh-CN')}
-              ），是否恢复？
-            </>
-          }
-        />
-      )}
       {/* ===== Toast 通知容器 ===== */}
       {toasts.length > 0 && (
         <div
