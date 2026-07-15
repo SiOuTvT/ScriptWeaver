@@ -170,7 +170,7 @@ export default function AIPanel() {
           </div>
           <button
             onClick={() => setShowConfig(!showConfig)}
-            className="flex items-center gap-1 rounded px-2 py-0.5 text-[11px] text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg-muted"
+            className="flex items-center gap-1 rounded px-2 py-0.5 t-label transition-colors hover:bg-surface-hover hover:text-fg-muted"
           >
             <Settings size={14} strokeWidth={1.75} />
             设置
@@ -185,7 +185,7 @@ export default function AIPanel() {
             <div className="eyebrow mb-3">连接设置 · Connection</div>
             <div className="space-y-3">
               <label className="block">
-                <span className="text-[11px] text-fg-subtle">API 端点</span>
+                <span className="t-label">API 端点</span>
                 <input
                   type="text"
                   value={config.endpoint}
@@ -194,7 +194,7 @@ export default function AIPanel() {
                 />
               </label>
               <label className="block">
-                <span className="text-[11px] text-fg-subtle">API Key</span>
+                <span className="t-label">API Key</span>
                 <input
                   type="password"
                   value={config.apiKey}
@@ -204,7 +204,7 @@ export default function AIPanel() {
                 />
               </label>
               <label className="block">
-                <span className="text-[11px] text-fg-subtle">模型</span>
+                <span className="t-label">模型</span>
                 <input
                   type="text"
                   value={config.model}
@@ -222,7 +222,7 @@ export default function AIPanel() {
         {/* 当前上下文 */}
         <section className="panel p-4">
           <div className="eyebrow mb-3">当前上下文 · Context</div>
-          <div className="flex gap-5 text-[11px] text-fg-subtle">
+          <div className="flex gap-5 t-label">
             <span><span className="font-mono text-fg-muted">{draftDeltas.length}</span> 行</span>
             <span><span className="font-mono text-fg-muted">{characterConfigs.length}</span> 个角色</span>
             <span><span className="font-mono text-fg-muted">{assets.filter((a) => a.type === 'background').length}</span> 个背景</span>
@@ -276,7 +276,7 @@ export default function AIPanel() {
         {/* 使用提示 */}
         <section className="panel p-4">
           <div className="eyebrow mb-3">使用提示 · Tips</div>
-          <p className="text-[11px] leading-relaxed text-fg-faint">
+          <p className="t-micro leading-relaxed">
             生成的剧本会被追加到当前时间轴末尾。你可以描述剧情走向、人物关系、场景氛围等。
             模型会自动匹配现有角色和背景，必要时会新增。
             支持 OpenAI 兼容的 API 端点（如 OpenAI、Azure、本地模型等）。
