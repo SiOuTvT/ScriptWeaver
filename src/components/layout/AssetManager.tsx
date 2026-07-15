@@ -220,7 +220,7 @@ export default function AssetManager() {
       <div className="flex flex-1 flex-col overflow-hidden">
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-1 py-10 text-[10px] text-fg-faint">
+            <div className="flex flex-col items-center justify-center gap-1 py-10 text-[11px] text-fg-faint">
               {search ? '没有匹配的素材' : '暂无素材，点击上方按钮导入'}
             </div>
           ) : tab === 'audio' ? (
@@ -376,7 +376,7 @@ export default function AssetManager() {
                             if (e.key === 'Escape') setEditingId(null)
                           }}
                           autoFocus
-                          className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[10px] text-fg outline-none"
+                          className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[11px] text-fg outline-none"
                         />
                       ) : (
                         <span className="block truncate text-[11px] font-medium text-white" title={asset.name}>
@@ -394,7 +394,7 @@ export default function AssetManager() {
       </div>
 
       {/* 底部统计 */}
-      <div className="border-t border-edge/10 px-2 py-1.5 text-[10px] text-fg-faint">
+      <div className="border-t border-edge/10 px-2 py-1.5 text-[11px] text-fg-faint">
         {filtered.length} 个{tabLabel}
         {search && ` · 共 ${assets.filter((a) => a.type === tab).length}`}
       </div>

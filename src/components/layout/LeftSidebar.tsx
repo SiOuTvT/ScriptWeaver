@@ -59,8 +59,8 @@ export default function LeftSidebar() {
               <span className="shrink-0">{item.icon}</span>
               {!collapsed && (
                 <>
-                  <span className="truncate text-xs">{item.label}</span>
-                  <span className="ml-auto font-mono text-[10px] tabular-nums text-fg-faint/70">
+                  <span className="truncate text-[13px]">{item.label}</span>
+                  <span className="ml-auto font-mono text-[11px] tabular-nums text-fg-faint/70">
                     {item.code}
                   </span>
                 </>
