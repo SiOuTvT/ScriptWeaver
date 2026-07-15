@@ -57,6 +57,12 @@ export default {
           soft: 'rgb(var(--c-primary-soft) / 0.14)',
         },
 
+        // 签名信号色「琥珀 Signal」—— 仅作指示/描边，不做大块填充
+        signal: {
+          DEFAULT: 'rgb(var(--c-signal) / <alpha-value>)',
+          soft: 'rgb(var(--c-signal-soft) / 0.14)',
+        },
+
         // 辅色「青 Cyan」
         accent: {
           DEFAULT: 'rgb(var(--c-accent) / <alpha-value>)',
@@ -102,6 +108,10 @@ export default {
         'fade-in': 'fadeIn 0.3s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'shimmer': 'shimmer 1.8s linear infinite',
+        'pulse-signal': 'pulseSignal 2s ease-in-out infinite',
+      },
+      letterSpacing: {
+        eyebrow: '0.18em',
       },
       keyframes: {
         fadeIn: {
@@ -115,6 +125,10 @@ export default {
         shimmer: {
           '0%': { backgroundPosition: '200% 0' },
           '100%': { backgroundPosition: '-200% 0' },
+        },
+        pulseSignal: {
+          '0%, 100%': { boxShadow: '0 0 0 3px rgb(var(--c-signal) / 0.16)', opacity: '1' },
+          '50%': { boxShadow: '0 0 0 5px rgb(var(--c-signal) / 0.06)', opacity: '0.7' },
         },
       },
     },
