@@ -200,6 +200,18 @@
     box-shadow: var(--shadow-1);
   }
 
+  /* 透明底棋盘格：标注 PNG 立绘的透明度（区分于满图背景） */
+  .checkerboard {
+    background-color: rgb(var(--c-surface-2));
+    background-image:
+      linear-gradient(45deg, rgb(var(--c-edge) / 0.16) 25%, transparent 25%),
+      linear-gradient(-45deg, rgb(var(--c-edge) / 0.16) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgb(var(--c-edge) / 0.16) 75%),
+      linear-gradient(-45deg, transparent 75%, rgb(var(--c-edge) / 0.16) 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+  }
+
   /* 激活项左侧信号光条（2px 琥珀，替代大块高亮，克制高级） */
   .signal-bar::before {
     content: '';
