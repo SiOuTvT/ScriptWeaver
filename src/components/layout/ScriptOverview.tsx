@@ -191,7 +191,7 @@ export default function ScriptOverview() {
     })
   }, [cards, search, activeScene, scenes])
 
-  // 滚动联动：标记离视口中心最近的卡片为当前行
+  // 滚动联动：标记离视口中心最近的卡片为当前行（仅卡片流视图使用）
   useEffect(() => {
     const container = scrollRef.current
     if (!container) return
@@ -364,13 +364,15 @@ export default function ScriptOverview() {
             <div className="mx-auto max-w-3xl pb-12">
               {scenes.map((sc, idx) => {
                 const d = sceneDetails[idx]
-                // 剧情树里高亮跟随滚动位置，不绑定点击(activeScene)，避免卡片卡在“点击态”
-                const isActive = activeLine !== null && activeLine >= sc.start && activeLine <= sc.end
+                const isActive = activeScene === idx
                 const bgColor = sc.bgId ? resolveAssetColor(sc.bgId, assets) : null
                 const railColor = bgColor ?? 'rgb(var(--c-edge-strong) / 0.35)'
                 return (
                   <div
                     key={idx}
+                    ref={(el) => {
+                      treeRefs.current[idx] = el
+                    }}
                     className="relative flex animate-fade-in gap-4 pb-4"
                     style={{ animationDelay: `${idx * 45}ms` }}
                   >
@@ -383,7 +385,7 @@ export default function ScriptOverview() {
                         type="button"
                         onClick={() => handleSceneClick(idx)}
                         title={`跳到场景 ${idx + 1}`}
-                        className="z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-[12px] font-semibold tabular-nums transition-transform hover:scale-110"
+                        className="z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-[12px] font-semibold tabular-nums outline-none transition-transform hover:scale-110"
                         style={{
                           borderColor: railColor,
                           background: bgColor ? bgColor + '1f' : 'rgb(var(--c-surface-3))',
@@ -399,7 +401,7 @@ export default function ScriptOverview() {
                     <button
                       type="button"
                       onClick={() => handleSceneClick(idx)}
-                      className={`group relative flex-1 overflow-hidden rounded-xl border bg-surface-2 p-3.5 text-left shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 ${
+                      className={`group relative flex-1 overflow-hidden rounded-xl border bg-surface-2 p-3.5 text-left shadow-1 outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 ${
                         isActive ? 'border-primary/30 ring-2 ring-primary/30' : 'border-edge/10'
                       }`}
                     >
