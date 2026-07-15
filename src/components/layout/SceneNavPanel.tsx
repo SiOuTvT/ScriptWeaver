@@ -214,7 +214,7 @@ export default function SceneNavPanel() {
   // ---- 整体 ----
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-edge/18 bg-surface">
+    <aside className="flex w-56 shrink-0 flex-col bg-surface">
       {/* 标题 */}
       <div className="flex items-center gap-2 border-b border-edge/14 bg-surface-1 px-3 py-2.5">
         <span className="signal-dot" />

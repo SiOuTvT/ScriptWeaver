@@ -212,6 +212,42 @@
     background: rgb(var(--c-signal));
     box-shadow: 0 0 8px rgb(var(--c-signal) / 0.6);
   }
+
+  /* 工作台三栏之间的极细刻度分隔线（精密仪器标尺语言） */
+  .col-divider {
+    position: relative;
+    flex: 0 0 8px;
+    align-self: stretch;
+    width: 8px;
+  }
+  /* 中线：发丝灰 */
+  .col-divider::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    transform: translateX(-50%);
+    background: rgb(var(--c-edge-strong) / 0.18);
+  }
+  /* 琥珀刻度：每 10px 一道极细信号点，呼应灵魂色 */
+  .col-divider::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    transform: translateX(-50%);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgb(var(--c-signal) / 0.38) 0,
+      rgb(var(--c-signal) / 0.38) 1px,
+      transparent 1px,
+      transparent 10px
+    );
+  }
 }
 
 /* 全局极轻颗粒噪点：叠在 canvas 上，≤3% 不糊字，制造纸/金属手感 */

@@ -381,9 +381,11 @@ export default function AppLayout() {
         {/* --- 场景导航：完整创作工作区 --- */}
         {isChapters && (
           <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="relative flex flex-1 gap-2 overflow-hidden p-2">
+            <div className="relative flex flex-1 items-stretch gap-0 overflow-hidden p-2">
               <ManagementPanel />
+              <div className="col-divider" aria-hidden />
               <StagePreview />
+              <div className="col-divider" aria-hidden />
               <ScriptDrawer />
             </div>
             <Timeline />
