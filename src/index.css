@@ -8,6 +8,10 @@
    ========================================================= */
 :root,
 [data-theme='light'] {
+  /* 字体栈：拉丁 Inter + 中文 Noto Sans SC（思源黑体），比系统雅黑精致统一 */
+  --font-sans: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
   --c-canvas: 240 239 235;        /* 干净浅灰桌面底（不发灰） */
   --c-surface: 255 255 255;       /* 主面板纯白 */
   --c-surface-1: 248 248 246;     /* 次级面板 */
@@ -129,6 +133,9 @@
   body {
     background: rgb(var(--c-canvas));
     color: rgb(var(--c-fg));
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.5;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -260,6 +267,19 @@
       transparent 10px
     );
   }
+
+  /* ===== 排版层次「墨仪 Type Scale」—— 统一字号 / 字重 / 字色 / 行高，杜绝大小刺眼、密度失调 =====
+     层级：display(18) > title(13/600) > subtitle(12/500) > body(13) > caption(12) > label(11/500) > micro(10)
+     字色语义：fg 正文 / fg-muted 次要 / fg-subtle 说明 / fg-faint 注记 —— 不再随手瞎选 */
+  .t-display  { font-family: var(--font-sans); font-size: 18px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; color: rgb(var(--c-fg)); }
+  .t-title    { font-family: var(--font-sans); font-size: 13px; line-height: 1.4;  font-weight: 600; letter-spacing: -0.005em; color: rgb(var(--c-fg)); }
+  .t-subtitle { font-family: var(--font-sans); font-size: 12px; line-height: 1.45; font-weight: 500; color: rgb(var(--c-fg-muted)); }
+  .t-body     { font-family: var(--font-sans); font-size: 13px; line-height: 1.6;  font-weight: 400; color: rgb(var(--c-fg)); }
+  .t-caption  { font-family: var(--font-sans); font-size: 12px; line-height: 1.55; font-weight: 400; color: rgb(var(--c-fg-subtle)); }
+  .t-label    { font-family: var(--font-sans); font-size: 11px; line-height: 1.4;  font-weight: 500; color: rgb(var(--c-fg-muted)); }
+  .t-micro    { font-family: var(--font-sans); font-size: 10px; line-height: 1.4;  font-weight: 400; color: rgb(var(--c-fg-faint)); }
+  /* 等宽数值 / 代码（数据、label 预览、日志）—— 精密仪器读数语言 */
+  .t-mono     { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 }
 
 /* 全局极轻颗粒噪点：叠在 canvas 上，≤3% 不糊字，制造纸/金属手感 */

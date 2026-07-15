@@ -440,7 +440,7 @@ export default function StagePreview() {
                     <span className="text-center text-[10px] font-medium text-white/80">
                       {getDisplayName(charId)}
                     </span>
-                    <span className="text-center text-[9px] text-white/50">
+                    <span className="text-center text-[10px] text-white/50">
                       {char.sprite_id}
                     </span>
                   </div>
@@ -535,7 +535,7 @@ export default function StagePreview() {
             </div>
           </div>
           {/* 行信息提示 */}
-          <div className="mt-1.5 text-right text-[9px] text-fg-subtle">
+          <div className="mt-1.5 text-right text-[10px] text-fg-subtle">
             {state.line_id} · 快捷输入 · {state.speaker ? `说话人 ${state.speaker}` : '旁白模式'}
           </div>
         </div>

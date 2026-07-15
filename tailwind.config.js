@@ -91,9 +91,9 @@ export default {
       fontFamily: {
         sans: [
           'Inter',
+          'Noto Sans SC',
           '"PingFang SC"',
           '"Microsoft YaHei"',
-          '"Noto Sans SC"',
           'sans-serif',
         ],
         mono: [

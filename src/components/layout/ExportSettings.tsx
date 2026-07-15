@@ -74,7 +74,7 @@ export default function ExportSettings() {
             <span className="eyebrow">Export · Ren'Py</span>
           </div>
           <h2 className="mt-1.5 text-base font-semibold tracking-tight text-fg">Ren'Py 导出设置</h2>
-          <p className="mt-0.5 text-[11px] text-fg-subtle">配置导出选项并校验脚本完整性</p>
+          <p className="mt-0.5 t-subtitle">配置导出选项并校验脚本完整性</p>
         </header>
 
         {/* 项目概况 */}
@@ -83,8 +83,8 @@ export default function ExportSettings() {
           <div className="grid grid-cols-3 divide-x divide-edge/10">
             {stats.map((item) => (
               <div key={item.label} className="px-4 first:pl-0">
-                <p className="text-[10px] text-fg-subtle">{item.label}</p>
-                <p className="mt-0.5 font-mono text-lg font-semibold text-fg">{item.value}</p>
+                <p className="t-label">{item.label}</p>
+                <p className="mt-0.5 t-display t-mono">{item.value}</p>
               </div>
             ))}
           </div>
@@ -93,7 +93,7 @@ export default function ExportSettings() {
         {/* 脚本入口 */}
         <section className="panel mb-4 p-4">
           <div className="eyebrow mb-3">脚本入口 · Label</div>
-          <label className="mb-1 block text-[11px] font-medium text-fg-muted">Ren'Py Script Label</label>
+          <label className="mb-1 block t-label">Ren'Py Script Label</label>
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -101,9 +101,9 @@ export default function ExportSettings() {
               onChange={(e) => setScriptLabel(e.target.value)}
               className="w-48 rounded-md border border-edge/15 bg-surface-3 px-2.5 py-1.5 text-xs text-fg outline-none transition-colors focus:border-signal/60"
             />
-            <code className="truncate font-mono text-[10px] text-fg-faint">label {scriptLabel}:</code>
+            <code className="truncate t-micro t-mono">label {scriptLabel}:</code>
           </div>
-          <p className="mt-1.5 text-[10px] text-fg-faint">导出的脚本将以该 label 开头，Ren'Py 通过它定位剧本入口。</p>
+          <p className="mt-1.5 t-micro">导出的脚本将以该 label 开头，Ren'Py 通过它定位剧本入口。</p>
         </section>
 
         {/* 导出操作 */}
@@ -128,7 +128,7 @@ export default function ExportSettings() {
         {/* 校验结果 */}
         {validationResult && (
           <div className={`panel mb-4 p-4 ${validationResult.ok ? 'border-success/40' : 'border-danger/40'}`}>
-            <pre className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed text-fg-muted">
+            <pre className="whitespace-pre-wrap t-micro t-mono leading-relaxed">
               {validationResult.message}
             </pre>
           </div>
@@ -137,14 +137,14 @@ export default function ExportSettings() {
         {/* 空缺引导 */}
         {totalLines === 0 && (
           <div className="panel mb-4 border-dashed border-edge/25 p-6 text-center">
-            <p className="text-[11px] text-fg-subtle">尚未添加任何剧本行。先去场景导航中编写内容再导出。</p>
+            <p className="t-caption">尚未添加任何剧本行。先去场景导航中编写内容再导出。</p>
           </div>
         )}
 
         {/* 导出格式说明 */}
         <section className="panel p-4">
           <div className="eyebrow mb-3">导出格式 · Format</div>
-          <div className="space-y-2 text-[10px] leading-relaxed text-fg-faint">
+          <div className="space-y-2 t-micro leading-relaxed">
             <p><code className="text-signal">script.rpy</code> — Ren'Py 脚本主文件，包含 label / scene / show / hide / 台词等。</p>
             <p><code className="text-signal">definitions.rpy</code> — 角色声明 + image / transform 定义 + 素材路径清单。</p>
             <p>导出后将文件放入 Ren'Py 项目的 <code className="text-signal">game/</code> 目录，素材放入对应子目录即可运行。</p>

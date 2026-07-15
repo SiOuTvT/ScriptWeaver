@@ -383,7 +383,7 @@ export default function AssetManager() {
                           {asset.name}
                         </span>
                       )}
-                      <span className="block truncate text-[8px] text-white/70">{asset.fileName}</span>
+                      <span className="block truncate text-[10px] text-white/70">{asset.fileName}</span>
                     </div>
                   </div>
                 )
