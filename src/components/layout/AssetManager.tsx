@@ -363,7 +363,16 @@ export default function AssetManager() {
         confirmText="删除"
         tone="danger"
         onConfirm={() => {
-          if (pendingDelete) deleteAsset(pendingDelete.id)
+          if (pendingDelete) {
+            const res = deleteAsset(pendingDelete.id)
+            if (!res.ok) {
+              alert(
+                `无法删除素材 "${pendingDelete.name}"，它被以下角色表情引用：\n${res.refs.join(
+                  '\n',
+                )}\n\n请先在角色管理中解除引用。`,
+              )
+            }
+          }
           setPendingDelete(null)
         }}
         onCancel={() => setPendingDelete(null)}

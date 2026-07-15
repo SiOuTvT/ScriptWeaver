@@ -87,7 +87,7 @@ interface AppState {
   // ===== 素材 CRUD =====
   addAsset: (asset: AssetItem) => void
   updateAsset: (id: string, patch: Partial<AssetItem>) => void
-  deleteAsset: (id: string) => void
+  deleteAsset: (id: string) => { ok: boolean; refs: string[] }
   getAsset: (id: string) => AssetItem | undefined
 
   // ===== 项目操作 =====
@@ -228,6 +228,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteAsset: (id) => {
+    // 角色引用检查（store 层防御，不依赖 UI 拦截）
+    // 防止其他代码路径绕过 AssetManager 的 getRefs 直接调用导致断链
+    const refs: string[] = []
+    for (const c of get().characterConfigs) {
+      for (const e of c.expressions) {
+        if (e.assetId === id) {
+          refs.push(`${c.displayName}(${c.charId}).${e.label}`)
+        }
+      }
+    }
+    if (refs.length > 0) {
+      return { ok: false, refs }
+    }
+
     get()._pushHistory()
     // 级联清理 Delta 中对被删素材的引用
     const deltas = get().draftDeltas.map((d) => {
@@ -272,6 +286,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       draftDeltas: deltas,
       resolvedStates: reduceLines(deltas),
     }))
+    return { ok: true, refs: [] }
   },
 
   getAsset: (id) => {
