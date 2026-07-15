@@ -121,12 +121,12 @@ export default function ScriptOverview() {
         bgmId: bgmId ?? null,
         ambientId: st.audio.ambient ? st.audio.ambient.asset_id : null,
         seIds: st.audio.se,
-        voiceId: st.voice ?? null,
+        voiceId: st.audio.voice ?? null,
         characters,
         bgm: bgmId ? getAsset(bgmId)?.name ?? bgmId : null,
         ambient: st.audio.ambient ? getAsset(st.audio.ambient.asset_id)?.name ?? st.audio.ambient.asset_id : null,
         se: st.audio.se.map((id) => getAsset(id)?.name ?? id),
-        voice: st.voice ? getAsset(st.voice)?.name ?? st.voice : null,
+        voice: st.audio.voice ? getAsset(st.audio.voice)?.name ?? st.audio.voice : null,
       }
     })
   }, [resolvedStates, characterConfigs, getAsset, charDisp, resolveExpr])
