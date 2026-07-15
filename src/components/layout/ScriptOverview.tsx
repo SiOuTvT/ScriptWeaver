@@ -364,9 +364,8 @@ export default function ScriptOverview() {
             <div className="mx-auto max-w-3xl pb-12">
               {scenes.map((sc, idx) => {
                 const d = sceneDetails[idx]
-                const isActive =
-                  activeScene === idx ||
-                  (activeLine !== null && activeLine >= sc.start && activeLine <= sc.end)
+                // 剧情树里高亮跟随滚动位置，不绑定点击(activeScene)，避免卡片卡在“点击态”
+                const isActive = activeLine !== null && activeLine >= sc.start && activeLine <= sc.end
                 const bgColor = sc.bgId ? resolveAssetColor(sc.bgId, assets) : null
                 const railColor = bgColor ?? 'rgb(var(--c-edge-strong) / 0.35)'
                 return (
