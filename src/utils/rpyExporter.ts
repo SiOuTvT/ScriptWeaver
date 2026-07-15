@@ -46,6 +46,12 @@ export function resolveLookups(
   const speakerToCharId: Record<string, string> = {}
   const allBgIds = new Set<string>()
 
+  // displayName -> charId 反向映射（应对 displayName 与 charId 差异较大的情况）
+  const displayNameToCharId = new Map<string, string>()
+  for (const char of characterConfigs) {
+    displayNameToCharId.set(char.displayName.toLowerCase(), char.charId)
+  }
+
   // 收集所有有效表达式名
   for (const char of characterConfigs) {
     for (const expr of char.expressions) {
@@ -60,15 +66,20 @@ export function resolveLookups(
     }
   }
 
-  // speaker 映射
+  // speaker 映射：先按 charId（大小写不敏感），再按 displayName（大小写不敏感）兜底
   for (const delta of deltas) {
     if (delta.speaker) {
+      let matched: string | undefined
       for (const charId of allCharIds) {
         if (delta.speaker.toLowerCase() === charId.toLowerCase()) {
-          speakerToCharId[delta.speaker] = charId
+          matched = charId
           break
         }
       }
+      if (!matched) {
+        matched = displayNameToCharId.get(delta.speaker.toLowerCase())
+      }
+      if (matched) speakerToCharId[delta.speaker] = matched
     }
   }
 
