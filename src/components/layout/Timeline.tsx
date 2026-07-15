@@ -689,7 +689,7 @@ export default function Timeline() {
                       }`}
                     >
                       <span className="font-mono leading-none text-[11px]">{s.line_id}</span>
-                      <span className="w-full truncate text-center text-[9px] leading-tight text-fg-subtle">
+                      <span className="w-full truncate text-center text-[10px] leading-tight text-fg-subtle">
                         {s.speaker ? `${s.speaker}：${s.dialogue}` : s.dialogue}
                       </span>
                     </button>
@@ -769,7 +769,7 @@ export default function Timeline() {
                   const seColor = resolveAssetColor(ev.items[0], assets)
                   return (
                   <div key={`se-${ev.index}`}
-                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[9px] text-fg"
+                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[10px] text-fg"
                     style={{ left: total > 0 ? `${(ev.index / total) * 100}%` : '0%', width: total > 0 ? `${(1 / total) * 100}%` : '0%', minWidth: 30, backgroundColor: seColor + '22', borderLeftColor: seColor }}
                     title={ev.items.map(assetName).join(', ')}>{assetName(ev.items[0])}</div>
                   )
@@ -788,7 +788,7 @@ export default function Timeline() {
                   const who = charId ? charDisplayName(charId) : (sp ?? '')
                   return (
                     <div key={`voice-${ev.index}`}
-                      className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[9px] text-fg"
+                      className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[10px] text-fg"
                       style={{
                         left: total > 0 ? `${(ev.index / total) * 100}%` : '0%',
                         width: total > 0 ? `${(1 / total) * 100}%` : '0%',
