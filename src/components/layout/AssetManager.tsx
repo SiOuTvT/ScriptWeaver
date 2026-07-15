@@ -272,7 +272,7 @@ export default function AssetManager() {
                         {asset.name}
                       </span>
                     )}
-                    <span className="block truncate text-[10px] text-fg-subtle">{asset.fileName}</span>
+                    <span className="block truncate text-[11px] text-fg-subtle">{asset.fileName}</span>
                   </div>
                   <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
@@ -379,11 +379,11 @@ export default function AssetManager() {
                           className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[10px] text-fg outline-none"
                         />
                       ) : (
-                        <span className="block truncate text-[10px] font-medium text-white" title={asset.name}>
+                        <span className="block truncate text-[11px] font-medium text-white" title={asset.name}>
                           {asset.name}
                         </span>
                       )}
-                      <span className="block truncate text-[10px] text-white/70">{asset.fileName}</span>
+                      <span className="block truncate text-[11px] text-white/70">{asset.fileName}</span>
                     </div>
                   </div>
                 )
