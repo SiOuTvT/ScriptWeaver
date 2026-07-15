@@ -166,7 +166,7 @@ export default function AIPanel() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="signal-dot" />
-            <span className="eyebrow">AI 辅助写作 · Assistant</span>
+            <span className="eyebrow">AI 辅助写作 Assistant</span>
           </div>
           <button
             onClick={() => setShowConfig(!showConfig)}
@@ -182,7 +182,7 @@ export default function AIPanel() {
         {/* 连接设置 */}
         {showConfig && (
           <section className="panel p-4">
-            <div className="eyebrow mb-3">连接设置 · Connection</div>
+            <div className="eyebrow mb-3">连接设置 Connection</div>
             <div className="space-y-3">
               <label className="block">
                 <span className="t-label">API 端点</span>
@@ -221,7 +221,7 @@ export default function AIPanel() {
 
         {/* 当前上下文 */}
         <section className="panel p-4">
-          <div className="eyebrow mb-3">当前上下文 · Context</div>
+          <div className="eyebrow mb-3">当前上下文 Context</div>
           <div className="flex gap-5 t-label">
             <span><span className="font-mono text-fg-muted">{draftDeltas.length}</span> 行</span>
             <span><span className="font-mono text-fg-muted">{characterConfigs.length}</span> 个角色</span>
@@ -238,7 +238,7 @@ export default function AIPanel() {
 
         {/* 创作指令 */}
         <section className="panel p-4">
-          <div className="eyebrow mb-3">创作指令 · Prompt</div>
+          <div className="eyebrow mb-3">创作指令 Prompt</div>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -275,7 +275,7 @@ export default function AIPanel() {
 
         {/* 使用提示 */}
         <section className="panel p-4">
-          <div className="eyebrow mb-3">使用提示 · Tips</div>
+          <div className="eyebrow mb-3">使用提示 Tips</div>
           <p className="t-micro leading-relaxed">
             生成的剧本会被追加到当前时间轴末尾。你可以描述剧情走向、人物关系、场景氛围等。
             模型会自动匹配现有角色和背景，必要时会新增。

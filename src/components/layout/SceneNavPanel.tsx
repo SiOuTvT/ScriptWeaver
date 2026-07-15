@@ -218,7 +218,7 @@ export default function SceneNavPanel() {
       {/* 标题 */}
       <div className="flex items-center gap-2 border-b border-edge/14 bg-surface-1 px-3 py-2.5">
         <span className="signal-dot" />
-        <span className="eyebrow">素材库 · Assets</span>
+        <span className="eyebrow">素材库 Assets</span>
         <span className="ml-auto text-[11px] text-fg-faint">拖拽至舞台</span>
       </div>
 
@@ -279,7 +279,7 @@ export default function SceneNavPanel() {
       {/* 底部计数 */}
       <div className="shrink-0 border-t border-edge/10 px-2 py-1.5 text-[11px] text-fg-faint">
         {filtered.length} 个{tab === 'audio' ? '音频' : tab === 'sprite' ? '立绘' : '背景'}
-        {search && ` · 共 ${assets.filter((a) => a.type === tab).length}`}
+        {search && ` 共 ${assets.filter((a) => a.type === tab).length}`}
       </div>
     </aside>
   )
