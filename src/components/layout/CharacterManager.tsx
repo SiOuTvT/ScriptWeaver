@@ -122,7 +122,7 @@ export default function CharacterManager() {
         </div>
         <button
           onClick={() => setShowNewForm(!showNewForm)}
-          className="rounded px-2 py-0.5 text-[10px] font-medium text-signal transition-colors hover:bg-signal/15"
+          className="rounded px-2 py-0.5 text-[11px] font-medium text-signal transition-colors hover:bg-signal/15"
         >
           + 新建
         </button>
@@ -326,7 +326,7 @@ export default function CharacterManager() {
       </div>
 
       {/* 底部统计 */}
-      <div className="border-t border-edge/10 px-3 py-1.5 text-[10px] text-fg-subtle">
+      <div className="border-t border-edge/10 px-3 py-1.5 text-[11px] text-fg-subtle">
         {characterConfigs.length} 个角色
       </div>
 
