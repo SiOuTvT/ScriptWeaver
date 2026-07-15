@@ -113,7 +113,7 @@ export default function CharacterManager() {
   )
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-edge/12 bg-surface shadow-[0_1px_3px_rgba(28,24,18,0.08)]">
+    <div className="flex flex-1 flex-col overflow-hidden bg-canvas">
       {/* 标题 */}
       <div className="flex items-center justify-between border-b border-edge/14 bg-surface-1 px-3 py-2.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
