@@ -59,7 +59,7 @@ export default function ExportSettings() {
   const charInScene = characterConfigs.length
 
   return (
-    <div className="flex flex-1 flex-col overflow-auto bg-canvas/50 p-6">
+    <div className="flex flex-1 flex-col overflow-auto bg-canvas p-6">
       <h2 className="mb-1 text-sm font-semibold text-fg">Ren'Py 导出设置</h2>
       <p className="mb-5 text-[11px] text-fg-subtle">配置导出选项并校验脚本完整性</p>
 
