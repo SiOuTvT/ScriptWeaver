@@ -116,12 +116,13 @@ export default function CharacterManager() {
     <div className="flex flex-1 flex-col overflow-hidden bg-canvas">
       {/* 标题 */}
       <div className="flex items-center justify-between border-b border-edge/14 bg-surface-1 px-3 py-2.5">
-        <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
-          角色管理
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="signal-dot" />
+          <span className="eyebrow">角色管理 · Characters</span>
+        </div>
         <button
           onClick={() => setShowNewForm(!showNewForm)}
-          className="rounded px-2 py-0.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15"
+          className="rounded px-2 py-0.5 text-[10px] font-medium text-signal transition-colors hover:bg-signal/15"
         >
           + 新建
         </button>
@@ -252,7 +253,7 @@ export default function CharacterManager() {
                           <label className="text-[10px] text-fg-subtle">表情列表</label>
                           <button
                             onClick={() => setShowExprPicker(!showExprPicker)}
-                            className="text-[10px] text-primary transition-colors hover:text-primary-hover"
+                            className="text-[10px] text-signal transition-opacity hover:opacity-80"
                           >
                             + 添加表情
                           </button>

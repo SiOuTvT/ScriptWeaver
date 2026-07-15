@@ -34,9 +34,8 @@ export default function ScriptDrawer() {
         {/* 头部 */}
         <div className="flex items-center justify-between border-b border-edge/12 px-3 py-2.5">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
-              剧本流
-            </span>
+            <span className="signal-dot" />
+            <span className="eyebrow">剧本流 · Script</span>
             <span className="rounded-full bg-surface-1 px-1.5 py-0.5 text-[10px] text-fg-subtle">
               {deltas.length}
             </span>
@@ -48,7 +47,7 @@ export default function ScriptDrawer() {
               title={pinned ? '取消钉住' : '钉住面板'}
               className={`rounded p-1 transition-colors ${
                 pinned
-                  ? 'bg-primary/15 text-primary'
+                  ? 'bg-signal/15 text-signal'
                   : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
               }`}
             >
@@ -149,7 +148,7 @@ function ChangeIndicators({ delta: d }: { delta: LineDelta }) {
   if (d.background !== null) push('bg', <ImageIcon size={11} strokeWidth={1.75} />)
   if (Object.keys(d.characters).length > 0) {
     const actions = Object.values(d.characters)
-    if (actions.some((c) => c.action === 'show')) push('ch', <ImageIcon size={11} strokeWidth={1.75} className="text-primary" />)
+    if (actions.some((c) => c.action === 'show')) push('ch', <ImageIcon size={11} strokeWidth={1.75} className="text-signal" />)
     if (actions.some((c) => c.action === 'hide' || c.action === '__CLEAR__')) push('hide', <DoorOpen size={11} strokeWidth={1.75} />)
   }
   if (d.audio.bgm === '__CLEAR__') push('bgm-off', <VolumeX size={11} strokeWidth={1.75} />)

@@ -125,20 +125,20 @@ const DropCell = memo(function DropCell({
       e.dataTransfer.dropEffect = 'copy'
       const cache = getDragCache()
       if (!cache) return
-      elRef.current?.classList.add('ring-1', 'ring-primary', 'bg-primary/15')
+      elRef.current?.classList.add('ring-1', 'ring-signal', 'bg-signal/15')
     },
     [acceptType],
   )
 
   const handleDragLeave = useCallback(() => {
-      elRef.current?.classList.remove('ring-1', 'ring-primary', 'bg-primary/15')
+      elRef.current?.classList.remove('ring-1', 'ring-signal', 'bg-signal/15')
     }, [])
 
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
-      elRef.current?.classList.remove('ring-1', 'ring-primary', 'bg-primary/15')
+      elRef.current?.classList.remove('ring-1', 'ring-signal', 'bg-signal/15')
       if (!acceptType) return
 
       let asset = getDragCache()
@@ -624,7 +624,7 @@ export default function Timeline() {
       {/* 拖拽预览浮层 */}
       {resizeState && (
         <div
-          className="pointer-events-none absolute z-50 rounded-sm border-2 border-primary bg-primary/20"
+          className="pointer-events-none absolute z-50 rounded-sm border-2 border-signal bg-signal/20"
           style={{
             top: 0,
             left: resizeState.ghostLeft,
@@ -632,7 +632,7 @@ export default function Timeline() {
             height: '100%',
           }}
         >
-          <span className="absolute top-1 left-2 text-[10px] font-mono text-primary-hover">
+          <span className="absolute top-1 left-2 text-[10px] font-mono text-signal">
             {resizeState.edge === 'left'
               ? `← L${resizeState.targetLine + 1}`
               : `L${resizeState.targetLine + 1} →`}
@@ -684,7 +684,7 @@ export default function Timeline() {
                       onClick={() => selectLine(i)}
                       className={`flex w-full flex-col items-center justify-center gap-0.5 px-1 transition-colors ${
                         i === selectedIndex
-                          ? 'text-primary'
+                          ? 'text-signal'
                           : 'text-fg-subtle group-hover:text-fg'
                       }`}
                     >

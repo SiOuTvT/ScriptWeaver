@@ -170,10 +170,9 @@ export default function AssetManager() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-canvas">
       {/* 标题 */}
-      <div className="flex items-baseline gap-1.5 border-b border-edge/14 bg-surface-1 px-3 py-2.5">
-        <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
-          素材管理
-        </span>
+      <div className="flex items-center gap-2 border-b border-edge/14 bg-surface-1 px-3 py-2.5">
+        <span className="signal-dot" />
+        <span className="eyebrow">素材管理 · Assets</span>
       </div>
 
       {/* 导入按钮 */}
@@ -277,7 +276,7 @@ export default function AssetManager() {
                         if (e.key === 'Escape') setEditingId(null)
                       }}
                       autoFocus
-                      className="w-full rounded border border-primary bg-surface-3 px-1 py-0.5 text-[11px] text-fg outline-none"
+                      className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[11px] text-fg outline-none"
                     />
                   ) : (
                     <span

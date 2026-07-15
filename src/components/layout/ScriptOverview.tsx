@@ -246,7 +246,7 @@ export default function ScriptOverview() {
       {/* ============ 头部 ============ */}
       <div className="flex items-center justify-between gap-3 border-b border-edge/10 px-4 py-2.5">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">剧本总览</span>
+          <span className="eyebrow">剧本总览 · Script</span>
           <div className="flex items-center gap-1">
             <StatChip label="行" value={stats.lines} />
             <StatChip label="场景" value={stats.scenes} />
@@ -256,7 +256,7 @@ export default function ScriptOverview() {
           {activeScene !== null && (
             <button
               onClick={() => setActiveScene(null)}
-              className="rounded bg-primary-soft px-2 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20"
+              className="rounded bg-signal-soft px-2 py-0.5 text-[10px] font-medium text-signal hover:bg-signal/20"
             >
               返回全部场景 ✕
             </button>
@@ -281,7 +281,7 @@ export default function ScriptOverview() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="搜索角色 / 台词…"
-              className="w-56 rounded-md border border-edge/10 bg-surface-3 py-1 pl-8 pr-3 text-[12px] text-fg placeholder-fg-faint outline-none focus:border-primary/40"
+              className="w-56 rounded-md border border-edge/10 bg-surface-3 py-1 pl-8 pr-3 text-[12px] text-fg placeholder-fg-faint outline-none focus:border-signal/40"
             />
           </div>
         </div>
@@ -338,8 +338,8 @@ export default function ScriptOverview() {
                 <button
                   key={idx}
                   onClick={() => handleSceneClick(idx)}
-                  className={`flex w-full items-center gap-2 px-3 py-2 pl-7 text-left transition-colors hover:bg-surface-hover ${
-                    isActiveScene ? 'bg-surface-active' : ''
+                  className={`relative flex w-full items-center gap-2 px-3 py-2 pl-7 text-left transition-colors hover:bg-surface-hover ${
+                    isActiveScene ? 'signal-bar bg-surface-active' : ''
                   }`}
                 >
                   <span
@@ -390,7 +390,7 @@ export default function ScriptOverview() {
                           borderColor: railColor,
                           background: bgColor ? bgColor + '1f' : 'rgb(var(--c-surface-3))',
                           color: bgColor ?? 'rgb(var(--c-fg-muted))',
-                          boxShadow: isActive ? `0 0 0 4px ${bgColor ?? 'rgb(var(--c-primary) / 0.25)'}` : undefined,
+                          boxShadow: isActive ? `0 0 0 4px ${bgColor ?? 'rgb(var(--c-signal) / 0.25)'}` : undefined,
                         }}
                       >
                         {idx + 1}
@@ -402,7 +402,7 @@ export default function ScriptOverview() {
                       type="button"
                       onClick={() => handleSceneClick(idx)}
                       className={`group relative flex-1 overflow-hidden rounded-xl border bg-surface-2 p-3.5 text-left shadow-1 outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 ${
-                        isActive ? 'border-primary/30 ring-2 ring-primary/30' : 'border-edge/10'
+                        isActive ? 'border-signal/40 ring-2 ring-signal/30' : 'border-edge/10'
                       }`}
                     >
                       {/* 顶部色条 */}
@@ -485,7 +485,7 @@ export default function ScriptOverview() {
                       cardRefs.current[c.index] = el
                     }}
                     className={`rounded-lg border border-edge/10 bg-surface-2 p-2.5 shadow-1 transition-shadow hover:shadow-2 ${
-                      isActiveCard ? 'ring-1 ring-primary/50' : ''
+                      isActiveCard ? 'ring-1 ring-signal/50' : ''
                     }`}
                     style={{ borderLeft: `3px solid ${isNarration ? 'transparent' : accent}` }}
                   >

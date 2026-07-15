@@ -48,7 +48,7 @@ export default function SceneNavPanel() {
       // 创建拖拽预览图：半透明小卡片
       const ghost = document.createElement('div')
       ghost.className =
-        'rounded-md border border-primary bg-surface-2 px-3 py-1.5 text-xs text-fg shadow-2'
+        'rounded-md border border-signal bg-surface-2 px-3 py-1.5 text-xs text-fg shadow-2'
       ghost.textContent = asset.name
       ghost.style.position = 'absolute'
       ghost.style.top = '-9999px'
@@ -216,11 +216,10 @@ export default function SceneNavPanel() {
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-edge/18 bg-surface">
       {/* 标题 */}
-      <div className="flex items-baseline gap-1.5 border-b border-edge/14 bg-surface-1 px-3 py-2.5">
-        <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
-          素材库
-        </span>
-        <span className="text-[10px] text-fg-faint">· 拖拽至舞台</span>
+      <div className="flex items-center gap-2 border-b border-edge/14 bg-surface-1 px-3 py-2.5">
+        <span className="signal-dot" />
+        <span className="eyebrow">素材库 · Assets</span>
+        <span className="ml-auto text-[10px] text-fg-faint">拖拽至舞台</span>
       </div>
 
       {/* 导入按钮 */}
