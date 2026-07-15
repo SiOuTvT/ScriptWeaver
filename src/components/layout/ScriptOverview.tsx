@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import { Search, ChevronRight, Music, Image as ImageIcon, Workflow, List } from 'lucide-react'
+import { Search, ChevronRight, Music, Image as ImageIcon, Workflow, List, AudioLines, Megaphone, Volume2, User } from 'lucide-react'
 
 // ===================== 颜色辅助 =====================
 import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
@@ -43,14 +43,14 @@ interface SceneData {
   lineCount: number
 }
 
-// 音频 chip 图标
+// 音频 chip 图标（线性图标，避免 emoji 廉价感）
 const ICON = {
-  bg: '🖼',
-  bgm: '🎵',
-  ambient: '🌿',
-  se: '⚡',
-  voice: '🗣',
-  char: '👤',
+  bg: <ImageIcon size={10} strokeWidth={1.75} className="text-fg-subtle" />,
+  bgm: <Music size={10} strokeWidth={1.75} className="text-fg-subtle" />,
+  ambient: <AudioLines size={10} strokeWidth={1.75} className="text-fg-subtle" />,
+  se: <Megaphone size={10} strokeWidth={1.75} className="text-fg-subtle" />,
+  voice: <Volume2 size={10} strokeWidth={1.75} className="text-fg-subtle" />,
+  char: <User size={10} strokeWidth={1.75} className="text-fg-subtle" />,
 }
 
 // 顶部统计小胶囊
