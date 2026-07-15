@@ -225,6 +225,8 @@ interface SpanData {
   assetId?: string
   /** 片段颜色（素材色或轨道色） */
   color?: string
+  /** 关联角色 ID（角色语音片段等） */
+  charId?: string
 }
 
 function spanPct(val: number, total: number): string {

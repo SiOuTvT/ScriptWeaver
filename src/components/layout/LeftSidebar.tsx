@@ -6,6 +6,7 @@ interface NavItem {
   id: NavItemId
   label: string
   icon: ReactNode
+  code?: string
 }
 
 const NAV_ITEMS: NavItem[] = [

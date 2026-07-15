@@ -299,7 +299,6 @@ export default function AppLayout() {
       projectRoot: root,
     })
     saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets, root)
-    setShowDraftRecovery(false)
 
     // 从磁盘重新读取素材 dataUrl（不依赖 .swproj 中可能残留的旧 base64）
     refreshAssetDataUrls(parsed.assets, root)
