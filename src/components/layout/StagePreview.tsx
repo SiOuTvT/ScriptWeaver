@@ -536,7 +536,7 @@ export default function StagePreview() {
           </div>
           {/* 行信息提示 */}
           <div className="mt-1.5 text-right text-[11px] text-fg-subtle">
-            {state.line_id} · 快捷输入 · {state.speaker ? `说话人 ${state.speaker}` : '旁白模式'}
+            {state.line_id} 快捷输入 {state.speaker ? `说话人 ${state.speaker}` : '旁白模式'}
           </div>
         </div>
 

@@ -71,7 +71,7 @@ export default function ExportSettings() {
         <header className="mb-5">
           <div className="flex items-center gap-2">
             <span className="signal-dot" />
-            <span className="eyebrow">Export · Ren'Py</span>
+            <span className="eyebrow">Export Ren'Py</span>
           </div>
           <h2 className="t-h2 mt-1.5">Ren'Py 导出设置</h2>
           <p className="mt-0.5 t-subtitle">配置导出选项并校验脚本完整性</p>
@@ -79,7 +79,7 @@ export default function ExportSettings() {
 
         {/* 项目概况 */}
         <section className="panel mb-4 p-4">
-          <div className="eyebrow mb-3">项目概况 · Overview</div>
+          <div className="eyebrow mb-3">项目概况 Overview</div>
           <div className="grid grid-cols-3 divide-x divide-edge/10">
             {stats.map((item) => (
               <div key={item.label} className="px-4 first:pl-0">
@@ -92,7 +92,7 @@ export default function ExportSettings() {
 
         {/* 脚本入口 */}
         <section className="panel mb-4 p-4">
-          <div className="eyebrow mb-3">脚本入口 · Label</div>
+          <div className="eyebrow mb-3">脚本入口 Label</div>
           <label className="mb-1 block t-label">Ren'Py Script Label</label>
           <div className="flex items-center gap-2">
             <input
@@ -108,7 +108,7 @@ export default function ExportSettings() {
 
         {/* 导出操作 */}
         <section className="panel mb-4 p-4">
-          <div className="eyebrow mb-3">导出操作 · Export</div>
+          <div className="eyebrow mb-3">导出操作 Export</div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleValidate}>
               校验引用
@@ -143,7 +143,7 @@ export default function ExportSettings() {
 
         {/* 导出格式说明 */}
         <section className="panel p-4">
-          <div className="eyebrow mb-3">导出格式 · Format</div>
+          <div className="eyebrow mb-3">导出格式 Format</div>
           <div className="space-y-2 t-micro leading-relaxed">
             <p><code className="text-signal">script.rpy</code> — Ren'Py 脚本主文件，包含 label / scene / show / hide / 台词等。</p>
             <p><code className="text-signal">definitions.rpy</code> — 角色声明 + image / transform 定义 + 素材路径清单。</p>

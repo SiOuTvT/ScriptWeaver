@@ -644,7 +644,7 @@ export default function Timeline() {
 
       <div className="flex items-center justify-between border-b border-edge/10 px-3 py-1.5">
         <span className="text-[11px] font-medium text-fg-muted">时间轴</span>
-        <span className="text-[11px] text-fg-subtle">{total} 行 · {totalTracks} 轨</span>
+        <span className="text-[11px] text-fg-subtle">{total} 行 {totalTracks} 轨</span>
       </div>
 
       <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + 60}px` }}>
@@ -798,7 +798,7 @@ export default function Timeline() {
                         backgroundColor: vColor + '22',
                         borderLeftColor: vColor,
                       }}
-                      title={`${who ? who + ' · ' : ''}${assetName(ev.voice)}`}>
+                      title={`${who ? who + ' ' : ''}${assetName(ev.voice)}`}>
                       {who || assetName(ev.voice)}
                     </div>
                   )

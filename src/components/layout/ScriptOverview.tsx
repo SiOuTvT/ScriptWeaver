@@ -246,7 +246,7 @@ export default function ScriptOverview() {
       {/* ============ 头部 ============ */}
       <div className="flex items-center justify-between gap-3 border-b border-edge/10 px-4 py-2.5">
         <div className="flex items-center gap-3">
-          <span className="eyebrow">剧本总览 · Script</span>
+          <span className="eyebrow">剧本总览 Script</span>
           <div className="flex items-center gap-1">
             <StatChip label="行" value={stats.lines} />
             <StatChip label="场景" value={stats.scenes} />
@@ -298,7 +298,7 @@ export default function ScriptOverview() {
               <button
                 key={c.index}
                 onClick={() => scrollToLine(c.index)}
-                title={`L${c.index + 1}${c.speakerName ? ' · ' + c.speakerName : ' · 旁白'}`}
+                title={`L${c.index + 1}${c.speakerName ? ' ' + c.speakerName : ' 旁白'}`}
                 className="group relative flex-1 border-b border-edge/5 transition-all"
                 style={{
                   opacity: inFilter ? 1 : 0.18,
@@ -326,7 +326,7 @@ export default function ScriptOverview() {
               size={12}
               className={`text-fg-subtle transition-transform ${outlineCollapsed ? '' : 'rotate-90'}`}
             />
-            <span className="text-[11px] font-medium text-fg-muted">大纲 · 场景</span>
+            <span className="text-[11px] font-medium text-fg-muted">大纲 场景</span>
             <span className="ml-auto text-[11px] text-fg-faint">{scenes.length}</span>
           </button>
           {!outlineCollapsed &&
@@ -349,7 +349,7 @@ export default function ScriptOverview() {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] text-fg">{sc.label}</span>
                     <span className="block text-[11px] text-fg-faint">
-                      L{sc.start + 1}–L{sc.end + 1} · {sc.lineCount} 行
+                      L{sc.start + 1}–L{sc.end + 1} {sc.lineCount} 行
                     </span>
                   </span>
                 </button>
@@ -531,7 +531,7 @@ export default function ScriptOverview() {
                           >
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: ch.color }} />
                             {ICON.char} {ch.name}
-                            {ch.expr && <span className="text-fg-faint">· {ch.expr}</span>}
+                            {ch.expr && <span className="text-fg-faint">{ch.expr}</span>}
                           </span>
                         ))}
                         {c.backgroundName && (

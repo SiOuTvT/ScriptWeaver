@@ -172,7 +172,7 @@ export default function AssetManager() {
       {/* 标题 */}
       <div className="flex items-center gap-2 border-b border-edge/14 bg-surface-1 px-3 py-2.5">
         <span className="signal-dot" />
-        <span className="eyebrow">素材管理 · Assets</span>
+        <span className="eyebrow">素材管理 Assets</span>
       </div>
 
       {/* 导入按钮 */}
@@ -396,7 +396,7 @@ export default function AssetManager() {
       {/* 底部统计 */}
       <div className="border-t border-edge/10 px-2 py-1.5 text-[11px] text-fg-faint">
         {filtered.length} 个{tabLabel}
-        {search && ` · 共 ${assets.filter((a) => a.type === tab).length}`}
+        {search && ` 共 ${assets.filter((a) => a.type === tab).length}`}
       </div>
 
       {/* 右键菜单 */}

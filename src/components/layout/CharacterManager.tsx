@@ -118,7 +118,7 @@ export default function CharacterManager() {
       <div className="flex items-center justify-between border-b border-edge/14 bg-surface-1 px-3 py-2.5">
         <div className="flex items-center gap-2">
           <span className="signal-dot" />
-          <span className="eyebrow">角色管理 · Characters</span>
+          <span className="eyebrow">角色管理 Characters</span>
         </div>
         <button
           onClick={() => setShowNewForm(!showNewForm)}
@@ -184,7 +184,7 @@ export default function CharacterManager() {
                           {char.displayName}
                         </span>
                         <span className="block text-[11px] text-fg-faint">
-                          {char.charId} · {exprCount} 表情
+                          {char.charId} {exprCount} 表情
                         </span>
                       </div>
                     </button>
@@ -243,7 +243,7 @@ export default function CharacterManager() {
               {/* 表情管理 */}
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="eyebrow">表情列表 · Expressions</span>
+                  <span className="eyebrow">表情列表 Expressions</span>
                   <button
                     onClick={() => setShowExprPicker(!showExprPicker)}
                     className="text-[11px] text-signal transition-opacity hover:opacity-80"
