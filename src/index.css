@@ -174,7 +174,7 @@
     font-family: var(--font-mono, ui-monospace, 'JetBrains Mono', monospace);
     font-size: 10px;
     line-height: 1.4;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: rgb(var(--c-fg-faint));
     font-weight: 500;
