@@ -415,7 +415,7 @@ export default function ScriptOverview() {
 
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="truncate text-[15px] font-semibold tracking-tight text-fg">
+                          <h3 className="truncate text-[14px] font-semibold text-fg">
                             {sc.label}
                           </h3>
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-fg-faint">
@@ -509,7 +509,7 @@ export default function ScriptOverview() {
 
                     {/* 台词正文 */}
                     <p
-                      className={`text-[14px] leading-[1.55] ${
+                      className={`text-[13px] leading-[1.55] ${
                         c.dialogue ? 'text-fg' : 'text-fg-faint italic'
                       }`}
                     >
