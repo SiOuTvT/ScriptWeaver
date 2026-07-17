@@ -284,6 +284,8 @@ const DraggableSpan = memo(function DraggableSpan({
   trackRowEl,
   onResizeStart,
   onDelete,
+  selected,
+  onSelect,
 }: {
   span: SpanData
   total: number
@@ -315,6 +317,7 @@ const DraggableSpan = memo(function DraggableSpan({
         else if (offset >= rect.width - threshold) edge = 'right'
       }
 
+      onSelect?.()
       onResizeStart({
         trackId,
         spanStart: span.start,
@@ -335,15 +338,15 @@ const DraggableSpan = memo(function DraggableSpan({
     >
       {/* 色块主体（整块可拖：边缘伸缩 / 中间移动） */}
       <div
-        className="pointer-events-auto absolute inset-x-0.5 top-1 bottom-1 cursor-grab rounded-sm active:cursor-grabbing"
+        className={`pointer-events-auto absolute inset-x-0.5 top-1 bottom-1 cursor-grab rounded-sm active:cursor-grabbing ${selected ? 'ring-2 ring-signal' : ''}`}
         style={{
           backgroundColor: color + '55',
           borderLeft: `2px solid ${color}`,
         }}
         onMouseDown={handleDown}
-        title="拖动中间可整体移动；拖动左右边缘可伸缩长度"
+        title="拖动中间可整体移动；拖动左右边缘可伸缩长度；选中后按 ← → 微移"
       >
-        <span className="truncate px-1.5 text-[12px] leading-5 text-fg" title={span.label}>
+        <span className="truncate px-1.5 text-[13px] leading-5 text-fg" title={span.label}>
           {span.label}
         </span>
       </div>
@@ -637,7 +640,7 @@ export default function Timeline() {
       const snapCandidates: number[] = []
       const track = allTracks.find((t) => t.id === info.trackId)
       if (track) {
-        for (const sp of track.spans) {
+        for (const sp of track.spans as SpanData[]) {
           if (sp.start === info.spanStart && sp.end === info.spanEnd && (sp.charId ?? undefined) === (info.charId ?? undefined)) continue
           snapCandidates.push(sp.start, sp.end + 1)
         }
@@ -830,7 +833,7 @@ export default function Timeline() {
         </div>
       </div>
 
-      <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + 60}px` }}>
+      <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + HEADER_H + 8}px` }}>
         {/* 轨道标签列 */}
         <div className="shrink-0 border-r border-edge/10 bg-canvas/50">
           {/* 占位行：对齐右边行号 header（48px 高） */}
@@ -930,6 +933,7 @@ export default function Timeline() {
                 ref={setTrackRowRef(track.id)}
                 className="relative flex border-b border-edge/10"
                 style={{ height: trackHeight }}
+                onMouseDown={() => setSelectedSpan(null)}
               >
                 {resolvedStates.map((s, i) => (
                   <DropCell key={s.line_id} lineIndex={i} trackId={track.id}
@@ -945,6 +949,8 @@ export default function Timeline() {
                     color={span.color ?? track.color}
                     trackId={track.id}
                     trackRowEl={trackRowRefs.current.get(track.id) ?? null}
+                    selected={selectedSpan?.trackId === track.id && selectedSpan.start === span.start && selectedSpan.end === span.end && (selectedSpan.charId ?? undefined) === ((span as SpanData).charId ?? undefined)}
+                    onSelect={() => setSelectedSpan({ trackId: track.id, start: span.start, end: span.end, charId: (span as SpanData).charId })}
                     onResizeStart={handleResizeStart}
                     onDelete={() => handleDeleteSpan(track.id, span)}
                   />
@@ -1020,7 +1026,7 @@ export default function Timeline() {
 
             {/* 拖拽预览浮层：仅覆盖当前轨道行，定位与色块一致 */}
             {resizeState && (() => {
-              const top = 48 + resizeState.trackIndex * trackHeight + 2
+              const top = HEADER_H + resizeState.trackIndex * trackHeight + 2
               return (
                 <div
                   className="pointer-events-none absolute z-50 rounded-sm border-2 border-signal bg-signal/20"

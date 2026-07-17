@@ -691,7 +691,7 @@ export default function StagePreview() {
                   commitDialogue(localSpeaker, e.target.value)
                 }}
                 placeholder={state.speaker ? `${state.speaker}的台词...` : '旁白或台词...'}
-                className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
+                className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[14px] text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
               />
             </div>
           </div>
