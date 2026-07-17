@@ -232,6 +232,8 @@ function spanPct(val: number, total: number): string {
   return total > 0 ? `${(val / total) * 100}%` : '0%'
 }
 
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+
 const SpanBlock = memo(function SpanBlock({
   span,
   total,
@@ -369,7 +371,6 @@ const DraggableSpan = memo(function DraggableSpan({
 
 export default function Timeline() {
   const resolvedStates = useAppStore((s) => s.resolvedStates)
-  const draftDeltas = useAppStore((s) => s.draftDeltas)
   const selectedIndex = useAppStore((s) => s.selectedLineIndex)
   const selectLine = useAppStore((s) => s.selectLine)
   const batchUpdateDeltas = useAppStore((s) => s.batchUpdateDeltas)
@@ -463,6 +464,7 @@ export default function Timeline() {
 
   // ========== 色块拖拽 resize 状态 ==========
   const [resizeState, setResizeState] = useState<ResizeState | null>(null)
+  const resizeRef = useRef<ResizeState | null>(null)
   const trackRowRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   const setTrackRowRef = useCallback((trackId: string) => (el: HTMLDivElement | null) => {
@@ -470,25 +472,206 @@ export default function Timeline() {
     else trackRowRefs.current.delete(trackId)
   }, [])
 
+  // 提交一次色块拖拽/伸缩的最终结果
+  const commitResize = useCallback(
+    (rs: ResizeState) => {
+      const spanLen = rs.spanEnd - rs.spanStart
+      let newStart = rs.spanStart
+      let newEnd = rs.spanEnd
+      if (rs.edge === 'left') {
+        newStart = rs.targetLine
+        newEnd = rs.spanEnd
+      } else if (rs.edge === 'right') {
+        newEnd = rs.targetLine
+        newStart = rs.spanStart
+      } else {
+        newStart = rs.targetLine
+        newEnd = rs.targetLine + spanLen
+      }
+
+      if (newStart === rs.spanStart && newEnd === rs.spanEnd) return
+
+      const track = allTracks.find((t) => t.id === rs.trackId)
+      if (!track) return
+
+      const updates: { index: number; updater: (prev: LineDelta) => LineDelta }[] = []
+
+      if (track.trackType === 'static' && track.trackDef) {
+        const td = track.trackDef
+        for (let i = 0; i < total; i++) {
+          const shouldHave = i >= newStart && i <= newEnd
+          const wasIn = i >= rs.spanStart && i <= rs.spanEnd
+
+          if (shouldHave && !wasIn) {
+            const anchorState = resolvedStates[rs.spanStart]
+            const assetVal = td.getAssetValue(anchorState)
+            if (td.id === 'bg') {
+              updates.push({ index: i, updater: (prev) => ({ ...prev, background: assetVal }) })
+            } else if (td.id === 'bgm') {
+              updates.push({
+                index: i,
+                updater: (prev) => {
+                  const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
+                  audio.bgm = assetVal
+                  return { ...prev, audio }
+                },
+              })
+            } else if (td.id === 'ambient') {
+              updates.push({
+                index: i,
+                updater: (prev) => {
+                  const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
+                  audio.ambient = assetVal
+                  return { ...prev, audio }
+                },
+              })
+            }
+          } else if (!shouldHave && wasIn) {
+            if (td.id === 'bg') {
+              updates.push({ index: i, updater: (prev) => ({ ...prev, background: null }) })
+            } else if (td.id === 'bgm') {
+              updates.push({
+                index: i,
+                updater: (prev) => {
+                  const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
+                  audio.bgm = null
+                  return { ...prev, audio }
+                },
+              })
+            } else if (td.id === 'ambient') {
+              updates.push({
+                index: i,
+                updater: (prev) => {
+                  const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
+                  audio.ambient = null
+                  return { ...prev, audio }
+                },
+              })
+            }
+          }
+        }
+      } else if (track.trackType === 'sprite-merged' && rs.charId) {
+        const charId = rs.charId
+        const anchorState = resolvedStates[rs.spanStart]
+        const charState = anchorState.characters[charId]
+        if (!charState) return
+
+        const spriteId = charState.sprite_id
+        const slot = charState.position_slot
+
+        for (let i = 0; i < total; i++) {
+          const shouldHave = i >= newStart && i <= newEnd
+          const wasIn = i >= rs.spanStart && i <= rs.spanEnd
+
+          if (shouldHave && !wasIn) {
+            updates.push({
+              index: i,
+              updater: (prev) => ({
+                ...prev,
+                characters: {
+                  ...prev.characters,
+                  [charId]: { sprite_id: spriteId, position_slot: slot, action: 'show' as const },
+                },
+              }),
+            })
+          } else if (!shouldHave && wasIn) {
+            updates.push({
+              index: i,
+              updater: (prev) => {
+                const chars = { ...prev.characters }
+                if (chars[charId]) {
+                  chars[charId] = { ...chars[charId], action: 'hide' as const }
+                }
+                return { ...prev, characters: chars }
+              },
+            })
+          }
+        }
+      }
+
+      if (updates.length > 0) {
+        batchUpdateDeltas(updates)
+        toast(`${track.label} 片段已移动到 第 ${newStart + 1}–${newEnd + 1} 行`, 'info')
+      }
+    },
+    [allTracks, resolvedStates, total, batchUpdateDeltas],
+  )
+
+  // 在色块上按下时直接挂载 document 级监听（而非用依赖 resizeState 的 effect 反复订阅，
+  // 后者每次移动都退订/重订会丢事件，导致「有时候拖不动」）
   const handleResizeStart = useCallback(
     (info: Omit<ResizeState, 'ghostLeft' | 'ghostWidth' | 'targetLine' | 'anchorLine' | 'trackIndex'> & { startClientX: number }) => {
       const rowEl = trackRowRefs.current.get(info.trackId)
       if (!rowEl) return
 
       const rowRect = rowEl.getBoundingClientRect()
-      const targetLine = Math.round((info.startClientX - rowRect.left) / cellWidth)
-      const anchorLine = Math.max(0, Math.min(total - 1, targetLine))
+      const targetLine = clamp(Math.round((info.startClientX - rowRect.left) / cellWidth), 0, total - 1)
+      const anchorLine = targetLine
       const trackIndex = allTracks.findIndex((t) => t.id === info.trackId)
 
-      // 初始 ghost 保持当前片段形态，移动过程中再整体平移
-      setResizeState({
+      const st: ResizeState = {
         ...info,
         ghostLeft: info.spanStart * cellWidth,
         ghostWidth: (info.spanEnd - info.spanStart + 1) * cellWidth,
         targetLine: anchorLine,
         anchorLine,
         trackIndex: trackIndex < 0 ? 0 : trackIndex,
-      })
+      }
+      resizeRef.current = st
+      setResizeState(st)
+
+      // 拖拽期间锁全局光标 + 禁止选中文本
+      document.body.style.cursor = info.edge === 'move' ? 'grabbing' : 'ew-resize'
+      document.body.style.userSelect = 'none'
+
+      const move = (ev: MouseEvent) => {
+        const cur = resizeRef.current
+        if (!cur) return
+        const row = trackRowRefs.current.get(cur.trackId)
+        if (!row) return
+        const rr = row.getBoundingClientRect()
+        const pos = clamp(Math.round((ev.clientX - rr.left) / cellWidth), 0, total - 1)
+        const spanLen = cur.spanEnd - cur.spanStart
+        let newStart = cur.spanStart
+        let newEnd = cur.spanEnd
+        let targetLine = cur.spanStart
+        if (cur.edge === 'left') {
+          newStart = Math.max(0, Math.min(pos, cur.spanEnd))
+          newEnd = cur.spanEnd
+          targetLine = newStart
+        } else if (cur.edge === 'right') {
+          newEnd = Math.min(total - 1, Math.max(pos, cur.spanStart))
+          newStart = cur.spanStart
+          targetLine = newEnd
+        } else {
+          const delta = pos - cur.anchorLine
+          newStart = Math.max(0, Math.min(total - 1 - spanLen, cur.spanStart + delta))
+          newEnd = newStart + spanLen
+          targetLine = newStart
+        }
+        const next: ResizeState = {
+          ...cur,
+          ghostLeft: newStart * cellWidth,
+          ghostWidth: (newEnd - newStart + 1) * cellWidth,
+          targetLine,
+        }
+        resizeRef.current = next
+        setResizeState(next)
+      }
+
+      const up = () => {
+        document.removeEventListener('mousemove', move)
+        document.removeEventListener('mouseup', up)
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+        const st = resizeRef.current
+        resizeRef.current = null
+        if (st) commitResize(st)
+        setResizeState(null)
+      }
+
+      document.addEventListener('mousemove', move)
+      document.addEventListener('mouseup', up)
     },
     [total, allTracks, cellWidth],
   )
@@ -522,190 +705,13 @@ export default function Timeline() {
     [batchUpdateDeltas],
   )
 
-  // document-level mousemove/mouseup
+  // 拖拽中断（卸载等）时还原全局光标与选中状态
   useEffect(() => {
-    if (!resizeState) return
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const rowEl = trackRowRefs.current.get(resizeState.trackId)
-      if (!rowEl) return
-
-      const rowRect = rowEl.getBoundingClientRect()
-      const cur = Math.max(0, Math.min(total - 1, Math.round((e.clientX - rowRect.left) / cellWidth)))
-      const spanLen = resizeState.spanEnd - resizeState.spanStart
-
-      let newStart = resizeState.spanStart
-      let newEnd = resizeState.spanEnd
-      let targetLine = resizeState.spanStart
-
-      if (resizeState.edge === 'left') {
-        newStart = Math.max(0, Math.min(cur, resizeState.spanEnd))
-        newEnd = resizeState.spanEnd
-        targetLine = newStart
-      } else if (resizeState.edge === 'right') {
-        newEnd = Math.min(total - 1, Math.max(cur, resizeState.spanStart))
-        newStart = resizeState.spanStart
-        targetLine = newEnd
-      } else {
-        // 整体移动：按位移平移，保持长度
-        const delta = cur - resizeState.anchorLine
-        newStart = Math.max(0, Math.min(total - 1 - spanLen, resizeState.spanStart + delta))
-        newEnd = newStart + spanLen
-        targetLine = newStart
-      }
-
-      setResizeState((prev) =>
-        prev
-          ? {
-              ...prev,
-              ghostLeft: newStart * cellWidth,
-              ghostWidth: (newEnd - newStart + 1) * cellWidth,
-              targetLine,
-            }
-          : null,
-      )
-    }
-
-    const handleMouseUp = () => {
-      if (!resizeState) return
-      const rs = resizeState
-
-      const spanLen = rs.spanEnd - rs.spanStart
-      let newStart = rs.spanStart
-      let newEnd = rs.spanEnd
-
-      if (rs.edge === 'left') {
-        newStart = rs.targetLine
-        newEnd = rs.spanEnd
-      } else if (rs.edge === 'right') {
-        newEnd = rs.targetLine
-        newStart = rs.spanStart
-      } else {
-        newStart = rs.targetLine
-        newEnd = rs.targetLine + spanLen
-      }
-
-      if (newStart === rs.spanStart && newEnd === rs.spanEnd) {
-        setResizeState(null)
-        return
-      }
-
-      // 查找对应轨道定义
-      const track = allTracks.find((t) => t.id === rs.trackId)
-      if (!track) { setResizeState(null); return }
-
-      const updates: { index: number; updater: (prev: LineDelta) => LineDelta }[] = []
-
-      if (track.trackType === 'static' && track.trackDef) {
-        const td = track.trackDef
-        for (let i = 0; i < total; i++) {
-          const shouldHave = i >= newStart && i <= newEnd
-          const wasIn = i >= rs.spanStart && i <= rs.spanEnd
-
-          if (shouldHave && !wasIn) {
-            // 该行需要设置素材
-            const anchorState = resolvedStates[rs.spanStart]
-            const assetVal = td.getAssetValue(anchorState)
-            if (td.id === 'bg') {
-              updates.push({ index: i, updater: (prev) => ({ ...prev, background: assetVal }) })
-            } else if (td.id === 'bgm') {
-              updates.push({
-                index: i,
-                updater: (prev) => {
-                  const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
-                  audio.bgm = assetVal
-                  return { ...prev, audio }
-                },
-              })
-            } else if (td.id === 'ambient') {
-              updates.push({
-                index: i,
-                updater: (prev) => {
-                  const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
-                  audio.ambient = assetVal
-                  return { ...prev, audio }
-                },
-              })
-            }
-          } else if (!shouldHave && wasIn) {
-            // 该行需要清除素材
-            if (td.id === 'bg') {
-              updates.push({ index: i, updater: (prev) => ({ ...prev, background: null }) })
-            } else if (td.id === 'bgm') {
-              updates.push({
-                index: i,
-                updater: (prev) => {
-                  const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
-                  audio.bgm = null
-                  return { ...prev, audio }
-                },
-              })
-            } else if (td.id === 'ambient') {
-              updates.push({
-                index: i,
-                updater: (prev) => {
-                  const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
-                  audio.ambient = null
-                  return { ...prev, audio }
-                },
-              })
-            }
-          }
-        }
-      } else if (track.trackType === 'sprite-merged' && rs.charId) {
-        const charId = rs.charId
-        const anchorState = resolvedStates[rs.spanStart]
-        const charState = anchorState.characters[charId]
-        if (!charState) { setResizeState(null); return }
-
-        const spriteId = charState.sprite_id
-        const slot = charState.position_slot
-
-        for (let i = 0; i < total; i++) {
-          const shouldHave = i >= newStart && i <= newEnd
-          const wasIn = i >= rs.spanStart && i <= rs.spanEnd
-
-          if (shouldHave && !wasIn) {
-            updates.push({
-              index: i,
-              updater: (prev) => ({
-                ...prev,
-                characters: {
-                  ...prev.characters,
-                  [charId]: { sprite_id: spriteId, position_slot: slot, action: 'show' as const },
-                },
-              }),
-            })
-          } else if (!shouldHave && wasIn) {
-            updates.push({
-              index: i,
-              updater: (prev) => {
-                const chars = { ...prev.characters }
-                // 如果该行之前没有角色指令，就不需要添加 hide
-                if (chars[charId]) {
-                  chars[charId] = { ...chars[charId], action: 'hide' as const }
-                }
-                return { ...prev, characters: chars }
-              },
-            })
-          }
-        }
-      }
-
-      if (updates.length > 0) {
-        batchUpdateDeltas(updates)
-      }
-      setResizeState(null)
-    }
-
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
     }
-  }, [resizeState, total, allTracks, resolvedStates, draftDeltas, batchUpdateDeltas, cellWidth])
+  }, [])
 
   return (
     <div className="flex shrink-0 flex-col border-t border-edge/10 bg-canvas relative">

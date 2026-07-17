@@ -74,9 +74,9 @@ const SLOT_ANCHORS: Record<string, { x: number; y: number }> = {
   right: { x: 0.78, y: 0.65 },
 }
 const SLOT_Y = 0.65
-/** 磁吸阈值：拖到离预设站位这么近就吸附过去 */
-const SNAP_X = 0.045
-const SNAP_Y = 0.05
+/** 磁吸阈值：拖到离预设站位这么近才吸附（留足自由微调空间，避免「被钉死」） */
+const SNAP_X = 0.035
+const SNAP_Y = 0.045
 
 const SLOT_POSITIONS: Record<string, { x: string; y: string }> = Object.fromEntries(
   Object.entries(SLOT_ANCHORS).map(([k, v]) => [k, { x: `${v.x * 100}%`, y: `${v.y * 100}%` }]),
@@ -351,8 +351,18 @@ export default function StagePreview() {
   // =================== 立绘自由拖动（磁吸预设站位 + 微调偏移） ===================
 
   const stageRef = useRef<HTMLDivElement>(null)
-  const [dragPos, setDragPos] = useState<{ charId: string; x: number; y: number; snapped: boolean } | null>(null)
+  const [dragPos, setDragPos] = useState<{ charId: string; x: number; y: number; snapped: boolean; slot: string } | null>(null)
   const dragPosRef = useRef<typeof dragPos>(null)
+
+  // 拖拽中断（卸载等）时还原全局光标与选中状态
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [])
+
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
   const handleCharMouseDown = useCallback(
     (charId: string) => (e: React.MouseEvent) => {
@@ -360,28 +370,46 @@ export default function StagePreview() {
       if (e.button !== 0) return
       e.preventDefault()
       e.stopPropagation()
-      const rect = stageRef.current?.getBoundingClientRect()
-      if (!rect) return
-      const curState = resolvedStates[selectedIndex] ?? null
+      const stageEl = stageRef.current
+      if (!stageEl) return
+      const char = (resolvedStates[selectedIndex]?.characters ?? {})[charId]
+      if (!char) return
+      const anchor = SLOT_ANCHORS[char.position_slot] ?? SLOT_ANCHORS.center
+      const startX = char.pos_x ?? anchor.x
+      const startY = char.pos_y ?? anchor.y
+
+      // 记录抓取点相对立绘中心的偏移：否则一拖动立绘中心就「瞬移」到光标下，看着像闪
+      const rect0 = stageEl.getBoundingClientRect()
+      const rx0 = (e.clientX - rect0.left) / rect0.width
+      const ry0 = (e.clientY - rect0.top) / rect0.height
+      const offsetX = rx0 - startX
+      const offsetY = ry0 - startY
+
+      // 拖拽期间锁全局光标为抓取态 + 禁止选中文本，避免「抓住又变回鼠标 / 误选文字」
+      document.body.style.cursor = 'grabbing'
+      document.body.style.userSelect = 'none'
 
       const move = (ev: MouseEvent) => {
-        let rx = (ev.clientX - rect.left) / rect.width
-        let ry = (ev.clientY - rect.top) / rect.height
-        rx = Math.max(0.03, Math.min(0.97, rx))
-        ry = Math.max(0.2, Math.min(1, ry))
-        // 磁吸：靠近预设站位就吸过去，保证全篇一致
+        const rect = stageEl.getBoundingClientRect()
+        let rx = (ev.clientX - rect.left) / rect.width - offsetX
+        let ry = (ev.clientY - rect.top) / rect.height - offsetY
+        rx = clamp(rx, 0.03, 0.97)
+        ry = clamp(ry, 0.2, 1)
+        // 磁吸：仅当靠近预设站位（吸附带较窄）才吸过去，留出自由微调空间
         let snapped = false
-        for (const a of Object.values(SLOT_ANCHORS)) {
+        let slot = char.position_slot
+        for (const [id, a] of Object.entries(SLOT_ANCHORS)) {
           if (Math.abs(rx - a.x) < SNAP_X) {
             rx = a.x
             snapped = true
+            slot = id
             break
           }
         }
         if (Math.abs(ry - SLOT_Y) < SNAP_Y) {
           ry = SLOT_Y
         }
-        const p = { charId, x: rx, y: ry, snapped }
+        const p = { charId, x: rx, y: ry, snapped, slot }
         dragPosRef.current = p
         setDragPos(p)
       }
@@ -389,10 +417,14 @@ export default function StagePreview() {
       const up = () => {
         document.removeEventListener('mousemove', move)
         document.removeEventListener('mouseup', up)
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
         const p = dragPosRef.current
         if (p) {
-          const slot = nearestSlot(p.x)
-          const resolvedChar = curState?.characters[charId]
+          const slot = p.slot
+          const resolvedChar = resolvedStates[selectedIndex]?.characters[charId]
+          // 完全吸回锚点才不存偏移（保持全篇一致）；否则存独立微调
+          const atAnchor = Math.abs(p.x - SLOT_ANCHORS[slot].x) < 1e-6 && Math.abs(p.y - SLOT_Y) < 1e-6
           updateDeltaAt(selectedIndex, (prev: LineDelta) => {
             const base = prev.characters[charId] ?? {
               sprite_id: resolvedChar?.sprite_id ?? 'default',
@@ -405,8 +437,8 @@ export default function StagePreview() {
                 ...prev.characters,
                 [charId]: {
                   ...base,
-                  pos_x: p.snapped && Math.abs(p.x - SLOT_ANCHORS[slot].x) < 1e-6 && Math.abs(p.y - SLOT_Y) < 1e-6 ? undefined : p.x,
-                  pos_y: p.snapped && Math.abs(p.x - SLOT_ANCHORS[slot].x) < 1e-6 && Math.abs(p.y - SLOT_Y) < 1e-6 ? undefined : p.y,
+                  pos_x: p.snapped && atAnchor ? undefined : p.x,
+                  pos_y: p.snapped && atAnchor ? undefined : p.y,
                   position_slot: slot,
                   action: 'show' as const,
                 },
@@ -500,6 +532,23 @@ export default function StagePreview() {
         {/* 立绘拖放槽位引导线 */}
         {spriteSlotGuides}
 
+        {/* 拖动立绘时显示预设站位锚点线，让「吸附」看得见、好理解 */}
+        {dragPos && (
+          <div className="pointer-events-none absolute inset-0 z-10">
+            {Object.entries(SLOT_ANCHORS).map(([id, a]) => (
+              <div
+                key={id}
+                className="absolute top-0 bottom-0 w-px -translate-x-1/2 bg-signal/50"
+                style={{ left: `${a.x * 100}%` }}
+              >
+                <span className="absolute top-1 left-1 rounded bg-signal/20 px-1 text-[11px] text-signal">
+                  {id}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* 角色层（可拖动：磁吸预设站位，拉离即自由微调） */}
         {Object.entries(state.characters).map(
           ([charId, char]: [string, ResolvedCharacterState]) => {
@@ -519,11 +568,12 @@ export default function StagePreview() {
               <div
                 key={charId}
                 onMouseDown={handleCharMouseDown(charId)}
-                className={`group pointer-events-auto absolute z-30 -translate-x-1/2 -translate-y-full flex cursor-grab flex-col items-center active:cursor-grabbing ${
+                onDragStart={(e) => e.preventDefault()}
+                className={`group pointer-events-auto absolute z-30 -translate-x-1/2 -translate-y-full flex select-none cursor-grab flex-col items-center active:cursor-grabbing ${
                   dragging ? '' : 'transition-[left,top] duration-200'
                 }`}
                 style={{ left: `${px * 100}%`, top: `${py * 100}%` }}
-                title="拖动可移动位置；靠近左/中/右会自动吸附"
+                title="拖动可移动位置；靠近左/中/右的虚线会自动吸附到站位，拉离即自由微调"
               >
                 {spriteDataUrl ? (
                   /* 真实立绘图片 */
@@ -555,7 +605,7 @@ export default function StagePreview() {
                       : 'text-fg-faint opacity-0 group-hover:opacity-100'
                   }`}
                 >
-                  {char.position_slot}
+                  {dragging ? dragPos!.slot : char.position_slot}
                   {hasOffset && !dragging ? ' 微调' : ''}
                   {dragging ? (dragPos!.snapped ? ' 吸附' : ` ${Math.round(px * 100)},${Math.round(py * 100)}`) : ''}
                 </div>
