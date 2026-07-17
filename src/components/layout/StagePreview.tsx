@@ -170,7 +170,6 @@ export default function StagePreview() {
 
   const currentDelta = draftDeltas[selectedIndex] ?? null
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
-  const [fadeKey, setFadeKey] = useState(0)
 
   // 快捷台词编辑本地状态
   const [localSpeaker, setLocalSpeaker] = useState(currentDelta?.speaker ?? '')
@@ -225,11 +224,6 @@ export default function StagePreview() {
     _setDragOverZone(null)
     _setDragAssetType(null)
   }, [])
-
-  // 选中行变化 → 交叉淡入淡出
-  useEffect(() => {
-    setFadeKey((k) => k + 1)
-  }, [selectedIndex])
 
   // =================== 拖放事件 ===================
 
@@ -382,7 +376,6 @@ export default function StagePreview() {
     <main className="relative flex flex-1 flex-col">
       <div
         className="relative flex-1 overflow-hidden rounded-lg border border-edge/16 bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
-        key={fadeKey}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDropOnStage}
@@ -420,7 +413,7 @@ export default function StagePreview() {
             return (
               <div
                 key={charId}
-                className="pointer-events-none absolute -translate-x-1/2 -translate-y-full animate-slide-up flex flex-col items-center"
+                className="pointer-events-none absolute -translate-x-1/2 -translate-y-full animate-slide-up flex flex-col items-center transition-[left,top] duration-200"
                 style={{ left: slot.x, top: slot.y }}
               >
                 {spriteDataUrl ? (
