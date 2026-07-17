@@ -36,7 +36,7 @@ export default function ScriptDrawer() {
           <div className="flex items-center gap-2">
             <span className="signal-dot" />
             <span className="eyebrow">剧本流 Script</span>
-            <span className="rounded-full bg-surface-1 px-1.5 py-0.5 text-[11px] text-fg-subtle">
+            <span className="rounded-full bg-surface-1 px-1.5 py-0.5 text-[12px] text-fg-subtle">
               {deltas.length}
             </span>
           </div>
@@ -82,7 +82,7 @@ export default function ScriptDrawer() {
               >
                 {/* 行号 + 角色 */}
                 <div className="mb-0.5 flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-fg-subtle">
+                  <span className="text-[12px] font-mono text-fg-subtle">
                     {delta.line_id}
                   </span>
                   <span className="text-xs font-medium text-fg-muted">
@@ -105,17 +105,17 @@ export default function ScriptDrawer() {
                 {isSelected && (
                   <div className="mt-1.5 flex flex-wrap gap-1">
                     {resolved.background && (
-                      <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[11px] text-fg-subtle">
+                      <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[12px] text-fg-subtle">
                         <ImageIcon size={10} strokeWidth={1.75} /> {resolved.background.asset_id}
                       </span>
                     )}
                     {resolved.audio.bgm && (
-                      <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[11px] text-fg-subtle">
+                      <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[12px] text-fg-subtle">
                         <Music size={10} strokeWidth={1.75} /> {resolved.audio.bgm.asset_id}
                       </span>
                     )}
                     {resolved.audio.ambient && (
-                      <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[11px] text-fg-subtle">
+                      <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[12px] text-fg-subtle">
                         <AudioLines size={10} strokeWidth={1.75} /> {resolved.audio.ambient.asset_id}
                       </span>
                     )}

@@ -56,7 +56,7 @@ const ICON = {
 // 顶部统计小胶囊
 function StatChip({ label, value }: { label: string; value: number }) {
   return (
-    <span className="inline-flex items-baseline gap-0.5 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-faint">
+    <span className="inline-flex items-baseline gap-0.5 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-faint">
       <span className="font-semibold text-fg-muted">{value}</span>
       {label}
     </span>
@@ -256,16 +256,16 @@ export default function ScriptOverview() {
           {activeScene !== null && (
             <button
               onClick={() => setActiveScene(null)}
-              className="rounded bg-signal-soft px-2 py-0.5 text-[11px] font-medium text-signal hover:bg-signal/20"
+              className="rounded bg-signal-soft px-2 py-0.5 text-[12px] font-medium text-signal hover:bg-signal/20"
             >
               返回全部场景 ✕
             </button>
           )}
-          <span className="rounded bg-surface-1 px-1.5 py-0.5 text-[11px] text-fg-faint">只读预览</span>
+          <span className="rounded bg-surface-1 px-1.5 py-0.5 text-[12px] text-fg-faint">只读预览</span>
         </div>
         <div className="flex items-center gap-3">
           {/* 视图切换：卡片流 / 剧情树 */}
-          <div className="flex items-center rounded-lg border border-edge/10 bg-surface-3 p-0.5 text-[11px] shadow-inset-top">
+          <div className="flex items-center rounded-lg border border-edge/10 bg-surface-3 p-0.5 text-[12px] shadow-inset-top">
             <button
               onClick={() => setViewMode('cards')}
               className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition-all ${viewMode === 'cards' ? 'bg-surface-2 font-medium text-fg shadow-1' : 'text-fg-subtle hover:text-fg'}`}
@@ -281,7 +281,7 @@ export default function ScriptOverview() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="搜索角色 / 台词…"
-              className="w-56 rounded-md border border-edge/10 bg-surface-3 py-1 pl-8 pr-3 text-[12px] text-fg placeholder-fg-faint outline-none focus:border-signal/40"
+              className="w-56 rounded-md border border-edge/10 bg-surface-3 py-1 pl-8 pr-3 text-[13px] text-fg placeholder-fg-faint outline-none focus:border-signal/40"
             />
           </div>
         </div>
@@ -326,8 +326,8 @@ export default function ScriptOverview() {
               size={12}
               className={`text-fg-subtle transition-transform ${outlineCollapsed ? '' : 'rotate-90'}`}
             />
-            <span className="text-[11px] font-medium text-fg-muted">大纲 场景</span>
-            <span className="ml-auto text-[11px] text-fg-faint">{scenes.length}</span>
+            <span className="text-[12px] font-medium text-fg-muted">大纲 场景</span>
+            <span className="ml-auto text-[12px] text-fg-faint">{scenes.length}</span>
           </button>
           {!outlineCollapsed &&
             scenes.map((sc, idx) => {
@@ -347,8 +347,8 @@ export default function ScriptOverview() {
                     style={{ background: sc.bgId ? resolveAssetColor(sc.bgId, assets) + '80' : 'transparent' }}
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] text-fg">{sc.label}</span>
-                    <span className="block text-[11px] text-fg-faint">
+                    <span className="block truncate text-[14px] text-fg">{sc.label}</span>
+                    <span className="block text-[12px] text-fg-faint">
                       L{sc.start + 1}–L{sc.end + 1} {sc.lineCount} 行
                     </span>
                   </span>
@@ -385,7 +385,7 @@ export default function ScriptOverview() {
                         type="button"
                         onClick={() => handleSceneClick(idx)}
                         title={`跳到场景 ${idx + 1}`}
-                        className="z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-[12px] font-semibold tabular-nums outline-none transition-transform hover:scale-110"
+                        className="z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-[13px] font-semibold tabular-nums outline-none transition-transform hover:scale-110"
                         style={{
                           borderColor: railColor,
                           background: bgColor ? bgColor + '1f' : 'rgb(var(--c-surface-3))',
@@ -418,7 +418,7 @@ export default function ScriptOverview() {
                           <h3 className="truncate text-[14px] font-semibold text-fg">
                             {sc.label}
                           </h3>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-fg-faint">
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-fg-faint">
                             <span className="font-mono tabular-nums">L{sc.start + 1}–L{sc.end + 1}</span>
                             <span className="h-1 w-1 rounded-full bg-fg-faint/40" />
                             <span>{sc.lineCount} 行</span>
@@ -453,7 +453,7 @@ export default function ScriptOverview() {
                           {d.chars.map(([cid, color]) => (
                             <span
                               key={cid}
-                              className="inline-flex items-center gap-1.5 rounded-full bg-surface-3/60 px-2 py-0.5 text-[11px] text-fg-muted ring-1 ring-edge/5"
+                              className="inline-flex items-center gap-1.5 rounded-full bg-surface-3/60 px-2 py-0.5 text-[12px] text-fg-muted ring-1 ring-edge/5"
                             >
                               <span
                                 className="h-2 w-2 rounded-full"
@@ -472,7 +472,7 @@ export default function ScriptOverview() {
           ) : (
             <div className="flex flex-col gap-2">
               {filtered.length === 0 && (
-                <div className="py-20 text-center text-[12px] text-fg-faint">没有匹配的行</div>
+                <div className="py-20 text-center text-[13px] text-fg-faint">没有匹配的行</div>
               )}
               {filtered.map((c) => {
                 const isNarration = !c.speakerId
@@ -492,24 +492,24 @@ export default function ScriptOverview() {
                     {/* 头部：说话人胶囊 / 旁白 */}
                     <div className="mb-1 flex items-center gap-2">
                       {isNarration ? (
-                        <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] font-medium text-fg-subtle">
+                        <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[12px] font-medium text-fg-subtle">
                           旁白
                         </span>
                       ) : (
                         <span
-                          className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                          className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[12px] font-semibold"
                           style={{ background: rgba(accent, 0.16), color: accent }}
                         >
                           <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
                           {c.speakerName}
                         </span>
                       )}
-                      <span className="text-[11px] text-fg-faint">L{c.index + 1}</span>
+                      <span className="text-[12px] text-fg-faint">L{c.index + 1}</span>
                     </div>
 
                     {/* 台词正文 */}
                     <p
-                      className={`text-[13px] leading-[1.55] ${
+                      className={`text-[14px] leading-[1.55] ${
                         c.dialogue ? 'text-fg' : 'text-fg-faint italic'
                       }`}
                     >
@@ -527,7 +527,7 @@ export default function ScriptOverview() {
                         {c.characters.map((ch) => (
                           <span
                             key={ch.charId}
-                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted"
+                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted"
                           >
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: ch.color }} />
                             {ICON.char} {ch.name}
@@ -535,19 +535,19 @@ export default function ScriptOverview() {
                           </span>
                         ))}
                         {c.backgroundName && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted">
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.backgroundId, assets) }} />
                             {ICON.bg} {c.backgroundName}
                           </span>
                         )}
                         {c.bgm && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted">
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.bgmId, assets) }} />
                             {ICON.bgm} {c.bgm}
                           </span>
                         )}
                         {c.ambient && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted">
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.ambientId, assets) }} />
                             {ICON.ambient} {c.ambient}
                           </span>
@@ -555,14 +555,14 @@ export default function ScriptOverview() {
                         {c.se.map((s, k) => (
                           <span
                             key={k}
-                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted"
+                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted"
                           >
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.seIds[k], assets) }} />
                             {ICON.se} {s}
                           </span>
                         ))}
                         {c.voice && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[11px] text-fg-muted">
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
                             <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.voiceId, assets) }} />
                             {ICON.voice} {c.voice}
                           </span>

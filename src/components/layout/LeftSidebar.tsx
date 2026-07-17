@@ -59,8 +59,8 @@ export default function LeftSidebar() {
               <span className="shrink-0">{item.icon}</span>
               {!collapsed && (
                 <>
-                  <span className="truncate text-[13px]">{item.label}</span>
-                  <span className="ml-auto font-mono text-[11px] tabular-nums text-fg-faint/70">
+                  <span className="truncate text-[14px]">{item.label}</span>
+                  <span className="ml-auto font-mono text-[12px] tabular-nums text-fg-faint/70">
                     {item.code}
                   </span>
                 </>
@@ -71,7 +71,7 @@ export default function LeftSidebar() {
       </nav>
 
       {/* 底部版本号 */}
-      <div className="border-t border-edge/10 p-2 text-center font-mono text-[11px] text-fg-faint">
+      <div className="border-t border-edge/10 p-2 text-center font-mono text-[12px] text-fg-faint">
         {collapsed ? 'v0.3' : 'v0.3.0'}
       </div>
     </aside>
