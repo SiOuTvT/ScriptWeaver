@@ -166,13 +166,11 @@ const DropCell = memo(function DropCell({
             audio.bgm = { asset_id: asset.assetId, volume: 0.7, loop: true, fade_in_ms: 1000 }
           } else if (trackId === 'ambient') {
             audio.ambient = { asset_id: asset.assetId, volume: 0.4, loop: true, fade_in_ms: 1500 }
+          } else if (trackId === 'voice') {
+            audio.voice = asset.assetId
           } else {
-            // 兜底：非标准音频轨道走自动检测
-            const cat = getAudioCategory(asset.assetId)
-            if (cat === 'bgm') audio.bgm = { asset_id: asset.assetId, volume: 0.7, loop: true, fade_in_ms: 1000 }
-            else if (cat === 'ambient') audio.ambient = { asset_id: asset.assetId, volume: 0.4, loop: true, fade_in_ms: 1500 }
-            else if (cat === 'voice') audio.voice = asset.assetId
-            else audio.se = [...audio.se, asset.assetId]
+            // SE 轨或兜底：追加到 se 列表
+            audio.se = [...audio.se, asset.assetId]
           }
           return { ...prev, audio }
         })
@@ -265,14 +263,15 @@ interface ResizeState {
   trackId: string
   spanStart: number
   spanEnd: number
-  edge: 'left' | 'right'
+  edge: 'left' | 'right' | 'move'
   charId?: string    // 立绘色块归属的角色
   ghostLeft: number  // px
   ghostWidth: number // px
   targetLine: number
+  anchorLine: number // move 模式下拖拽起点的目标行，用于计算位移
 }
 
-/** 色块 + 左右拖拽手柄 */
+/** 色块 + 左右拖拽手柄 + 整体移动 + 删除 */
 const DraggableSpan = memo(function DraggableSpan({
   span,
   total,
@@ -280,18 +279,20 @@ const DraggableSpan = memo(function DraggableSpan({
   trackId,
   trackRowEl,
   onResizeStart,
+  onDelete,
 }: {
   span: SpanData
   total: number
   color: string
   trackId: string
   trackRowEl: HTMLDivElement | null
-  onResizeStart: (state: Omit<ResizeState, 'ghostLeft' | 'ghostWidth' | 'targetLine'> & { startClientX: number }) => void
+  onResizeStart: (state: Omit<ResizeState, 'ghostLeft' | 'ghostWidth' | 'targetLine' | 'anchorLine'> & { startClientX: number }) => void
+  onDelete: () => void
 }) {
   const leftPct = spanPct(span.start, total)
   const widthPct = spanPct(span.end - span.start + 1, total)
 
-  const handleMouseDown = useCallback(
+  const handleEdgeDown = useCallback(
     (edge: 'left' | 'right') => (e: React.MouseEvent) => {
       e.stopPropagation()
       e.preventDefault()
@@ -309,29 +310,64 @@ const DraggableSpan = memo(function DraggableSpan({
     [trackId, span.start, span.end, span.charId, trackRowEl, onResizeStart],
   )
 
+  // 在色块主体上按下 → 整体移动（按住拖动整段左右平移）
+  const handleMoveDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      e.preventDefault()
+      if (!trackRowEl) return
+
+      onResizeStart({
+        trackId,
+        spanStart: span.start,
+        spanEnd: span.end,
+        edge: 'move',
+        charId: span.charId,
+        startClientX: e.clientX,
+      })
+    },
+    [trackId, span.start, span.end, span.charId, trackRowEl, onResizeStart],
+  )
+
   return (
     <div
-      className="absolute top-0 bottom-0 select-none"
+      className="group absolute top-0 bottom-0 select-none"
       style={{ left: leftPct, width: widthPct }}
     >
-      {/* 色块主体（穿透鼠标事件到 DropCell） */}
+      {/* 色块主体（可拖动整体移动） */}
       <div
-        className="pointer-events-none absolute inset-x-2 top-1 bottom-1 rounded-sm"
+        className="pointer-events-auto absolute inset-x-2 top-1 bottom-1 cursor-grab rounded-sm active:cursor-grabbing"
         style={{
           backgroundColor: color + '55',
           borderLeft: `2px solid ${color}`,
         }}
+        onMouseDown={handleMoveDown}
+        title="拖动可整体移动位置"
       >
         <span className="truncate px-1.5 text-[12px] leading-5 text-fg" title={span.label}>
           {span.label}
         </span>
       </div>
 
+      {/* 删除按钮（hover 显示） */}
+      <button
+        type="button"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation()
+          onDelete()
+        }}
+        title="删除该片段"
+        className="absolute -right-1.5 -top-1.5 z-40 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-white opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100"
+      >
+        <X size={10} strokeWidth={2.5} />
+      </button>
+
       {/* 左拖拽手柄 */}
       <div
         className="absolute left-0 -ml-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-l hover:bg-fg/15 active:bg-fg/25"
         style={{ minWidth: 6 }}
-        onMouseDown={handleMouseDown('left')}
+        onMouseDown={handleEdgeDown('left')}
         title="拖拽调整起始行"
       />
 
@@ -339,7 +375,7 @@ const DraggableSpan = memo(function DraggableSpan({
       <div
         className="absolute right-0 -mr-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-r hover:bg-fg/15 active:bg-fg/25"
         style={{ minWidth: 6 }}
-        onMouseDown={handleMouseDown('right')}
+        onMouseDown={handleEdgeDown('right')}
         title="拖拽调整结束行"
       />
     </div>
@@ -354,6 +390,7 @@ export default function Timeline() {
   const selectedIndex = useAppStore((s) => s.selectedLineIndex)
   const selectLine = useAppStore((s) => s.selectLine)
   const batchUpdateDeltas = useAppStore((s) => s.batchUpdateDeltas)
+  const updateDeltaAt = useAppStore((s) => s.updateDeltaAt)
   const insertDeltaAt = useAppStore((s) => s.insertDeltaAt)
   const deleteDeltaAt = useAppStore((s) => s.deleteDeltaAt)
   const moveDelta = useAppStore((s) => s.moveDelta)
@@ -427,8 +464,8 @@ export default function Timeline() {
       trackType: 'sprite-merged' as const,
       trackDef: undefined,
     },
-    { id: 'se', label: 'SE', color: '#eab308', acceptAssetType: null, spans: [], trackType: 'static' as const, trackDef: undefined },
-    { id: 'voice', label: '语音', color: '#a855f7', acceptAssetType: null, spans: [], trackType: 'static' as const, trackDef: undefined },
+    { id: 'se', label: 'SE', color: '#eab308', acceptAssetType: 'audio' as const, spans: [], trackType: 'static' as const, trackDef: undefined },
+    { id: 'voice', label: '语音', color: '#a855f7', acceptAssetType: 'audio' as const, spans: [], trackType: 'static' as const, trackDef: undefined },
   ], [resolvedStates, charData, assetName, charDisplayName])
 
   const totalTracks = allTracks.length
@@ -443,26 +480,53 @@ export default function Timeline() {
   }, [])
 
   const handleResizeStart = useCallback(
-    (info: Omit<ResizeState, 'ghostLeft' | 'ghostWidth' | 'targetLine'> & { startClientX: number }) => {
+    (info: Omit<ResizeState, 'ghostLeft' | 'ghostWidth' | 'targetLine' | 'anchorLine'> & { startClientX: number }) => {
       const rowEl = trackRowRefs.current.get(info.trackId)
       if (!rowEl) return
 
       const rowRect = rowEl.getBoundingClientRect()
-      const cellPx = cellWidth // each cell is 120px
-      const targetLine = Math.round((info.startClientX - rowRect.left) / cellPx)
-      const clamped = Math.max(0, Math.min(total - 1, targetLine))
+      const targetLine = Math.round((info.startClientX - rowRect.left) / cellWidth)
+      const anchorLine = Math.max(0, Math.min(total - 1, targetLine))
 
-      const newStart = info.edge === 'left' ? clamped : info.spanStart
-      const newEnd = info.edge === 'right' ? clamped : info.spanEnd
-
+      // 初始 ghost 保持当前片段形态，移动过程中再整体平移
       setResizeState({
         ...info,
-        ghostLeft: newStart * cellPx,
-        ghostWidth: (newEnd - newStart + 1) * cellPx,
-        targetLine: clamped,
+        ghostLeft: info.spanStart * cellWidth,
+        ghostWidth: (info.spanEnd - info.spanStart + 1) * cellWidth,
+        targetLine: anchorLine,
+        anchorLine,
       })
     },
     [total],
+  )
+
+  // 删除整段色块（bgm/ambient 置空，立绘移除该角色指令）
+  const handleDeleteSpan = useCallback(
+    (trackId: string, span: SpanData) => {
+      const updates: { index: number; updater: (prev: LineDelta) => LineDelta }[] = []
+      for (let i = span.start; i <= span.end; i++) {
+        updates.push({
+          index: i,
+          updater: (prev) => {
+            if (trackId === 'bgm' || trackId === 'ambient') {
+              const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
+              if (trackId === 'bgm') audio.bgm = null
+              else audio.ambient = null
+              return { ...prev, audio }
+            }
+            if (trackId === 'characters' && span.charId) {
+              const chars = { ...prev.characters }
+              delete chars[span.charId]
+              return { ...prev, characters: chars }
+            }
+            return prev
+          },
+        })
+      }
+      if (updates.length) batchUpdateDeltas(updates)
+      toast(`已删除 ${trackId} 片段（第 ${span.start + 1}–${span.end + 1} 行）`, 'info')
+    },
+    [batchUpdateDeltas],
   )
 
   // document-level mousemove/mouseup
@@ -474,11 +538,28 @@ export default function Timeline() {
       if (!rowEl) return
 
       const rowRect = rowEl.getBoundingClientRect()
-      const targetLine = Math.round((e.clientX - rowRect.left) / cellWidth)
-      const clamped = Math.max(0, Math.min(total - 1, targetLine))
+      const cur = Math.max(0, Math.min(total - 1, Math.round((e.clientX - rowRect.left) / cellWidth)))
+      const spanLen = resizeState.spanEnd - resizeState.spanStart
 
-      const newStart = resizeState.edge === 'left' ? clamped : resizeState.spanStart
-      const newEnd = resizeState.edge === 'right' ? clamped : resizeState.spanEnd
+      let newStart = resizeState.spanStart
+      let newEnd = resizeState.spanEnd
+      let targetLine = resizeState.spanStart
+
+      if (resizeState.edge === 'left') {
+        newStart = Math.max(0, Math.min(cur, resizeState.spanEnd))
+        newEnd = resizeState.spanEnd
+        targetLine = newStart
+      } else if (resizeState.edge === 'right') {
+        newEnd = Math.min(total - 1, Math.max(cur, resizeState.spanStart))
+        newStart = resizeState.spanStart
+        targetLine = newEnd
+      } else {
+        // 整体移动：按位移平移，保持长度
+        const delta = cur - resizeState.anchorLine
+        newStart = Math.max(0, Math.min(total - 1 - spanLen, resizeState.spanStart + delta))
+        newEnd = newStart + spanLen
+        targetLine = newStart
+      }
 
       setResizeState((prev) =>
         prev
@@ -486,7 +567,7 @@ export default function Timeline() {
               ...prev,
               ghostLeft: newStart * cellWidth,
               ghostWidth: (newEnd - newStart + 1) * cellWidth,
-              targetLine: clamped,
+              targetLine,
             }
           : null,
       )
@@ -496,8 +577,20 @@ export default function Timeline() {
       if (!resizeState) return
       const rs = resizeState
 
-      const newStart = rs.edge === 'left' ? rs.targetLine : rs.spanStart
-      const newEnd = rs.edge === 'right' ? rs.targetLine : rs.spanEnd
+      const spanLen = rs.spanEnd - rs.spanStart
+      let newStart = rs.spanStart
+      let newEnd = rs.spanEnd
+
+      if (rs.edge === 'left') {
+        newStart = rs.targetLine
+        newEnd = rs.spanEnd
+      } else if (rs.edge === 'right') {
+        newEnd = rs.targetLine
+        newStart = rs.spanStart
+      } else {
+        newStart = rs.targetLine
+        newEnd = rs.targetLine + spanLen
+      }
 
       if (newStart === rs.spanStart && newEnd === rs.spanEnd) {
         setResizeState(null)
@@ -763,6 +856,7 @@ export default function Timeline() {
                     trackId={track.id}
                     trackRowEl={trackRowRefs.current.get(track.id) ?? null}
                     onResizeStart={handleResizeStart}
+                    onDelete={() => handleDeleteSpan(track.id, span)}
                   />
                 ))}
 
@@ -771,9 +865,24 @@ export default function Timeline() {
                   const seColor = resolveAssetColor(ev.items[0], assets)
                   return (
                   <div key={`se-${ev.index}`}
-                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
+                    className="group pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
                     style={{ left: total > 0 ? `${(ev.index / total) * 100}%` : '0%', width: total > 0 ? `${(1 / total) * 100}%` : '0%', minWidth: 30, backgroundColor: seColor + '22', borderLeftColor: seColor }}
-                    title={ev.items.map(assetName).join(', ')}>{assetName(ev.items[0])}</div>
+                    title={ev.items.map(assetName).join(', ')}>
+                    <span className="truncate">{assetName(ev.items[0])}</span>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        updateDeltaAt(ev.index, (prev) => ({
+                          ...prev,
+                          audio: { ...prev.audio, se: prev.audio.se.filter((x) => x !== ev.items[0]) },
+                        }))
+                      }}
+                      title="删除该 SE"
+                      className="pointer-events-auto absolute -right-1.5 -top-1.5 z-40 hidden h-4 w-4 items-center justify-center rounded-full bg-danger text-white group-hover:flex"
+                    ><X size={10} strokeWidth={2.5} /></button>
+                  </div>
                   )
                 })}
 
@@ -790,7 +899,7 @@ export default function Timeline() {
                   const who = charId ? charDisplayName(charId) : (sp ?? '')
                   return (
                     <div key={`voice-${ev.index}`}
-                      className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
+                      className="group pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
                       style={{
                         left: total > 0 ? `${(ev.index / total) * 100}%` : '0%',
                         width: total > 0 ? `${(1 / total) * 100}%` : '0%',
@@ -799,7 +908,20 @@ export default function Timeline() {
                         borderLeftColor: vColor,
                       }}
                       title={`${who ? who + ' ' : ''}${assetName(ev.voice)}`}>
-                      {who || assetName(ev.voice)}
+                      <span className="truncate">{who || assetName(ev.voice)}</span>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          updateDeltaAt(ev.index, (prev) => ({
+                            ...prev,
+                            audio: { ...prev.audio, voice: null },
+                          }))
+                        }}
+                        title="删除该语音"
+                        className="pointer-events-auto absolute -right-1.5 -top-1.5 z-40 hidden h-4 w-4 items-center justify-center rounded-full bg-danger text-white group-hover:flex"
+                      ><X size={10} strokeWidth={2.5} /></button>
                     </div>
                   )
                 })}
