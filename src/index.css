@@ -282,6 +282,37 @@
   .t-micro    { font-family: var(--font-sans); font-size: 12px; line-height: 1.45; font-weight: 400; color: rgb(var(--c-fg-faint)); }
   /* 等宽数值 / 代码（数据、label 预览、日志）—— 精密读数语言 */
   .t-mono     { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* 主题色相滑块：精密仪器风细轨 + 白环透镜滑块（替代默认原生塑料感手柄） */
+  .theme-hue {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    border-radius: 9999px;
+    outline: none;
+  }
+  .theme-hue::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: rgb(var(--c-surface));
+    border: 2px solid rgb(var(--c-fg) / 0.85);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    transition: transform 0.12s ease;
+  }
+  .theme-hue::-webkit-slider-thumb:hover { transform: scale(1.12); }
+  .theme-hue::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: rgb(var(--c-surface));
+    border: 2px solid rgb(var(--c-fg) / 0.85);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+  }
 }
 
 /* 全局极轻颗粒噪点：叠在 canvas 上，≤3% 不糊字，制造纸/金属手感 */

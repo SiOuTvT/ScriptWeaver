@@ -1,5 +1,5 @@
 import { useAppStore, NavItemId } from '@/stores/appStore'
-import { BookOpen, FileText, Images, Users, Download, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react'
+import { BookOpen, FileText, Images, Users, Download, Sparkles, Palette, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 interface NavItem {
@@ -16,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'characters', label: '角色管理', code: '04', icon: <Users size={18} strokeWidth={1.75} /> },
   { id: 'export', label: '导出设置', code: '05', icon: <Download size={18} strokeWidth={1.75} /> },
   { id: 'ai', label: 'AI 功能', code: '06', icon: <Sparkles size={18} strokeWidth={1.75} /> },
+  { id: 'theme', label: '外观主题', code: '07', icon: <Palette size={18} strokeWidth={1.75} /> },
 ]
 
 export default function LeftSidebar() {
