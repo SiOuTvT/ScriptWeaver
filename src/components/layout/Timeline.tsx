@@ -252,7 +252,7 @@ const SpanBlock = memo(function SpanBlock({
         borderLeft: `2px solid ${color}`,
       }}
     >
-      <span className="truncate text-[11px] leading-5 text-fg">
+      <span className="truncate text-[12px] leading-5 text-fg">
         {span.label}
       </span>
     </div>
@@ -322,7 +322,7 @@ const DraggableSpan = memo(function DraggableSpan({
           borderLeft: `2px solid ${color}`,
         }}
       >
-        <span className="truncate px-1.5 text-[11px] leading-5 text-fg" title={span.label}>
+        <span className="truncate px-1.5 text-[12px] leading-5 text-fg" title={span.label}>
           {span.label}
         </span>
       </div>
@@ -634,7 +634,7 @@ export default function Timeline() {
             height: '100%',
           }}
         >
-          <span className="absolute top-1 left-2 text-[11px] font-mono text-signal">
+          <span className="absolute top-1 left-2 text-[12px] font-mono text-signal">
             {resizeState.edge === 'left'
               ? `← L${resizeState.targetLine + 1}`
               : `L${resizeState.targetLine + 1} →`}
@@ -643,20 +643,20 @@ export default function Timeline() {
       )}
 
       <div className="flex items-center justify-between border-b border-edge/10 px-3 py-1.5">
-        <span className="text-[11px] font-medium text-fg-muted">时间轴</span>
-        <span className="text-[11px] text-fg-subtle">{total} 行 {totalTracks} 轨</span>
+        <span className="text-[12px] font-medium text-fg-muted">时间轴</span>
+        <span className="text-[12px] text-fg-subtle">{total} 行 {totalTracks} 轨</span>
       </div>
 
       <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + 60}px` }}>
         {/* 轨道标签列 */}
         <div className="shrink-0 border-r border-edge/10 bg-canvas/50">
           {/* 占位行：对齐右边行号 header（48px 高） */}
-          <div className="flex items-center border-b border-edge/10 px-2 text-[11px] font-semibold text-fg-subtle"
+          <div className="flex items-center border-b border-edge/10 px-2 text-[12px] font-semibold text-fg-subtle"
             style={{ height: 48 }}>
             轨道
           </div>
           {allTracks.map((track) => (
-            <div key={track.id} className="flex items-center gap-1.5 border-b border-edge/10 px-2 text-[11px] text-fg-muted"
+            <div key={track.id} className="flex items-center gap-1.5 border-b border-edge/10 px-2 text-[12px] text-fg-muted"
               style={{ height: trackHeight }}>
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: track.color }} />
               <span className="truncate">{track.label}</span>
@@ -690,8 +690,8 @@ export default function Timeline() {
                           : 'text-fg-subtle group-hover:text-fg'
                       }`}
                     >
-                      <span className="font-mono leading-none text-[11px]">{s.line_id}</span>
-                      <span className="w-full truncate text-center text-[11px] leading-tight text-fg-subtle">
+                      <span className="font-mono leading-none text-[12px]">{s.line_id}</span>
+                      <span className="w-full truncate text-center text-[12px] leading-tight text-fg-subtle">
                         {s.speaker ? `${s.speaker}：${s.dialogue}` : s.dialogue}
                       </span>
                     </button>
@@ -771,7 +771,7 @@ export default function Timeline() {
                   const seColor = resolveAssetColor(ev.items[0], assets)
                   return (
                   <div key={`se-${ev.index}`}
-                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[11px] text-fg"
+                    className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
                     style={{ left: total > 0 ? `${(ev.index / total) * 100}%` : '0%', width: total > 0 ? `${(1 / total) * 100}%` : '0%', minWidth: 30, backgroundColor: seColor + '22', borderLeftColor: seColor }}
                     title={ev.items.map(assetName).join(', ')}>{assetName(ev.items[0])}</div>
                   )
@@ -790,7 +790,7 @@ export default function Timeline() {
                   const who = charId ? charDisplayName(charId) : (sp ?? '')
                   return (
                     <div key={`voice-${ev.index}`}
-                      className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[11px] text-fg"
+                      className="pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
                       style={{
                         left: total > 0 ? `${(ev.index / total) * 100}%` : '0%',
                         width: total > 0 ? `${(1 / total) * 100}%` : '0%',

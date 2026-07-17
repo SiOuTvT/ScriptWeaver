@@ -28,7 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label htmlFor={inputId} className="text-[11px] font-medium text-fg-muted">
+        <label htmlFor={inputId} className="text-[12px] font-medium text-fg-muted">
           {label}
         </label>
       )}
@@ -49,7 +49,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         />
       </div>
       {hint && (
-        <span className={cn('text-[11px]', error ? 'text-danger' : 'text-fg-faint')}>
+        <span className={cn('text-[12px]', error ? 'text-danger' : 'text-fg-faint')}>
           {hint}
         </span>
       )}
@@ -72,7 +72,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label htmlFor={areaId} className="text-[11px] font-medium text-fg-muted">
+        <label htmlFor={areaId} className="text-[12px] font-medium text-fg-muted">
           {label}
         </label>
       )}
@@ -83,7 +83,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         {...rest}
       />
       {hint && (
-        <span className={cn('text-[11px]', error ? 'text-danger' : 'text-fg-faint')}>
+        <span className={cn('text-[12px]', error ? 'text-danger' : 'text-fg-faint')}>
           {hint}
         </span>
       )}

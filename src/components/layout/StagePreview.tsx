@@ -437,15 +437,15 @@ export default function StagePreview() {
                     className="flex w-16 flex-col items-center gap-1 rounded-t-lg px-3 pt-6 pb-3 shadow-lg"
                     style={{ backgroundColor: spriteColor, minHeight: '100px' }}
                   >
-                    <span className="text-center text-[11px] font-medium text-white/80">
+                    <span className="text-center text-[12px] font-medium text-white/80">
                       {getDisplayName(charId)}
                     </span>
-                    <span className="text-center text-[11px] text-white/50">
+                    <span className="text-center text-[12px] text-white/50">
                       {char.sprite_id}
                     </span>
                   </div>
                 )}
-                <div className="mt-1 text-center text-[11px] text-fg-faint">
+                <div className="mt-1 text-center text-[12px] text-fg-faint">
                   [{char.position_slot}]
                 </div>
               </div>
@@ -459,7 +459,7 @@ export default function StagePreview() {
             {state.line_id}
           </span>
           {state.background?.transition && (
-            <span className="rounded bg-signal/15 px-1.5 py-0.5 text-[11px] text-signal">
+            <span className="rounded bg-signal/15 px-1.5 py-0.5 text-[12px] text-signal">
               {state.background.transition}
             </span>
           )}
@@ -474,27 +474,27 @@ export default function StagePreview() {
           }`}
         >
           {state.audio.bgm && (
-            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[11px] text-success">
+            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[12px] text-success">
               <Music size={10} strokeWidth={1.75} /> {state.audio.bgm.asset_id}
             </span>
           )}
           {state.audio.ambient && (
-            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[11px] text-info">
+            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[12px] text-info">
               <AudioLines size={10} strokeWidth={1.75} /> {state.audio.ambient.asset_id}
             </span>
           )}
           {state.audio.se.length > 0 && (
-            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[11px] text-warning">
+            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[12px] text-warning">
               <Megaphone size={10} strokeWidth={1.75} /> {state.audio.se.join(', ')}
             </span>
           )}
           {state.audio.voice && (
-            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[11px] text-purple-400">
+            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[12px] text-purple-400">
               <Volume2 size={10} strokeWidth={1.75} /> {state.audio.voice}
             </span>
           )}
           {dragOverZone === 'audio' && (
-            <span className="text-[11px] text-info">放置音频</span>
+            <span className="text-[12px] text-info">放置音频</span>
           )}
         </div>
 
@@ -535,7 +535,7 @@ export default function StagePreview() {
             </div>
           </div>
           {/* 行信息提示 */}
-          <div className="mt-1.5 text-right text-[11px] text-fg-subtle">
+          <div className="mt-1.5 text-right text-[12px] text-fg-subtle">
             {state.line_id} 快捷输入 {state.speaker ? `说话人 ${state.speaker}` : '旁白模式'}
           </div>
         </div>

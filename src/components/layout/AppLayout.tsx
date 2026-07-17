@@ -328,12 +328,12 @@ export default function AppLayout() {
           <span className="hidden h-4 w-px bg-edge-strong/15 sm:block" />
           <span className="eyebrow hidden sm:block">Visual Novel Studio</span>
           {totalLines > 0 && (
-            <span className="font-mono text-[11px] tabular-nums text-fg-faint">
+            <span className="font-mono text-[12px] tabular-nums text-fg-faint">
               {totalLines.toString().padStart(3, '0')} 行
             </span>
           )}
           {projectRoot && (
-            <span className="flex items-center gap-1.5 text-[11px] text-fg-faint" title={projectRoot}>
+            <span className="flex items-center gap-1.5 text-[12px] text-fg-faint" title={projectRoot}>
               <span className="signal-dot" /> 已保存
             </span>
           )}
