@@ -27,16 +27,16 @@ const VARS = [
   '--c-on-primary',
 ] as const
 
-/** 精修和谐预设色板（中文命名，沉稳、成熟，色相互不打架） */
+/** 精调预设色板（Open Color 系，每色取其色相中最耐看的一档，特性鲜明不刺眼） */
 export const ACCENT_PRESETS: { name: string; hex: string }[] = [
-  { name: '紫毫', hex: '#5446DC' },
-  { name: '靛蓝', hex: '#4160D8' },
-  { name: '天青', hex: '#1C9BD6' },
-  { name: '松绿', hex: '#0CA678' },
-  { name: '琥珀', hex: '#E0920C' },
-  { name: '绛红', hex: '#E03131' },
-  { name: '品红', hex: '#D6336C' },
-  { name: '黛墨', hex: '#495057' },
+  { name: '樱粉', hex: '#F06595' }, // 可爱粉
+  { name: '紫毫', hex: '#5446DC' }, // 品牌紫（默认）
+  { name: '靛蓝', hex: '#3B5BDB' }, // 沉静靛
+  { name: '天蓝', hex: '#1C7ED6' }, // 清爽蓝
+  { name: '青碧', hex: '#0CA678' }, // 通透绿
+  { name: '琥珀', hex: '#F08C00' }, // 暖琥珀
+  { name: '绯红', hex: '#E03131' }, // 正绯红
+  { name: '玫红', hex: '#D6336C' }, // 浓郁玫
 ]
 
 const clamp = (n: number, min = 0, max = 255) => Math.min(max, Math.max(min, n))
@@ -167,17 +167,12 @@ export function computeAccentVars(hex: string, theme: ThemeMode): Record<string,
 
 /**
  * 应用主题色到 <html> 内联样式。
- * 若为默认色或非法值，则清除内联覆盖，回落到 index.css 精调的默认值。
+ * 信号色（小数线 / 选中卡片 / 焦点环 / 信号点）恒等于主色，确保整站一致跟随。
+ * 仅在基色非法时才清除覆盖、回落到 index.css 默认值。
  */
 export function applyAccent(hex: string, theme: ThemeMode): void {
   if (typeof document === 'undefined') return
   const root = document.documentElement
-  const isDefault = !hex || hex.toUpperCase() === DEFAULT_ACCENT
-
-  if (isDefault) {
-    VARS.forEach((v) => root.style.removeProperty(v))
-    return
-  }
   const vars = computeAccentVars(hex, theme)
   if (!vars) {
     VARS.forEach((v) => root.style.removeProperty(v))

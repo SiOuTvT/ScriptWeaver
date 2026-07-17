@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Check, Pipette, RotateCcw } from 'lucide-react'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { Check, Pipette, RotateCcw, X } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { useAppStore } from '@/stores/appStore'
 import {
@@ -9,42 +9,54 @@ import {
   toHex,
   rgbToHsl,
   withHue,
+  computeAccentVars,
 } from '@/utils/themeColor'
 
 /**
  * 外观与主题色 —— 左侧边栏独立页面（非弹窗）
  * 沿用「墨仪」设计语言：panel / eyebrow / t-* 排版层次 + 分层 surface。
- * 预设以圆形色样 + 名称呈现，克制和谐；选色实时写入 CSS 变量，全站同步生效。
+ *
+ * 交互模型：本地草稿（draft）+ 显式「保存」。
+ *  - 选色/拖动/输入只更新草稿，预览区实时反映，但全站不变；
+ *  - 点「保存」才把草稿写入 store + localStorage，全局小数线/卡片/按钮同步变色；
+ *  - 「取消」丢弃草稿，「恢复默认紫毫」一键回填默认草稿。
  */
 export default function ThemeSettings() {
   const accentColor = useAppStore((s) => s.accentColor)
   const setAccentColor = useAppStore((s) => s.setAccentColor)
-  const resetAccentColor = useAppStore((s) => s.resetAccentColor)
+  const theme = useAppStore((s) => s.theme)
 
-  // HEX 输入框本地草稿（允许输入过程中的非法中间态）
-  const [text, setText] = useState(accentColor)
+  // 本地草稿：未保存的临时选择
+  const [draft, setDraft] = useState(accentColor)
   useEffect(() => {
-    setText(accentColor)
+    setDraft(accentColor)
   }, [accentColor])
 
-  const currentRgb = parseHex(accentColor)
-  const currentHue = currentRgb ? Math.round(rgbToHsl(currentRgb).h) : 250
-  const isDefault = accentColor.toUpperCase() === DEFAULT_ACCENT
+  const dirty = draft.toUpperCase() !== accentColor.toUpperCase()
+  const isDefaultDraft = draft.toUpperCase() === DEFAULT_ACCENT
 
-  const commit = (hex: string) => {
+  // 预览区作用域变量：让预览只反映草稿，不污染全站
+  const previewVars = computeAccentVars(draft, theme)
+  const previewStyle = previewVars
+    ? (Object.fromEntries(Object.entries(previewVars)) as CSSProperties)
+    : undefined
+
+  const currentRgb = parseHex(draft)
+  const currentHue = currentRgb ? Math.round(rgbToHsl(currentRgb).h) : 250
+
+  const setValid = (hex: string) => {
     const rgb = parseHex(hex)
-    if (!rgb) return
-    const normalized = toHex(rgb)
-    setAccentColor(normalized)
-    setText(normalized)
+    if (rgb) setDraft(toHex(rgb))
   }
 
   const onTextChange = (v: string) => {
     let s = v
     if (!s.startsWith('#')) s = '#' + s.replace(/#/g, '')
-    setText(s)
-    if (parseHex(s)) commit(s)
+    setDraft(s)
   }
+
+  const revert = () => setDraft(accentColor)
+  const restoreDefault = () => setDraft(DEFAULT_ACCENT)
 
   return (
     <div className="flex flex-1 flex-col overflow-auto bg-canvas p-6">
@@ -56,10 +68,10 @@ export default function ThemeSettings() {
             <span className="eyebrow">Appearance</span>
           </div>
           <h2 className="t-h2 mt-1.5">外观与主题色</h2>
-          <p className="mt-0.5 t-subtitle">选择主色，全站按钮、链接、焦点与信号即时生效</p>
+          <p className="mt-0.5 t-subtitle">选好主色后点「保存」生效，全站按钮、链接、焦点与信号随即同步</p>
         </header>
 
-        {/* 当前主色概览 */}
+        {/* 当前主色 + 操作 */}
         <section className="panel mb-4 flex items-center gap-4 p-4">
           <div
             className="h-14 w-14 shrink-0 rounded-xl border border-edge/10 shadow-inset-top"
@@ -67,19 +79,25 @@ export default function ThemeSettings() {
             aria-hidden
           />
           <div className="min-w-0">
-            <div className="t-label text-fg-muted">当前主色</div>
+            <div className="t-label text-fg-muted">已生效主色</div>
             <div className="t-mono mt-0.5 text-[18px] font-medium leading-tight text-fg">{accentColor}</div>
+            {dirty && (
+              <div className="mt-0.5 text-[12px] font-medium text-primary">● 有未保存的更改</div>
+            )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<RotateCcw size={14} strokeWidth={1.75} />}
-            onClick={() => resetAccentColor()}
-            disabled={isDefault}
-            className="ml-auto"
-          >
-            恢复默认紫毫
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setAccentColor(draft)}
+              disabled={!dirty}
+            >
+              保存
+            </Button>
+            <Button variant="ghost" size="sm" icon={<X size={14} strokeWidth={1.75} />} onClick={revert} disabled={!dirty}>
+              取消
+            </Button>
+          </div>
         </section>
 
         {/* 预设色板 */}
@@ -87,13 +105,13 @@ export default function ThemeSettings() {
           <div className="eyebrow mb-4">预设色板 Presets</div>
           <div className="grid grid-cols-4 gap-x-3 gap-y-4">
             {ACCENT_PRESETS.map((p) => {
-              const active = accentColor.toUpperCase() === p.hex.toUpperCase()
+              const active = draft.toUpperCase() === p.hex.toUpperCase()
               return (
                 <button
                   key={p.hex}
                   type="button"
                   title={`${p.name} ${p.hex}`}
-                  onClick={() => commit(p.hex)}
+                  onClick={() => setValid(p.hex)}
                   className="group flex flex-col items-center gap-1.5"
                 >
                   <span
@@ -130,7 +148,7 @@ export default function ThemeSettings() {
         <section className="panel mb-4 p-4">
           <div className="eyebrow mb-3">色相微调 Hue</div>
           <div className="mb-2.5 flex items-center justify-between">
-            <span className="t-label">拖动调整色相，保持明度与饱和度</span>
+            <span className="t-label">拖动调整色相，保留当前明度与饱和度</span>
             <span className="t-mono text-[12px] text-fg-faint">{currentHue}°</span>
           </div>
           <input
@@ -138,7 +156,7 @@ export default function ThemeSettings() {
             min={0}
             max={360}
             value={currentHue}
-            onChange={(e) => commit(withHue(accentColor, Number(e.target.value)))}
+            onChange={(e) => setValid(withHue(draft, Number(e.target.value)))}
             className="theme-hue w-full"
             style={{
               background:
@@ -152,7 +170,7 @@ export default function ThemeSettings() {
           <div className="eyebrow mb-3">自定义色号 Custom</div>
           <div className="flex items-center gap-2">
             <input
-              value={text}
+              value={draft}
               onChange={(e) => onTextChange(e.target.value)}
               spellCheck={false}
               maxLength={7}
@@ -167,18 +185,28 @@ export default function ThemeSettings() {
               取色
               <input
                 type="color"
-                value={parseHex(accentColor) ? toHex(parseHex(accentColor)!) : DEFAULT_ACCENT}
-                onChange={(e) => commit(e.target.value)}
+                value={parseHex(draft) ? toHex(parseHex(draft)!) : DEFAULT_ACCENT}
+                onChange={(e) => setValid(e.target.value)}
                 className="absolute inset-0 cursor-pointer opacity-0"
               />
             </label>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<RotateCcw size={14} strokeWidth={1.75} />}
+              onClick={restoreDefault}
+              disabled={isDefaultDraft}
+              title="恢复默认紫毫（需点保存生效）"
+            >
+              默认
+            </Button>
           </div>
-          <p className="mt-2.5 t-micro">支持 #RGB 或 #RRGGBB，输入即时生效并自动校正大小写。</p>
+          <p className="mt-2.5 t-micro">支持 #RGB 或 #RRGGBB，输入即时预览，点「保存」后生效。</p>
         </section>
 
-        {/* 实时预览 */}
-        <section className="panel p-4">
-          <div className="eyebrow mb-3">实时预览 Live</div>
+        {/* 实时预览（作用域变量，仅反映草稿） */}
+        <section className="panel p-4" style={previewStyle}>
+          <div className="eyebrow mb-3">实时预览 Live（仅预览，保存后全站生效）</div>
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Button variant="primary" size="sm">
@@ -191,7 +219,7 @@ export default function ThemeSettings() {
             </div>
             <div className="relative overflow-hidden rounded-md bg-surface-1 px-3 py-2">
               <span className="signal-bar" aria-hidden />
-              <span className="pl-2 text-[13px] text-fg">激活的列表项（左侧小数线随主题色）</span>
+              <span className="pl-2 text-[13px] text-fg">激活的列表项（左侧小数线随主色）</span>
             </div>
             <p className="text-[13px] text-fg-muted">
               这是一段正文，其中包含{' '}
