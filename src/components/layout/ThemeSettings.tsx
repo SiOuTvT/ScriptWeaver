@@ -13,8 +13,8 @@ import {
 
 /**
  * 外观与主题色 —— 左侧边栏独立页面（非弹窗）
- * 严格沿用「墨仪」设计语言：panel / eyebrow / t-* 排版层次 + 分层 surface。
- * 选色实时写入 CSS 变量，全站（含小数线、选中卡片）同步生效。
+ * 沿用「墨仪」设计语言：panel / eyebrow / t-* 排版层次 + 分层 surface。
+ * 预设以圆形色样 + 名称呈现，克制和谐；选色实时写入 CSS 变量，全站同步生效。
  */
 export default function ThemeSettings() {
   const accentColor = useAppStore((s) => s.accentColor)
@@ -60,35 +60,32 @@ export default function ThemeSettings() {
         </header>
 
         {/* 当前主色概览 */}
-        <section className="panel mb-4 p-4">
-          <div className="eyebrow mb-3">当前主色 Current</div>
-          <div className="flex items-center gap-3">
-            <div
-              className="h-12 w-12 shrink-0 rounded-lg border border-edge/10"
-              style={{ background: accentColor }}
-              aria-hidden
-            />
-            <div className="min-w-0">
-              <div className="t-label text-fg-muted">主题色</div>
-              <div className="t-mono mt-0.5 text-[16px] font-medium text-fg">{accentColor}</div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<RotateCcw size={14} strokeWidth={1.75} />}
-              onClick={() => resetAccentColor()}
-              disabled={isDefault}
-              className="ml-auto"
-            >
-              恢复默认紫毫
-            </Button>
+        <section className="panel mb-4 flex items-center gap-4 p-4">
+          <div
+            className="h-14 w-14 shrink-0 rounded-xl border border-edge/10 shadow-inset-top"
+            style={{ background: accentColor }}
+            aria-hidden
+          />
+          <div className="min-w-0">
+            <div className="t-label text-fg-muted">当前主色</div>
+            <div className="t-mono mt-0.5 text-[18px] font-medium leading-tight text-fg">{accentColor}</div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<RotateCcw size={14} strokeWidth={1.75} />}
+            onClick={() => resetAccentColor()}
+            disabled={isDefault}
+            className="ml-auto"
+          >
+            恢复默认紫毫
+          </Button>
         </section>
 
         {/* 预设色板 */}
         <section className="panel mb-4 p-4">
-          <div className="eyebrow mb-3">预设色板 Presets</div>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="eyebrow mb-4">预设色板 Presets</div>
+          <div className="grid grid-cols-4 gap-x-3 gap-y-4">
             {ACCENT_PRESETS.map((p) => {
               const active = accentColor.toUpperCase() === p.hex.toUpperCase()
               return (
@@ -97,29 +94,42 @@ export default function ThemeSettings() {
                   type="button"
                   title={`${p.name} ${p.hex}`}
                   onClick={() => commit(p.hex)}
-                  className={`group relative flex h-11 items-center justify-center rounded-lg border transition-all ${
-                    active
-                      ? 'border-fg/40'
-                      : 'border-edge/12 hover:border-edge/30 hover:-translate-y-0.5'
-                  }`}
-                  style={{ background: p.hex }}
+                  className="group flex flex-col items-center gap-1.5"
                 >
-                  {active && (
-                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-fg text-surface shadow-1">
-                      <Check size={11} strokeWidth={3} />
-                    </span>
-                  )}
+                  <span
+                    className={`relative flex h-9 w-9 items-center justify-center rounded-full border transition-all ${
+                      active
+                        ? 'border-fg/40 ring-1 ring-fg/30'
+                        : 'border-edge/15 hover:border-edge/40 hover:scale-105'
+                    }`}
+                    style={{ background: p.hex }}
+                  >
+                    {active && (
+                      <Check
+                        size={15}
+                        strokeWidth={3}
+                        className="text-white"
+                        style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.45))' }}
+                      />
+                    )}
+                  </span>
+                  <span
+                    className={`t-micro transition-colors ${
+                      active ? 'text-fg' : 'text-fg-faint group-hover:text-fg-muted'
+                    }`}
+                  >
+                    {p.name}
+                  </span>
                 </button>
               )
             })}
           </div>
-          <p className="mt-2.5 t-micro">点选任一预设即可应用，选中项以角标标记。</p>
         </section>
 
         {/* 色相微调 */}
         <section className="panel mb-4 p-4">
           <div className="eyebrow mb-3">色相微调 Hue</div>
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2.5 flex items-center justify-between">
             <span className="t-label">拖动调整色相，保持明度与饱和度</span>
             <span className="t-mono text-[12px] text-fg-faint">{currentHue}°</span>
           </div>
