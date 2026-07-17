@@ -35,6 +35,11 @@ function indent(level: number, text: string): string {
   return '    '.repeat(level) + text
 }
 
+/** 归一化坐标保留 3 位小数，避免导出脚本出现超长浮点 */
+function round3(n: number): number {
+  return Math.round(n * 1000) / 1000
+}
+
 // --------------- 校验层 ---------------
 
 export function resolveLookups(
@@ -181,7 +186,7 @@ export function exportToRpy(
   lines.push('')
 
   let currentBg: string | null = null
-  let currentChars: Record<string, { sprite_id: string; position_slot: string }> = {}
+  let currentChars: Record<string, { sprite_id: string; position_slot: string; pos_x?: number; pos_y?: number }> = {}
   let currentBgm: string | null = null
   let currentAmbient: string | null = null
 
@@ -204,9 +209,14 @@ export function exportToRpy(
     }
 
     // ---- 角色 ----
-    const newChars: Record<string, { sprite_id: string; position_slot: string }> = {}
+    const newChars: Record<string, { sprite_id: string; position_slot: string; pos_x?: number; pos_y?: number }> = {}
     for (const [charId, char] of Object.entries(state.characters)) {
-      newChars[charId] = { sprite_id: char.sprite_id, position_slot: char.position_slot }
+      newChars[charId] = {
+        sprite_id: char.sprite_id,
+        position_slot: char.position_slot,
+        pos_x: char.pos_x,
+        pos_y: char.pos_y,
+      }
     }
 
     for (const charId of Object.keys(currentChars)) {
@@ -217,8 +227,19 @@ export function exportToRpy(
 
     for (const [charId, char] of Object.entries(newChars)) {
       const prev = currentChars[charId]
-      if (!prev || prev.sprite_id !== char.sprite_id || prev.position_slot !== char.position_slot) {
-        block.push(`show ${charId} ${char.sprite_id} at ${char.position_slot}`)
+      const changed =
+        !prev ||
+        prev.sprite_id !== char.sprite_id ||
+        prev.position_slot !== char.position_slot ||
+        prev.pos_x !== char.pos_x ||
+        prev.pos_y !== char.pos_y
+      if (changed) {
+        // 有自由微调坐标时用 Transform（水平居中 / 底部对齐），否则用命名槽位
+        const atClause =
+          char.pos_x != null || char.pos_y != null
+            ? `at Transform(xpos=${round3(char.pos_x ?? 0.5)}, ypos=${round3(char.pos_y ?? 0.65)}, xanchor=0.5, yanchor=1.0)`
+            : `at ${char.position_slot}`
+        block.push(`show ${charId} ${char.sprite_id} ${atClause}`)
       }
     }
 

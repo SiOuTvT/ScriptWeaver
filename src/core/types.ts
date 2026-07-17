@@ -103,8 +103,15 @@ export type TrackValue = AudioTrackInstruction | null | '__CLEAR__'
 export interface CharacterDelta {
   /** 表情 ID（如 "smile"），对应 CharacterConfig.expressions[].id */
   sprite_id: string
-  /** 引用命名槽位ID */
+  /** 引用命名槽位ID（作为吸附基准 / 未微调时的落点） */
   position_slot: string
+  /**
+   * 自由微调坐标（归一化 0-1，舞台内绝对位置）。
+   * 未设置时按 position_slot 落点；设置后覆盖槽位，用于「预设吸附 + 自由微调」。
+   * pos_x = 水平中心，pos_y = 立绘底部对齐的纵向位置。
+   */
+  pos_x?: number
+  pos_y?: number
   /** 过渡效果 */
   transition?: string
   /**
@@ -172,6 +179,9 @@ export interface ProjectFile {
 export interface ResolvedCharacterState {
   sprite_id: string
   position_slot: string
+  /** 自由微调坐标（归一化 0-1）；未设置时按 position_slot 落点 */
+  pos_x?: number
+  pos_y?: number
   transition?: string
 }
 
