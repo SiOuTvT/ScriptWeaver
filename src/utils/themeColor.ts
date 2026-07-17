@@ -27,18 +27,16 @@ const VARS = [
   '--c-on-primary',
 ] as const
 
-/** 精选高级预设色板（含中文命名，克制、成熟，不刺眼） */
+/** 精修和谐预设色板（中文命名，沉稳、成熟，色相互不打架） */
 export const ACCENT_PRESETS: { name: string; hex: string }[] = [
   { name: '紫毫', hex: '#5446DC' },
-  { name: '靛蓝', hex: '#3B5BDB' },
-  { name: '天青', hex: '#0EA5E9' },
-  { name: '翡翠', hex: '#10B981' },
-  { name: '竹绿', hex: '#16A34A' },
-  { name: '琥珀', hex: '#D97706' },
-  { name: '赭橙', hex: '#EA580C' },
-  { name: '绯红', hex: '#E11D48' },
-  { name: '品红', hex: '#DB2777' },
-  { name: '石墨', hex: '#475569' },
+  { name: '靛蓝', hex: '#4160D8' },
+  { name: '天青', hex: '#1C9BD6' },
+  { name: '松绿', hex: '#0CA678' },
+  { name: '琥珀', hex: '#E0920C' },
+  { name: '绛红', hex: '#E03131' },
+  { name: '品红', hex: '#D6336C' },
+  { name: '黛墨', hex: '#495057' },
 ]
 
 const clamp = (n: number, min = 0, max = 255) => Math.min(max, Math.max(min, n))

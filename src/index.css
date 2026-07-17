@@ -287,15 +287,15 @@
   .theme-hue {
     -webkit-appearance: none;
     appearance: none;
-    height: 8px;
+    height: 6px;
     border-radius: 9999px;
     outline: none;
   }
   .theme-hue::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 9999px;
     background: rgb(var(--c-surface));
     border: 2px solid rgb(var(--c-fg) / 0.85);
@@ -305,8 +305,8 @@
   }
   .theme-hue::-webkit-slider-thumb:hover { transform: scale(1.12); }
   .theme-hue::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 9999px;
     background: rgb(var(--c-surface));
     border: 2px solid rgb(var(--c-fg) / 0.85);
