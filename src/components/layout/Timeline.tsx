@@ -269,9 +269,10 @@ interface ResizeState {
   ghostWidth: number // px
   targetLine: number
   anchorLine: number // move 模式下拖拽起点的目标行，用于计算位移
+  trackIndex: number // 所在轨道行序号，用于定位预览浮层
 }
 
-/** 色块 + 左右拖拽手柄 + 整体移动 + 删除 */
+/** 色块：整块可拖动 —— 靠近左右边缘=伸缩，中间=整体移动；右上角可删除 */
 const DraggableSpan = memo(function DraggableSpan({
   span,
   total,
@@ -286,17 +287,28 @@ const DraggableSpan = memo(function DraggableSpan({
   color: string
   trackId: string
   trackRowEl: HTMLDivElement | null
-  onResizeStart: (state: Omit<ResizeState, 'ghostLeft' | 'ghostWidth' | 'targetLine' | 'anchorLine'> & { startClientX: number }) => void
+  onResizeStart: (state: Omit<ResizeState, 'ghostLeft' | 'ghostWidth' | 'targetLine' | 'anchorLine' | 'trackIndex'> & { startClientX: number }) => void
   onDelete: () => void
 }) {
   const leftPct = spanPct(span.start, total)
   const widthPct = spanPct(span.end - span.start + 1, total)
+  const outerRef = useRef<HTMLDivElement>(null)
 
-  const handleEdgeDown = useCallback(
-    (edge: 'left' | 'right') => (e: React.MouseEvent) => {
+  // 在色块上按下：按落点靠近哪条边决定「伸缩」还是「整体移动」
+  const handleDown = useCallback(
+    (e: React.MouseEvent) => {
       e.stopPropagation()
       e.preventDefault()
       if (!trackRowEl) return
+
+      const rect = outerRef.current?.getBoundingClientRect()
+      let edge: 'left' | 'right' | 'move' = 'move'
+      if (rect && rect.width > 0) {
+        const offset = e.clientX - rect.left
+        const threshold = Math.max(10, rect.width * 0.22) // 边缘命中区，整块都好抓
+        if (offset <= threshold) edge = 'left'
+        else if (offset >= rect.width - threshold) edge = 'right'
+      }
 
       onResizeStart({
         trackId,
@@ -310,39 +322,21 @@ const DraggableSpan = memo(function DraggableSpan({
     [trackId, span.start, span.end, span.charId, trackRowEl, onResizeStart],
   )
 
-  // 在色块主体上按下 → 整体移动（按住拖动整段左右平移）
-  const handleMoveDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation()
-      e.preventDefault()
-      if (!trackRowEl) return
-
-      onResizeStart({
-        trackId,
-        spanStart: span.start,
-        spanEnd: span.end,
-        edge: 'move',
-        charId: span.charId,
-        startClientX: e.clientX,
-      })
-    },
-    [trackId, span.start, span.end, span.charId, trackRowEl, onResizeStart],
-  )
-
   return (
     <div
+      ref={outerRef}
       className="group absolute top-0 bottom-0 select-none"
       style={{ left: leftPct, width: widthPct }}
     >
-      {/* 色块主体（可拖动整体移动） */}
+      {/* 色块主体（整块可拖：边缘伸缩 / 中间移动） */}
       <div
-        className="pointer-events-auto absolute inset-x-2 top-1 bottom-1 cursor-grab rounded-sm active:cursor-grabbing"
+        className="pointer-events-auto absolute inset-x-0.5 top-1 bottom-1 cursor-grab rounded-sm active:cursor-grabbing"
         style={{
           backgroundColor: color + '55',
           borderLeft: `2px solid ${color}`,
         }}
-        onMouseDown={handleMoveDown}
-        title="拖动可整体移动位置"
+        onMouseDown={handleDown}
+        title="拖动中间可整体移动；拖动左右边缘可伸缩长度"
       >
         <span className="truncate px-1.5 text-[12px] leading-5 text-fg" title={span.label}>
           {span.label}
@@ -363,21 +357,9 @@ const DraggableSpan = memo(function DraggableSpan({
         <X size={10} strokeWidth={2.5} />
       </button>
 
-      {/* 左拖拽手柄 */}
-      <div
-        className="absolute left-0 -ml-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-l hover:bg-fg/15 active:bg-fg/25"
-        style={{ minWidth: 6 }}
-        onMouseDown={handleEdgeDown('left')}
-        title="拖拽调整起始行"
-      />
-
-      {/* 右拖拽手柄 */}
-      <div
-        className="absolute right-0 -mr-1 top-1 bottom-1 z-30 w-2 cursor-col-resize rounded-r hover:bg-fg/15 active:bg-fg/25"
-        style={{ minWidth: 6 }}
-        onMouseDown={handleEdgeDown('right')}
-        title="拖拽调整结束行"
-      />
+      {/* 边缘视觉提示（仅作提示，不拦截事件） */}
+      <div className="pointer-events-none absolute left-0 top-1 bottom-1 z-30 w-1.5 rounded-l bg-fg/0 group-hover:bg-fg/20" />
+      <div className="pointer-events-none absolute right-0 top-1 bottom-1 z-30 w-1.5 rounded-r bg-fg/0 group-hover:bg-fg/20" />
     </div>
   )
 })
@@ -480,13 +462,14 @@ export default function Timeline() {
   }, [])
 
   const handleResizeStart = useCallback(
-    (info: Omit<ResizeState, 'ghostLeft' | 'ghostWidth' | 'targetLine' | 'anchorLine'> & { startClientX: number }) => {
+    (info: Omit<ResizeState, 'ghostLeft' | 'ghostWidth' | 'targetLine' | 'anchorLine' | 'trackIndex'> & { startClientX: number }) => {
       const rowEl = trackRowRefs.current.get(info.trackId)
       if (!rowEl) return
 
       const rowRect = rowEl.getBoundingClientRect()
       const targetLine = Math.round((info.startClientX - rowRect.left) / cellWidth)
       const anchorLine = Math.max(0, Math.min(total - 1, targetLine))
+      const trackIndex = allTracks.findIndex((t) => t.id === info.trackId)
 
       // 初始 ghost 保持当前片段形态，移动过程中再整体平移
       setResizeState({
@@ -495,9 +478,10 @@ export default function Timeline() {
         ghostWidth: (info.spanEnd - info.spanStart + 1) * cellWidth,
         targetLine: anchorLine,
         anchorLine,
+        trackIndex: trackIndex < 0 ? 0 : trackIndex,
       })
     },
-    [total],
+    [total, allTracks],
   )
 
   // 删除整段色块（bgm/ambient 置空，立绘移除该角色指令）
@@ -716,25 +700,6 @@ export default function Timeline() {
 
   return (
     <div className="flex shrink-0 flex-col border-t border-edge/10 bg-canvas relative">
-      {/* 拖拽预览浮层 */}
-      {resizeState && (
-        <div
-          className="pointer-events-none absolute z-50 rounded-sm border-2 border-signal bg-signal/20"
-          style={{
-            top: 0,
-            left: resizeState.ghostLeft,
-            width: Math.max(cellWidth, resizeState.ghostWidth),
-            height: '100%',
-          }}
-        >
-          <span className="absolute top-1 left-2 text-[12px] font-mono text-signal">
-            {resizeState.edge === 'left'
-              ? `← L${resizeState.targetLine + 1}`
-              : `L${resizeState.targetLine + 1} →`}
-          </span>
-        </div>
-      )}
-
       <div className="flex items-center justify-between border-b border-edge/10 px-3 py-1.5">
         <span className="text-[12px] font-medium text-fg-muted">时间轴</span>
         <span className="text-[12px] text-fg-subtle">{total} 行 {totalTracks} 轨</span>
@@ -927,6 +892,30 @@ export default function Timeline() {
                 })}
               </div>
             ))}
+
+            {/* 拖拽预览浮层：仅覆盖当前轨道行，定位与色块一致 */}
+            {resizeState && (() => {
+              const top = 48 + resizeState.trackIndex * trackHeight + 2
+              return (
+                <div
+                  className="pointer-events-none absolute z-50 rounded-sm border-2 border-signal bg-signal/20"
+                  style={{
+                    top,
+                    left: resizeState.ghostLeft,
+                    width: Math.max(cellWidth, resizeState.ghostWidth),
+                    height: trackHeight - 4,
+                  }}
+                >
+                  <span className="absolute top-1 left-2 text-[12px] font-mono text-signal">
+                    {resizeState.edge === 'left'
+                      ? `← L${resizeState.targetLine + 1}`
+                      : resizeState.edge === 'right'
+                      ? `L${resizeState.targetLine + 1} →`
+                      : `L${resizeState.targetLine + 1}`}
+                  </span>
+                </div>
+              )
+            })()}
           </div>
         </div>
       </div>
