@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { LineDelta, ResolvedLineState, AssetItem, CharacterConfig } from '@/core/types'
 import { reduceLines } from '@/core/reducer'
 import { MOCK_DELTAS, MOCK_ASSETS, MOCK_CHARACTERS } from '@/data/mockDeltas'
+import { DEFAULT_ACCENT } from '@/utils/themeColor'
 
 // 生成唯一 ID
 let _uidCounter = 0
@@ -73,6 +74,11 @@ interface AppState {
   theme: ThemeMode
   setTheme: (t: ThemeMode) => void
   toggleTheme: () => void
+
+  // ---- 主题色（primary 基色 HEX） ----
+  accentColor: string
+  setAccentColor: (hex: string) => void
+  resetAccentColor: () => void
 
   // ---- 剧本抽屉 ----
   scriptDrawerOpen: boolean
@@ -153,6 +159,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     (typeof localStorage !== 'undefined' &&
       (localStorage.getItem('sw-theme') as ThemeMode | null)) ||
     'dark',
+
+  // ---- 主题色（持久化，默认紫毫） ----
+  accentColor:
+    (typeof localStorage !== 'undefined' && localStorage.getItem('sw-accent')) ||
+    DEFAULT_ACCENT,
 
   // ---- 左侧边栏 ----
   leftSidebarCollapsed: false,
@@ -425,6 +436,25 @@ export const useAppStore = create<AppState>((set, get) => ({
       /* 忽略 */
     }
     set({ theme: next })
+  },
+
+  // ---- 主题色 ----
+  setAccentColor: (hex) => {
+    try {
+      localStorage.setItem('sw-accent', hex)
+    } catch {
+      /* 忽略 */
+    }
+    set({ accentColor: hex })
+  },
+
+  resetAccentColor: () => {
+    try {
+      localStorage.setItem('sw-accent', DEFAULT_ACCENT)
+    } catch {
+      /* 忽略 */
+    }
+    set({ accentColor: DEFAULT_ACCENT })
   },
 
   setActiveNavItem: (item) => set({ activeNavItem: item }),

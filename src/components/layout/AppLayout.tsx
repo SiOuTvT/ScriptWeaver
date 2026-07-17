@@ -9,12 +9,14 @@ import AssetManager from './AssetManager'
 import CharacterManager from './CharacterManager'
 import AIPanel from './AIPanel'
 import ExportSettings from './ExportSettings'
+import ThemeColorPanel from './ThemeColorPanel'
+import { applyAccent } from '@/utils/themeColor'
 import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 import { subscribe, getToastItems, toast, type ToastItem } from '@/utils/toast'
-import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown } from 'lucide-react'
+import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown, Palette } from 'lucide-react'
 import { Button, IconButton, ConfirmDialog } from '@/components/ui'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 
@@ -126,6 +128,7 @@ export default function AppLayout() {
 
   // ---- 对话框状态 ----
   const [showNewConfirm, setShowNewConfirm] = useState(false)
+  const [showThemeColor, setShowThemeColor] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
 
   // ---- auto-save refs ----
@@ -177,12 +180,18 @@ export default function AppLayout() {
   // ---- 主题：应用到 <html data-theme> 并同步 Electron 原生标题栏 ----
   const theme = useAppStore((s) => s.theme)
   const toggleTheme = useAppStore((s) => s.toggleTheme)
+  const accentColor = useAppStore((s) => s.accentColor)
   useEffect(() => {
     const root = document.documentElement
     root.setAttribute('data-theme', theme)
     root.style.colorScheme = theme
     window.electronAPI?.setNativeTheme?.(theme)
   }, [theme])
+
+  // ---- 主题色：随基色 / 明暗模式变化，实时写入 CSS 变量 ----
+  useEffect(() => {
+    applyAccent(accentColor, theme)
+  }, [accentColor, theme])
 
   // 全局快捷键：Ctrl+Z 撤销 / Ctrl+Y 或 Ctrl+Shift+Z 重做
   useEffect(() => {
@@ -354,6 +363,12 @@ export default function AppLayout() {
           </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
           <IconButton
+            icon={<Palette size={16} strokeWidth={1.75} />}
+            aria-label="主题色"
+            onClick={() => setShowThemeColor(true)}
+            title="主题色"
+          />
+          <IconButton
             icon={theme === 'dark' ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
             aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
             onClick={toggleTheme}
@@ -387,6 +402,9 @@ export default function AppLayout() {
         {activeNavItem === 'export' && <ExportSettings />}
         {activeNavItem === 'ai' && <AIPanel />}
       </div>
+
+      {/* ===== 主题色调色台 ===== */}
+      <ThemeColorPanel open={showThemeColor} onClose={() => setShowThemeColor(false)} />
 
       {/* ===== 新建确认对话框 ===== */}
       <ConfirmDialog
