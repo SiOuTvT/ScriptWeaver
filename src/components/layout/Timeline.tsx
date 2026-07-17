@@ -292,6 +292,8 @@ const DraggableSpan = memo(function DraggableSpan({
   trackRowEl: HTMLDivElement | null
   onResizeStart: (state: Omit<ResizeState, 'ghostLeft' | 'ghostWidth' | 'targetLine' | 'anchorLine' | 'trackIndex'> & { startClientX: number }) => void
   onDelete: () => void
+  selected?: boolean
+  onSelect?: () => void
 }) {
   const leftPct = spanPct(span.start, total)
   const widthPct = spanPct(span.end - span.start + 1, total)
@@ -419,7 +421,10 @@ export default function Timeline() {
   [resolvedStates])
 
   const total = resolvedStates.length
-  const trackHeight = 28
+  const trackHeight = 42
+  const HEADER_H = 56
+  const SNAP_RADIUS_PX = 8
+  const SUBDIV = 4
 
   // 缩放：把行拉宽/收窄，便于精细对齐与拖拽
   const ZOOM_MIN = 60
@@ -466,6 +471,10 @@ export default function Timeline() {
   const [resizeState, setResizeState] = useState<ResizeState | null>(null)
   const resizeRef = useRef<ResizeState | null>(null)
   const trackRowRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  // 磁吸参考线（拖拽时显示，行单位，可小数）
+  const [guideLines, setGuideLines] = useState<number[]>([])
+  // 选中的片段（用于高亮 + 方向键微移）
+  const [selectedSpan, setSelectedSpan] = useState<{ trackId: string; start: number; end: number; charId?: string } | null>(null)
 
   const setTrackRowRef = useCallback((trackId: string) => (el: HTMLDivElement | null) => {
     if (el) trackRowRefs.current.set(trackId, el)
@@ -624,39 +633,69 @@ export default function Timeline() {
       document.body.style.cursor = info.edge === 'move' ? 'grabbing' : 'ew-resize'
       document.body.style.userSelect = 'none'
 
+      // 磁吸候选：同轨其它片段的左右边缘 + 播放头（当前选中行）
+      const snapCandidates: number[] = []
+      const track = allTracks.find((t) => t.id === info.trackId)
+      if (track) {
+        for (const sp of track.spans) {
+          if (sp.start === info.spanStart && sp.end === info.spanEnd && (sp.charId ?? undefined) === (info.charId ?? undefined)) continue
+          snapCandidates.push(sp.start, sp.end + 1)
+        }
+      }
+      snapCandidates.push(selectedIndex)
+      const SNAP_R = SNAP_RADIUS_PX / cellWidth
+
       const move = (ev: MouseEvent) => {
         const cur = resizeRef.current
         if (!cur) return
         const row = trackRowRefs.current.get(cur.trackId)
         if (!row) return
         const rr = row.getBoundingClientRect()
-        const pos = clamp(Math.round((ev.clientX - rr.left) / cellWidth), 0, total - 1)
         const spanLen = cur.spanEnd - cur.spanStart
-        let newStart = cur.spanStart
-        let newEnd = cur.spanEnd
-        let targetLine = cur.spanStart
+        // 连续（小数行）位置：拖拽跟手、不跳格
+        const posF = clamp((ev.clientX - rr.left) / cellWidth, 0, total - 1e-6)
+
+        let newStartF = cur.spanStart
+        let newEndF = cur.spanEnd
         if (cur.edge === 'left') {
-          newStart = Math.max(0, Math.min(pos, cur.spanEnd))
-          newEnd = cur.spanEnd
-          targetLine = newStart
+          newStartF = clamp(posF, 0, cur.spanEnd)
         } else if (cur.edge === 'right') {
-          newEnd = Math.min(total - 1, Math.max(pos, cur.spanStart))
-          newStart = cur.spanStart
-          targetLine = newEnd
+          newEndF = clamp(posF, cur.spanStart, total - 1)
         } else {
-          const delta = pos - cur.anchorLine
-          newStart = Math.max(0, Math.min(total - 1 - spanLen, cur.spanStart + delta))
-          newEnd = newStart + spanLen
-          targetLine = newStart
+          newStartF = clamp(cur.spanStart + (posF - cur.anchorLine), 0, total - 1 - spanLen)
+          newEndF = newStartF + spanLen
         }
+
+        // 磁吸：对移动边缘吸附到最近候选（邻近片段边缘 / 播放头），并显示参考线
+        const testEdges = cur.edge === 'left' ? [newStartF] : cur.edge === 'right' ? [newEndF] : [newStartF, newEndF]
+        let best = SNAP_R
+        let bestC = -1
+        let bestIdx = 0
+        testEdges.forEach((edge, idx) => {
+          for (const c of snapCandidates) {
+            const d = Math.abs(edge - c)
+            if (d < best) { best = d; bestC = c; bestIdx = idx }
+          }
+        })
+        const guides: number[] = []
+        if (bestC >= 0) {
+          const deltaSnap = bestC - testEdges[bestIdx]
+          if (cur.edge === 'left') newStartF += deltaSnap
+          else if (cur.edge === 'right') newEndF += deltaSnap
+          else { newStartF += deltaSnap; newEndF += deltaSnap }
+          guides.push(bestC)
+        }
+
+        const targetLineVal = cur.edge === 'right' ? Math.round(newEndF) : Math.round(newStartF)
         const next: ResizeState = {
           ...cur,
-          ghostLeft: newStart * cellWidth,
-          ghostWidth: (newEnd - newStart + 1) * cellWidth,
-          targetLine,
+          ghostLeft: newStartF * cellWidth,
+          ghostWidth: Math.max(cellWidth, (newEndF - newStartF + 1) * cellWidth),
+          targetLine: targetLineVal,
         }
         resizeRef.current = next
         setResizeState(next)
+        setGuideLines(guides)
       }
 
       const up = () => {
@@ -664,16 +703,17 @@ export default function Timeline() {
         document.removeEventListener('mouseup', up)
         document.body.style.cursor = ''
         document.body.style.userSelect = ''
-        const st = resizeRef.current
+        const stt = resizeRef.current
         resizeRef.current = null
-        if (st) commitResize(st)
+        setGuideLines([])
+        if (stt) commitResize(stt)
         setResizeState(null)
       }
 
       document.addEventListener('mousemove', move)
       document.addEventListener('mouseup', up)
     },
-    [total, allTracks, cellWidth],
+    [total, allTracks, cellWidth, selectedIndex, commitResize],
   )
 
   // 删除整段色块（bgm/ambient 置空，立绘移除该角色指令）
@@ -704,6 +744,50 @@ export default function Timeline() {
     },
     [batchUpdateDeltas],
   )
+
+  // 选中片段后用 ← → 方向键整体微移 1 行
+  const nudgeSelected = useCallback(
+    (delta: number) => {
+      const sel = selectedSpan
+      if (!sel) return
+      const spanLen = sel.end - sel.start
+      const newStart = clamp(sel.start + delta, 0, total - 1 - spanLen)
+      const newEnd = newStart + spanLen
+      if (newStart === sel.start) return
+      commitResize({
+        trackId: sel.trackId,
+        spanStart: sel.start,
+        spanEnd: sel.end,
+        edge: 'move',
+        charId: sel.charId,
+        ghostLeft: 0,
+        ghostWidth: 0,
+        targetLine: newStart,
+        anchorLine: sel.start,
+        trackIndex: 0,
+      })
+      setSelectedSpan({ ...sel, start: newStart, end: newEnd })
+    },
+    [selectedSpan, total, commitResize],
+  )
+
+  // 方向键微移监听（输入框聚焦时不拦截）
+  useEffect(() => {
+    if (!selectedSpan) return
+    const handler = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) return
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        nudgeSelected(-1)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        nudgeSelected(1)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [selectedSpan, nudgeSelected])
 
   // 拖拽中断（卸载等）时还原全局光标与选中状态
   useEffect(() => {
