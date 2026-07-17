@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useRef, memo, useState, useEffect } from 'react'
-import { ChevronUp, ChevronDown, X, Plus } from 'lucide-react'
+import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import type { ResolvedLineState, LineDelta, CharacterConfig } from '@/core/types'
 import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
@@ -104,12 +104,13 @@ function computeSpans(states: ResolvedLineState[], getValue: TrackDef['getValue'
 // ===================== DropCell =====================
 
 const DropCell = memo(function DropCell({
-  lineIndex, trackId, acceptType, isSelected,
+  lineIndex, trackId, acceptType, isSelected, width,
 }: {
   lineIndex: number
   trackId: string
   acceptType: 'background' | 'audio' | 'sprite' | null
   isSelected: boolean
+  width: number
 }) {
   const updateDeltaAt = useAppStore((s) => s.updateDeltaAt)
   const selectLine = useAppStore((s) => s.selectLine)
@@ -205,7 +206,7 @@ const DropCell = memo(function DropCell({
     <div
       ref={elRef}
       className={`shrink-0 border-r border-edge/10 ${isSelected ? 'bg-primary/5' : ''}`}
-      style={{ width: 120 }}
+      style={{ width }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -418,7 +419,15 @@ export default function Timeline() {
 
   const total = resolvedStates.length
   const trackHeight = 28
-  const cellWidth = 120
+
+  // 缩放：把行拉宽/收窄，便于精细对齐与拖拽
+  const ZOOM_MIN = 60
+  const ZOOM_MAX = 300
+  const ZOOM_STEP = 40
+  const [cellWidth, setCellWidth] = useState(120)
+  const zoomIn = useCallback(() => setCellWidth((w) => Math.min(ZOOM_MAX, w + ZOOM_STEP)), [])
+  const zoomOut = useCallback(() => setCellWidth((w) => Math.max(ZOOM_MIN, w - ZOOM_STEP)), [])
+  const zoomReset = useCallback(() => setCellWidth(120), [])
 
   const allTracks = useMemo(() => [
     ...TRACKS.map((t) => ({
@@ -481,7 +490,7 @@ export default function Timeline() {
         trackIndex: trackIndex < 0 ? 0 : trackIndex,
       })
     },
-    [total, allTracks],
+    [total, allTracks, cellWidth],
   )
 
   // 删除整段色块（bgm/ambient 置空，立绘移除该角色指令）
@@ -696,13 +705,39 @@ export default function Timeline() {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [resizeState, total, allTracks, resolvedStates, draftDeltas, batchUpdateDeltas])
+  }, [resizeState, total, allTracks, resolvedStates, draftDeltas, batchUpdateDeltas, cellWidth])
 
   return (
     <div className="flex shrink-0 flex-col border-t border-edge/10 bg-canvas relative">
       <div className="flex items-center justify-between border-b border-edge/10 px-3 py-1.5">
         <span className="text-[12px] font-medium text-fg-muted">时间轴</span>
-        <span className="text-[12px] text-fg-subtle">{total} 行 {totalTracks} 轨</span>
+        <div className="flex items-center gap-2">
+          {/* 缩放控制：拉宽行距便于精细对齐 */}
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={zoomOut}
+              disabled={cellWidth <= ZOOM_MIN}
+              title="缩小行距"
+              className={`flex h-5 w-5 items-center justify-center rounded transition-colors ${
+                cellWidth <= ZOOM_MIN ? 'cursor-default text-fg-faint' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+              }`}
+            ><ZoomOut size={13} strokeWidth={1.75} /></button>
+            <button
+              onClick={zoomReset}
+              title="恢复默认行距"
+              className="min-w-[34px] rounded px-1 text-center text-[12px] tabular-nums text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
+            >{Math.round((cellWidth / 120) * 100)}%</button>
+            <button
+              onClick={zoomIn}
+              disabled={cellWidth >= ZOOM_MAX}
+              title="放大行距"
+              className={`flex h-5 w-5 items-center justify-center rounded transition-colors ${
+                cellWidth >= ZOOM_MAX ? 'cursor-default text-fg-faint' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+              }`}
+            ><ZoomIn size={13} strokeWidth={1.75} /></button>
+          </div>
+          <span className="text-[12px] text-fg-subtle">{total} 行 {totalTracks} 轨</span>
+        </div>
       </div>
 
       <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + 60}px` }}>
@@ -808,7 +843,7 @@ export default function Timeline() {
               >
                 {resolvedStates.map((s, i) => (
                   <DropCell key={s.line_id} lineIndex={i} trackId={track.id}
-                    acceptType={track.acceptAssetType} isSelected={i === selectedIndex} />
+                    acceptType={track.acceptAssetType} isSelected={i === selectedIndex} width={cellWidth} />
                 ))}
 
                 {/* 可拖拽色块 */}

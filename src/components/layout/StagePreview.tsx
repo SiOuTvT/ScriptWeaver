@@ -67,10 +67,33 @@ function getRelativePos(
 
 // ===================== 常量 =====================
 
-const SLOT_POSITIONS: Record<string, { x: string; y: string }> = {
-  left: { x: '22%', y: '65%' },
-  center: { x: '50%', y: '65%' },
-  right: { x: '78%', y: '65%' },
+/** 预设站位锚点（归一化 0-1）——作为磁吸基准，保证全篇站位一致 */
+const SLOT_ANCHORS: Record<string, { x: number; y: number }> = {
+  left: { x: 0.22, y: 0.65 },
+  center: { x: 0.5, y: 0.65 },
+  right: { x: 0.78, y: 0.65 },
+}
+const SLOT_Y = 0.65
+/** 磁吸阈值：拖到离预设站位这么近就吸附过去 */
+const SNAP_X = 0.045
+const SNAP_Y = 0.05
+
+const SLOT_POSITIONS: Record<string, { x: string; y: string }> = Object.fromEntries(
+  Object.entries(SLOT_ANCHORS).map(([k, v]) => [k, { x: `${v.x * 100}%`, y: `${v.y * 100}%` }]),
+)
+
+/** 返回离给定 x 最近的预设站位 ID */
+function nearestSlot(x: number): string {
+  let best = 'center'
+  let bestDist = Infinity
+  for (const [id, a] of Object.entries(SLOT_ANCHORS)) {
+    const d = Math.abs(a.x - x)
+    if (d < bestDist) {
+      bestDist = d
+      best = id
+    }
+  }
+  return best
 }
 
 const BG_COLORS: Record<string, string> = {
@@ -325,6 +348,82 @@ export default function StagePreview() {
     [selectedIndex, updateDeltaAt, resetDragState, state],
   )
 
+  // =================== 立绘自由拖动（磁吸预设站位 + 微调偏移） ===================
+
+  const stageRef = useRef<HTMLDivElement>(null)
+  const [dragPos, setDragPos] = useState<{ charId: string; x: number; y: number; snapped: boolean } | null>(null)
+  const dragPosRef = useRef<typeof dragPos>(null)
+
+  const handleCharMouseDown = useCallback(
+    (charId: string) => (e: React.MouseEvent) => {
+      // 只接管左键，避免与右键菜单等冲突
+      if (e.button !== 0) return
+      e.preventDefault()
+      e.stopPropagation()
+      const rect = stageRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const curState = resolvedStates[selectedIndex] ?? null
+
+      const move = (ev: MouseEvent) => {
+        let rx = (ev.clientX - rect.left) / rect.width
+        let ry = (ev.clientY - rect.top) / rect.height
+        rx = Math.max(0.03, Math.min(0.97, rx))
+        ry = Math.max(0.2, Math.min(1, ry))
+        // 磁吸：靠近预设站位就吸过去，保证全篇一致
+        let snapped = false
+        for (const a of Object.values(SLOT_ANCHORS)) {
+          if (Math.abs(rx - a.x) < SNAP_X) {
+            rx = a.x
+            snapped = true
+            break
+          }
+        }
+        if (Math.abs(ry - SLOT_Y) < SNAP_Y) {
+          ry = SLOT_Y
+        }
+        const p = { charId, x: rx, y: ry, snapped }
+        dragPosRef.current = p
+        setDragPos(p)
+      }
+
+      const up = () => {
+        document.removeEventListener('mousemove', move)
+        document.removeEventListener('mouseup', up)
+        const p = dragPosRef.current
+        if (p) {
+          const slot = nearestSlot(p.x)
+          const resolvedChar = curState?.characters[charId]
+          updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+            const base = prev.characters[charId] ?? {
+              sprite_id: resolvedChar?.sprite_id ?? 'default',
+              position_slot: slot,
+              action: 'show' as const,
+            }
+            return {
+              ...prev,
+              characters: {
+                ...prev.characters,
+                [charId]: {
+                  ...base,
+                  pos_x: p.snapped && Math.abs(p.x - SLOT_ANCHORS[slot].x) < 1e-6 && Math.abs(p.y - SLOT_Y) < 1e-6 ? undefined : p.x,
+                  pos_y: p.snapped && Math.abs(p.x - SLOT_ANCHORS[slot].x) < 1e-6 && Math.abs(p.y - SLOT_Y) < 1e-6 ? undefined : p.y,
+                  position_slot: slot,
+                  action: 'show' as const,
+                },
+              },
+            }
+          })
+        }
+        dragPosRef.current = null
+        setDragPos(null)
+      }
+
+      document.addEventListener('mousemove', move)
+      document.addEventListener('mouseup', up)
+    },
+    [selectedIndex, updateDeltaAt, resolvedStates],
+  )
+
   // =================== 渲染 ===================
 
   // Sprite 槽位线（memo 避免每次渲染重建）
@@ -375,6 +474,7 @@ export default function StagePreview() {
   return (
     <main className="relative flex flex-1 flex-col">
       <div
+        ref={stageRef}
         className="relative flex-1 overflow-hidden rounded-lg border border-edge/16 bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -400,28 +500,38 @@ export default function StagePreview() {
         {/* 立绘拖放槽位引导线 */}
         {spriteSlotGuides}
 
-        {/* 角色层 */}
+        {/* 角色层（可拖动：磁吸预设站位，拉离即自由微调） */}
         {Object.entries(state.characters).map(
           ([charId, char]: [string, ResolvedCharacterState]) => {
-            const slot = SLOT_POSITIONS[char.position_slot] ?? SLOT_POSITIONS.center
             const { dataUrl: spriteDataUrl, color: spriteColor } = resolveSpriteImage(
               char.sprite_id,
               assets,
               characterConfigs,
             )
 
+            const dragging = dragPos?.charId === charId
+            const anchor = SLOT_ANCHORS[char.position_slot] ?? SLOT_ANCHORS.center
+            const px = dragging ? dragPos!.x : char.pos_x ?? anchor.x
+            const py = dragging ? dragPos!.y : char.pos_y ?? anchor.y
+            const hasOffset = char.pos_x != null || char.pos_y != null
+
             return (
               <div
                 key={charId}
-                className="pointer-events-none absolute -translate-x-1/2 -translate-y-full flex flex-col items-center transition-[left,top] duration-200"
-                style={{ left: slot.x, top: slot.y }}
+                onMouseDown={handleCharMouseDown(charId)}
+                className={`group pointer-events-auto absolute z-30 -translate-x-1/2 -translate-y-full flex cursor-grab flex-col items-center active:cursor-grabbing ${
+                  dragging ? '' : 'transition-[left,top] duration-200'
+                }`}
+                style={{ left: `${px * 100}%`, top: `${py * 100}%` }}
+                title="拖动可移动位置；靠近左/中/右会自动吸附"
               >
                 {spriteDataUrl ? (
                   /* 真实立绘图片 */
                   <img
                     src={spriteDataUrl}
                     alt={getDisplayName(charId)}
-                    className="max-h-64 w-auto object-contain drop-shadow-lg"
+                    draggable={false}
+                    className="max-h-64 w-auto select-none object-contain drop-shadow-lg"
                     style={{ minHeight: '80px' }}
                   />
                 ) : (
@@ -438,8 +548,16 @@ export default function StagePreview() {
                     </span>
                   </div>
                 )}
-                <div className="mt-1 text-center text-[12px] text-fg-faint">
-                  [{char.position_slot}]
+                <div
+                  className={`mt-1 rounded px-1.5 text-center text-[12px] transition-colors ${
+                    dragging
+                      ? 'bg-signal/20 text-signal'
+                      : 'text-fg-faint opacity-0 group-hover:opacity-100'
+                  }`}
+                >
+                  {char.position_slot}
+                  {hasOffset && !dragging ? ' 微调' : ''}
+                  {dragging ? (dragPos!.snapped ? ' 吸附' : ` ${Math.round(px * 100)},${Math.round(py * 100)}`) : ''}
                 </div>
               </div>
             )
