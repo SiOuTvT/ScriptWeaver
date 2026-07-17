@@ -336,11 +336,11 @@ export default function StagePreview() {
           const pos = SLOT_POSITIONS[slot]
           const active = dragOverZone === `ch-${slot}`
           return (
-            <div
-              key={slot}
-              className="absolute -translate-x-1/2 flex flex-col items-center"
-              style={{ left: pos.x, top: '50%' }}
-            >
+              <div
+                key={slot}
+                className="absolute -translate-x-1/2 -translate-y-full flex flex-col items-center"
+                style={{ left: pos.x, top: pos.y }}
+              >
               <div
                 className={`rounded-lg border-2 border-dashed px-6 py-12 transition-colors duration-150 ${
                   active
@@ -413,7 +413,7 @@ export default function StagePreview() {
             return (
               <div
                 key={charId}
-                className="pointer-events-none absolute -translate-x-1/2 -translate-y-full animate-slide-up flex flex-col items-center transition-[left,top] duration-200"
+                className="pointer-events-none absolute -translate-x-1/2 -translate-y-full flex flex-col items-center transition-[left,top] duration-200"
                 style={{ left: slot.x, top: slot.y }}
               >
                 {spriteDataUrl ? (
