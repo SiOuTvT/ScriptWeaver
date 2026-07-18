@@ -1,154 +1,162 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { Button } from '@/components/ui'
 import { Settings, Sparkles, Loader2 } from 'lucide-react'
 import type { LineDelta } from '@/core/types'
+import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
+import {
+  AIConfig,
+  AIMode,
+  loadConfig,
+  saveConfig,
+  applyPreset,
+  buildSystemPrompt,
+  buildUserPrompt,
+  buildAudioHints,
+  buildTagIndex,
+  parseDirective,
+  resolveDirectiveToDelta,
+  composeDeltas,
+  streamChatCompletion,
+} from '@/utils/aiDirector'
 
-const STORAGE_KEY = 'scriptweaver_ai_config'
+const STORAGE_MODE_KEY = 'scriptweaver_ai_mode'
 
-interface AIConfig {
-  endpoint: string
-  apiKey: string
-  model: string
-}
-
-function loadConfig(): AIConfig {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch { /* noop */ }
-  return { endpoint: 'https://api.openai.com/v1/chat/completions', apiKey: '', model: 'gpt-3.5-turbo' }
-}
-
-function saveConfig(cfg: AIConfig): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg))
-}
-
-function nextLineId(deltas: LineDelta[]): string {
-  let maxNum = 0
+function maxLineNum(deltas: LineDelta[]): number {
+  let max = 0
   for (const d of deltas) {
-    const match = d.line_id.match(/^L(\d+)$/)
-    if (match) {
-      const n = parseInt(match[1], 10)
-      if (n > maxNum) maxNum = n
-    }
+    const m = d.line_id.match(/^L(\d+)$/)
+    if (m) max = Math.max(max, parseInt(m[1], 10))
   }
-  return `L${maxNum + 1}`
-}
-
-const SYSTEM_PROMPT = `你是一个视觉小说剧本生成助手。用户会描述想要的场景，你需要生成一个 Ren'Py 风格的剧本JSON。
-
-返回格式必须是纯 JSON 数组，每个元素是一条指令，包含：
-- line_id: "L1", "L2", ...（行号）
-- speaker: 说话人名称（null 表示旁白）
-- dialogue: 台词
-- background: { asset_id: "school", transition: "dissolve" } | null（null=延续上一行）
-- characters: { "角色名": { sprite_id: "表情名", position_slot: "left"|"center"|"right", action: "show" } }（空对象={}表示无角色变更）
-- audio: { bgm: null, ambient: null, se: [], voice: null }（bgm可设 { asset_id, volume, loop, fade_in_ms }）
-
-【规则】
-1. 生成 5-12 行
-2. 角色名为英文小写（如 alice, bob）
-3. 表情名用英文（如 smile, angry, normal, sad, happy）
-4. 背景用英文关键词（如 school, park, room, street, night_sky）
-5. 音乐用英文风格关键词（如 peaceful, tense, romantic, cheerful）
-6. 输出只包含 JSON 数组，不要任何额外文字`
-
-function buildUserPrompt(desc: string, existingChars: string, existingBgs: string): string {
-  return `现有角色: ${existingChars || '无'}
-现有背景: ${existingBgs || '无'}
-
-用户需求: ${desc}
-
-请根据以上信息生成适合的剧本。角色和背景尽量用已有的，必要时可以新增合适的。`
+  return max
 }
 
 export default function AIPanel() {
   const draftDeltas = useAppStore((s) => s.draftDeltas)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
   const assets = useAppStore((s) => s.assets)
-  const insertDeltaAt = useAppStore((s) => s.insertDeltaAt)
+  const selectedLineIndex = useAppStore((s) => s.selectedLineIndex)
+  const setDraftDeltas = useAppStore((s) => s.setDraftDeltas)
   const selectLine = useAppStore((s) => s.selectLine)
 
   const [config, setConfig] = useState<AIConfig>(loadConfig)
+  const [mode, setMode] = useState<AIMode>(() => {
+    try {
+      return (localStorage.getItem(STORAGE_MODE_KEY) as AIMode) || 'director'
+    } catch {
+      return 'director'
+    }
+  })
   const [prompt, setPrompt] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showConfig, setShowConfig] = useState(!config.apiKey)
+  const [streamText, setStreamText] = useState('') // 打字机缓冲（仅本地，不写 store）
+  const [applyResult, setApplyResult] = useState<{ ok: boolean; message: string } | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const committedRef = useRef(false) // 幂等守卫：一次 AI 排戏只提交一次
 
-  const existingChars = characterConfigs.map((c) => `${c.charId}(${c.displayName})`).join(', ')
-  const existingBgs = assets.filter((a) => a.type === 'background').map((a) => a.name).join(', ')
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_MODE_KEY, mode)
+    } catch {
+      /* noop */
+    }
+  }, [mode])
 
   const generate = useCallback(async () => {
     if (!prompt.trim() || !config.apiKey.trim()) return
 
     setLoading(true)
     setError(null)
+    setApplyResult(null)
+    setStreamText('')
+    committedRef.current = false
 
     const controller = new AbortController()
     abortRef.current = controller
 
     try {
-      const res = await fetch(config.endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiKey}`,
+      const messages = [
+        {
+          role: 'system' as const,
+          content: buildSystemPrompt(mode, {
+            characters: characterConfigs.map((c) => ({ charId: c.charId, displayName: c.displayName })),
+            backgrounds: assets.filter((a) => a.type === 'background').map((a) => a.name),
+            audioHints: buildAudioHints(assets),
+          }),
         },
-        body: JSON.stringify({
-          model: config.model,
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: buildUserPrompt(prompt, existingChars, existingBgs) },
-          ],
-          temperature: 0.7,
-          max_tokens: 2000,
-        }),
-        signal: controller.signal,
+        { role: 'user' as const, content: buildUserPrompt(prompt, mode) },
+      ]
+
+      const full = await streamChatCompletion(
+        config,
+        messages,
+        (tok) => setStreamText((prev) => prev + tok),
+        controller.signal,
+      )
+
+      // 导师模式：仅预览，不触碰时间轴
+      if (mode === 'mentor') {
+        setApplyResult({ ok: true, message: '（导师模式）已在上方预览改写结果，未修改时间轴。' })
+        setPrompt('')
+        return
+      }
+
+      // 舞台监督模式：解析 → 标签绑定 → 单事务提交
+      const directive = parseDirective(full)
+      if (!directive.lines.length) {
+        setApplyResult({ ok: false, message: 'AI 未返回任何剧本行。' })
+        return
+      }
+
+      const index = buildTagIndex(assets)
+      const baseMax = maxLineNum(draftDeltas)
+      const plan: LineDelta[] = []
+      const allReport = { resolved: [] as string[], unresolved: [] as string[] }
+
+      directive.lines.forEach((line, i) => {
+        const { delta, report } = resolveDirectiveToDelta(line, {
+          index,
+          assets,
+          characterConfigs,
+          slots: DEFAULT_POSITION_SLOTS,
+          lineId: `L${baseMax + i + 1}`,
+          span: [0, 0],
+        })
+        plan.push(delta)
+        allReport.resolved.push(...report.resolved)
+        allReport.unresolved.push(...report.unresolved)
       })
 
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '')
-        throw new Error(`API 请求失败 (${res.status}): ${errText.slice(0, 200)}`)
+      // ★ 单事务提交：一次 setDraftDeltas = 整段 AI 排戏仅一条撤销记录
+      if (!committedRef.current) {
+        const finalDeltas = composeDeltas(draftDeltas, plan, selectedLineIndex, 'insert')
+        setDraftDeltas(finalDeltas)
+        committedRef.current = true
+        const firstNew = Math.min(finalDeltas.length, selectedLineIndex + 1)
+        selectLine(firstNew)
       }
 
-      const data = await res.json()
-      const content = data.choices?.[0]?.message?.content ?? ''
-
-      // 提取 JSON 数组
-      const jsonMatch = content.match(/\[[\s\S]*\]/)
-      if (!jsonMatch) {
-        throw new Error('AI 响应格式错误：未找到 JSON 数组')
-      }
-
-      const lines = JSON.parse(jsonMatch[0]) as Array<Partial<LineDelta>>
-
-      // 插入生成的行
-      const insertAt = draftDeltas.length
-      for (const line of lines) {
-        const id = nextLineId(useAppStore.getState().draftDeltas)
-        const delta: LineDelta = {
-          line_id: id,
-          speaker: line.speaker ?? null,
-          dialogue: line.dialogue ?? '',
-          background: line.background ?? null,
-          characters: line.characters ?? {},
-          audio: line.audio ?? { bgm: null, ambient: null, se: [], voice: null },
-        }
-        insertDeltaAt(insertAt, delta)
-      }
-
-      selectLine(insertAt)
+      const resolvedMsg = allReport.resolved.length
+        ? `已绑定：${allReport.resolved.join('、')}`
+        : '未自动绑定任何素材'
+      const unresolvedMsg = allReport.unresolved.length
+        ? `；待复核：${allReport.unresolved.join('、')}`
+        : ''
+      setApplyResult({
+        ok: allReport.unresolved.length === 0,
+        message: `已应用 ${plan.length} 行（插入到第 ${selectedLineIndex + 1} 行后）。${resolvedMsg}${unresolvedMsg}`,
+      })
       setPrompt('')
     } catch (err: any) {
-      if (err.name === 'AbortError') return
-      setError(err.message ?? '未知错误')
+      if (err?.name === 'AbortError') return
+      setError(err?.message ?? '未知错误')
     } finally {
       setLoading(false)
       abortRef.current = null
     }
-  }, [prompt, config, existingChars, existingBgs, draftDeltas.length, insertDeltaAt, selectLine])
+  }, [prompt, config, mode, draftDeltas, assets, characterConfigs, selectedLineIndex, setDraftDeltas, selectLine])
 
   const cancel = useCallback(() => {
     abortRef.current?.abort()
@@ -177,6 +185,27 @@ export default function AIPanel() {
             设置
           </Button>
         </div>
+        {/* 双角色切换 */}
+        <div className="mt-3 inline-flex rounded-lg border border-edge/15 bg-surface-3 p-0.5">
+          <button
+            type="button"
+            onClick={() => setMode('director')}
+            className={`rounded-md px-3 py-1 text-xs transition-colors ${
+              mode === 'director' ? 'bg-signal text-white' : 'text-fg-muted hover:text-fg'
+            }`}
+          >
+            舞台监督
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('mentor')}
+            className={`rounded-md px-3 py-1 text-xs transition-colors ${
+              mode === 'mentor' ? 'bg-signal text-white' : 'text-fg-muted hover:text-fg'
+            }`}
+          >
+            文学导师
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
@@ -185,6 +214,21 @@ export default function AIPanel() {
           <section className="panel p-4">
             <div className="eyebrow mb-3">连接设置 Connection</div>
             <div className="space-y-3">
+              <label className="block">
+                <span className="t-label">厂商预设</span>
+                <select
+                  value={config.provider}
+                  onChange={(e) =>
+                    setConfig(applyPreset(config, e.target.value as AIConfig['provider']))
+                  }
+                  className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
+                >
+                  <option value="openai">OpenAI</option>
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="openrouter">OpenRouter (Claude 等)</option>
+                  <option value="custom">自定义</option>
+                </select>
+              </label>
               <label className="block">
                 <span className="t-label">API 端点</span>
                 <input
@@ -213,6 +257,30 @@ export default function AIPanel() {
                   className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
                 />
               </label>
+              <label className="block">
+                <span className="t-label">温度 (Temperature)：{config.temperature.toFixed(1)}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={config.temperature}
+                  onChange={(e) => setConfig({ ...config, temperature: parseFloat(e.target.value) })}
+                  className="mt-1 w-full accent-signal"
+                />
+              </label>
+              <label className="block">
+                <span className="t-label">最大 Token</span>
+                <input
+                  type="number"
+                  min={256}
+                  max={8192}
+                  step={256}
+                  value={config.maxTokens}
+                  onChange={(e) => setConfig({ ...config, maxTokens: parseInt(e.target.value || '2000', 10) })}
+                  className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
+                />
+              </label>
               <Button variant="primary" block onClick={saveConfigCb}>
                 保存设置
               </Button>
@@ -224,11 +292,39 @@ export default function AIPanel() {
         <section className="panel p-4">
           <div className="eyebrow mb-3">当前上下文 Context</div>
           <div className="flex gap-5 t-label">
-            <span><span className="font-mono text-fg-muted">{draftDeltas.length}</span> 行</span>
-            <span><span className="font-mono text-fg-muted">{characterConfigs.length}</span> 个角色</span>
-            <span><span className="font-mono text-fg-muted">{assets.filter((a) => a.type === 'background').length}</span> 个背景</span>
+            <span>
+              <span className="font-mono text-fg-muted">{draftDeltas.length}</span> 行
+            </span>
+            <span>
+              <span className="font-mono text-fg-muted">{characterConfigs.length}</span> 个角色
+            </span>
+            <span>
+              <span className="font-mono text-fg-muted">
+                {assets.filter((a) => a.type === 'background').length}
+              </span>{' '}
+              个背景
+            </span>
+            <span>
+              <span className="font-mono text-fg-muted">
+                {assets.filter((a) => a.type === 'audio').length}
+              </span>{' '}
+              个音频
+            </span>
           </div>
         </section>
+
+        {/* 流式打字机预览 */}
+        {streamText && (
+          <section className="panel p-4">
+            <div className="eyebrow mb-2">
+              {loading ? 'AI 生成中…' : mode === 'mentor' ? '改写预览' : '导演指令预览'}
+            </div>
+            <pre className="whitespace-pre-wrap t-micro t-mono leading-relaxed text-fg-muted">
+              {streamText}
+              {loading && <span className="animate-pulse">▍</span>}
+            </pre>
+          </section>
+        )}
 
         {/* 错误 */}
         {error && (
@@ -237,13 +333,26 @@ export default function AIPanel() {
           </div>
         )}
 
+        {/* 应用结果 */}
+        {applyResult && (
+          <div className={`panel p-3 ${applyResult.ok ? 'border-success/40' : 'border-danger/40'}`}>
+            <p className="t-caption">{applyResult.message}</p>
+          </div>
+        )}
+
         {/* 创作指令 */}
         <section className="panel p-4">
-          <div className="eyebrow mb-3">创作指令 Prompt</div>
+          <div className="eyebrow mb-3">
+            {mode === 'mentor' ? '润色指令 Prompt' : '创作指令 Prompt'}
+          </div>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="例如：Alice 和 Bob 在学校走廊相遇，争吵关于周末去图书馆还是去游乐园的事情..."
+            placeholder={
+              mode === 'mentor'
+                ? '粘贴需要润色/扩写的台词或大纲…'
+                : '例如：Alice 和 Bob 在学校走廊相遇，争吵关于周末去图书馆还是去游乐园的事情…'
+            }
             rows={4}
             disabled={loading}
             className="w-full resize-none rounded-lg border border-edge/15 bg-surface-3 px-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none focus:border-signal/60 disabled:opacity-50"
@@ -262,7 +371,7 @@ export default function AIPanel() {
               ) : (
                 <>
                   <Sparkles size={14} strokeWidth={1.75} />
-                  生成剧本
+                  {mode === 'mentor' ? '润色' : '生成剧本'}
                 </>
               )}
             </Button>
@@ -278,9 +387,10 @@ export default function AIPanel() {
         <section className="panel p-4">
           <div className="eyebrow mb-3">使用提示 Tips</div>
           <p className="t-micro leading-relaxed">
-            生成的剧本会被追加到当前时间轴末尾。你可以描述剧情走向、人物关系、场景氛围等。
-            模型会自动匹配现有角色和背景，必要时会新增。
-            支持 OpenAI 兼容的 API 端点（如 OpenAI、Azure、本地模型等）。
+            <span className="text-signal">舞台监督</span>：AI 返回结构化元数据，自动把情感/环境/音效标签绑定到真实素材，
+            并在有对白时自动挂载语音打点，整段作为单条记录写入时间轴（可一步撤销）。
+            <span className="text-signal">文学导师</span>：仅预览润色结果，不修改时间轴。
+            支持 OpenAI 兼容端点（OpenAI / DeepSeek / OpenRouter / 本地模型等）。
           </p>
         </section>
       </div>

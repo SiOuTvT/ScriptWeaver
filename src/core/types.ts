@@ -45,6 +45,12 @@ export interface AssetItem {
   blobUrl?: string
   /** 素材专属显示色（hex），可选，用于时间轴/总览着色 */
   color?: string
+  /**
+   * 语义标签（可选，B 方向自动打点引擎的精准索引）。
+   * 用于让 AI 返回的语义标签（如 "rain" / "storm"）稳定命中真实素材，
+   * 而不依赖文件名启发式。完全向后兼容：旧 .swproj 无此字段亦可正常工作。
+   */
+  tags?: string[]
   importedAt: string
 }
 
