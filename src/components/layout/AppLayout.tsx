@@ -347,17 +347,17 @@ export default function AppLayout() {
           )}
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" icon={<FilePlus size={14} strokeWidth={1.75} />} onClick={handleNewClick}>
+          <Button variant="ghost" size="md" icon={<FilePlus size={14} strokeWidth={1.75} />} onClick={handleNewClick}>
             新建
           </Button>
-          <Button variant="ghost" size="sm" icon={<FolderOpen size={14} strokeWidth={1.75} />} onClick={handleOpen}>
+          <Button variant="ghost" size="md" icon={<FolderOpen size={14} strokeWidth={1.75} />} onClick={handleOpen}>
             打开
           </Button>
-          <Button variant="ghost" size="sm" icon={<Save size={14} strokeWidth={1.75} />} onClick={handleSave}>
+          <Button variant="ghost" size="md" icon={<Save size={14} strokeWidth={1.75} />} onClick={handleSave}>
             保存
           </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
-          <Button variant="outline" size="sm" icon={<FileDown size={14} strokeWidth={1.75} />} onClick={handleExport}>
+          <Button variant="outline" size="md" icon={<FileDown size={14} strokeWidth={1.75} />} onClick={handleExport}>
             导出 RPY
           </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />

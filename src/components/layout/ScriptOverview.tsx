@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import { Search, ChevronRight, Music, Image as ImageIcon, Workflow, List, AudioLines, Megaphone, Volume2, User } from 'lucide-react'
+import { Search, ChevronRight, Music, Image as ImageIcon, Workflow, List, AudioLines, Megaphone, Volume2, User, X } from 'lucide-react'
 
 // ===================== 颜色辅助 =====================
 import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
@@ -256,9 +256,9 @@ export default function ScriptOverview() {
           {activeScene !== null && (
             <button
               onClick={() => setActiveScene(null)}
-              className="rounded bg-signal-soft px-2 py-0.5 text-[12px] font-medium text-signal hover:bg-signal/20"
+              className="inline-flex items-center gap-1 rounded bg-signal-soft px-2 py-0.5 text-[12px] font-medium text-signal transition-colors hover:bg-signal/20"
             >
-              返回全部场景 ✕
+              <X size={12} strokeWidth={2} /> 返回全部场景
             </button>
           )}
           <span className="rounded bg-surface-1 px-1.5 py-0.5 text-[12px] text-fg-faint">只读预览</span>

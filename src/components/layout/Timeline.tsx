@@ -853,7 +853,7 @@ export default function Timeline() {
 
         {/* 轨道内容 */}
         <div className="flex-1 overflow-x-auto">
-          <div className="relative" style={{ minWidth: `${total * cellWidth}px` }}>
+          <div className="relative" style={{ width: `${total * cellWidth}px` }}>
             {/* 行号 + 行操作按钮 */}
             <div className="flex border-b border-edge/10" style={{ height: 48 }}>
               {resolvedStates.map((s, i) => {

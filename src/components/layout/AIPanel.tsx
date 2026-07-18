@@ -168,13 +168,14 @@ export default function AIPanel() {
             <span className="signal-dot" />
             <span className="eyebrow">AI 辅助写作 Assistant</span>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Settings size={14} strokeWidth={1.75} />}
             onClick={() => setShowConfig(!showConfig)}
-            className="flex items-center gap-1 rounded px-2 py-0.5 t-label transition-colors hover:bg-surface-hover hover:text-fg-muted"
           >
-            <Settings size={14} strokeWidth={1.75} />
             设置
-          </button>
+          </Button>
         </div>
       </div>
 

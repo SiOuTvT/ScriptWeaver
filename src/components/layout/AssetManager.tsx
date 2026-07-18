@@ -302,7 +302,7 @@ export default function AssetManager() {
                   <div
                     key={asset.id}
                     onContextMenu={(e) => handleContextMenu(e, asset)}
-                    className={`group relative aspect-square overflow-hidden rounded-md border border-edge/12 transition-all hover:border-edge/25 hover:shadow-[0_4px_14px_rgba(28,24,18,0.14)] ${
+                    className={`group relative aspect-square overflow-hidden rounded-md border border-edge/12 transition-all hover:border-edge/25 hover:shadow-2 ${
                       isSprite ? 'checkerboard' : 'bg-surface-2'
                     }`}
                   >
