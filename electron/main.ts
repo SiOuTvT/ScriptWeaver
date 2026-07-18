@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain, dialog, nativeTheme, protocol } from 'elec
 import path from 'path'
 import fs from 'fs'
 import { Readable } from 'stream'
+// AI 编排逻辑（纯函数）由主进程持有：密钥不进渲染进程，渲染端只发 prompt 收文本
+import { streamChatCompletion, defaultAIConfig, type AIConfig, type ChatMessage } from '../src/utils/aiDirector'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -266,6 +268,84 @@ function startAssetWatch(projectRoot: string): void {
 }
 
 // ===================== IPC Handlers =====================
+
+// --------------- AI 配置与主进程代理（安全不透明感知） ---------------
+// 密钥仅存在于主进程 userData/ai-config.json，渲染进程永远拿不到明文。
+const AI_CONFIG_PATH = path.join(app.getPath('userData'), 'ai-config.json')
+
+function readAIConfig(): AIConfig {
+  try {
+    if (fs.existsSync(AI_CONFIG_PATH)) {
+      const p = JSON.parse(fs.readFileSync(AI_CONFIG_PATH, 'utf-8'))
+      return {
+        provider: p.provider ?? 'openai',
+        endpoint: p.endpoint ?? defaultAIConfig().endpoint,
+        apiKey: typeof p.apiKey === 'string' ? p.apiKey : '',
+        model: p.model ?? defaultAIConfig().model,
+        temperature: typeof p.temperature === 'number' ? p.temperature : 0.7,
+        maxTokens: typeof p.maxTokens === 'number' ? p.maxTokens : 2000,
+      }
+    }
+  } catch {
+    /* 损坏则回落默认 */
+  }
+  return defaultAIConfig()
+}
+
+function writeAIConfig(incoming: AIConfig): void {
+  const existing = readAIConfig()
+  const merged: AIConfig = { ...existing, ...incoming }
+  // 渲染端传空密钥代表「保留现有密钥」，绝不覆盖已存值
+  if (!incoming.apiKey) merged.apiKey = existing.apiKey
+  try {
+    fs.writeFileSync(AI_CONFIG_PATH, JSON.stringify(merged), 'utf-8')
+  } catch {
+    /* 写入失败静默 */
+  }
+}
+
+// 渲染端取配置：脱敏（apiKey 置空）+ hasApiKey 标记，确保密钥不透明
+ipcMain.handle('ai:getConfig', () => {
+  const c = readAIConfig()
+  return { ...c, apiKey: '', hasApiKey: !!c.apiKey }
+})
+
+ipcMain.handle('ai:setConfig', (_event, cfg: AIConfig) => {
+  writeAIConfig(cfg)
+  return { ok: true }
+})
+
+// 流式对话：渲染端只发 messages，主进程用自有密钥请求上游并回灌 chunk
+let activeChat: AbortController | null = null
+
+ipcMain.on('ai:chat', async (event, payload: { messages: ChatMessage[] }) => {
+  const cfg = readAIConfig()
+  if (!cfg.apiKey) {
+    event.sender.send('ai:error', '未配置 API Key（请在 AI 设置中填写，密钥仅存于本地安全区）')
+    return
+  }
+  const controller = new AbortController()
+  activeChat = controller
+  try {
+    const full = await streamChatCompletion(
+      cfg,
+      payload.messages,
+      (delta: string) => event.sender.send('ai:chunk', { delta }),
+      controller.signal,
+    )
+    event.sender.send('ai:done', { full })
+  } catch (err: unknown) {
+    const e = err as { name?: string; message?: string }
+    if (e?.name === 'AbortError') event.sender.send('ai:aborted')
+    else event.sender.send('ai:error', e?.message ?? '未知错误')
+  } finally {
+    activeChat = null
+  }
+})
+
+ipcMain.on('ai:abort', () => {
+  activeChat?.abort()
+})
 
 ipcMain.handle('app:getVersion', () => {
   return app.getVersion()
