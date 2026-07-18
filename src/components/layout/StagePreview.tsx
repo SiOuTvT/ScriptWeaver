@@ -673,7 +673,7 @@ export default function StagePreview() {
                 }}
                 placeholder="说话人"
                 list="speaker-list"
-                className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1 text-xs text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
+                className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[14px] text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
               />
               <datalist id="speaker-list">
                 {characterConfigs.map((c) => (
