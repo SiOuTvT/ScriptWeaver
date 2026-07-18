@@ -14,15 +14,51 @@ import { applyAccent } from '@/utils/themeColor'
 import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
+import { bindAssetWatcher } from '@/services/assetSync'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 import { subscribe, getToastItems, toast, type ToastItem } from '@/utils/toast'
 import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown } from 'lucide-react'
 import { Button, IconButton, ConfirmDialog } from '@/components/ui'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 
-/** 剥离 assets 中的 dataUrl —— 仅内存渲染使用，不入 .swproj / localStorage */
-function stripDataUrls(assets: AssetItem[]): AssetItem[] {
-  return assets.map(({ dataUrl: _, ...rest }) => rest)
+/** 剥离 assets 中的 blobUrl 易失字段 —— 仅 Web 降级内存渲染使用，不入 .swproj / localStorage */
+function stripVolatile(assets: AssetItem[]): AssetItem[] {
+  return assets.map(({ blobUrl: _blobUrl, ...rest }) => rest)
+}
+
+/**
+ * 合并磁盘扫描出的素材：仅新增库中尚未存在（按 relativePath 去重）的文件，
+ * 不覆盖 .swproj 已有素材（保留其 id 与角色/背景/音频引用关系）。
+ */
+function mergeScannedAssets(
+  scanned: { id: string; type: AssetItem['type']; name: string; fileName: string; relativePath: string; importedAt: string }[],
+): void {
+  const store = useAppStore.getState()
+  const have = new Set(store.assets.map((a) => a.relativePath).filter(Boolean))
+  const fresh = scanned.filter((a) => a.relativePath && !have.has(a.relativePath))
+  if (fresh.length > 0) {
+    store.setAssets([...store.assets, ...fresh])
+  }
+}
+
+/**
+ * 激活项目根目录：通知主进程（驱动 sw-asset:// 协议查找 + 文件夹监听），
+ * 并扫描磁盘 assets 目录做增量合并。
+ */
+async function activateProjectRoot(root: string | null): Promise<void> {
+  const api = window.electronAPI
+  if (!api) return
+  try {
+    await api.setActiveProjectRoot(root)
+    if (root) {
+      const scan = await api.scanProjectAssets(root)
+      if (scan.success && scan.assets) {
+        mergeScannedAssets(scan.assets)
+      }
+    }
+  } catch (err) {
+    console.error('[activateProjectRoot] 失败:', err)
+  }
 }
 
 /** 序列化完整项目数据为 JSON（不含 dataUrl） */
@@ -35,7 +71,7 @@ function serializeProject(
     version: 1,
     draftDeltas: deltas,
     characterConfigs,
-    assets: stripDataUrls(assets),
+    assets: stripVolatile(assets),
     savedAt: new Date().toISOString(),
   }
   return JSON.stringify(project, null, 2)
@@ -58,58 +94,6 @@ function deserializeProject(json: string): {
   } catch {
     return null
   }
-}
-
-/**
- * 根据相对路径从磁盘重新读取素材文件，生成 dataUrl（仅内存，不入库）。
- * 在浏览器模式下（无 Electron API）直接返回原数组。
- * 失败的读取会打印 console.error 以便调试。
- */
-async function refreshAssetDataUrls(
-  assets: AssetItem[],
-  projectRoot: string | null,
-): Promise<AssetItem[]> {
-  const api = window.electronAPI
-  if (!api) {
-    // 浏览器模式：没有 IPC，无法读取磁盘文件
-    return assets
-  }
-  if (!projectRoot) {
-    console.warn('[refreshAssetDataUrls] 缺少 projectRoot，跳过素材刷新')
-    return assets
-  }
-
-  const refreshed = await Promise.all(
-    assets.map(async (asset) => {
-      // 已有 dataUrl 或缺少 relativePath → 跳过
-      if (asset.dataUrl) return asset
-      if (!asset.relativePath) {
-        console.warn(`[refreshAssetDataUrls] 素材 "${asset.name}" 缺少 relativePath，跳过`)
-        return asset
-      }
-      try {
-        const result = await api.readAssetFile(asset.relativePath, projectRoot)
-        if (result.success && result.dataUrl) {
-          return { ...asset, dataUrl: result.dataUrl }
-        }
-        console.error(
-          `[refreshAssetDataUrls] 读取失败: "${asset.fileName}"\n` +
-          `  relativePath: ${asset.relativePath}\n` +
-          `  projectRoot: ${projectRoot}\n` +
-          `  error: ${result.error ?? '(无详细信息)'}`,
-        )
-      } catch (err) {
-        console.error(
-          `[refreshAssetDataUrls] IPC 异常: "${asset.fileName}"\n` +
-          `  relativePath: ${asset.relativePath}\n` +
-          `  projectRoot: ${projectRoot}\n` +
-          `  exception: ${err}`,
-        )
-      }
-      return asset
-    }),
-  )
-  return refreshed
 }
 
 const DEBOUNCE_MS = 800
@@ -155,14 +139,16 @@ export default function AppLayout() {
       if (!draft) return
       const root = draft.projectRoot ?? null
       loadProjectData({ ...draft, projectRoot: root })
-      if (root) {
-        refreshAssetDataUrls(draft.assets ?? [], root)
-          .then((refreshed) => useAppStore.getState().setAssets(refreshed))
-          .catch((err) => console.error('[restoreDraft] 素材刷新失败:', err))
-      }
+      // 激活项目根目录：驱动 sw-asset:// 协议 + 文件夹监听 + 磁盘增量合并
+      activateProjectRoot(root)
     },
     [loadProjectData],
   )
+
+  // 绑定资产文件夹增量监听（幂等）
+  useEffect(() => {
+    bindAssetWatcher()
+  }, [])
 
   useEffect(() => {
     const draft = loadDraft()
@@ -234,6 +220,8 @@ export default function AppLayout() {
   const handleNewConfirm = () => {
     newProject()
     clearDraft()
+    // 新项目无根目录：停止监听、清空协议查找根
+    window.electronAPI?.setActiveProjectRoot?.(null)
     setShowNewConfirm(false)
   }
 
@@ -259,6 +247,8 @@ export default function AppLayout() {
     if (result.success && result.projectDir) {
       setProjectRoot(result.projectDir)
       saveDraft(draftDeltas, characterConfigs, assets, result.projectDir)
+      // 保存后激活项目根：主进程已开启监听，此处扫描合并磁盘素材
+      activateProjectRoot(result.projectDir)
     } else if (result.error) {
       alert(`保存失败：${result.error}`)
     }
@@ -308,14 +298,8 @@ export default function AppLayout() {
     })
     saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets, root)
 
-    // 从磁盘重新读取素材 dataUrl（不依赖 .swproj 中可能残留的旧 base64）
-    refreshAssetDataUrls(parsed.assets, root)
-      .then((refreshed) => {
-        useAppStore.getState().setAssets(refreshed)
-      })
-      .catch((err) => {
-        console.error('[handleOpen] 素材刷新失败:', err)
-      })
+    // 激活项目根：驱动 sw-asset:// 协议 + 文件夹监听 + 磁盘增量合并（不依赖任何 base64 回读）
+    activateProjectRoot(root)
   }
 
   const totalLines = draftDeltas.length

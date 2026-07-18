@@ -8,6 +8,7 @@ import {
   getAudioCategory,
 } from '@/utils/assetHelpers'
 import { toast } from '@/utils/toast'
+import { resolveAssetSrc } from '@/utils/assetSrc'
 import { Music, AudioLines, Megaphone, Volume2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui'
 
@@ -115,13 +116,13 @@ const SPRITE_COLORS: Record<string, string> = {
 // ===================== 素材图片解析 =====================
 
 /**
- * 根据 asset_id 解析背景图片 dataUrl。
- * 优先从 assets 查找真实图片 dataUrl，兜底到 BG_COLORS 色块。
+ * 根据 asset_id 解析背景图片 URL（sw-asset:// 协议或 blobUrl）。
+ * 兜底到 BG_COLORS 色块。
  */
 function resolveBackgroundUrl(assetId: string | undefined, assets: AssetItem[]): string | undefined {
   if (!assetId) return undefined
   const asset = assets.find((a) => a.id === assetId)
-  return asset?.dataUrl
+  return resolveAssetSrc(asset)
 }
 
 /**
@@ -137,8 +138,9 @@ function resolveSpriteImage(
 ): { dataUrl?: string; color: string } {
   // 1. 直接匹配 asset id（拖放场景）
   const directAsset = assets.find((a) => a.id === spriteId)
-  if (directAsset?.dataUrl) {
-    return { dataUrl: directAsset.dataUrl, color: '#888' }
+  const directSrc = resolveAssetSrc(directAsset)
+  if (directSrc) {
+    return { dataUrl: directSrc, color: '#888' }
   }
 
   // 2. 通过角色表情引用查找
@@ -146,8 +148,9 @@ function resolveSpriteImage(
     const expr = cc.expressions.find((e) => e.id === spriteId)
     if (expr) {
       const exprAsset = assets.find((a) => a.id === expr.assetId)
-      if (exprAsset?.dataUrl) {
-        return { dataUrl: exprAsset.dataUrl, color: '#888' }
+      const exprSrc = resolveAssetSrc(exprAsset)
+      if (exprSrc) {
+        return { dataUrl: exprSrc, color: '#888' }
       }
     }
   }

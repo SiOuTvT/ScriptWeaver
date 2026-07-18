@@ -1,8 +1,8 @@
 /**
  * localStorage 草稿自动保存/恢复
  * 仅存储项目元数据（deltas + configs + assets 信息），不含二进制文件内容。
- * dataUrl 在保存时剥离，避免 base64 撑爆 localStorage（5-10MB 限制）。
- * projectRoot 也一并保存，以便草稿恢复时也能从磁盘重新读取素材文件。
+ * blobUrl（Web 降级临时对象 URL）在保存时剥离，避免持久化无效引用。
+ * projectRoot 也一并保存，以便草稿恢复时从磁盘经 sw-asset:// 协议直读素材。
  */
 
 import type { LineDelta, CharacterConfig, AssetItem } from '@/core/types'
@@ -18,9 +18,9 @@ export interface DraftData {
   savedAt: string
 }
 
-/** 剥离 assets 中的 dataUrl 字段，防止 base64 数据进入持久化存储 */
-function stripDataUrls(assets: AssetItem[]): AssetItem[] {
-  return assets.map(({ dataUrl: _, ...rest }) => rest)
+/** 剥离 assets 中的 blobUrl 易失字段，防止无效对象 URL 进入持久化存储 */
+function stripVolatile(assets: AssetItem[]): AssetItem[] {
+  return assets.map(({ blobUrl: _blobUrl, ...rest }) => rest)
 }
 
 export function saveDraft(
@@ -33,7 +33,7 @@ export function saveDraft(
     const data: DraftData = {
       deltas,
       characterConfigs,
-      assets: stripDataUrls(assets),
+      assets: stripVolatile(assets),
       projectRoot,
       savedAt: new Date().toISOString(),
     }

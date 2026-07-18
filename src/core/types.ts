@@ -37,8 +37,12 @@ export interface AssetItem {
   height?: number
   /** 音频时长（秒） */
   duration?: number
-  /** 图片/音频的 base64 data URL，用于渲染时直接显示，避免 file:// 安全限制 */
-  dataUrl?: string
+  /**
+   * Web 降级模式下的临时对象 URL（URL.createObjectURL 结果）。
+   * Electron 模式恒为空——素材通过 sw-asset:// 协议按 relativePath 流式直读，二进制不进内存。
+   * 该字段为易失字段，不写入 .swproj / localStorage。
+   */
+  blobUrl?: string
   /** 素材专属显示色（hex），可选，用于时间轴/总览着色 */
   color?: string
   importedAt: string

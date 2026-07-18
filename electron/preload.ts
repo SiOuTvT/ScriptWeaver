@@ -25,32 +25,44 @@ const api = {
     error?: string
   }> => ipcRenderer.invoke('dialog:openProject'),
 
-  /** 导入素材：打开文件选择器，复制到临时目录 */
+  /** 导入素材：打开文件选择器，二进制复制到会话目录（不再返回 Base64） */
   pickAssetFiles: (options?: {
     filters?: { name: string; extensions: string[] }[]
+    kind?: 'background' | 'sprite' | 'audio'
   }): Promise<{
     success: boolean
     files?: {
       id: string
       fileName: string
       relativePath: string
-      type: string
-      width?: number
-      height?: number
-      dataUrl?: string
+      type: 'background' | 'sprite' | 'audio'
     }[]
     error?: string
   }> => ipcRenderer.invoke('dialog:pickAssetFiles', options),
 
-  /** 读取项目的素材文件为 data URL */
-  readAssetFile: (relativePath: string, projectRoot?: string): Promise<{ success: boolean; dataUrl?: string; error?: string }> =>
-    ipcRenderer.invoke('fs:readAssetFile', relativePath, projectRoot),
+  /** 设置活动项目根目录：驱动 sw-asset:// 协议查找 + 开启文件夹监听 */
+  setActiveProjectRoot: (root: string | null): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke('fs:setActiveProjectRoot', root),
+
+  /** 扫描项目 assets 目录，返回磁盘素材清单（元数据，无二进制） */
+  scanProjectAssets: (projectRoot: string): Promise<{
+    success: boolean
+    assets?: {
+      id: string
+      type: 'background' | 'sprite' | 'audio'
+      name: string
+      fileName: string
+      relativePath: string
+      importedAt: string
+    }[]
+    error?: string
+  }> => ipcRenderer.invoke('fs:scanProjectAssets', projectRoot),
 
   on(channel: string, callback: (...args: unknown[]) => void) {
     ipcRenderer.on(channel, (_event, ...args) => callback(...args))
   },
 
-  off(channel: string, callback: (...args: unknown[]) => void) {
+  off(channel: string, _callback: (...args: unknown[]) => void) {
     ipcRenderer.removeAllListeners(channel)
   },
 }

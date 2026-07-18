@@ -39,3 +39,340 @@ computing gzip size...
 
 [17492:0716/044253.360:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
 [17492:0716/044253.360:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AIPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Button.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/App.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/LeftSidebar.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ScriptDrawer.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ManagementPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ScriptOverview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CharacterManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/IconButton.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Card.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/ConfirmDialog.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Dialog.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Tabs.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Input.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Tooltip.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Skeleton.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:49:26[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mD:/ScriptWeaver/src/main.tsx[22m
+[2m04:24:55[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx[22m
+[2m04:25:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx[22m
+[2m04:25:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx[22m
+[2m04:25:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx[22m
+[2m04:27:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:27:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:27:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:27:42[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:27:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:27:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:28:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:35:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeColorPanel.tsx[22m
+[2m04:35:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeColorPanel.tsx[22m
+[2m04:35:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeColorPanel.tsx[22m
+[2m04:35:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/LeftSidebar.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:35:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/LeftSidebar.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:35:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:35:57[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:36:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:36:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:36:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:36:10[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./ThemeSettings" from "src/components/layout/AppLayout.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/AppLayout.tsx[39m:12:26
+[33m  27 |  import AIPanel from "./AIPanel";
+  28 |  import ExportSettings from "./ExportSettings";
+  29 |  import ThemeSettings from "./ThemeSettings";
+     |                             ^
+  30 |  import { applyAccent } from "@/utils/themeColor";
+  31 |  import { useAppStore } from "@/stores/appStore";[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+[2m04:36:10[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./ThemeSettings" from "src/components/layout/AppLayout.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/AppLayout.tsx[39m:12:26
+[33m  27 |  import AIPanel from "./AIPanel";
+  28 |  import ExportSettings from "./ExportSettings";
+  29 |  import ThemeSettings from "./ThemeSettings";
+     |                             ^
+  30 |  import { applyAccent } from "@/utils/themeColor";
+  31 |  import { useAppStore } from "@/stores/appStore";[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+[2m04:36:14[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./ThemeSettings" from "src/components/layout/AppLayout.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/AppLayout.tsx[39m:12:26
+[33m  27 |  import AIPanel from "./AIPanel";
+  28 |  import ExportSettings from "./ExportSettings";
+  29 |  import ThemeSettings from "./ThemeSettings";
+     |                             ^
+  30 |  import { applyAccent } from "@/utils/themeColor";
+  31 |  import { useAppStore } from "@/stores/appStore";[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+[2m04:36:14[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./ThemeSettings" from "src/components/layout/AppLayout.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/AppLayout.tsx[39m:12:26
+[33m  27 |  import AIPanel from "./AIPanel";
+  28 |  import ExportSettings from "./ExportSettings";
+  29 |  import ThemeSettings from "./ThemeSettings";
+     |                             ^
+  30 |  import { applyAccent } from "@/utils/themeColor";
+  31 |  import { useAppStore } from "@/stores/appStore";[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+[2m04:36:15[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./ThemeSettings" from "src/components/layout/AppLayout.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/AppLayout.tsx[39m:12:26
+[33m  27 |  import AIPanel from "./AIPanel";
+  28 |  import ExportSettings from "./ExportSettings";
+  29 |  import ThemeSettings from "./ThemeSettings";
+     |                             ^
+  30 |  import { applyAccent } from "@/utils/themeColor";
+  31 |  import { useAppStore } from "@/stores/appStore";[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+      at async viteTransformMiddleware (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:62106:24)
+[2m04:36:52[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./ThemeSettings" from "src/components/layout/AppLayout.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/AppLayout.tsx[39m:12:26
+[33m  27 |  import AIPanel from "./AIPanel";
+  28 |  import ExportSettings from "./ExportSettings";
+  29 |  import ThemeSettings from "./ThemeSettings";
+     |                             ^
+  30 |  import { applyAccent } from "@/utils/themeColor";
+  31 |  import { useAppStore } from "@/stores/appStore";[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 14)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+      at async viteTransformMiddleware (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:62106:24)
+[2m04:37:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:37:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/App.tsx[22m
+[2m04:37:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ThemeColorPanel.tsx[22m
+[2m04:43:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m04:43:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:43:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ThemeSettings.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:52:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m04:55:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ThemeSettings.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m04:55:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m05:00:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:00:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:00:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:00:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:00:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:01:08[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:01:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:01:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:02:07[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:02:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:02:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:02:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:03:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:03:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:04:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:04:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:04:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:04:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:12:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:12:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:12:55[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:13:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:13:24[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:13:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:13:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:13:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:33:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m05:34:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:35:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:35:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:35:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:35:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:36:05[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m05:36:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m05:36:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m05:36:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:36:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:37:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:37:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:37:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:37:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:37:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:37:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:57:08[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:57:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:57:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:57:55[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:57:55[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:58:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:58:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:58:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m05:59:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:00:07[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:00:07[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:01:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:01:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:12:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:12:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:12:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:12:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:13:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:14:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:14:05[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:14:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:15:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:15:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:15:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:16:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:16:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:29:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:29:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:29:42[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:29:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:05[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:06[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:08[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m06:30:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+(node:17492) electron: Failed to load URL: http://localhost:5173/ with error: ERR_NETWORK_IO_SUSPENDED
+(Use `electron --trace-warnings ...` to show where the warning was created)
+[2m10:01:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:01:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:02:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:02:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:05:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:11:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:11:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:11:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:11:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:11:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:11:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:11:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/LeftSidebar.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:11:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ScriptOverview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ScriptOverview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:12:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ScriptOverview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:18:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AIPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:22:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:22:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:22:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CharacterManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:22:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ScriptDrawer.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:12[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CharacterManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CharacterManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CharacterManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ScriptDrawer.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ScriptDrawer.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CharacterManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:23:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ScriptDrawer.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[36m
+build started...[39m
+[32m✓[39m 1 modules transformed.
+[2mdist-electron/[22m[36mmain.js  [39m[1m[2m11.64 kB[22m[1m[22m[2m │ gzip: 3.46 kB[22m
+[36mbuilt in 182ms.[39m
+
+[34652:0718/104609.375:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[34652:0718/104609.375:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[36m
+build started...[39m
+[32m✓[39m 1 modules transformed.
+[2mdist-electron/[22m[36mpreload.js  [39m[1m[2m1.35 kB[22m[1m[22m[2m │ gzip: 0.81 kB[22m
+[36mbuilt in 24ms.[39m
+[2m10:47:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:47:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:47:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:47:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/SceneNavPanel.tsx[22m
+[2m10:47:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:47:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:48:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:48:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:48:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:48:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:48:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:48:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:48:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m10:48:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m10:48:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m10:49:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:49:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:49:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:49:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:49:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:50:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:50:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m10:50:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m

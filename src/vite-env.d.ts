@@ -18,17 +18,32 @@ interface ElectronAPI {
     error?: string
   }>
 
-  /** 导入素材文件：打开文件选择器 */
+  /** 导入素材文件：打开文件选择器（二进制落盘，无 Base64） */
   pickAssetFiles: (options?: {
     filters?: { name: string; extensions: string[] }[]
+    kind?: 'background' | 'sprite' | 'audio'
   }) => Promise<{
     success: boolean
-    files?: { id: string; fileName: string; relativePath: string; type: string; width?: number; height?: number; dataUrl?: string }[]
+    files?: { id: string; fileName: string; relativePath: string; type: 'background' | 'sprite' | 'audio' }[]
     error?: string
   }>
 
-  /** 读取项目的素材文件为 data URL */
-  readAssetFile: (relativePath: string, projectRoot?: string) => Promise<{ success: boolean; dataUrl?: string; error?: string }>
+  /** 设置活动项目根目录：驱动 sw-asset:// 协议查找 + 文件夹监听 */
+  setActiveProjectRoot: (root: string | null) => Promise<{ success: boolean }>
+
+  /** 扫描项目 assets 目录，返回磁盘素材清单 */
+  scanProjectAssets: (projectRoot: string) => Promise<{
+    success: boolean
+    assets?: {
+      id: string
+      type: 'background' | 'sprite' | 'audio'
+      name: string
+      fileName: string
+      relativePath: string
+      importedAt: string
+    }[]
+    error?: string
+  }>
 
   /** 获取会话临时目录路径 */
   getSessionDir: () => Promise<string>

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
 import { hashAssetColor } from '@/utils/charColor'
+import { resolveAssetSrc } from '@/utils/assetSrc'
 import { Tabs, Input, Button, IconButton, ConfirmDialog } from '@/components/ui'
 import { Image as ImageIcon, User, Music, Plus, Search, Pencil, Trash2 } from 'lucide-react'
 
@@ -64,7 +65,7 @@ export default function AssetManager() {
         filters = [{ name: '图片文件', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
       }
 
-      const result = await api.pickAssetFiles({ filters })
+      const result = await api.pickAssetFiles({ filters, kind: tab })
       if (!result.success || !result.files) return
 
       const now = new Date().toISOString()
@@ -75,9 +76,6 @@ export default function AssetManager() {
           name: f.fileName.replace(/\.[^.]+$/, ''),
           fileName: f.fileName,
           relativePath: f.relativePath,
-          width: f.width,
-          height: f.height,
-          dataUrl: f.dataUrl,
           importedAt: now,
         }
         addAsset(asset)
@@ -96,34 +94,18 @@ export default function AssetManager() {
       const now = new Date().toISOString()
       Array.from(files).forEach((file) => {
         const id = `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-        // 图片类型用 FileReader 生成 base64 dataUrl，音频跳过（仅 Electron 模式支持）
+        // Web 降级：用 URL.createObjectURL 生成临时 blobUrl（比 base64 省内存），仅内存有效
         const isImage = file.type.startsWith('image/')
-        if (isImage) {
-          const reader = new FileReader()
-          reader.onload = () => {
-            const asset: AssetItem = {
-              id,
-              type: tab,
-              name: file.name.replace(/\.[^.]+$/, ''),
-              fileName: file.name,
-              relativePath: '',
-              dataUrl: reader.result as string,
-              importedAt: now,
-            }
-            addAsset(asset)
-          }
-          reader.readAsDataURL(file)
-        } else {
-          const asset: AssetItem = {
-            id,
-            type: tab,
-            name: file.name.replace(/\.[^.]+$/, ''),
-            fileName: file.name,
-            relativePath: '',
-            importedAt: now,
-          }
-          addAsset(asset)
+        const asset: AssetItem = {
+          id,
+          type: tab,
+          name: file.name.replace(/\.[^.]+$/, ''),
+          fileName: file.name,
+          relativePath: '',
+          blobUrl: isImage ? URL.createObjectURL(file) : undefined,
+          importedAt: now,
         }
+        addAsset(asset)
       })
       e.target.value = ''
     },
@@ -301,6 +283,7 @@ export default function AssetManager() {
             <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5 lg:grid-cols-6">
               {filtered.map((asset) => {
                 const isSprite = asset.type === 'sprite'
+                const imgSrc = resolveAssetSrc(asset)
                 return (
                   <div
                     key={asset.id}
@@ -309,18 +292,18 @@ export default function AssetManager() {
                       isSprite ? 'checkerboard' : 'bg-surface-2'
                     }`}
                   >
-                    {asset.dataUrl ? (
+                    {imgSrc ? (
                       isSprite ? (
                         <div className="flex h-full w-full items-center justify-center p-1">
                           <img
-                            src={asset.dataUrl}
+                            src={imgSrc}
                             alt={asset.name}
                             className="max-h-full max-w-full object-contain drop-shadow-sm"
                           />
                         </div>
                       ) : (
                         <img
-                          src={asset.dataUrl}
+                          src={imgSrc}
                           alt={asset.name}
                           className="absolute inset-0 h-full w-full object-cover"
                         />
