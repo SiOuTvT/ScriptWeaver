@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
 import { hashAssetColor } from '@/utils/charColor'
-import { Tabs, Input, Button, ConfirmDialog } from '@/components/ui'
+import { Tabs, Input, Button, IconButton, ConfirmDialog } from '@/components/ui'
 import { Image as ImageIcon, User, Music, Plus, Search, Pencil, Trash2 } from 'lucide-react'
 
 type TabId = AssetType
@@ -275,20 +275,23 @@ export default function AssetManager() {
                     <span className="block truncate text-[12px] text-fg-subtle">{asset.fileName}</span>
                   </div>
                   <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<Pencil size={13} strokeWidth={1.75} />}
                       onClick={() => startRename(asset)}
-                      className="rounded p-1 text-fg-subtle transition-colors hover:bg-surface-active hover:text-fg"
                       title="重命名"
-                    >
-                      <Pencil size={13} strokeWidth={1.75} />
-                    </button>
-                    <button
+                      aria-label="重命名"
+                    />
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<Trash2 size={13} strokeWidth={1.75} />}
                       onClick={() => requestDelete(asset)}
-                      className="rounded p-1 text-fg-subtle transition-colors hover:bg-danger/12 hover:text-danger"
                       title="删除"
-                    >
-                      <Trash2 size={13} strokeWidth={1.75} />
-                    </button>
+                      aria-label="删除"
+                      className="hover:bg-danger/12 hover:text-danger"
+                    />
                   </div>
                 </div>
               ))}
