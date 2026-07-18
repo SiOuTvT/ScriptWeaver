@@ -1,23 +1,62 @@
+# ============================================================
+# ScriptWeaver 1.0 全平台顶配分发配置
+#   Win  : nsis（标准安装包） + zip（免安装绿色版）  · x64
+#   macOS: dmg + zip                              · universal（Intel + Apple Silicon）
+#   Linux: AppImage（免安装通用绿色版）
+# 自动更新索引：publish 配置触发 electron-builder 在 release/ 生成
+#   latest.yml / latest-mac.yml / latest-linux.yml
+# ============================================================
 appId: com.scriptweaver.app
 productName: ScriptWeaver
 directories:
   output: release
   buildResources: assets
+asar: true
 files:
   - dist/**/*
   - dist-electron/**/*
+
+# ---- 自动更新发布源（替换为你的静态托管地址即可启用 OTA） ----
+publish:
+  provider: generic
+  url: https://your-release-host.example.com/scriptweaver/releases/
+  # electron-builder 会据此自动产出 latest.yml / latest-mac.yml / latest-linux.yml
+
+# ===================== Windows =====================
 win:
   target:
     - nsis
-  artifactName: ${productName}-${version}-setup.${ext}
+    - zip
+  arch:
+    - x64
+  # nsis 产出 .exe，zip 产出 .zip，扩展名天然不冲突
+  artifactName: ${productName}-${version}-${arch}.${ext}
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+# ===================== macOS =====================
+# universal 单包同时兼容 Intel 与 Apple Silicon（M1/M2/M3/M4）；
+# 若 universal 的 lipo 合并在某些环境失败，可将 arch 改为 [x64, arm64] 出分流包。
 mac:
   target:
     - dmg
-  artifactName: ${productName}-${version}.${ext}
+    - zip
+  arch:
+    - universal
+  category: public.app-category.developer-tools
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+# ===================== Linux =====================
 linux:
   target:
     - AppImage
+  arch:
+    - x64
+  category: Development
   artifactName: ${productName}-${version}.${ext}
