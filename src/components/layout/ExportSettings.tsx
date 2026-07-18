@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { Button } from '@/components/ui'
-import { downloadRpy, validateExportNames, resolveLookups, formatValidationErrors, exportDefinitionsRpy, exportToRpy } from '@/utils/rpyExporter'
+import { downloadRpy, validateExportNames, resolveLookups, formatValidationErrors, exportDefinitionsRpy, exportToRpy, exportProjectPackage } from '@/utils/rpyExporter'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 
 export default function ExportSettings() {
@@ -12,9 +12,10 @@ export default function ExportSettings() {
 
   const [scriptLabel, setScriptLabel] = useState('start')
   const [validationResult, setValidationResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [packageResult, setPackageResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   const handleValidate = useCallback(() => {
-    const lookups = resolveLookups(draftDeltas, characterConfigs)
+    const lookups = resolveLookups(draftDeltas, characterConfigs, assets)
     const errors = validateExportNames(draftDeltas, lookups, characterConfigs)
     if (errors.length === 0) {
       setValidationResult({ ok: true, message: '所有引用均有效，无错误。' })
@@ -52,6 +53,18 @@ export default function ExportSettings() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel])
+
+  const handleExportPackage = useCallback(async () => {
+    const res = await exportProjectPackage(
+      draftDeltas,
+      resolvedStates,
+      characterConfigs,
+      assets,
+      DEFAULT_POSITION_SLOTS,
+      scriptLabel,
+    )
+    setPackageResult({ ok: res.success, message: res.message })
   }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel])
 
   const totalLines = draftDeltas.length
@@ -122,7 +135,11 @@ export default function ExportSettings() {
             <Button variant="primary" onClick={handleExportBoth} disabled={totalLines === 0}>
               一并导出
             </Button>
+            <Button variant="ghost" onClick={handleExportPackage} disabled={totalLines === 0}>
+              导出 Ren'Py 项目包
+            </Button>
           </div>
+          <p className="mt-2 t-micro">「项目包」会生成完整 <code className="text-signal">game/</code> 目录（含 script.rpy / definitions.rpy / images / audio），Electron 下自动建目录并磁盘直拷素材；纯浏览器环境回落为双文件下载。</p>
         </section>
 
         {/* 校验结果 */}
@@ -130,6 +147,15 @@ export default function ExportSettings() {
           <div className={`panel mb-4 p-4 ${validationResult.ok ? 'border-success/40' : 'border-danger/40'}`}>
             <pre className="whitespace-pre-wrap t-micro t-mono leading-relaxed">
               {validationResult.message}
+            </pre>
+          </div>
+        )}
+
+        {/* 项目包导出结果 */}
+        {packageResult && (
+          <div className={`panel mb-4 p-4 ${packageResult.ok ? 'border-success/40' : 'border-danger/40'}`}>
+            <pre className="whitespace-pre-wrap t-micro t-mono leading-relaxed">
+              {packageResult.message}
             </pre>
           </div>
         )}

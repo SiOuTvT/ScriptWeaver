@@ -466,3 +466,70 @@ ipcMain.handle('dialog:pickAssetFiles', async (_event, options?: {
     return { success: false, error: (err as Error).message }
   }
 })
+
+// ===================== 导出 Ren'Py 项目包 =====================
+
+interface ExportAssetRef {
+  assetId: string
+  type: 'background' | 'sprite' | 'audio'
+  fileName: string
+  /** 相对项目根目录的源路径，如 assets/images/background/x.jpg */
+  sourceRelativePath: string
+  /** 相对 game/ 的导出路径，如 images/background/x.jpg */
+  exportRelPath: string
+}
+
+interface RpyBundle {
+  script: string
+  definitions: string
+  assets: ExportAssetRef[]
+}
+
+ipcMain.handle('fs:exportRenpy', async (_event, bundle: RpyBundle) => {
+  if (!mainWindow) return { success: false, error: 'No active window' }
+
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: '选择 Ren\'Py 导出目录',
+    properties: ['openDirectory', 'createDirectory'],
+  })
+  if (result.canceled || result.filePaths.length === 0) return { success: false }
+  const root = result.filePaths[0]
+  const gameDir = path.join(root, 'game')
+
+  // 自动创建 game/ 目录结构（与 C 阶段 assets/ 规范同名映射）
+  const imgBg = path.join(gameDir, 'images', 'background')
+  const imgSpr = path.join(gameDir, 'images', 'sprite')
+  const audDir = path.join(gameDir, 'audio')
+  ensureDir(imgBg)
+  ensureDir(imgSpr)
+  ensureDir(audDir)
+
+  // 源根：已保存项目用 projectRoot，否则回落会话目录
+  const srcRoot = activeProjectRoot ?? getSessionDir()
+  const resolvedSrcRoot = path.resolve(srcRoot)
+
+  // 单文件磁盘直拷（磁盘→磁盘，二进制不进内存），带防目录穿越校验
+  let copied = 0
+  for (const a of bundle.assets ?? []) {
+    const src = path.resolve(resolvedSrcRoot, a.sourceRelativePath)
+    // 安全：解析后必须仍落在 srcRoot 子树内（防 ../ 逃逸）
+    if (src !== resolvedSrcRoot && !src.startsWith(resolvedSrcRoot + path.sep)) continue
+    if (!fs.existsSync(src)) continue
+    const dest = path.resolve(gameDir, a.exportRelPath)
+    try {
+      copyFile(src, dest)
+      copied++
+    } catch {
+      /* 单文件失败不阻断整体导出 */
+    }
+  }
+
+  try {
+    fs.writeFileSync(path.join(gameDir, 'script.rpy'), bundle.script ?? '', 'utf-8')
+    fs.writeFileSync(path.join(gameDir, 'definitions.rpy'), bundle.definitions ?? '', 'utf-8')
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message }
+  }
+
+  return { success: true, gameDir, copied }
+})
