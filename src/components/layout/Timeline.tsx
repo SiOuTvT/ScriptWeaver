@@ -253,7 +253,7 @@ const SpanBlock = memo(function SpanBlock({
         borderLeft: `2px solid ${color}`,
       }}
     >
-      <span className="truncate text-[12px] leading-5 text-fg">
+      <span className="truncate text-[14px] leading-5 text-fg">
         {span.label}
       </span>
     </div>
@@ -424,8 +424,8 @@ export default function Timeline() {
   [resolvedStates])
 
   const total = resolvedStates.length
-  const trackHeight = 42
-  const HEADER_H = 56
+  const trackHeight = 36
+  const HEADER_H = 48
   const SNAP_RADIUS_PX = 8
   const SUBDIV = 4
 
@@ -683,9 +683,10 @@ export default function Timeline() {
         const guides: number[] = []
         if (bestC >= 0) {
           const deltaSnap = bestC - testEdges[bestIdx]
-          if (cur.edge === 'left') newStartF += deltaSnap
-          else if (cur.edge === 'right') newEndF += deltaSnap
-          else { newStartF += deltaSnap; newEndF += deltaSnap }
+          // 吸附后重新 clamp 到合法范围，避免越界卡死
+          if (cur.edge === 'left') newStartF = clamp(newStartF + deltaSnap, 0, cur.spanEnd)
+          else if (cur.edge === 'right') newEndF = clamp(newEndF + deltaSnap, cur.spanStart, total - 1)
+          else { newStartF = clamp(newStartF + deltaSnap, 0, total - 1 - spanLen); newEndF = newStartF + spanLen }
           guides.push(bestC)
         }
 
@@ -1037,7 +1038,7 @@ export default function Timeline() {
                     height: trackHeight - 4,
                   }}
                 >
-                  <span className="absolute top-1 left-2 text-[12px] font-mono text-signal">
+                  <span className="absolute top-1 left-2 text-[14px] font-mono text-signal">
                     {resizeState.edge === 'left'
                       ? `← L${resizeState.targetLine + 1}`
                       : resizeState.edge === 'right'
