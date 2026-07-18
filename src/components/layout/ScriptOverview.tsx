@@ -1,9 +1,10 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect, memo } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { Search, ChevronRight, Music, Image as ImageIcon, Workflow, List, AudioLines, Megaphone, Volume2, User, X } from 'lucide-react'
 
 // ===================== 颜色辅助 =====================
 import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
+import type { AssetItem } from '@/core/types'
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '')
   const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h
@@ -62,6 +63,118 @@ function StatChip({ label, value }: { label: string; value: number }) {
     </span>
   )
 }
+
+// 单行卡片（memo 化：滚动导致 activeLine 变化时仅激活卡重渲染，其余跳过重渲染）
+const OverviewCard = memo(function OverviewCard({
+  data: c,
+  isActiveCard,
+  accent,
+  assets,
+  registerRef,
+}: {
+  data: CardData
+  isActiveCard: boolean
+  accent: string
+  assets: AssetItem[]
+  registerRef: (el: HTMLDivElement | null) => void
+}) {
+  const isNarration = !c.speakerId
+  return (
+    <div
+      ref={registerRef}
+      className={`rounded-lg border border-edge/10 bg-surface-2 p-2.5 shadow-1 transition-shadow hover:shadow-2 ${
+        isActiveCard ? 'ring-1 ring-signal/50' : ''
+      }`}
+      style={{
+        borderLeft: `3px solid ${isNarration ? 'transparent' : accent}`,
+        // 离屏卡片跳过布局/绘制，500+ 行长列表高频拖拽时消除 Long Task
+        contentVisibility: 'auto',
+        containIntrinsicSize: 'auto 96px',
+      }}
+    >
+      {/* 头部：说话人胶囊 / 旁白 */}
+      <div className="mb-1 flex items-center gap-2">
+        {isNarration ? (
+          <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[12px] font-medium text-fg-subtle">
+            旁白
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[12px] font-semibold"
+            style={{ background: rgba(accent, 0.16), color: accent }}
+          >
+            <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
+            {c.speakerName}
+          </span>
+        )}
+        <span className="text-[12px] text-fg-faint">L{c.index + 1}</span>
+      </div>
+
+      {/* 台词正文 */}
+      <p
+        className={`text-[14px] leading-[1.55] ${
+          c.dialogue ? 'text-fg' : 'text-fg-faint italic'
+        }`}
+      >
+        {c.dialogue || '(空行)'}
+      </p>
+
+      {/* 素材 chip 行 */}
+      {(c.characters.length > 0 ||
+        c.backgroundName ||
+        c.bgm ||
+        c.ambient ||
+        c.se.length > 0 ||
+        c.voice) && (
+        <div className="mt-1.5 flex flex-wrap gap-1 border-t border-edge/10 pt-1.5">
+          {c.characters.map((ch) => (
+            <span
+              key={ch.charId}
+              className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted"
+            >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: ch.color }} />
+              {ICON.char} {ch.name}
+              {ch.expr && <span className="text-fg-faint">{ch.expr}</span>}
+            </span>
+          ))}
+          {c.backgroundName && (
+            <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.backgroundId, assets) }} />
+              {ICON.bg} {c.backgroundName}
+            </span>
+          )}
+          {c.bgm && (
+            <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.bgmId, assets) }} />
+              {ICON.bgm} {c.bgm}
+            </span>
+          )}
+          {c.ambient && (
+            <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.ambientId, assets) }} />
+              {ICON.ambient} {c.ambient}
+            </span>
+          )}
+          {c.se.map((s, k) => (
+            <span
+              key={k}
+              className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted"
+            >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.seIds[k], assets) }} />
+              {ICON.se} {s}
+            </span>
+          ))}
+          {c.voice && (
+            <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.voiceId, assets) }} />
+              {ICON.voice} {c.voice}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+})
 
 export default function ScriptOverview() {
   const resolvedStates = useAppStore((s) => s.resolvedStates)
@@ -474,104 +587,18 @@ export default function ScriptOverview() {
               {filtered.length === 0 && (
                 <div className="py-20 text-center text-[13px] text-fg-faint">没有匹配的行</div>
               )}
-              {filtered.map((c) => {
-                const isNarration = !c.speakerId
-                const isActiveCard = c.index === activeLine
-                const accent = c.speakerColor ?? 'rgb(var(--c-fg-faint))'
-                return (
-                  <div
-                    key={c.lineId}
-                    ref={(el) => {
-                      cardRefs.current[c.index] = el
-                    }}
-                    className={`rounded-lg border border-edge/10 bg-surface-2 p-2.5 shadow-1 transition-shadow hover:shadow-2 ${
-                      isActiveCard ? 'ring-1 ring-signal/50' : ''
-                    }`}
-                    style={{ borderLeft: `3px solid ${isNarration ? 'transparent' : accent}` }}
-                  >
-                    {/* 头部：说话人胶囊 / 旁白 */}
-                    <div className="mb-1 flex items-center gap-2">
-                      {isNarration ? (
-                        <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[12px] font-medium text-fg-subtle">
-                          旁白
-                        </span>
-                      ) : (
-                        <span
-                          className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[12px] font-semibold"
-                          style={{ background: rgba(accent, 0.16), color: accent }}
-                        >
-                          <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
-                          {c.speakerName}
-                        </span>
-                      )}
-                      <span className="text-[12px] text-fg-faint">L{c.index + 1}</span>
-                    </div>
-
-                    {/* 台词正文 */}
-                    <p
-                      className={`text-[14px] leading-[1.55] ${
-                        c.dialogue ? 'text-fg' : 'text-fg-faint italic'
-                      }`}
-                    >
-                      {c.dialogue || '(空行)'}
-                    </p>
-
-                    {/* 素材 chip 行 */}
-                    {(c.characters.length > 0 ||
-                      c.backgroundName ||
-                      c.bgm ||
-                      c.ambient ||
-                      c.se.length > 0 ||
-                      c.voice) && (
-                      <div className="mt-1.5 flex flex-wrap gap-1 border-t border-edge/10 pt-1.5">
-                        {c.characters.map((ch) => (
-                          <span
-                            key={ch.charId}
-                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted"
-                          >
-                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: ch.color }} />
-                            {ICON.char} {ch.name}
-                            {ch.expr && <span className="text-fg-faint">{ch.expr}</span>}
-                          </span>
-                        ))}
-                        {c.backgroundName && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
-                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.backgroundId, assets) }} />
-                            {ICON.bg} {c.backgroundName}
-                          </span>
-                        )}
-                        {c.bgm && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
-                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.bgmId, assets) }} />
-                            {ICON.bgm} {c.bgm}
-                          </span>
-                        )}
-                        {c.ambient && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
-                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.ambientId, assets) }} />
-                            {ICON.ambient} {c.ambient}
-                          </span>
-                        )}
-                        {c.se.map((s, k) => (
-                          <span
-                            key={k}
-                            className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted"
-                          >
-                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.seIds[k], assets) }} />
-                            {ICON.se} {s}
-                          </span>
-                        ))}
-                        {c.voice && (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted">
-                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: resolveAssetColor(c.voiceId, assets) }} />
-                            {ICON.voice} {c.voice}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+              {filtered.map((c) => (
+                <OverviewCard
+                  key={c.lineId}
+                  data={c}
+                  isActiveCard={c.index === activeLine}
+                  accent={c.speakerColor ?? 'rgb(var(--c-fg-faint))'}
+                  assets={assets}
+                  registerRef={(el) => {
+                    cardRefs.current[c.index] = el
+                  }}
+                />
+              ))}
             </div>
           )}
         </div>

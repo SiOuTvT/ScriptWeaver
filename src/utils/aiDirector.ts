@@ -37,6 +37,22 @@ export const PROVIDER_PRESETS: Record<Exclude<AIProvider, 'custom'>, { endpoint:
 
 const STORAGE_KEY = 'scriptweaver_ai_config'
 
+/** 默认 AI 配置（dev 渲染端降级用；主进程有独立持久化，密钥不在此） */
+export function defaultAIConfig(): AIConfig {
+  return {
+    provider: 'openai',
+    endpoint: PROVIDER_PRESETS.openai.endpoint,
+    apiKey: '',
+    model: PROVIDER_PRESETS.openai.model,
+    temperature: 0.7,
+    maxTokens: 2000,
+  }
+}
+
+/**
+ * 渲染端 dev 降级读取（仅在无 electronAPI 的纯 web 环境使用）。
+ * 桌面端密钥由主进程持有，渲染进程通过 ai:getConfig 拿到的是已脱敏配置。
+ */
 export function loadConfig(): AIConfig {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -54,14 +70,7 @@ export function loadConfig(): AIConfig {
   } catch {
     /* noop */
   }
-  return {
-    provider: 'openai',
-    endpoint: PROVIDER_PRESETS.openai.endpoint,
-    apiKey: '',
-    model: PROVIDER_PRESETS.openai.model,
-    temperature: 0.7,
-    maxTokens: 2000,
-  }
+  return defaultAIConfig()
 }
 
 export function saveConfig(cfg: AIConfig): void {

@@ -3,7 +3,7 @@ import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
 import { setDragCache, DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
 import { resolveAssetSrc } from '@/utils/assetSrc'
-import { playAudioPreview, stopAudioPreview, isAudioPlaying } from '@/utils/audioManager'
+import { toggleAssetPreview, isAssetPlaying } from '@/utils/audioManager'
 import { Tabs, Input, Button, IconButton } from '@/components/ui'
 import { Image as ImageIcon, User, Music, Plus, Play, Pause, GripVertical, Search } from 'lucide-react'
 
@@ -167,7 +167,7 @@ export default function SceneNavPanel() {
           <IconButton
             variant="ghost"
             size="sm"
-            icon={isAudioPlaying() ? <Pause size={14} strokeWidth={1.75} /> : <Play size={14} strokeWidth={1.75} />}
+            icon={isAssetPlaying(asset.id) ? <Pause size={14} strokeWidth={1.75} /> : <Play size={14} strokeWidth={1.75} />}
             onMouseDown={(e) => {
               e.stopPropagation()
               e.preventDefault()
@@ -175,11 +175,8 @@ export default function SceneNavPanel() {
             onClick={(e) => {
               e.stopPropagation()
               e.preventDefault()
-              if (isAudioPlaying()) {
-                stopAudioPreview()
-              } else {
-                playAudioPreview(asset)
-              }
+              // 按资产精准切换：同一素材停、不同素材叠加（四通道可同时响）
+              toggleAssetPreview(asset)
             }}
             title="点击试听"
             aria-label="点击试听"

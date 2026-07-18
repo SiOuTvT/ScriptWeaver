@@ -9,6 +9,7 @@ import {
   AIMode,
   loadConfig,
   saveConfig,
+  defaultAIConfig,
   applyPreset,
   buildSystemPrompt,
   buildUserPrompt,
@@ -40,6 +41,14 @@ export default function AIPanel() {
   const selectLine = useAppStore((s) => s.selectLine)
 
   const [config, setConfig] = useState<AIConfig>(loadConfig)
+  // 是否已有（脱敏后）密钥：桌面端来自主进程 ai:getConfig，dev 来自 localStorage
+  const [hasKey, setHasKey] = useState<boolean>(() => {
+    try {
+      return !!loadConfig().apiKey.trim()
+    } catch {
+      return false
+    }
+  })
   const [mode, setMode] = useState<AIMode>(() => {
     try {
       return (localStorage.getItem(STORAGE_MODE_KEY) as AIMode) || 'director'
@@ -50,11 +59,34 @@ export default function AIPanel() {
   const [prompt, setPrompt] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showConfig, setShowConfig] = useState(!config.apiKey)
+  const [showConfig, setShowConfig] = useState<boolean>(() => {
+    try {
+      return !loadConfig().apiKey.trim()
+    } catch {
+      return true
+    }
+  })
   const [streamText, setStreamText] = useState('') // 打字机缓冲（仅本地，不写 store）
   const [applyResult, setApplyResult] = useState<{ ok: boolean; message: string } | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const committedRef = useRef(false) // 幂等守卫：一次 AI 排戏只提交一次
+
+  // 启动即从主进程安全区拉取脱敏配置（密钥不进渲染进程）
+  useEffect(() => {
+    const api = window.electronAPI
+    if (api?.aiGetConfig) {
+      api
+        .aiGetConfig()
+        .then((cfg) => {
+          setConfig({ ...defaultAIConfig(), ...cfg })
+          setHasKey(!!cfg.hasApiKey)
+          setShowConfig(!cfg.hasApiKey)
+        })
+        .catch(() => {
+          /* 回落到下方 dev 默认 */
+        })
+    }
+  }, [])
 
   useEffect(() => {
     try {
@@ -64,38 +96,9 @@ export default function AIPanel() {
     }
   }, [mode])
 
-  const generate = useCallback(async () => {
-    if (!prompt.trim() || !config.apiKey.trim()) return
-
-    setLoading(true)
-    setError(null)
-    setApplyResult(null)
-    setStreamText('')
-    committedRef.current = false
-
-    const controller = new AbortController()
-    abortRef.current = controller
-
-    try {
-      const messages = [
-        {
-          role: 'system' as const,
-          content: buildSystemPrompt(mode, {
-            characters: characterConfigs.map((c) => ({ charId: c.charId, displayName: c.displayName })),
-            backgrounds: assets.filter((a) => a.type === 'background').map((a) => a.name),
-            audioHints: buildAudioHints(assets),
-          }),
-        },
-        { role: 'user' as const, content: buildUserPrompt(prompt, mode) },
-      ]
-
-      const full = await streamChatCompletion(
-        config,
-        messages,
-        (tok) => setStreamText((prev) => prev + tok),
-        controller.signal,
-      )
-
+  // 收尾：解析 → 标签绑定 → 单事务提交（两套收发路径共用）
+  const finish = useCallback(
+    (full: string) => {
       // 导师模式：仅预览，不触碰时间轴
       if (mode === 'mentor') {
         setApplyResult({ ok: true, message: '（导师模式）已在上方预览改写结果，未修改时间轴。' })
@@ -149,6 +152,75 @@ export default function AIPanel() {
         message: `已应用 ${plan.length} 行（插入到第 ${selectedLineIndex + 1} 行后）。${resolvedMsg}${unresolvedMsg}`,
       })
       setPrompt('')
+    },
+    [mode, assets, characterConfigs, draftDeltas, selectedLineIndex, setDraftDeltas, selectLine],
+  )
+
+  const generate = useCallback(async () => {
+    if (!prompt.trim()) return
+    const secure = !!window.electronAPI?.aiChat
+    const keyReady = secure ? hasKey : config.apiKey.trim().length > 0
+    if (!keyReady) return
+
+    setLoading(true)
+    setError(null)
+    setApplyResult(null)
+    setStreamText('')
+    committedRef.current = false
+
+    const messages = [
+      {
+        role: 'system' as const,
+        content: buildSystemPrompt(mode, {
+          characters: characterConfigs.map((c) => ({ charId: c.charId, displayName: c.displayName })),
+          backgrounds: assets.filter((a) => a.type === 'background').map((a) => a.name),
+          audioHints: buildAudioHints(assets),
+        }),
+      },
+      { role: 'user' as const, content: buildUserPrompt(prompt, mode) },
+    ]
+
+    // 桌面端：密钥在主进程，渲染端只发 prompt 收 chunk
+    if (secure) {
+      const api = window.electronAPI!
+      let full = ''
+      const onChunk = (d: { delta: string }) => {
+        full += d.delta
+        setStreamText(full)
+      }
+      const onDone = (d: { full: string }) => {
+        api.removeAiListeners()
+        setLoading(false)
+        finish(d.full)
+      }
+      const onErr = (msg: string) => {
+        api.removeAiListeners()
+        setLoading(false)
+        setError(msg)
+      }
+      const onAbort = () => {
+        api.removeAiListeners()
+        setLoading(false)
+      }
+      api.onAiChunk(onChunk)
+      api.onAiDone(onDone)
+      api.onAiError(onErr)
+      api.onAiAborted(onAbort)
+      api.aiChat({ messages })
+      return
+    }
+
+    // dev 纯 web 降级：渲染端直接请求（密钥来自 localStorage）
+    const controller = new AbortController()
+    abortRef.current = controller
+    try {
+      const full = await streamChatCompletion(
+        config,
+        messages,
+        (tok) => setStreamText((prev) => prev + tok),
+        controller.signal,
+      )
+      finish(full)
     } catch (err: any) {
       if (err?.name === 'AbortError') return
       setError(err?.message ?? '未知错误')
@@ -156,14 +228,29 @@ export default function AIPanel() {
       setLoading(false)
       abortRef.current = null
     }
-  }, [prompt, config, mode, draftDeltas, assets, characterConfigs, selectedLineIndex, setDraftDeltas, selectLine])
+  }, [prompt, config, hasKey, mode, draftDeltas, assets, characterConfigs, selectedLineIndex, setDraftDeltas, selectLine, finish])
 
   const cancel = useCallback(() => {
-    abortRef.current?.abort()
+    const api = window.electronAPI
+    if (api?.aiAbort) {
+      api.aiAbort()
+    } else {
+      abortRef.current?.abort()
+      setLoading(false)
+    }
   }, [])
 
-  const saveConfigCb = useCallback(() => {
-    saveConfig(config)
+  const saveConfigCb = useCallback(async () => {
+    const api = window.electronAPI
+    if (api?.aiSetConfig) {
+      // 密钥落入主进程安全区；渲染端提交后立即丢弃明文
+      await api.aiSetConfig(config)
+      setHasKey(true)
+      setConfig((c) => ({ ...c, apiKey: '' }))
+    } else {
+      saveConfig(config)
+      setHasKey(!!config.apiKey.trim())
+    }
     setShowConfig(false)
   }, [config])
 
@@ -244,9 +331,14 @@ export default function AIPanel() {
                   type="password"
                   value={config.apiKey}
                   onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-                  placeholder="sk-..."
+                  placeholder={hasKey && !config.apiKey ? '已保存在本地安全区，留空即保留' : 'sk-...'}
                   className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
                 />
+                {hasKey && !config.apiKey && (
+                  <p className="mt-1 text-[11px] text-fg-faint">
+                    密钥由主进程安全区托管，渲染进程不可见。
+                  </p>
+                )}
               </label>
               <label className="block">
                 <span className="t-label">模型</span>
@@ -361,7 +453,7 @@ export default function AIPanel() {
             <Button
               variant="primary"
               onClick={generate}
-              disabled={loading || !prompt.trim() || !config.apiKey.trim()}
+              disabled={loading || !prompt.trim() || (window.electronAPI ? !hasKey : !config.apiKey.trim())}
             >
               {loading ? (
                 <>

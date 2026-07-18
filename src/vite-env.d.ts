@@ -59,6 +59,17 @@ interface ElectronAPI {
   /** 同步原生窗口主题（标题栏等） */
   setNativeTheme: (theme: 'dark' | 'light') => void
 
+  // --------------- AI 桥接（密钥不进渲染进程） ---------------
+  aiGetConfig: () => Promise<import('./utils/aiDirector').AIConfig & { hasApiKey: boolean }>
+  aiSetConfig: (cfg: import('./utils/aiDirector').AIConfig) => Promise<{ ok: boolean }>
+  aiChat: (payload: { messages: import('./utils/aiDirector').ChatMessage[] }) => void
+  aiAbort: () => void
+  onAiChunk: (cb: (d: { delta: string }) => void) => void
+  onAiDone: (cb: (d: { full: string }) => void) => void
+  onAiError: (cb: (msg: string) => void) => void
+  onAiAborted: (cb: () => void) => void
+  removeAiListeners: () => void
+
   on: (channel: string, callback: (...args: unknown[]) => void) => void
   off: (channel: string, callback: (...args: unknown[]) => void) => void
 }
