@@ -3,7 +3,7 @@ import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
 import { setDragCache, DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
 import { playAudioPreview, stopAudioPreview, isAudioPlaying } from '@/utils/audioManager'
-import { Tabs, Input, Button } from '@/components/ui'
+import { Tabs, Input, Button, IconButton } from '@/components/ui'
 import { Image as ImageIcon, User, Music, Plus, Play, Pause, GripVertical, Search } from 'lucide-react'
 
 type TabId = AssetType
@@ -182,7 +182,10 @@ export default function SceneNavPanel() {
 
         {/* 音频预览按钮 */}
         {!isImg && (
-          <button
+          <IconButton
+            variant="ghost"
+            size="sm"
+            icon={isAudioPlaying() ? <Pause size={14} strokeWidth={1.75} /> : <Play size={14} strokeWidth={1.75} />}
             onMouseDown={(e) => {
               e.stopPropagation()
               e.preventDefault()
@@ -197,10 +200,9 @@ export default function SceneNavPanel() {
               }
             }}
             title="点击试听"
-            className="shrink-0 rounded p-1 text-fg-subtle transition-colors hover:bg-surface-active hover:text-info"
-          >
-            {isAudioPlaying() ? <Pause size={14} strokeWidth={1.75} /> : <Play size={14} strokeWidth={1.75} />}
-          </button>
+            aria-label="点击试听"
+            className="hover:text-info"
+          />
         )}
 
         {/* 拖拽提示 */}

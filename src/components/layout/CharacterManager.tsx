@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import { Button, Input, ConfirmDialog } from '@/components/ui'
+import { Button, IconButton, Input, ConfirmDialog } from '@/components/ui'
 import { Image as ImageIcon, X, User } from 'lucide-react'
 import type { CharacterConfig, ExpressionRef, AssetItem } from '@/core/types'
 import { hashCharColor } from '@/utils/charColor'
@@ -120,12 +120,14 @@ export default function CharacterManager() {
           <span className="signal-dot" />
           <span className="eyebrow">角色管理 Characters</span>
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setShowNewForm(!showNewForm)}
-          className="rounded px-2 py-0.5 text-[12px] font-medium text-signal transition-colors hover:bg-signal/15"
+          className="text-signal hover:bg-signal/15"
         >
           + 新建
-        </button>
+        </Button>
       </div>
 
       {/* 两栏：左角色列表 + 右详情 */}
@@ -244,12 +246,14 @@ export default function CharacterManager() {
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <span className="eyebrow">表情列表 Expressions</span>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setShowExprPicker(!showExprPicker)}
-                    className="text-[12px] text-signal transition-opacity hover:opacity-80"
+                    className="text-signal hover:opacity-80"
                   >
                     + 添加表情
-                  </button>
+                  </Button>
                 </div>
 
                 {showExprPicker && (
@@ -295,13 +299,15 @@ export default function CharacterManager() {
                           <span className="min-w-0 flex-1 truncate text-[12px] text-fg-muted">
                             {asset?.name ?? '(素材已删除)'}
                           </span>
-                          <button
+                          <IconButton
+                            variant="ghost"
+                            size="sm"
+                            icon={<X size={13} strokeWidth={1.75} />}
                             onClick={() => handleRemoveExpression(expr.id)}
-                            className="shrink-0 text-fg-faint transition-colors hover:text-danger"
                             title="移除表情"
-                          >
-                            <X size={13} strokeWidth={1.75} />
-                          </button>
+                            aria-label="移除表情"
+                            className="hover:text-danger"
+                          />
                         </div>
                       )
                     })}

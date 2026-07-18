@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { Pin, X, Image as ImageIcon, Music, AudioLines, Volume2, Megaphone, DoorOpen, VolumeX } from 'lucide-react'
 import type { LineDelta } from '@/core/types'
+import { IconButton, Button } from '@/components/ui'
 
 export default function ScriptDrawer() {
   const deltas = useAppStore((s) => s.draftDeltas)
@@ -42,26 +43,25 @@ export default function ScriptDrawer() {
           </div>
           <div className="flex items-center gap-1">
             {/* 钉住按钮 */}
-            <button
+            <IconButton
+              variant="ghost"
+              size="sm"
+              icon={<Pin size={15} strokeWidth={1.75} />}
               onClick={togglePin}
               title={pinned ? '取消钉住' : '钉住面板'}
-              className={`rounded p-1 transition-colors ${
-                pinned
-                  ? 'bg-signal/15 text-signal'
-                  : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
-              }`}
-            >
-              <Pin size={15} strokeWidth={1.75} />
-            </button>
+              aria-label={pinned ? '取消钉住' : '钉住面板'}
+              className={pinned ? 'bg-signal/15 text-signal' : ''}
+            />
             {/* 关闭按钮（钉住时隐藏） */}
             {!pinned && (
-              <button
+              <IconButton
+                variant="ghost"
+                size="sm"
+                icon={<X size={15} strokeWidth={1.75} />}
                 onClick={toggleOpen}
-                className="rounded p-1 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
                 title="关闭剧本流"
-              >
-                <X size={15} strokeWidth={1.75} />
-              </button>
+                aria-label="关闭剧本流"
+              />
             )}
           </div>
         </div>
@@ -129,12 +129,14 @@ export default function ScriptDrawer() {
 
       {/* 浮动触发按钮（抽屉关闭时显示） */}
       {!open && (
-        <button
-          onClick={toggleOpen}
-          className="absolute top-4 right-4 z-20 rounded-lg border border-edge-strong/20 bg-surface-2/90 px-3 py-1.5 text-xs text-fg-muted shadow-2 backdrop-blur transition-colors hover:bg-surface-hover hover:text-fg"
-        >
-          剧本
-        </button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={toggleOpen}
+        className="absolute top-4 right-4 z-20 rounded-lg bg-surface-2/90 px-3 py-1.5 shadow-2 backdrop-blur"
+      >
+        剧本
+      </Button>
       )}
     </>
   )
