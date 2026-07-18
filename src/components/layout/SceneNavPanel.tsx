@@ -197,7 +197,7 @@ export default function SceneNavPanel() {
               }
             }}
             title="点击试听"
-            className="shrink-0 rounded p-1 text-fg-subtle opacity-0 transition-all hover:bg-surface-active hover:text-info group-hover:opacity-100"
+            className="shrink-0 rounded p-1 text-fg-subtle transition-colors hover:bg-surface-active hover:text-info"
           >
             {isAudioPlaying() ? <Pause size={14} strokeWidth={1.75} /> : <Play size={14} strokeWidth={1.75} />}
           </button>

@@ -84,7 +84,7 @@ export default function ExportSettings() {
             {stats.map((item) => (
               <div key={item.label} className="px-4 first:pl-0">
                 <p className="t-label">{item.label}</p>
-                <p className="mt-0.5 t-display t-mono">{item.value}</p>
+                <p className="mt-0.5 t-h2 t-mono">{item.value}</p>
               </div>
             ))}
           </div>

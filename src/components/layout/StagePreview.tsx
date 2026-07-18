@@ -504,7 +504,7 @@ export default function StagePreview() {
     : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? '#111') : '#111' }
 
   return (
-    <main className="relative flex flex-1 flex-col">
+    <main className="relative flex min-w-0 flex-1 flex-col">
       <div
         ref={stageRef}
         className="relative flex-1 overflow-hidden rounded-lg border border-edge/16 bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
@@ -682,7 +682,7 @@ export default function StagePreview() {
               </datalist>
             </div>
             {/* 台词输入 */}
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <input
                 type="text"
                 value={localDialogue}

@@ -54,7 +54,7 @@ export default function LeftSidebar() {
               } ${
                 isActive
                   ? 'signal-bar bg-primary/[0.08] text-fg'
-                  : 'text-fg-faint hover:bg-surface-hover hover:text-fg-muted'
+                  : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
               }`}
             >
               <span className="shrink-0">{item.icon}</span>
