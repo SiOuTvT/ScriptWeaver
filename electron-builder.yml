@@ -9,7 +9,7 @@
 appId: com.scriptweaver.app
 productName: ScriptWeaver
 directories:
-  output: release
+  output: release_build
   buildResources: assets
 asar: true
 files:
@@ -27,8 +27,7 @@ win:
   target:
     - nsis
     - zip
-  arch:
-    - x64
+  # 不指定 arch：electron-builder 默认按当前构建平台自动输出标准架构（x64）
   # nsis 产出 .exe，zip 产出 .zip，扩展名天然不冲突
   artifactName: ${productName}-${version}-${arch}.${ext}
 nsis:
@@ -39,14 +38,18 @@ nsis:
   createStartMenuShortcut: true
 
 # ===================== macOS =====================
-# universal 单包同时兼容 Intel 与 Apple Silicon（M1/M2/M3/M4）；
-# 若 universal 的 lipo 合并在某些环境失败，可将 arch 改为 [x64, arm64] 出分流包。
+# 架构不在此处声明：electron-builder 默认按构建平台输出标准架构。
+# 若需 universal 单包兼容 Intel + Apple Silicon，应写在 target 内（仅可在 macOS 上构建）：
+#   mac:
+#     target:
+#       - target: dmg
+#         arch: universal
+#       - target: zip
+#         arch: universal
 mac:
   target:
     - dmg
     - zip
-  arch:
-    - universal
   category: public.app-category.developer-tools
   hardenedRuntime: false
   gatekeeperAssess: false
@@ -56,7 +59,6 @@ mac:
 linux:
   target:
     - AppImage
-  arch:
-    - x64
+  # 不指定 arch：默认按当前构建平台输出标准架构
   category: Development
   artifactName: ${productName}-${version}.${ext}
