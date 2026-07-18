@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
 import { setDragCache, DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
+import { resolveAssetSrc } from '@/utils/assetSrc'
 import { playAudioPreview, stopAudioPreview, isAudioPlaying } from '@/utils/audioManager'
 import { Tabs, Input, Button, IconButton } from '@/components/ui'
 import { Image as ImageIcon, User, Music, Plus, Play, Pause, GripVertical, Search } from 'lucide-react'
@@ -75,7 +76,7 @@ export default function SceneNavPanel() {
         filters = [{ name: '图片文件', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
       }
 
-      const result = await api.pickAssetFiles({ filters })
+      const result = await api.pickAssetFiles({ filters, kind: tab })
       if (!result.success || !result.files) return
 
       const now = new Date().toISOString()
@@ -86,9 +87,6 @@ export default function SceneNavPanel() {
           name: f.fileName.replace(/\.[^.]+$/, ''),
           fileName: f.fileName,
           relativePath: f.relativePath,
-          width: f.width,
-          height: f.height,
-          dataUrl: f.dataUrl,
           importedAt: now,
         }
         addAsset(asset)
@@ -105,34 +103,18 @@ export default function SceneNavPanel() {
       const now = new Date().toISOString()
       Array.from(files).forEach((file) => {
         const id = `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-        // 图片类型用 FileReader 生成 base64 dataUrl，音频跳过（仅 Electron 模式支持）
+        // Web 降级：用 URL.createObjectURL 生成临时 blobUrl（比 base64 省内存），仅内存有效
         const isImage = file.type.startsWith('image/')
-        if (isImage) {
-          const reader = new FileReader()
-          reader.onload = () => {
-            const asset: AssetItem = {
-              id,
-              type: tab,
-              name: file.name.replace(/\.[^.]+$/, ''),
-              fileName: file.name,
-              relativePath: '',
-              dataUrl: reader.result as string,
-              importedAt: now,
-            }
-            addAsset(asset)
-          }
-          reader.readAsDataURL(file)
-        } else {
-          const asset: AssetItem = {
-            id,
-            type: tab,
-            name: file.name.replace(/\.[^.]+$/, ''),
-            fileName: file.name,
-            relativePath: '',
-            importedAt: now,
-          }
-          addAsset(asset)
+        const asset: AssetItem = {
+          id,
+          type: tab,
+          name: file.name.replace(/\.[^.]+$/, ''),
+          fileName: file.name,
+          relativePath: '',
+          blobUrl: isImage ? URL.createObjectURL(file) : undefined,
+          importedAt: now,
         }
+        addAsset(asset)
       })
       e.target.value = ''
     },
@@ -154,9 +136,9 @@ export default function SceneNavPanel() {
       >
         {/* 缩略图 */}
         <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-surface-1">
-          {asset.dataUrl ? (
+          {resolveAssetSrc(asset) ? (
             <img
-              src={asset.dataUrl}
+              src={resolveAssetSrc(asset)}
               alt={asset.name}
               className="h-full w-full object-cover"
             />
