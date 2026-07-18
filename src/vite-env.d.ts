@@ -48,6 +48,14 @@ interface ElectronAPI {
   /** 获取会话临时目录路径 */
   getSessionDir: () => Promise<string>
 
+  /** 导出 Ren'Py 项目包：主进程建 game/ 目录 + 磁盘直拷素材 */
+  exportRenpy: (bundle: unknown) => Promise<{
+    success: boolean
+    gameDir?: string
+    copied?: number
+    error?: string
+  }>
+
   /** 同步原生窗口主题（标题栏等） */
   setNativeTheme: (theme: 'dark' | 'light') => void
 

@@ -376,3 +376,131 @@ build started...[39m
 [2m10:50:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
 [2m10:50:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
 [2m10:50:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m18:43:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m18:43:18[22m [33m[1m[vite][22m[39m [33mwarning: [33mThis assignment will throw because "currentChars" is a constant[33m
+444|        nodes.push(...block)
+445|      }
+446|      currentChars = newChars
+   |      ^
+447|    }
+448|  
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mD:/ScriptWeaver/src/utils/rpyExporter.ts[39m
+[2m18:43:18[22m [33m[1m[vite][22m[39m [33mwarning: [33mThis assignment will throw because "currentChars" is a constant[33m
+444|        nodes.push(...block)
+445|      }
+446|      currentChars = newChars
+   |      ^
+447|    }
+448|  
+[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mD:/ScriptWeaver/src/utils/rpyExporter.ts[39m
+[2m18:43:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m18:43:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m18:43:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m18:43:57[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m18:43:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m18:43:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m18:44:36[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m18:44:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[2m18:44:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ThemeSettings.tsx[22m
+[36m
+build started...[39m
+[32m✓[39m 1 modules transformed.
+[2mdist-electron/[22m[36mpreload.js  [39m[1m[2m1.49 kB[22m[1m[22m[2m │ gzip: 0.88 kB[22m
+[36mbuilt in 57ms.[39m
+[36m
+build started...[39m
+[32m✓[39m 1 modules transformed.
+[2mdist-electron/[22m[36mmain.js  [39m[1m[2m13.13 kB[22m[1m[22m[2m │ gzip: 3.74 kB[22m
+[36mbuilt in 48ms.[39m
+
+[8932:0718/184520.086:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[8932:0718/184520.086:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[2m18:45:24[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m18:45:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m18:45:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m18:45:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m18:45:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m18:45:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m18:46:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m18:46:14[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+D:/ScriptWeaver/src/utils/rpyExporter.ts:351:6: ERROR: The symbol "currentChars" has already been declared
+[2m18:46:14[22m [31m[1m[vite][22m[39m Pre-transform error: Transform failed with 1 error:
+D:/ScriptWeaver/src/utils/rpyExporter.ts:351:6: ERROR: The symbol "currentChars" has already been declared
+[2m18:46:14[22m [31m[1m[vite][22m[39m [31mInternal server error: Transform failed with 1 error:
+D:/ScriptWeaver/src/utils/rpyExporter.ts:351:6: ERROR: The symbol "currentChars" has already been declared[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mD:/ScriptWeaver/src/utils/rpyExporter.ts[39m:351:6
+[33m  
+  [33mThe symbol "currentChars" has already been declared[33m
+  349|    let currentBgm: string | null = null
+  350|    let currentAmbient: string | null = null
+  351|    let currentChars = new Map<string, { exprId: string; at: AtClause; zorder: number }>()
+     |        ^
+  352|  
+  353|    for (let i = 0; i < resolvedStates.length; i++) {
+  [39m
+      at failureErrorWithLog (d:\ScriptWeaver\node_modules\esbuild\lib\main.js:1472:15)
+      at d:\ScriptWeaver\node_modules\esbuild\lib\main.js:755:50
+      at responseCallbacks.<computed> (d:\ScriptWeaver\node_modules\esbuild\lib\main.js:622:9)
+      at handleIncomingPacket (d:\ScriptWeaver\node_modules\esbuild\lib\main.js:677:12)
+      at Socket.readFromStdout (d:\ScriptWeaver\node_modules\esbuild\lib\main.js:600:7)
+      at Socket.emit (node:events:509:28)
+      at addChunk (node:internal/streams/readable:563:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+      at Readable.push (node:internal/streams/readable:394:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+[2m18:46:14[22m [31m[1m[vite][22m[39m [31mInternal server error: Transform failed with 1 error:
+D:/ScriptWeaver/src/utils/rpyExporter.ts:351:6: ERROR: The symbol "currentChars" has already been declared[39m
+  Plugin: [35mvite:esbuild[39m
+  File: [36mD:/ScriptWeaver/src/utils/rpyExporter.ts[39m:351:6
+[33m  
+  [33mThe symbol "currentChars" has already been declared[33m
+  349|    let currentBgm: string | null = null
+  350|    let currentAmbient: string | null = null
+  351|    let currentChars = new Map<string, { exprId: string; at: AtClause; zorder: number }>()
+     |        ^
+  352|  
+  353|    for (let i = 0; i < resolvedStates.length; i++) {
+  [39m
+      at failureErrorWithLog (d:\ScriptWeaver\node_modules\esbuild\lib\main.js:1472:15)
+      at d:\ScriptWeaver\node_modules\esbuild\lib\main.js:755:50
+      at responseCallbacks.<computed> (d:\ScriptWeaver\node_modules\esbuild\lib\main.js:622:9)
+      at handleIncomingPacket (d:\ScriptWeaver\node_modules\esbuild\lib\main.js:677:12)
+      at Socket.readFromStdout (d:\ScriptWeaver\node_modules\esbuild\lib\main.js:600:7)
+      at Socket.emit (node:events:509:28)
+      at addChunk (node:internal/streams/readable:563:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+      at Readable.push (node:internal/streams/readable:394:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+[2m18:46:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/ExportSettings.tsx, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m18:47:25[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[36mvite v5.4.21 [32mbuilding for development...[36m[39m
+[36m
+watching for file changes...[39m
+[36mvite v5.4.21 [32mbuilding for development...[36m[39m
+[36m
+watching for file changes...[39m
+[36m
+build started...[39m
+[36m
+build started...[39m
+[2m18:47:25[22m [36m[1m[vite][22m[39m server restarted.
+transforming...
+[32m✓[39m 1 modules transformed.
+transforming...
+rendering chunks...
+[32m✓[39m 1 modules transformed.
+rendering chunks...
+computing gzip size...
+computing gzip size...
+[2mdist-electron/[22m[36mpreload.js  [39m[1m[2m1.49 kB[22m[1m[22m[2m │ gzip: 0.88 kB[22m
+[36mbuilt in 148ms.[39m
+[2mdist-electron/[22m[36mmain.js  [39m[1m[2m13.13 kB[22m[1m[22m[2m │ gzip: 3.74 kB[22m
+[36mbuilt in 149ms.[39m
+
+[52920:0718/184727.719:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[52920:0718/184727.719:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)

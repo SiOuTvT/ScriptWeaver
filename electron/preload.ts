@@ -7,6 +7,12 @@ const api = {
   /** 获取会话临时目录 */
   getSessionDir: (): Promise<string> => ipcRenderer.invoke('app:getSessionDir'),
 
+  /** 导出 Ren'Py 项目包：选目录 → 建 game/ 结构 → 磁盘直拷素材 → 写 .rpy */
+  exportRenpy: (
+    bundle: unknown,
+  ): Promise<{ success: boolean; gameDir?: string; copied?: number; error?: string }> =>
+    ipcRenderer.invoke('fs:exportRenpy', bundle),
+
   /** 同步原生窗口主题（标题栏等），fire-and-forget */
   setNativeTheme: (theme: 'dark' | 'light'): void => ipcRenderer.send('app:setNativeTheme', theme),
 
