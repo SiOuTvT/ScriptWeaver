@@ -21,11 +21,11 @@ export const MOCK_ASSETS: AssetItem[] = [
   { id: 'asset_spr_bob_smile', type: 'sprite', name: 'Bob 微笑', fileName: 'bob_smile.png', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
   { id: 'asset_spr_charlie_happy', type: 'sprite', name: 'Charlie 开心', fileName: 'charlie_happy.png', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
   // 音频 (5)
-  { id: 'asset_audio_bgm_peaceful', type: 'audio', name: '宁静 BGM', fileName: 'bgm_peaceful.mp3', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
-  { id: 'asset_audio_bgm_lively', type: 'audio', name: '活泼 BGM', fileName: 'bgm_lively.mp3', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
-  { id: 'asset_audio_bgm_warm', type: 'audio', name: '温暖 BGM', fileName: 'bgm_warm.mp3', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
-  { id: 'asset_audio_ambient_crickets', type: 'audio', name: '虫鸣', fileName: 'ambient_crickets.mp3', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
-  { id: 'asset_audio_ambient_rain', type: 'audio', name: '雨声', fileName: 'ambient_rain.mp3', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
+  { id: 'asset_audio_bgm_peaceful', type: 'audio', name: '宁静 BGM', fileName: 'bgm_peaceful.mp3', relativePath: '', tags: ['peaceful', '宁静', 'calm'], importedAt: '2024-01-01T00:00:00Z' },
+  { id: 'asset_audio_bgm_lively', type: 'audio', name: '活泼 BGM', fileName: 'bgm_lively.mp3', relativePath: '', tags: ['lively', '活泼', 'cheerful'], importedAt: '2024-01-01T00:00:00Z' },
+  { id: 'asset_audio_bgm_warm', type: 'audio', name: '温暖 BGM', fileName: 'bgm_warm.mp3', relativePath: '', tags: ['warm', '温暖', 'tender'], importedAt: '2024-01-01T00:00:00Z' },
+  { id: 'asset_audio_ambient_crickets', type: 'audio', name: '虫鸣', fileName: 'ambient_crickets.mp3', relativePath: '', tags: ['crickets', '虫鸣', 'night', 'night_sky'], importedAt: '2024-01-01T00:00:00Z' },
+  { id: 'asset_audio_ambient_rain', type: 'audio', name: '雨声', fileName: 'ambient_rain.mp3', relativePath: '', tags: ['rain', 'storm', 'weather', '雨', '雨声'], importedAt: '2024-01-01T00:00:00Z' },
   // 语音 (6)
   { id: 'asset_audio_voice_alice_02', type: 'audio', name: 'Alice 语音02', fileName: 'v_alice_02.ogg', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
   { id: 'asset_audio_voice_alice_04', type: 'audio', name: 'Alice 语音04', fileName: 'v_alice_04.ogg', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
@@ -35,8 +35,8 @@ export const MOCK_ASSETS: AssetItem[] = [
   { id: 'asset_audio_voice_bob_07', type: 'audio', name: 'Bob 语音07', fileName: 'v_bob_07.ogg', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
   { id: 'asset_audio_voice_charlie_09', type: 'audio', name: 'Charlie 语音09', fileName: 'v_charlie_09.ogg', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
   // 音效 (2)
-  { id: 'asset_audio_se_footsteps', type: 'audio', name: '脚步声', fileName: 'footsteps.ogg', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
-  { id: 'asset_audio_se_door_close', type: 'audio', name: '关门声', fileName: 'door_close.ogg', relativePath: '', importedAt: '2024-01-01T00:00:00Z' },
+  { id: 'asset_audio_se_footsteps', type: 'audio', name: '脚步声', fileName: 'footsteps.ogg', relativePath: '', tags: ['footsteps', 'step', '脚步'], importedAt: '2024-01-01T00:00:00Z' },
+  { id: 'asset_audio_se_door_close', type: 'audio', name: '关门声', fileName: 'door_close.ogg', relativePath: '', tags: ['door', 'close', '关门'], importedAt: '2024-01-01T00:00:00Z' },
 ]
 
 // ============================================================
