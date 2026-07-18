@@ -572,10 +572,16 @@ export default function StagePreview() {
                 key={charId}
                 onMouseDown={handleCharMouseDown(charId)}
                 onDragStart={(e) => e.preventDefault()}
-                className={`group pointer-events-auto absolute z-30 -translate-x-1/2 -translate-y-full flex select-none cursor-grab flex-col items-center active:cursor-grabbing ${
+                className={`group pointer-events-auto absolute -translate-x-1/2 -translate-y-full flex select-none cursor-grab flex-col items-center active:cursor-grabbing ${
                   dragging ? '' : 'transition-[left,top] duration-200'
                 }`}
-                style={{ left: `${px * 100}%`, top: `${py * 100}%` }}
+                // zIndex 动态对齐 computeZorder：按水平位置升序（越靠右越靠前），
+                // 与 Ren'Py 导出产物层级严格一致，消灭预览/导出认知分歧。
+                style={{
+                  left: `${px * 100}%`,
+                  top: `${py * 100}%`,
+                  zIndex: Math.round((char.pos_x ?? SLOT_ANCHORS[char.position_slot]?.x ?? 0.5) * 10) + 10,
+                }}
                 title="拖动可移动位置；靠近左/中/右的虚线会自动吸附到站位，拉离即自由微调"
               >
                 {spriteDataUrl ? (
