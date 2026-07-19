@@ -148,25 +148,24 @@ function classifyAsset(abs: string): AssetKind | null {
   return null
 }
 
-// 会话临时目录
+// 会话素材目录（持久化、路径稳定）
+// 注意：必须用「稳定且持久」的路径（userData 下，不含时间戳），且退出时不删除。
+// 否则导入但未保存项目的素材会随应用退出 / dev 热重载（electron 重启触发 before-quit）
+// 而从临时目录被整体清空，导致 sw-asset 全部 404：图片看不了、音频听不了、时间轴失效。
 let sessionDir: string | null = null
 
 function getSessionDir(): string {
   if (!sessionDir) {
-    sessionDir = path.join(app.getPath('temp'), `scriptweaver-session-${Date.now()}`)
+    sessionDir = path.join(app.getPath('userData'), 'session-assets')
     ensureDir(sessionDir)
   }
   return sessionDir
 }
 
-// 应用退出时清理临时目录 + 监听器
+// 应用退出时只停监听器，不再删除素材目录（素材已落在持久化的 userData 下，
+// 删除会导致下次启动全部 404；如需彻底清空，由「新建项目」等显式动作处理）。
 app.on('before-quit', () => {
   stopAssetWatch()
-  if (sessionDir && fs.existsSync(sessionDir)) {
-    try {
-      fs.rmSync(sessionDir, { recursive: true, force: true })
-    } catch { /* 静默 */ }
-  }
 })
 
 // ===================== sw-asset:// 协议 Handler =====================
@@ -237,15 +236,12 @@ function registerAssetProtocol(): void {
               },
             })
           }
+          // 整文件响应：流式 body 不要带 Content-Length，
+          // 否则 Electron protocol.handle 会按长度截断/卡死（图片/立绘加载不出）。
           const stream = Readable.toWeb(fs.createReadStream(abs)) as unknown as ReadableStream
           console.log('[sw-asset]  HIT', abs, mime)
           return new Response(stream, {
-            headers: {
-              'Content-Type': mime,
-              'Accept-Ranges': 'bytes',
-              'Content-Length': String(total),
-              'Cache-Control': 'no-cache',
-            },
+            headers: { 'Content-Type': mime, 'Cache-Control': 'no-cache' },
           })
         }
       }

@@ -184,19 +184,13 @@ function classifyAsset(abs) {
 let sessionDir = null;
 function getSessionDir() {
   if (!sessionDir) {
-    sessionDir = path.join(electron.app.getPath("temp"), `scriptweaver-session-${Date.now()}`);
+    sessionDir = path.join(electron.app.getPath("userData"), "session-assets");
     ensureDir(sessionDir);
   }
   return sessionDir;
 }
 electron.app.on("before-quit", () => {
   stopAssetWatch();
-  if (sessionDir && fs.existsSync(sessionDir)) {
-    try {
-      fs.rmSync(sessionDir, { recursive: true, force: true });
-    } catch {
-    }
-  }
 });
 function registerAssetProtocol() {
   electron.protocol.handle("sw-asset", (request) => {
@@ -252,12 +246,7 @@ function registerAssetProtocol() {
           const stream$1 = stream.Readable.toWeb(fs.createReadStream(abs));
           console.log("[sw-asset]  HIT", abs, mime);
           return new Response(stream$1, {
-            headers: {
-              "Content-Type": mime,
-              "Accept-Ranges": "bytes",
-              "Content-Length": String(total),
-              "Cache-Control": "no-cache"
-            }
+            headers: { "Content-Type": mime, "Cache-Control": "no-cache" }
           });
         }
       }
