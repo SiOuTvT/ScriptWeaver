@@ -802,7 +802,7 @@ export default function Timeline() {
   }, [])
 
   return (
-    <div className="flex shrink-0 flex-col mt-2 border-t border-edge/15 bg-canvas relative">
+    <div className="flex shrink-0 flex-col mt-3 bg-surface rounded-lg border border-edge/[0.14] shadow-sm relative">
       <div className="flex items-center justify-between border-b border-edge/10 px-3 py-1.5">
         <span className="text-[12px] font-medium text-fg-muted">时间轴</span>
         <div className="flex items-center gap-2">
