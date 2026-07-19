@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { Pin, X, Image as ImageIcon, Music, AudioLines, Volume2, Megaphone, DoorOpen, VolumeX } from 'lucide-react'
 import type { LineDelta } from '@/core/types'
-import { IconButton, Button } from '@/components/ui'
+import { IconButton } from '@/components/ui'
 
 export default function ScriptDrawer() {
   const deltas = useAppStore((s) => s.draftDeltas)
@@ -126,18 +126,6 @@ export default function ScriptDrawer() {
           })}
         </div>
       </aside>
-
-      {/* 浮动触发按钮（抽屉关闭时显示） */}
-      {!open && (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={toggleOpen}
-        className="absolute top-4 right-4 z-20 rounded-lg bg-surface-2/90 px-3 py-1.5 shadow-2 backdrop-blur"
-      >
-        剧本
-      </Button>
-      )}
     </>
   )
 }

@@ -9,7 +9,7 @@ import {
 } from '@/utils/assetHelpers'
 import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
-import { Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight, Plus, FileText } from 'lucide-react'
 import { Skeleton, IconButton } from '@/components/ui'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
@@ -194,6 +194,8 @@ export default function StagePreview() {
   const characterConfigs = useAppStore((s) => s.characterConfigs)
   const addCharacter = useAppStore((s) => s.addCharacter)
   const draftDeltas = useAppStore((s) => s.draftDeltas)
+  const scriptDrawerOpen = useAppStore((s) => s.scriptDrawerOpen)
+  const toggleScriptDrawer = useAppStore((s) => s.toggleScriptDrawer)
 
   const currentDelta = draftDeltas[selectedIndex] ?? null
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
@@ -586,6 +588,17 @@ export default function StagePreview() {
             <Plus size={15} strokeWidth={2} />
             添加场景
           </button>
+          {!scriptDrawerOpen && (
+            <button
+              type="button"
+              onClick={toggleScriptDrawer}
+              title="打开剧本流"
+              className="ml-1 inline-flex items-center gap-1 rounded-md border border-edge/20 bg-surface-2 px-2 py-1 text-[13px] font-medium text-fg transition-colors hover:bg-surface-hover"
+            >
+              <FileText size={15} strokeWidth={1.75} />
+              剧本
+            </button>
+          )}
         </div>
       </header>
       <div
