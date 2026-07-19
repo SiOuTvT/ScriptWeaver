@@ -629,7 +629,6 @@ export default function StagePreview() {
       if (e.button !== 0) return
       e.preventDefault()
       e.stopPropagation()
-      setSelectedCharId(charId)
       const el = e.currentTarget as HTMLDivElement
       const stageEl = stageRef.current
       if (!stageEl) return
@@ -678,6 +677,7 @@ export default function StagePreview() {
         document.removeEventListener('mouseup', up)
         document.body.style.cursor = ''
         document.body.style.userSelect = ''
+        setSelectedCharId(charId)
         const p = dragPosRef.current
         if (p) {
           const resolvedChar = resolvedStates[selectedIndex]?.characters[charId]
@@ -758,40 +758,58 @@ export default function StagePreview() {
   const bgDataUrl = resolveBackgroundUrl(bgAssetId, assets)
   const bgLoaded = useImageLoaded(bgDataUrl)
 
-  // 从背景图采样主色调，用来填充 contain 的 letterbox 区（比纯色空白自然，也比模糊铺满干净）
-  const [bgTint, setBgTint] = useState<string | undefined>(undefined)
+  // 读取背景图真实宽高比，让舞台 preview 主动「贴合」背景比例：
+  // 比例一致时 contain 即整图铺满、零上下空白，既看得到整张背景、又不会留难看的纯色边。
+  const [bgAspect, setBgAspect] = useState<number | undefined>(undefined)
   useEffect(() => {
     if (!bgDataUrl) {
-      setBgTint(undefined)
+      setBgAspect(undefined)
       return
     }
     let active = true
     const img = new Image()
     img.onload = () => {
-      try {
-        const c = document.createElement('canvas')
-        c.width = 12
-        c.height = 12
-        const ctx = c.getContext('2d')
-        if (!ctx) {
-          if (active) setBgTint(undefined)
-          return
-        }
-        ctx.drawImage(img, 0, 0, 12, 12)
-        const d = ctx.getImageData(0, 0, 12, 12).data
-        let r = 0, g = 0, b = 0, n = 0
-        for (let i = 0; i < d.length; i += 4) {
-          r += d[i]; g += d[i + 1]; b += d[i + 2]; n++
-        }
-        if (active) setBgTint(`rgb(${Math.round(r / n)}, ${Math.round(g / n)}, ${Math.round(b / n)})`)
-      } catch {
-        if (active) setBgTint(undefined)
+      if (active) {
+        const a = img.naturalWidth / img.naturalHeight
+        setBgAspect(a > 0 && isFinite(a) ? a : undefined)
       }
     }
-    img.onerror = () => { if (active) setBgTint(undefined) }
+    img.onerror = () => { if (active) setBgAspect(undefined) }
     img.src = bgDataUrl
     return () => { active = false }
   }, [bgDataUrl])
+  const stageAspect = bgAspect && bgAspect > 0 && isFinite(bgAspect) ? bgAspect : undefined
+
+  // 关键修复：单纯给 stageRef 设 `aspectRatio` + `max-h/max-w-full` 时，其内部全是
+  // absolute 子元素、没有 in-flow 内容撑开，盒子会塌缩成 0×0（全白、立绘/背景全消失）。
+  // 故用 JS 测量居中容器，按背景比例算出「最大内接矩形」直接作为 stageRef 的实际宽高。
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [stageBox, setStageBox] = useState<{ w: number; h: number } | null>(null)
+  useEffect(() => {
+    const c = containerRef.current
+    if (!c) return
+    const compute = () => {
+      const cw = c.clientWidth
+      const ch = c.clientHeight
+      if (!stageAspect || cw <= 0 || ch <= 0) {
+        setStageBox(null)
+        return
+      }
+      let w: number, h: number
+      if (cw / ch > stageAspect) {
+        h = ch
+        w = ch * stageAspect
+      } else {
+        w = cw
+        h = cw / stageAspect
+      }
+      setStageBox((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h }))
+    }
+    compute()
+    const ro = new ResizeObserver(compute)
+    ro.observe(c)
+    return () => ro.disconnect()
+  }, [stageAspect])
 
   if (!state) {
     return (
@@ -816,9 +834,9 @@ export default function StagePreview() {
   const bgSharpStyle: React.CSSProperties = hasBgImage
     ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }
     : {}
-  // letterbox 区用「从背景图采样的主色调」填充：既看到整张背景、又不会上下留刺眼的纯色空白
+  // 舞台已按背景比例约束，contain 即整图铺满零空白；无背景时底色用 surface-3 形成内嵌画布感。
   const bgBaseStyle: React.CSSProperties = hasBgImage
-    ? { background: bgTint ?? stageEmptyBg }
+    ? { background: stageEmptyBg }
     : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? stageEmptyBg) : stageEmptyBg }
 
   return (
@@ -884,21 +902,25 @@ export default function StagePreview() {
         </div>
       </header>
       <div className="relative flex flex-1 overflow-hidden">
-        <div
-          ref={stageRef}
-          className="relative flex-1 overflow-hidden bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDropOnStage}
-          onClick={() => setSelectedCharId(null)}
-        >
+        <div ref={containerRef} className="relative flex flex-1 items-center justify-center overflow-hidden bg-canvas">
+          <div
+            ref={stageRef}
+            className={`relative shrink-0 overflow-hidden bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)] ${
+              stageBox ? '' : 'h-full w-full'
+            }`}
+            style={stageBox ? { width: stageBox.w, height: stageBox.h } : undefined}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDropOnStage}
+            onClick={() => setSelectedCharId(null)}
+          >
         {/* 背景层 */}
         <div
           className="absolute inset-0 animate-fade-in"
           style={bgBaseStyle}
         >
           {hasBgImage && (
-            /* 清晰整图：contain 完整显示，不裁切；letterbox 由底色(bgTint)自然填充 */
+            /* 清晰整图：contain 完整显示，不裁切；舞台已按背景比例约束，故零留白 */
             <div className="absolute inset-0" style={bgSharpStyle} />
           )}
           {bgDataUrl && !bgLoaded && (
@@ -1139,6 +1161,7 @@ export default function StagePreview() {
             />
           ))}
         </div>
+      </div>
       </div>
 
         {/* 立绘编辑侧栏：单击选中立绘后常驻显示，固定在舞台右侧，绝不遮挡舞台；
