@@ -499,20 +499,22 @@ export default function StagePreview() {
 
   if (!state) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-fg-faint">
-        暂无数据
-      </div>
+      <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-md border border-edge/10 shadow-sm overflow-hidden">
+        <div className="flex flex-1 items-center justify-center text-sm text-fg-faint bg-[rgb(var(--c-surface-3))]">
+          暂无数据
+        </div>
+      </main>
     )
   }
 
-  // 空舞台底色归入「canvas 底」层（浅色=干净浅灰 230 / 深色=近黑），与左右白色浮起面板形成清晰分层，不再有孤立的第三种米灰
-  const stageEmptyBg = 'rgb(var(--c-canvas))'
+  // 空舞台演出区占位：用 surface-3（236 输入框底），在白面板外壳内形成清晰的内嵌画布感（255→236 差 19 级，视觉分明但不刺眼）
+  const stageEmptyBg = 'rgb(var(--c-surface-3))'
   const bgStyle: React.CSSProperties = bgDataUrl
     ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? stageEmptyBg) : stageEmptyBg }
 
   return (
-    <main className="relative flex min-w-0 flex-1 flex-col">
+    <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm overflow-hidden">
       <div
         ref={stageRef}
         className="relative flex-1 overflow-hidden rounded-lg border border-edge/16 bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
@@ -688,7 +690,7 @@ export default function StagePreview() {
           className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 p-3 pt-10"
           style={{
             background:
-              'linear-gradient(to top, rgb(var(--c-canvas) / 0.96), rgb(var(--c-canvas) / 0.82) 55%, transparent)',
+              'linear-gradient(to top, rgb(var(--c-surface-3) / 0.96), rgb(var(--c-surface-3) / 0.82) 55%, transparent)',
           }}
         >
           <div className="flex items-start gap-2">

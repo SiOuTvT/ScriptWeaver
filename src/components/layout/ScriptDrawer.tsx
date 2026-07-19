@@ -30,7 +30,7 @@ export default function ScriptDrawer() {
     <>
       {/* 抽屉本体 */}
       <aside
-        className={`${width} ${visibility} flex shrink-0 flex-col bg-surface transition-all duration-300 overflow-hidden`}
+        className={`${width} ${visibility} flex shrink-0 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm transition-all duration-300 overflow-hidden`}
       >
         {/* 头部 */}
         <div className="flex items-center justify-between border-b border-edge/12 px-3 py-2.5">
