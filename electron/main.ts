@@ -191,18 +191,25 @@ function registerAssetProtocol(): void {
 
       for (const root of roots) {
         const assetsDir = path.resolve(root, 'assets')
-        const abs = path.resolve(root, rel)
-        // 防目录穿越：必须在 assets 子树内
-        if (abs !== assetsDir && !abs.startsWith(assetsDir + path.sep)) continue
-        const ext = path.extname(abs).toLowerCase()
-        if (!IMG_EXTS.includes(ext) && !AUDIO_EXTS.includes(ext)) continue
-        if (!fs.existsSync(abs)) continue
+        // 候选路径：优先直接拼 rel（rel 已含 assets/），再退一步尝试在 assets/ 下拼接
+        // （兼容 relativePath 带或不带 assets/ 前缀两种存储格式，杜绝因前缀差异导致 404）
+        const candidates = [
+          path.resolve(root, rel),
+          path.resolve(root, 'assets', rel),
+        ]
+        for (const abs of candidates) {
+          // 防目录穿越：必须在 assets 子树内
+          if (abs !== assetsDir && !abs.startsWith(assetsDir + path.sep)) continue
+          const ext = path.extname(abs).toLowerCase()
+          if (!IMG_EXTS.includes(ext) && !AUDIO_EXTS.includes(ext)) continue
+          if (!fs.existsSync(abs)) continue
 
-        const mime = MIME_MAP[ext] ?? 'application/octet-stream'
-        const stream = Readable.toWeb(fs.createReadStream(abs)) as unknown as ReadableStream
-        return new Response(stream, {
-          headers: { 'Content-Type': mime, 'Cache-Control': 'no-cache' },
-        })
+          const mime = MIME_MAP[ext] ?? 'application/octet-stream'
+          const stream = Readable.toWeb(fs.createReadStream(abs)) as unknown as ReadableStream
+          return new Response(stream, {
+            headers: { 'Content-Type': mime, 'Cache-Control': 'no-cache' },
+          })
+        }
       }
       return new Response('not found', { status: 404 })
     } catch (err) {

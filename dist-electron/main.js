@@ -209,16 +209,21 @@ function registerAssetProtocol() {
       roots.push(getSessionDir());
       for (const root of roots) {
         const assetsDir = path.resolve(root, "assets");
-        const abs = path.resolve(root, rel);
-        if (abs !== assetsDir && !abs.startsWith(assetsDir + path.sep)) continue;
-        const ext = path.extname(abs).toLowerCase();
-        if (!IMG_EXTS.includes(ext) && !AUDIO_EXTS.includes(ext)) continue;
-        if (!fs.existsSync(abs)) continue;
-        const mime = MIME_MAP[ext] ?? "application/octet-stream";
-        const stream$1 = stream.Readable.toWeb(fs.createReadStream(abs));
-        return new Response(stream$1, {
-          headers: { "Content-Type": mime, "Cache-Control": "no-cache" }
-        });
+        const candidates = [
+          path.resolve(root, rel),
+          path.resolve(root, "assets", rel)
+        ];
+        for (const abs of candidates) {
+          if (abs !== assetsDir && !abs.startsWith(assetsDir + path.sep)) continue;
+          const ext = path.extname(abs).toLowerCase();
+          if (!IMG_EXTS.includes(ext) && !AUDIO_EXTS.includes(ext)) continue;
+          if (!fs.existsSync(abs)) continue;
+          const mime = MIME_MAP[ext] ?? "application/octet-stream";
+          const stream$1 = stream.Readable.toWeb(fs.createReadStream(abs));
+          return new Response(stream$1, {
+            headers: { "Content-Type": mime, "Cache-Control": "no-cache" }
+          });
+        }
       }
       return new Response("not found", { status: 404 });
     } catch (err) {
