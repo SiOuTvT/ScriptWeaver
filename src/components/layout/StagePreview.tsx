@@ -9,8 +9,8 @@ import {
 } from '@/utils/assetHelpers'
 import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
-import { Music, AudioLines, Megaphone, Volume2, Image as ImageIcon } from 'lucide-react'
-import { Skeleton } from '@/components/ui'
+import { Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Skeleton, IconButton } from '@/components/ui'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
 
@@ -209,6 +209,28 @@ export default function StagePreview() {
       setLocalDialogue(currentDelta.dialogue ?? '')
     }
   }, [selectedIndex, currentDelta?.line_id])
+
+  // 键盘切换场景：←/↑ 上一场景，→/↓ 下一场景（在输入框内输入时不抢键）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = document.activeElement as HTMLElement | null
+      const tag = (el?.tagName || '').toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || el?.isContentEditable) return
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        if (selectedIndex < resolvedStates.length - 1) {
+          e.preventDefault()
+          selectLine(selectedIndex + 1)
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        if (selectedIndex > 0) {
+          e.preventDefault()
+          selectLine(selectedIndex - 1)
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedIndex, resolvedStates.length, selectLine])
 
   // dialogue 变更 → 防抖写入 store
   const commitDialogue = useCallback((speaker: string, dialogue: string) => {
@@ -529,6 +551,33 @@ export default function StagePreview() {
 
   return (
     <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm overflow-hidden">
+      {/* 场景导航头部：上一/下一 + 当前/总数，键盘 ←/→ 亦可切换 */}
+      <header className="flex shrink-0 items-center justify-between border-b border-edge/10 px-3 py-1.5">
+        <span className="text-[12px] font-medium text-fg">场景预览 · {state.line_id}</span>
+        <div className="flex items-center gap-1">
+          <IconButton
+            variant="ghost"
+            size="sm"
+            disabled={selectedIndex <= 0}
+            icon={<ChevronLeft size={16} strokeWidth={1.75} />}
+            onClick={() => selectLine(selectedIndex - 1)}
+            title="上一个场景"
+            aria-label="上一个场景"
+          />
+          <span className="min-w-[46px] text-center text-[12px] tabular-nums text-fg-subtle">
+            {selectedIndex + 1} / {resolvedStates.length}
+          </span>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            disabled={selectedIndex >= resolvedStates.length - 1}
+            icon={<ChevronRight size={16} strokeWidth={1.75} />}
+            onClick={() => selectLine(selectedIndex + 1)}
+            title="下一个场景"
+            aria-label="下一个场景"
+          />
+        </div>
+      </header>
       <div
         ref={stageRef}
         className="relative flex-1 overflow-hidden rounded-lg border border-edge/16 bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
