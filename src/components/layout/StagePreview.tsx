@@ -505,8 +505,8 @@ export default function StagePreview() {
     )
   }
 
-  // 空舞台底色跟随主题（浅色用柔和舞台灰、深色用近黑），不再硬编码死黑 #111
-  const stageEmptyBg = 'rgb(var(--c-stage))'
+  // 空舞台底色归入「canvas 底」层（浅色=干净浅灰 230 / 深色=近黑），与左右白色浮起面板形成清晰分层，不再有孤立的第三种米灰
+  const stageEmptyBg = 'rgb(var(--c-canvas))'
   const bgStyle: React.CSSProperties = bgDataUrl
     ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? stageEmptyBg) : stageEmptyBg }
@@ -688,7 +688,7 @@ export default function StagePreview() {
           className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 p-3 pt-10"
           style={{
             background:
-              'linear-gradient(to top, rgb(var(--c-stage) / 0.96), rgb(var(--c-stage) / 0.82) 55%, transparent)',
+              'linear-gradient(to top, rgb(var(--c-canvas) / 0.96), rgb(var(--c-canvas) / 0.82) 55%, transparent)',
           }}
         >
           <div className="flex items-start gap-2">
