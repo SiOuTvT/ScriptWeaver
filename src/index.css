@@ -73,8 +73,6 @@
   --c-surface-hover: 48 54 65;    /* hover */
   --c-surface-active: 60 67 80;   /* 选中 */
 
-  --c-stage: 17 17 17;            /* 舞台演出区底：深墨近黑，深色下衬托立绘 */
-
   --c-edge: 255 255 255;          /* 边框色相 */
   --c-edge-strong: 255 255 255;
 
