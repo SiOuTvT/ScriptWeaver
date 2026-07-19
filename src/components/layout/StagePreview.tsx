@@ -659,9 +659,14 @@ export default function StagePreview() {
         const rect = stageEl.getBoundingClientRect()
         let rx = (ev.clientX - rect.left) / rect.width - offsetX
         let ry = (ev.clientY - rect.top) / rect.height - offsetY
-        // 边界夹紧：整张立绘永远完整落在舞台内（绝不被 overflow-hidden 裁切而「变小」）
-        rx = clamp(rx, halfWFrac, 1 - halfWFrac)
-        ry = clamp(ry, fullHFrac, 1)
+        // 边界处理：立绘比舞台窄/矮时，保持整张完整不裁切；
+        // 立绘比舞台宽/高时（尤其编辑面板打开挤窄舞台后）放宽边界允许自由移动，
+        // 溢出由 overflow 自然裁切——否则 halfWFrac>=0.5 会把 clamp 区间压成反向、立绘被锁死（左不能、右不能）。
+        const minX = halfWFrac < 0.5 ? halfWFrac : 0
+        const maxX = halfWFrac < 0.5 ? 1 - halfWFrac : 1
+        rx = clamp(rx, minX, maxX)
+        const minY = fullHFrac < 1 ? fullHFrac : 0
+        ry = clamp(ry, minY, 1)
         // 锁定单轴：拖动时只改另一轴，被锁定轴维持抓取起始值（位移与缩放解耦）
         if (lockAxisRef.current === 'x') ry = startY
         else if (lockAxisRef.current === 'y') rx = startX
@@ -758,59 +763,6 @@ export default function StagePreview() {
   const bgDataUrl = resolveBackgroundUrl(bgAssetId, assets)
   const bgLoaded = useImageLoaded(bgDataUrl)
 
-  // 读取背景图真实宽高比，让舞台 preview 主动「贴合」背景比例：
-  // 比例一致时 contain 即整图铺满、零上下空白，既看得到整张背景、又不会留难看的纯色边。
-  const [bgAspect, setBgAspect] = useState<number | undefined>(undefined)
-  useEffect(() => {
-    if (!bgDataUrl) {
-      setBgAspect(undefined)
-      return
-    }
-    let active = true
-    const img = new Image()
-    img.onload = () => {
-      if (active) {
-        const a = img.naturalWidth / img.naturalHeight
-        setBgAspect(a > 0 && isFinite(a) ? a : undefined)
-      }
-    }
-    img.onerror = () => { if (active) setBgAspect(undefined) }
-    img.src = bgDataUrl
-    return () => { active = false }
-  }, [bgDataUrl])
-  const stageAspect = bgAspect && bgAspect > 0 && isFinite(bgAspect) ? bgAspect : undefined
-
-  // 关键修复：单纯给 stageRef 设 `aspectRatio` + `max-h/max-w-full` 时，其内部全是
-  // absolute 子元素、没有 in-flow 内容撑开，盒子会塌缩成 0×0（全白、立绘/背景全消失）。
-  // 故用 JS 测量居中容器，按背景比例算出「最大内接矩形」直接作为 stageRef 的实际宽高。
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [stageBox, setStageBox] = useState<{ w: number; h: number } | null>(null)
-  useEffect(() => {
-    const c = containerRef.current
-    if (!c) return
-    const compute = () => {
-      const cw = c.clientWidth
-      const ch = c.clientHeight
-      if (!stageAspect || cw <= 0 || ch <= 0) {
-        setStageBox(null)
-        return
-      }
-      let w: number, h: number
-      if (cw / ch > stageAspect) {
-        h = ch
-        w = ch * stageAspect
-      } else {
-        w = cw
-        h = cw / stageAspect
-      }
-      setStageBox((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h }))
-    }
-    compute()
-    const ro = new ResizeObserver(compute)
-    ro.observe(c)
-    return () => ro.disconnect()
-  }, [stageAspect])
-
   if (!state) {
     return (
       <main
@@ -828,13 +780,17 @@ export default function StagePreview() {
 
   // 空舞台演出区占位：用 surface-3（236 输入框底），在白面板外壳内形成清晰的内嵌画布感（255→236 差 19 级，视觉分明但不刺眼）
   const stageEmptyBg = 'rgb(var(--c-surface-3))'
-  // 背景图：清晰整图用 contain 完整显示（不裁切）；letterbox 的空白区用「同图模糊铺满」填充，
-  // 既看得到整张背景、又不会上下留难看的纯色空白。
   const hasBgImage = !!bgDataUrl
+  // 清晰整图：contain 完整显示、不裁切（看得到整张背景）。
   const bgSharpStyle: React.CSSProperties = hasBgImage
     ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }
     : {}
-  // 舞台已按背景比例约束，contain 即整图铺满零空白；无背景时底色用 surface-3 形成内嵌画布感。
+  // 模糊铺满：cover 填满整块并放大模糊，专门填充 contain 的上下/左右留白区，
+  // 比纯色空白自然、比裁切清爽（用户指定的「上下模糊」方案）。
+  const bgBlurStyle: React.CSSProperties = hasBgImage
+    ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(26px)', transform: 'scale(1.15)' }
+    : {}
+  // 兜底底色：无背景图时用 surface-3 形成内嵌画布感。
   const bgBaseStyle: React.CSSProperties = hasBgImage
     ? { background: stageEmptyBg }
     : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? stageEmptyBg) : stageEmptyBg }
@@ -902,26 +858,26 @@ export default function StagePreview() {
         </div>
       </header>
       <div className="relative flex flex-1 overflow-hidden">
-        <div ref={containerRef} className="relative flex flex-1 items-center justify-center overflow-hidden bg-canvas">
-          <div
-            ref={stageRef}
-            className={`relative shrink-0 overflow-hidden bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)] ${
-              stageBox ? '' : 'h-full w-full'
-            }`}
-            style={stageBox ? { width: stageBox.w, height: stageBox.h } : undefined}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDropOnStage}
-            onClick={() => setSelectedCharId(null)}
-          >
+        <div
+          ref={stageRef}
+          className="relative flex-1 overflow-hidden bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDropOnStage}
+          onClick={() => setSelectedCharId(null)}
+        >
         {/* 背景层 */}
         <div
           className="absolute inset-0 animate-fade-in"
           style={bgBaseStyle}
         >
           {hasBgImage && (
-            /* 清晰整图：contain 完整显示，不裁切；舞台已按背景比例约束，故零留白 */
-            <div className="absolute inset-0" style={bgSharpStyle} />
+            <>
+              {/* 模糊铺满：填充 contain 的上下/左右留白区，比纯色空白自然 */}
+              <div className="absolute inset-0" style={bgBlurStyle} />
+              {/* 清晰整图：contain 完整显示，不裁切；留白区由下方模糊层透出 */}
+              <div className="absolute inset-0" style={bgSharpStyle} />
+            </>
           )}
           {bgDataUrl && !bgLoaded && (
             <Skeleton className="absolute inset-0" />
@@ -1161,7 +1117,6 @@ export default function StagePreview() {
             />
           ))}
         </div>
-      </div>
       </div>
 
         {/* 立绘编辑侧栏：单击选中立绘后常驻显示，固定在舞台右侧，绝不遮挡舞台；
