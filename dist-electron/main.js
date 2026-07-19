@@ -228,11 +228,9 @@ function registerAssetProtocol() {
               end = total - 1;
             }
             const sliceLen = end - start + 1;
-            const stream2 = stream.Readable.toWeb(
-              fs.createReadStream(abs, { start, end })
-            );
+            const slice = fs.readFileSync(abs, { start, end });
             console.log("[sw-asset]  HIT(range)", abs, start, "-", end, "/", total);
-            return new Response(stream2, {
+            return new Response(new Uint8Array(slice), {
               status: 206,
               headers: {
                 "Content-Type": mime,

@@ -392,10 +392,14 @@ export default function AssetManager() {
                 return (
                   <div
                     key={asset.id}
+                    draggable
+                    onDragStart={(e) => handleAssetDragStart(e, asset)}
+                    onDragEnd={handleAssetDragEnd}
                     onContextMenu={(e) => handleContextMenu(e, asset)}
-                    className={`group relative aspect-square overflow-hidden rounded-md border border-edge/12 transition-all hover:border-edge/25 hover:shadow-2 ${
+                    className={`group relative aspect-square cursor-grab overflow-hidden rounded-md border border-edge/12 transition-all hover:border-edge/25 hover:shadow-2 active:cursor-grabbing ${
                       isSprite ? 'checkerboard' : 'bg-surface-2'
                     }`}
+                    title="拖拽到舞台或时间轴使用"
                   >
                     {imgSrc ? (
                       isSprite ? (
