@@ -221,11 +221,12 @@ function registerAssetProtocol(): void {
               end = total - 1
             }
             const sliceLen = end - start + 1
-            const stream = Readable.toWeb(
-              fs.createReadStream(abs, { start, end })
-            ) as unknown as ReadableStream
+            // 注意：Range 响应必须用「整段读入内存的定长 body」，不能走流式 ReadableStream。
+            // Electron 的 protocol.handle 对「流式 206」支持有坑，会导致 <audio> 收不全数据而
+            // 报 MEDIA_ELEMENT_ERROR / 播放无声；图片走的是整文件 200，故一直正常。
+            const slice = fs.readFileSync(abs, { start, end })
             console.log('[sw-asset]  HIT(range)', abs, start, '-', end, '/', total)
-            return new Response(stream, {
+            return new Response(new Uint8Array(slice), {
               status: 206,
               headers: {
                 'Content-Type': mime,
