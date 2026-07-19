@@ -1,44 +1,37 @@
 
-> scriptweaver@0.1.0 dev:electron
-> concurrently -k "vite" "wait-on http://localhost:5173 && electron ."
+> scriptweaver@0.1.0 dev
+> vite
 
-(node:48920) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
-(Use `node --trace-deprecation ...` to show where the warning was created)
-[0] [36mvite v5.4.21 [32mbuilding for development...[36m[39m
-[0] [36m
-[0] watching for file changes...[39m
-[0] [36mvite v5.4.21 [32mbuilding for development...[36m[39m
-[0] [36m
-[0] watching for file changes...[39m
-[0] [36m
-[0] build started...[39m
-[0] [36m
-[0] build started...[39m
-[0] 
-[0]   [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m1110[22m[2m[0m ms[22m
-[0] 
-[0]   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
-[0] [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
-[0] transforming...
-[0] transforming...
-[0] [32m✓[39m 1 modules transformed.
-[0] rendering chunks...
-[0] computing gzip size...
-[0] [32m✓[39m 2 modules transformed.
-[0] [2mdist-electron/[22m[36mpreload.js  [39m[1m[2m2.58 kB[22m[1m[22m[2m │ gzip: 1.27 kB[22m
-[0] [36mbuilt in 2625ms.[39m
-[0] rendering chunks...
-[0] computing gzip size...
-[0] [2mdist-electron/[22m[36mmain.js  [39m[1m[2m17.26 kB[22m[1m[22m[2m │ gzip: 5.17 kB[22m
-[0] [36mbuilt in 2950ms.[39m
-[1] 
-[0] 
-[0] [4540:0719/120647.660:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
-[0] [4540:0719/120647.661:ERROR:disk_cache.cc(208)] Unable to create cache
-[0] [4540:0719/120647.661:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
-[0] [4540:0719/120649.429:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[0] [4540:0719/120649.429:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[0] ����: û���ҵ����� "4540"��
-[0] vite exited with code 0
---> Sending SIGTERM to other processes..
-[1] wait-on http://localhost:5173 && electron . exited with code 1
+[36mvite v5.4.21 [32mbuilding for development...[36m[39m
+[36m
+watching for file changes...[39m
+[36mvite v5.4.21 [32mbuilding for development...[36m[39m
+[36m
+watching for file changes...[39m
+[36m
+build started...[39m
+[36m
+build started...[39m
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m827[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+[2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+transforming...
+transforming...
+[32m✓[39m 1 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist-electron/[22m[36mpreload.js  [39m[1m[2m2.58 kB[22m[1m[22m[2m │ gzip: 1.27 kB[22m
+[36mbuilt in 669ms.[39m
+[32m✓[39m 2 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist-electron/[22m[36mmain.js  [39m[1m[2m17.26 kB[22m[1m[22m[2m │ gzip: 5.17 kB[22m
+[36mbuilt in 726ms.[39m
+
+[51352:0719/132149.651:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[51352:0719/132149.651:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[51352:0719/132226.048:ERROR:CONSOLE(1)] "Uncaught (in promise) TypeError: Failed to fetch", source: devtools://devtools/bundled/panels/elements/elements.js (1)
+[2m13:24:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /src/index.css[22m
+[2m13:24:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /src/index.css[22m

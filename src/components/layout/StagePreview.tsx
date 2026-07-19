@@ -290,9 +290,9 @@ export default function StagePreview() {
       let idx = selectedIndex
       let curState = state
       if (!curState) {
-        get().insertDeltaAt(0)
+        useAppStore.getState().insertDeltaAt(0)
         idx = 0
-        curState = get().getResolvedState(0)
+        curState = useAppStore.getState().getResolvedState(0)
         if (!curState) return
       }
 
