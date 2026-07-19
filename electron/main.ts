@@ -224,7 +224,9 @@ function registerAssetProtocol(): void {
             // 注意：Range 响应必须用「整段读入内存的定长 body」，不能走流式 ReadableStream。
             // Electron 的 protocol.handle 对「流式 206」支持有坑，会导致 <audio> 收不全数据而
             // 报 MEDIA_ELEMENT_ERROR / 播放无声；图片走的是整文件 200，故一直正常。
-            const slice = fs.readFileSync(abs, { start, end })
+            // 关键：fs.readFileSync 的 end 是排他性的，HTTP Range 的 end 是包含性的，
+            // 必须 +1 否则 body 比 Content-Length 少 1 字节 → 浏览器一直等 → 音频卡死。
+            const slice = fs.readFileSync(abs, { start, end: end + 1 })
             console.log('[sw-asset]  HIT(range)', abs, start, '-', end, '/', total)
             return new Response(new Uint8Array(slice), {
               status: 206,

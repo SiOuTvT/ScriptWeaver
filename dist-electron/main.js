@@ -228,7 +228,7 @@ function registerAssetProtocol() {
               end = total - 1;
             }
             const sliceLen = end - start + 1;
-            const slice = fs.readFileSync(abs, { start, end });
+            const slice = fs.readFileSync(abs, { start, end: end + 1 });
             console.log("[sw-asset]  HIT(range)", abs, start, "-", end, "/", total);
             return new Response(new Uint8Array(slice), {
               status: 206,

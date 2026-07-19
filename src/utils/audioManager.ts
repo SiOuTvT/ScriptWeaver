@@ -49,9 +49,11 @@ function notify(): void {
 function ensureEl(kind: 'bgm' | 'ambient'): HTMLAudioElement {
   const el = kind === 'bgm' ? bgmEl : ambientEl
   if (el) return el
-  const created = new Audio()
+  const created = document.createElement('audio')
+  created.style.display = 'none'
   created.loop = true
   created.volume = kind === 'bgm' ? 0.6 : 0.4
+  document.body.appendChild(created)
   if (kind === 'bgm') bgmEl = created
   else ambientEl = created
   return created
@@ -79,6 +81,8 @@ function stopOneShots(): void {
   for (const el of oneShots) {
     try {
       el.pause()
+      el.removeAttribute('src')
+      if (el.parentNode) el.parentNode.removeChild(el)
     } catch {
       /* noop */
     }
@@ -119,7 +123,9 @@ export async function playAudioPreview(asset: AssetItem): Promise<boolean> {
 
   if (cat === 'bgm' || cat === 'ambient') {
     const el = ensureEl(cat)
+    // 先挂载再设 src，确保媒体管线就绪
     el.src = src
+    el.load()
     if (cat === 'bgm') {
       el.volume = 0.6
       bgmId = asset.id
@@ -141,29 +147,35 @@ export async function playAudioPreview(asset: AssetItem): Promise<boolean> {
   }
 
   // se / voice：一次性通道，与常驻通道自然重叠
-  const el = new Audio(src)
+  const el = document.createElement('audio')
+  el.style.display = 'none'
+  el.preload = 'auto'
   el.volume = 0.7
+  // 关键：先挂 DOM 再设 src，否则 Electron 自定义协议下可能加载失败
+  document.body.appendChild(el)
+  el.src = src
+  el.load()
   oneShotIds.add(asset.id)
   oneShots.add(el)
-  el.onended = () => {
+  let cleaned = false
+  const cleanup = () => {
+    if (cleaned) return
+    cleaned = true
+    try { el.removeAttribute('src') } catch { /* noop */ }
+    if (el.parentNode) el.parentNode.removeChild(el)
     oneShots.delete(el)
     oneShotIds.delete(asset.id)
     notify()
   }
-  el.onerror = () => {
-    oneShots.delete(el)
-    oneShotIds.delete(asset.id)
-    notify()
-  }
+  el.onended = cleanup
+  el.onerror = cleanup
   try {
     await el.play()
     notify()
     return true
   } catch (err) {
     console.error(`[AudioPreview] 播放失败: ${asset.name}`, err)
-    oneShots.delete(el)
-    oneShotIds.delete(asset.id)
-    notify()
+    cleanup()
     return false
   }
 }
