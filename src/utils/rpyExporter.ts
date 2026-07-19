@@ -57,7 +57,7 @@ type RpyNode =
   | { kind: 'label'; name: string }
   | { kind: 'blank' }
   | { kind: 'scene'; image: string; transition?: string }
-  | { kind: 'show'; charId: string; exprId: string; at: AtClause; zorder: number }
+  | { kind: 'show'; charId: string; exprId: string; at: AtClause; zorder: number; zoom?: number }
   | { kind: 'hide'; charId: string }
   | { kind: 'playMusic'; file: string; fadein?: number; loop: boolean }
   | { kind: 'playAmbient'; file: string; fadein?: number; loop: boolean }
@@ -347,7 +347,7 @@ function compileToNodes(
   let currentBg: string | null = null
   let currentBgm: string | null = null
   let currentAmbient: string | null = null
-  let currentChars = new Map<string, { exprId: string; at: AtClause; zorder: number }>()
+  let currentChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number }>()
 
   for (let i = 0; i < resolvedStates.length; i++) {
     const state = resolvedStates[i]
@@ -365,12 +365,13 @@ function compileToNodes(
     }
 
     // ---- 角色：先收集本行完整状态 ----
-    const newChars = new Map<string, { exprId: string; at: AtClause; zorder: number }>()
+    const newChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number }>()
     for (const [charId, c] of Object.entries(state.characters)) {
       newChars.set(charId, {
         exprId: c.sprite_id,
         at: resolveAt(c, st),
         zorder: computeZorder(c, st),
+        zoom: c.scale != null && c.scale !== 1 ? round3(c.scale) : undefined,
       })
     }
     // 退场（上一行有、本行无）
@@ -381,9 +382,9 @@ function compileToNodes(
     for (const [charId, nc] of newChars) {
       const prev = currentChars.get(charId)
       const changed =
-        !prev || prev.exprId !== nc.exprId || !atEqual(prev.at, nc.at) || prev.zorder !== nc.zorder
+        !prev || prev.exprId !== nc.exprId || !atEqual(prev.at, nc.at) || prev.zorder !== nc.zorder || prev.zoom !== nc.zoom
       if (changed) {
-        block.push({ kind: 'show', charId, exprId: nc.exprId, at: nc.at, zorder: nc.zorder })
+        block.push({ kind: 'show', charId, exprId: nc.exprId, at: nc.at, zorder: nc.zorder, zoom: nc.zoom })
       }
     }
 
@@ -475,8 +476,11 @@ function serializeNode(n: RpyNode): string {
   switch (n.kind) {
     case 'scene':
       return n.transition ? `scene ${n.image} with ${n.transition}` : `scene ${n.image}`
-    case 'show':
-      return `show ${n.charId} ${n.exprId} at ${serializeAt(n.at)} zorder ${n.zorder}`
+    case 'show': {
+      let at = serializeAt(n.at)
+      if (n.zoom != null && n.zoom !== 1) at += `, zoom(${n.zoom})`
+      return `show ${n.charId} ${n.exprId} at ${at} zorder ${n.zorder}`
+    }
     case 'hide':
       return `hide ${n.charId}`
     case 'playMusic': {

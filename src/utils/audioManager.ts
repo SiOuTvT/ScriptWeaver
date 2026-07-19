@@ -59,7 +59,7 @@ function ensureEl(kind: 'bgm' | 'ambient'): HTMLAudioElement {
   return created
 }
 
-function stopBgm(): void {
+export function stopBgm(): void {
   if (bgmEl) {
     bgmEl.pause()
     bgmEl.currentTime = 0
@@ -68,7 +68,7 @@ function stopBgm(): void {
   notify()
 }
 
-function stopAmbient(): void {
+export function stopAmbient(): void {
   if (ambientEl) {
     ambientEl.pause()
     ambientEl.currentTime = 0
@@ -77,7 +77,7 @@ function stopAmbient(): void {
   notify()
 }
 
-function stopOneShots(): void {
+export function stopOneShots(): void {
   for (const el of oneShots) {
     try {
       el.pause()

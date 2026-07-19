@@ -93,6 +93,12 @@ export interface AudioTrackInstruction {
   fade_in_ms?: number
   fade_out_ms?: number
   loop: boolean
+  /**
+   * 相对该段落（行）起点的切入延迟（毫秒）。
+   * 用于「台词播放到第 N 秒才切入 BGM/环境音」之类的段落内精确时序。
+   * 默认 0 = 随该段立即切入。仅作用于常驻通道的起始时刻。
+   */
+  offset_ms?: number
 }
 
 /**
@@ -122,6 +128,12 @@ export interface CharacterDelta {
    */
   pos_x?: number
   pos_y?: number
+  /**
+   * 缩放比例（独立变量，默认 1，即原始尺寸）。
+   * 与 pos_x/pos_y 完全解耦：缩放仅改变立绘自身大小，不影响其在舞台中的落点。
+   * 渲染层以「底部中心」为缩放原点，确保放大/缩小时立绘脚底锚定、位置零漂移。
+   */
+  scale?: number
   /** 过渡效果 */
   transition?: string
   /**
@@ -164,6 +176,13 @@ export interface LineDelta {
     ambient: TrackValue
     se: string[]
     voice: string | null
+    /**
+     * 语音相对该段落起点的切入延迟（毫秒）。
+     * 一次性事件（voice/se）同样支持段落内精确偏移。
+     */
+    voice_offset_ms?: number
+    /** 音效（se）逐项相对该段落起点的切入延迟（毫秒），key 为 asset_id */
+    se_offset_ms?: Record<string, number>
   }
 
   /** AI 生成的元数据（阶段四使用，当前预留） */
@@ -192,6 +211,8 @@ export interface ResolvedCharacterState {
   /** 自由微调坐标（归一化 0-1）；未设置时按 position_slot 落点 */
   pos_x?: number
   pos_y?: number
+  /** 缩放比例（独立变量，默认 1）；与位置解耦 */
+  scale?: number
   transition?: string
 }
 
@@ -200,6 +221,8 @@ export interface ResolvedAudioState {
   ambient: AudioTrackInstruction | null
   se: string[]
   voice: string | null
+  voice_offset_ms?: number
+  se_offset_ms?: Record<string, number>
 }
 
 /**

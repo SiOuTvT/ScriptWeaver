@@ -3,6 +3,7 @@ import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import type { ResolvedLineState, LineDelta, CharacterConfig } from '@/core/types'
 import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
+import { estimateLineDurationMs } from '@/utils/playback'
 import {
   DRAG_MIME,
   getDragCache,
@@ -775,6 +776,57 @@ export default function Timeline() {
     [selectedSpan, total, commitResize],
   )
 
+  // ========== 段落内音频偏移拖拽（SE / Voice 在单行内部的时间轴定位） ==========
+  const seDragRef = useRef<{ lineIndex: number; kind: 'se' | 'voice'; id: string; offset: number } | null>(null)
+  const [seDrag, setSeDrag] = useState<{ lineIndex: number; kind: 'se' | 'voice'; id: string; offset: number } | null>(null)
+
+  /**
+   * 在单个 cell（即一行）内水平拖拽音频块，换算为相对该段落起点的切入延迟（offset_ms）。
+   * 行内时间轴总时长由台词字数估算（estimateLineDurationMs），与 Auto 播放严格一致。
+   */
+  const handleAudioOffsetDragStart = useCallback(
+    (lineIndex: number, kind: 'se' | 'voice', id: string, e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const rowEl = trackRowRefs.current.get(kind === 'se' ? 'se' : 'voice')
+      if (!rowEl) return
+      const rect = rowEl.getBoundingClientRect()
+      const cellW = rect.width / total
+      const duration = estimateLineDurationMs(resolvedStates[lineIndex]?.dialogue)
+      document.body.style.cursor = 'ew-resize'
+      document.body.style.userSelect = 'none'
+
+      const move = (ev: MouseEvent) => {
+        const x = clamp(ev.clientX - rect.left - lineIndex * cellW, 0, cellW)
+        const offset = Math.round((x / cellW) * duration)
+        seDragRef.current = { lineIndex, kind, id, offset }
+        setSeDrag({ lineIndex, kind, id, offset })
+      }
+      const up = () => {
+        document.removeEventListener('mousemove', move)
+        document.removeEventListener('mouseup', up)
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+        const d = seDragRef.current
+        seDragRef.current = null
+        setSeDrag(null)
+        if (!d) return
+        updateDeltaAt(d.lineIndex, (prev) => {
+          const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
+          if (d.kind === 'se') {
+            audio.se_offset_ms = { ...(prev.audio.se_offset_ms ?? {}), [d.id]: d.offset }
+          } else {
+            audio.voice_offset_ms = d.offset
+          }
+          return { ...prev, audio }
+        })
+      }
+      document.addEventListener('mousemove', move)
+      document.addEventListener('mouseup', up)
+    },
+    [total, resolvedStates, updateDeltaAt],
+  )
+
   // 方向键微移监听（输入框聚焦时不拦截）
   useEffect(() => {
     if (!selectedSpan) return
@@ -960,12 +1012,26 @@ export default function Timeline() {
                 {/* SE 点事件：按素材专属色着色 */}
                 {track.id === 'se' && seEvents.map((ev) => {
                   const seColor = resolveAssetColor(ev.items[0], assets)
+                  const duration = estimateLineDurationMs(resolvedStates[ev.index]?.dialogue)
+                  const baseOffset = resolvedStates[ev.index]?.audio.se_offset_ms?.[ev.items[0]] ?? 0
+                  const offset = seDrag?.kind === 'se' && seDrag.lineIndex === ev.index && seDrag.id === ev.items[0] ? seDrag.offset : baseOffset
+                  const cellLeftPct = (ev.index / total) * 100
+                  const cellWidthPct = (1 / total) * 100
+                  const leftPct = cellLeftPct + (offset / Math.max(duration, 1)) * cellWidthPct
                   return (
-                  <div key={`se-${ev.index}`}
-                    className="group pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
-                    style={{ left: total > 0 ? `${(ev.index / total) * 100}%` : '0%', width: total > 0 ? `${(1 / total) * 100}%` : '0%', minWidth: 30, backgroundColor: seColor + '22', borderLeftColor: seColor }}
-                    title={ev.items.map(assetName).join(', ')}>
-                    <span className="truncate">{assetName(ev.items[0])}</span>
+                  <div
+                    key={`se-${ev.index}-${ev.items[0]}`}
+                    className="group absolute top-1 bottom-1 z-10 flex items-center"
+                    style={{ left: `${leftPct}%`, width: `clamp(30px, ${cellWidthPct}%, 64px)` }}
+                    title={`${ev.items.map(assetName).join(', ')}（第 ${Math.round(offset)}ms 切入）`}
+                  >
+                    <div
+                      onMouseDown={(e) => handleAudioOffsetDragStart(ev.index, 'se', ev.items[0], e)}
+                      className="flex h-full min-w-[28px] cursor-ew-resize items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
+                      style={{ backgroundColor: seColor + '33', borderLeftColor: seColor }}
+                    >
+                      <span className="truncate">{assetName(ev.items[0])}</span>
+                    </div>
                     <button
                       type="button"
                       onMouseDown={(e) => e.stopPropagation()}
@@ -994,18 +1060,24 @@ export default function Timeline() {
                       ? resolveCharColor(charId, characterConfigs)
                       : '#a855f7'
                   const who = charId ? charDisplayName(charId) : (sp ?? '')
+                  const duration = estimateLineDurationMs(resolvedStates[ev.index]?.dialogue)
+                  const baseOffset = resolvedStates[ev.index]?.audio.voice_offset_ms ?? 0
+                  const offset = seDrag?.kind === 'voice' && seDrag.lineIndex === ev.index ? seDrag.offset : baseOffset
+                  const cellLeftPct = (ev.index / total) * 100
+                  const cellWidthPct = (1 / total) * 100
+                  const leftPct = cellLeftPct + (offset / Math.max(duration, 1)) * cellWidthPct
                   return (
-                    <div key={`voice-${ev.index}`}
-                      className="group pointer-events-none absolute top-1 bottom-1 flex items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
-                      style={{
-                        left: total > 0 ? `${(ev.index / total) * 100}%` : '0%',
-                        width: total > 0 ? `${(1 / total) * 100}%` : '0%',
-                        minWidth: 30,
-                        backgroundColor: vColor + '22',
-                        borderLeftColor: vColor,
-                      }}
-                      title={`${who ? who + ' ' : ''}${assetName(ev.voice)}`}>
-                      <span className="truncate">{who || assetName(ev.voice)}</span>
+                    <div
+                      key={`voice-${ev.index}`}
+                      className="group absolute top-1 bottom-1 z-10 flex items-center"
+                      style={{ left: `${leftPct}%`, width: `clamp(30px, ${cellWidthPct}%, 64px)` }}
+                      title={`${who ? who + ' ' : ''}${assetName(ev.voice)}（第 ${Math.round(offset)}ms 切入）`}>
+                      <div
+                        onMouseDown={(e) => handleAudioOffsetDragStart(ev.index, 'voice', ev.voice, e)}
+                        className="flex h-full min-w-[28px] cursor-ew-resize items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
+                        style={{ backgroundColor: vColor + '33', borderLeftColor: vColor }}>
+                        <span className="truncate">{who || assetName(ev.voice)}</span>
+                      </div>
                       <button
                         type="button"
                         onMouseDown={(e) => e.stopPropagation()}
