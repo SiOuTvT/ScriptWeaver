@@ -313,7 +313,7 @@ export default function StagePreview() {
 
       // 空项目时自动创建首行再接受素材放置
       let idx = selectedIndex
-      let curState = state
+      let curState: ResolvedLineState | null = state
       if (!curState) {
         useAppStore.getState().insertDeltaAt(0)
         idx = 0
