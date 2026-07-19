@@ -33,9 +33,11 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  perMachine: false
+  perMachine: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
+  # 高分屏适配：安装向导初始化前标记进程为 DPI 感知，避免 Windows 位图拉伸导致模糊/字体毛边
+  include: build/installer.nsh
 
 # ===================== macOS =====================
 # 架构不在此处声明：electron-builder 默认按构建平台输出标准架构。

@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import type { LineDelta, ResolvedLineState, AssetItem, CharacterConfig } from '@/core/types'
 import { reduceLines } from '@/core/reducer'
-import { MOCK_DELTAS, MOCK_ASSETS, MOCK_CHARACTERS } from '@/data/mockDeltas'
 import { DEFAULT_ACCENT } from '@/utils/themeColor'
 
 // 生成唯一 ID
@@ -144,11 +143,11 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  // ---- 数据（初始化载入 mock） ----
-  draftDeltas: MOCK_DELTAS,
-  resolvedStates: reduceLines(MOCK_DELTAS),
-  assets: MOCK_ASSETS,
-  characterConfigs: MOCK_CHARACTERS,
+  // ---- 数据（首发空白版：首次打开即为纯净空项目，无预载演示内容） ----
+  draftDeltas: [],
+  resolvedStates: reduceLines([]),
+  assets: [],
+  characterConfigs: [],
   projectRoot: null,
 
   // ---- 选中 ----
