@@ -11,7 +11,7 @@ import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import {
   Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight,
-  Plus, FileText, Play, Pause, Copy, X,
+  Plus, FileText, Play, Pause, Copy, X, Pencil,
 } from 'lucide-react'
 import { Skeleton, IconButton } from '@/components/ui'
 import { PRESET_SLOTS, getPresetSlot } from '@/core/positionSlots'
@@ -206,8 +206,8 @@ export default function StagePreview() {
   const [localSpeaker, setLocalSpeaker] = useState(currentDelta?.speaker ?? '')
   const [localDialogue, setLocalDialogue] = useState(currentDelta?.dialogue ?? '')
   const dialogueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // 台词栏聚焦态：激活输入时给予下层立绘物理安全边距并高亮，杜绝误触
-  const [inputFocused, setInputFocused] = useState(false)
+  // 台词栏激活态：默认隐藏，点击悬浮按钮或快捷键「I」才弹出半透明浮层，避免常驻挡视线
+  const [inputActive, setInputActive] = useState(false)
 
   // 选中行变化 → 同步本地状态
   useEffect(() => {
@@ -238,6 +238,23 @@ export default function StagePreview() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedIndex, resolvedStates.length, selectLine])
+
+  // 快捷键：I 切换台词浮层，Esc 关闭（输入框聚焦时不拦截原生行为）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = document.activeElement as HTMLElement | null
+      const tag = (el?.tagName || '').toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || el?.isContentEditable) return
+      if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault()
+        setInputActive((v) => !v)
+      } else if (e.key === 'Escape') {
+        setInputActive(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // dialogue 变更 → 防抖写入 store
   const commitDialogue = useCallback((speaker: string, dialogue: string) => {
@@ -823,14 +840,15 @@ export default function StagePreview() {
           )}
         </div>
       </header>
-      <div
-        ref={stageRef}
-        className="relative flex-1 overflow-hidden bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDropOnStage}
-        onClick={() => setSelectedCharId(null)}
-      >
+      <div className="relative flex flex-1 overflow-hidden">
+        <div
+          ref={stageRef}
+          className="relative flex-1 overflow-hidden bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDropOnStage}
+          onClick={() => setSelectedCharId(null)}
+        >
         {/* 背景层 */}
         <div
           className="absolute inset-0 animate-fade-in"
@@ -957,99 +975,7 @@ export default function StagePreview() {
         )}
 
 
-        {/* 立绘编辑面板：选中立绘后浮动出现，定点 / 复制 / 锁定 / 缩放 */}
-        {selectedCharId && state.characters[selectedCharId] && (
-          <div className="absolute left-2 top-16 z-30 w-44 rounded-lg border border-edge/15 bg-surface/95 p-2.5 shadow-2 backdrop-blur-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-[12px] font-semibold text-fg">
-                立绘编辑 · {getDisplayName(selectedCharId)}
-              </span>
-              <button
-                type="button"
-                onClick={() => setSelectedCharId(null)}
-                className="rounded p-0.5 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
-                title="关闭"
-              >
-                <X size={13} strokeWidth={2} />
-              </button>
-            </div>
 
-            {/* 一键定点（五档经典站位） */}
-            <div className="mb-2">
-              <div className="mb-1 text-[11px] text-fg-subtle">定点</div>
-              <div className="grid grid-cols-3 gap-1">
-                {PRESET_SLOTS.map((s) => {
-                  const cur = state.characters[selectedCharId]
-                  const activeSlot = cur.position_slot === s.id && cur.pos_x == null && cur.pos_y == null
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => applyPresetSlot(selectedCharId, s.id)}
-                      className={`rounded border px-1 py-1 text-[12px] transition-colors ${
-                        activeSlot
-                          ? 'border-signal bg-signal/15 text-signal'
-                          : 'border-edge/15 text-fg-muted hover:bg-surface-hover'
-                      }`}
-                      title={`定位到${s.label}`}
-                    >
-                      {s.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* 复制上一行位置 */}
-            <button
-              type="button"
-              onClick={() => copyPrevPosition(selectedCharId)}
-              className="mb-2 flex w-full items-center justify-center gap-1 rounded border border-edge/15 px-2 py-1 text-[12px] text-fg-muted transition-colors hover:bg-surface-hover"
-              title="把上一行该角色的位置与缩放复制过来，实现同角色跨页精确对齐"
-            >
-              <Copy size={12} strokeWidth={1.75} /> 复制上一行位置
-            </button>
-
-            {/* 锁定单轴 */}
-            <div className="mb-2">
-              <div className="mb-1 text-[11px] text-fg-subtle">锁定轴</div>
-              <div className="flex gap-1">
-                {(['none', 'x', 'y'] as const).map((ax) => (
-                  <button
-                    key={ax}
-                    type="button"
-                    onClick={() => setLockAxis(ax)}
-                    className={`flex-1 rounded border px-1 py-1 text-[12px] transition-colors ${
-                      lockAxis === ax
-                        ? 'border-signal bg-signal/15 text-signal'
-                        : 'border-edge/15 text-fg-muted hover:bg-surface-hover'
-                    }`}
-                    title={ax === 'none' ? '不锁定，自由拖动' : ax === 'x' ? '锁定横向，只改纵向' : '锁定纵向，只改横向'}
-                  >
-                    {ax === 'none' ? '无' : ax === 'x' ? '锁X' : '锁Y'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 缩放（与位置完全解耦） */}
-            <div>
-              <div className="mb-1 flex items-center justify-between text-[11px] text-fg-subtle">
-                <span>缩放</span>
-                <span className="tabular-nums text-fg-muted">×{(state.characters[selectedCharId].scale ?? 1).toFixed(2)}</span>
-              </div>
-              <input
-                type="range"
-                min={0.2}
-                max={2}
-                step={0.05}
-                value={state.characters[selectedCharId].scale ?? 1}
-                onChange={(e) => setCharScale(selectedCharId, parseFloat(e.target.value))}
-                className="w-full accent-signal"
-              />
-            </div>
-          </div>
-        )}
 
         {/* 行号指示器 */}
         <div className="pointer-events-none absolute top-3 left-3 z-20 flex items-center gap-2">
@@ -1096,6 +1022,63 @@ export default function StagePreview() {
           )}
         </div>
 
+        {/* 台词输入浮层：默认隐藏，点击悬浮按钮 / 快捷键「I」才弹出半透明浮层，激活时浮于舞台下方中央，不长期遮挡视线 */}
+        {inputActive ? (
+          <div
+            className="absolute bottom-3 left-1/2 z-40 w-[min(640px,92%)] -translate-x-1/2 rounded-xl border border-edge/15 bg-surface/85 p-2.5 shadow-2 backdrop-blur-md"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-[12px] font-semibold text-fg">写台词</span>
+              <button
+                type="button"
+                onClick={() => setInputActive(false)}
+                className="rounded p-0.5 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
+                title="收起（Esc）"
+              >
+                <X size={13} strokeWidth={2} />
+              </button>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="relative shrink-0">
+                <input
+                  type="text"
+                  autoFocus
+                  value={localSpeaker}
+                  onChange={(e) => { setLocalSpeaker(e.target.value); commitDialogue(e.target.value, localDialogue) }}
+                  placeholder="说话人"
+                  list="speaker-list"
+                  className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[14px] text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
+                />
+                <datalist id="speaker-list">
+                  {characterConfigs.map((c) => (
+                    <option key={c.charId} value={c.displayName}>{c.charId}</option>
+                  ))}
+                </datalist>
+              </div>
+              <div className="min-w-0 flex-1">
+                <input
+                  type="text"
+                  value={localDialogue}
+                  onChange={(e) => { setLocalDialogue(e.target.value); commitDialogue(localSpeaker, e.target.value) }}
+                  placeholder={state.speaker ? `${state.speaker}的台词...` : '旁白或台词...'}
+                  className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[14px] text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setInputActive(true)}
+            className="absolute bottom-3 left-1/2 z-40 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full border border-edge/15 bg-surface/80 px-3 py-1.5 text-[13px] text-fg-muted shadow-lg backdrop-blur-md transition-colors hover:bg-surface-hover hover:text-fg"
+            title="写台词（快捷键 I）"
+          >
+            <Pencil size={13} strokeWidth={1.75} /> 写台词
+          </button>
+        )}
+
         {/* 行进度条 */}
         <div className="absolute right-0 bottom-0 left-0 z-20 flex h-0.5">
           {resolvedStates.map((_, i) => (
@@ -1111,55 +1094,100 @@ export default function StagePreview() {
         </div>
       </div>
 
-      {/* 台词输入浮动栏：排在舞台之后（in-flow），天然把立绘顶到安全区之上——物理安全边距，彻底杜绝误触；
-          聚焦时展开更高边距 + 高亮。半透明玻璃质感，下方演出仍可见。 */}
-      <div
-        className={`relative z-40 shrink-0 border-t border-edge/10 bg-surface/90 px-3 py-2.5 backdrop-blur-md transition-all duration-150 ${
-          inputFocused ? 'py-3 ring-1 ring-inset ring-signal/40' : ''
-        }`}
-      >
-        <div className="flex items-start gap-2">
-          {/* 说话人选择器 */}
-          <div className="relative shrink-0">
-            <input
-              type="text"
-              value={localSpeaker}
-              onChange={(e) => {
-                setLocalSpeaker(e.target.value)
-                commitDialogue(e.target.value, localDialogue)
-              }}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              placeholder="说话人"
-              list="speaker-list"
-              className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[14px] text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
-            />
-            <datalist id="speaker-list">
-              {characterConfigs.map((c) => (
-                <option key={c.charId} value={c.displayName}>{c.charId}</option>
-              ))}
-            </datalist>
-          </div>
-          {/* 台词输入 */}
-          <div className="min-w-0 flex-1">
-            <input
-              type="text"
-              value={localDialogue}
-              onChange={(e) => {
-                setLocalDialogue(e.target.value)
-                commitDialogue(localSpeaker, e.target.value)
-              }}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              placeholder={state.speaker ? `${state.speaker}的台词...` : '旁白或台词...'}
-              className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[14px] text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
-            />
-          </div>
-        </div>
-        {/* 行信息提示 */}
-        <div className="mt-1.5 text-right text-[12px] text-fg-subtle">
-          {state.line_id} 快捷输入 {state.speaker ? `说话人 ${state.speaker}` : '旁白模式'}
-        </div>
+        {/* 立绘编辑侧栏：单击选中立绘后常驻显示，固定在舞台右侧，绝不遮挡舞台；
+            滑块实时驱动立绘（位置 / 缩放）变化，所见即所得 */}
+        {selectedCharId && state.characters[selectedCharId] && (
+          <aside className="flex w-52 shrink-0 flex-col gap-3 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-semibold text-fg">
+                立绘编辑 · {getDisplayName(selectedCharId)}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedCharId(null)}
+                className="rounded p-0.5 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
+                title="关闭"
+              >
+                <X size={13} strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* 一键定点（五档经典站位） */}
+            <div>
+              <div className="mb-1 text-[11px] text-fg-subtle">定点</div>
+              <div className="grid grid-cols-3 gap-1">
+                {PRESET_SLOTS.map((s) => {
+                  const cur = state.characters[selectedCharId]
+                  const activeSlot = cur.position_slot === s.id && cur.pos_x == null && cur.pos_y == null
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => applyPresetSlot(selectedCharId, s.id)}
+                      className={`rounded border px-1 py-1 text-[12px] transition-colors ${
+                        activeSlot
+                          ? 'border-signal bg-signal/15 text-signal'
+                          : 'border-edge/15 text-fg-muted hover:bg-surface-hover'
+                      }`}
+                      title={`定位到${s.label}`}
+                    >
+                      {s.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* 复制上一行位置 */}
+            <button
+              type="button"
+              onClick={() => copyPrevPosition(selectedCharId)}
+              className="flex w-full items-center justify-center gap-1 rounded border border-edge/15 px-2 py-1 text-[12px] text-fg-muted transition-colors hover:bg-surface-hover"
+              title="把上一行该角色的位置与缩放复制过来，实现同角色跨页精确对齐"
+            >
+              <Copy size={12} strokeWidth={1.75} /> 复制上一行位置
+            </button>
+
+            {/* 锁定单轴 */}
+            <div>
+              <div className="mb-1 text-[11px] text-fg-subtle">锁定轴</div>
+              <div className="flex gap-1">
+                {(['none', 'x', 'y'] as const).map((ax) => (
+                  <button
+                    key={ax}
+                    type="button"
+                    onClick={() => setLockAxis(ax)}
+                    className={`flex-1 rounded border px-1 py-1 text-[12px] transition-colors ${
+                      lockAxis === ax
+                        ? 'border-signal bg-signal/15 text-signal'
+                        : 'border-edge/15 text-fg-muted hover:bg-surface-hover'
+                    }`}
+                    title={ax === 'none' ? '不锁定，自由拖动' : ax === 'x' ? '锁定横向，只改纵向' : '锁定纵向，只改横向'}
+                  >
+                    {ax === 'none' ? '无' : ax === 'x' ? '锁X' : '锁Y'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 缩放（与位置完全解耦） */}
+            <div>
+              <div className="mb-1 flex items-center justify-between text-[11px] text-fg-subtle">
+                <span>缩放</span>
+                <span className="tabular-nums text-fg-muted">×{(state.characters[selectedCharId].scale ?? 1).toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                min={0.2}
+                max={2}
+                step={0.05}
+                value={state.characters[selectedCharId].scale ?? 1}
+                onChange={(e) => setCharScale(selectedCharId, parseFloat(e.target.value))}
+                className="w-full accent-signal"
+              />
+            </div>
+          </aside>
+        )}
       </div>
     </main>
   )
