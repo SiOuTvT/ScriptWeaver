@@ -22,8 +22,8 @@ export default function ScriptDrawer() {
     el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [selectedIndex])
 
-  // 抽屉宽度：钉住 = 348px，浮动 = 320px，收起 = 0（由外部控制显示/隐藏）
-  const width = open ? (pinned ? 'w-[260px]' : 'w-60') : 'w-0'
+  // 抽屉宽度：钉住 = 208px，浮动 = 176px，收起 = 0（缩窄以把更多空间留给舞台）
+  const width = open ? (pinned ? 'w-52' : 'w-44') : 'w-0'
   const visibility = open ? '' : 'invisible'
 
   return (

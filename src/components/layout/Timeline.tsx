@@ -1052,7 +1052,7 @@ export default function Timeline() {
                     key={`se-${ev.index}-${ev.items[0]}`}
                     className="group absolute top-1 bottom-1 z-10 flex items-center"
                     style={{ left: `${leftPct}%`, width: `clamp(30px, ${cellWidthPct}%, 64px)` }}
-                    title={`${ev.items.map(assetName).join(', ')}（第 ${Math.round(offset)}ms 切入）`}
+                    title={`${ev.items.map(assetName).join(', ')}（第 ${Math.round(offset)}ms 切入 · 拖拽或 Alt+←→ 段落内微调）`}
                   >
                     <div
                       onMouseDown={(e) => handleAudioOffsetDragStart(ev.index, 'se', ev.items[0], e)}
@@ -1102,7 +1102,7 @@ export default function Timeline() {
                       key={`voice-${ev.index}`}
                       className="group absolute top-1 bottom-1 z-10 flex items-center"
                       style={{ left: `${leftPct}%`, width: `clamp(30px, ${cellWidthPct}%, 64px)` }}
-                      title={`${who ? who + ' ' : ''}${assetName(ev.voice)}（第 ${Math.round(offset)}ms 切入）`}>
+                      title={`${who ? who + ' ' : ''}${assetName(ev.voice)}（第 ${Math.round(offset)}ms 切入 · 拖拽或 Alt+←→ 段落内微调）`}>
                       <div
                       onMouseDown={(e) => handleAudioOffsetDragStart(ev.index, 'voice', ev.voice, e)}
                       className={`flex h-full min-w-[28px] cursor-ew-resize items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg ${

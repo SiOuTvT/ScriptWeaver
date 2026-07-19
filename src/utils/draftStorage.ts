@@ -16,6 +16,8 @@ export interface DraftData {
   /** 项目根目录（.swproj 所在目录），恢复草稿时用于重新读取素材文件 */
   projectRoot: string | null
   savedAt: string
+  /** 场景画布比例（Ren'Py 式自选）；缺省按 16:9 处理 */
+  canvasRatio?: { w: number; h: number }
 }
 
 /** 剥离 assets 中的 blobUrl 易失字段，防止无效对象 URL 进入持久化存储 */
@@ -28,6 +30,7 @@ export function saveDraft(
   characterConfigs: CharacterConfig[] = [],
   assets: AssetItem[] = [],
   projectRoot: string | null = null,
+  canvasRatio?: { w: number; h: number },
 ): void {
   try {
     const data: DraftData = {
@@ -36,6 +39,7 @@ export function saveDraft(
       assets: stripVolatile(assets),
       projectRoot,
       savedAt: new Date().toISOString(),
+      canvasRatio,
     }
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data))
   } catch {

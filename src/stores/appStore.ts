@@ -83,6 +83,10 @@ interface AppState {
   scriptDrawerOpen: boolean
   scriptDrawerPinned: boolean
 
+  // ---- 场景画布比例（Ren'Py 式自选，默认 16:9，支持 4:3 / 1:1 等） ----
+  canvasRatio: { w: number; h: number }
+  setCanvasRatio: (r: { w: number; h: number }) => void
+
   // ===== 角色 CRUD =====
   addCharacter: (config: Omit<CharacterConfig, 'createdAt' | 'updatedAt'>) => void
   updateCharacter: (charId: string, patch: Partial<CharacterConfig>) => void
@@ -171,6 +175,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   // ---- 剧本抽屉 ----
   scriptDrawerOpen: true,
   scriptDrawerPinned: true,
+
+  // ---- 场景画布比例（默认 16:9） ----
+  canvasRatio: { w: 16, h: 9 },
 
   // ===== 角色 CRUD =====
   addCharacter: (config) => {
@@ -474,6 +481,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     }),
 
   setScriptDrawerOpen: (open) => set({ scriptDrawerOpen: open }),
+
+  // ---- 场景画布比例 ----
+  setCanvasRatio: (r) => set({ canvasRatio: r }),
 
   getResolvedState: (index) => {
     const states = get().resolvedStates
