@@ -629,47 +629,36 @@ export default function StagePreview() {
       if (e.button !== 0) return
       e.preventDefault()
       e.stopPropagation()
-      const el = e.currentTarget as HTMLDivElement
       const stageEl = stageRef.current
       if (!stageEl) return
       const char = (resolvedStates[selectedIndex]?.characters ?? {})[charId]
       if (!char) return
       const anchor = SLOT_ANCHORS[char.position_slot] ?? SLOT_ANCHORS.center
-      const startX = char.pos_x ?? anchor.x
-      const startY = char.pos_y ?? anchor.y
+      const startPx = char.pos_x ?? anchor.x
+      const startPy = char.pos_y ?? anchor.y
 
-      // 用 getBoundingClientRect 拿到「含 scale 变换」的真实渲染尺寸，做边界夹紧，
-      // 避免缩放后的立绘在边缘被裁切（看起来「变小」）或拖出舞台。
-      const srect0 = stageEl.getBoundingClientRect()
-      const erect0 = el.getBoundingClientRect()
-      const halfWFrac = erect0.width / srect0.width / 2
-      const fullHFrac = erect0.height / srect0.height
+      // 像素增量法拖拽：鼠标像素位移直接换算成归一化位移，与立绘尺寸 / label 完全解耦，彻底跟手；
+      // 不再测量 halfWFrac / fullHFrac 做比例夹紧（那是「拖不到最左」边界死锁的根源）。
 
-      // 抓取点相对立绘「中心-X / 底部-Y」锚点的偏移，避免一抓住立绘中心就瞬移到光标下（看着像闪）
-      const rx0 = (e.clientX - srect0.left) / srect0.width
-      const ry0 = (e.clientY - srect0.top) / srect0.height
-      const offsetX = rx0 - startX
-      const offsetY = ry0 - startY
+      const startMouseX = e.clientX
+      const startMouseY = e.clientY
 
-      // 拖拽期间锁全局光标为抓取态 + 禁止选中文本，避免「抓住又变回鼠标 / 误选文字」
       document.body.style.cursor = 'grabbing'
       document.body.style.userSelect = 'none'
 
       const move = (ev: MouseEvent) => {
         const rect = stageEl.getBoundingClientRect()
-        let rx = (ev.clientX - rect.left) / rect.width - offsetX
-        let ry = (ev.clientY - rect.top) / rect.height - offsetY
-        // 边界处理：立绘比舞台窄/矮时，保持整张完整不裁切；
-        // 立绘比舞台宽/高时（尤其编辑面板打开挤窄舞台后）放宽边界允许自由移动，
-        // 溢出由 overflow 自然裁切——否则 halfWFrac>=0.5 会把 clamp 区间压成反向、立绘被锁死（左不能、右不能）。
-        const minX = halfWFrac < 0.5 ? halfWFrac : 0
-        const maxX = halfWFrac < 0.5 ? 1 - halfWFrac : 1
-        rx = clamp(rx, minX, maxX)
-        const minY = fullHFrac < 1 ? fullHFrac : 0
-        ry = clamp(ry, minY, 1)
+        const dx = (ev.clientX - startMouseX) / rect.width
+        const dy = (ev.clientY - startMouseY) / rect.height
+        let rx = startPx + dx
+        let ry = startPy + dy
+        // 解除边界死锁：立绘中心允许到舞台边缘（中心∈[0,1] 时边缘已超出舞台，
+        // 由 overflow-hidden 裁切），满足「拖到最左/最右甚至超出」；不再用半宽夹紧卡在中间。
+        rx = clamp(rx, 0, 1)
+        ry = clamp(ry, 0, 1)
         // 锁定单轴：拖动时只改另一轴，被锁定轴维持抓取起始值（位移与缩放解耦）
-        if (lockAxisRef.current === 'x') ry = startY
-        else if (lockAxisRef.current === 'y') rx = startX
+        if (lockAxisRef.current === 'x') ry = startPy
+        else if (lockAxisRef.current === 'y') rx = startPx
         // 仅实时显示「将吸附到的站位」，拖动中不强行吸附（避免来回跳变 / 闪屏）；吸附在松手时执行
         const slot = nearestSlot(rx)
         const p = { charId, x: rx, y: ry, snapped: false, slot }
@@ -778,22 +767,9 @@ export default function StagePreview() {
     )
   }
 
-  // 空舞台演出区占位：用 surface-3（236 输入框底），在白面板外壳内形成清晰的内嵌画布感（255→236 差 19 级，视觉分明但不刺眼）
-  const stageEmptyBg = 'rgb(var(--c-surface-3))'
+  // 舞台核心区锁定 16:9，背景图以 contain 完整显示、绝不截断；
+  // 比例留白由外层纯黑视口（Letterboxing）填充，无需模糊层或底色。
   const hasBgImage = !!bgDataUrl
-  // 清晰整图：contain 完整显示、不裁切（看得到整张背景）。
-  const bgSharpStyle: React.CSSProperties = hasBgImage
-    ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }
-    : {}
-  // 模糊铺满：cover 填满整块并放大模糊，专门填充 contain 的上下/左右留白区，
-  // 比纯色空白自然、比裁切清爽（用户指定的「上下模糊」方案）。
-  const bgBlurStyle: React.CSSProperties = hasBgImage
-    ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'blur(26px)', transform: 'scale(1.15)' }
-    : {}
-  // 兜底底色：无背景图时用 surface-3 形成内嵌画布感。
-  const bgBaseStyle: React.CSSProperties = hasBgImage
-    ? { background: stageEmptyBg }
-    : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? stageEmptyBg) : stageEmptyBg }
 
   return (
     <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm overflow-hidden">
@@ -857,27 +833,25 @@ export default function StagePreview() {
           )}
         </div>
       </header>
-      <div className="relative flex flex-1 overflow-hidden">
+      {/* 舞台视口：外层纯黑遮罩，引入 Galgame 标准电影黑边（Letterboxing）。
+          舞台核心区锁定 16:9，背景图 contain 完整显示、绝不截断，比例留白由纯黑遮罩填满。 */}
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-black">
         <div
           ref={stageRef}
-          className="relative flex-1 overflow-hidden bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
+          className="relative aspect-video max-w-full overflow-hidden bg-black shadow-2xl"
+          style={{ height: '100%' }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDropOnStage}
           onClick={() => setSelectedCharId(null)}
         >
-        {/* 背景层 */}
-        <div
-          className="absolute inset-0 animate-fade-in"
-          style={bgBaseStyle}
-        >
+        {/* 背景层：contain 完整显示整张图，绝不截断；比例留白由外层纯黑视口填充（电影黑边） */}
+        <div className="absolute inset-0 bg-black">
           {hasBgImage && (
-            <>
-              {/* 模糊铺满：填充 contain 的上下/左右留白区，比纯色空白自然 */}
-              <div className="absolute inset-0" style={bgBlurStyle} />
-              {/* 清晰整图：contain 完整显示，不裁切；留白区由下方模糊层透出 */}
-              <div className="absolute inset-0" style={bgSharpStyle} />
-            </>
+            <div
+              className="absolute inset-0 animate-fade-in bg-contain bg-center bg-no-repeat"
+              style={{ backgroundImage: `url(${bgDataUrl})` }}
+            />
           )}
           {bgDataUrl && !bgLoaded && (
             <Skeleton className="absolute inset-0" />
@@ -945,32 +919,32 @@ export default function StagePreview() {
                 onMouseDown={handleCharMouseDown(charId)}
                 onClick={(e) => e.stopPropagation()}
                 onDragStart={(e) => e.preventDefault()}
-                className={`group pointer-events-auto absolute -translate-x-1/2 -translate-y-full flex select-none cursor-grab flex-col items-center active:cursor-grabbing ${
-                  dragging ? '' : 'transition-[left,top] duration-200'
+                className={`group pointer-events-auto absolute flex select-none cursor-grab flex-col items-center active:cursor-grabbing ${
+                  dragging ? '' : 'transition-[left,top,transform] duration-200'
                 } ${selected ? 'rounded-lg ring-2 ring-signal' : ''}`}
-                // zIndex 动态对齐 computeZorder：按水平位置升序（越靠右越靠前），
-                // 与 Ren'Py 导出产物层级严格一致，消灭预览/导出认知分歧。
+                // left/top 百分比相对舞台（父容器）精确定位坐标；transform 仅做居中 translate(-50%,-100%)
+                // + 缩放 scale，围绕底部中心 origin。位移与缩放彻底解耦——移动只改 left/top，大小绝对恒定。
                 style={{
                   left: `${px * 100}%`,
                   top: `${py * 100}%`,
+                  transform: `translate(-50%, -100%) scale(${scale})`,
+                  transformOrigin: 'bottom center',
                   zIndex: dragging ? 1000 : Math.round((char.pos_x ?? SLOT_ANCHORS[char.position_slot]?.x ?? 0.5) * 10) + 10,
                 }}
                 title="拖动可移动位置；靠近站位的虚线会自动吸附，拉离即自由微调。点按选中后可定点 / 缩放 / 锁定。"
               >
                 {spriteDataUrl ? (
-                  /* 真实立绘图片：外层负责定位，内层 img 仅承载 scale，缩放原点锁定底部中心 → 位移与缩放彻底解耦 */
                   <img
                     src={spriteDataUrl}
                     alt={getDisplayName(charId)}
                     draggable={false}
                     className="max-h-64 w-auto select-none object-contain drop-shadow-lg"
-                    style={{ minHeight: '80px', transform: `scale(${scale})`, transformOrigin: 'bottom center' }}
+                    style={{ minHeight: '80px' }}
                   />
                 ) : (
-                  /* 兜底色块占位（同样仅内层缩放） */
                   <div
                     className="flex w-16 flex-col items-center gap-1 rounded-t-lg px-3 pt-6 pb-3 shadow-lg"
-                    style={{ backgroundColor: spriteColor, minHeight: '100px', transform: `scale(${scale})`, transformOrigin: 'bottom center' }}
+                    style={{ backgroundColor: spriteColor, minHeight: '100px' }}
                   >
                     <span className="text-center text-[12px] font-medium text-white/80">
                       {getDisplayName(charId)}
@@ -980,8 +954,9 @@ export default function StagePreview() {
                     </span>
                   </div>
                 )}
+                {/* 标签脱离文档流（absolute），避免占位高度干扰脚底锚点定位精度 */}
                 <div
-                  className={`mt-1 rounded px-1.5 text-center text-[12px] transition-colors ${
+                  className={`absolute top-full left-1/2 -translate-x-1/2 mt-1 rounded px-1.5 text-center text-[12px] transition-colors ${
                     dragging
                       ? 'bg-signal/20 text-signal'
                       : selected
@@ -1122,7 +1097,7 @@ export default function StagePreview() {
         {/* 立绘编辑侧栏：单击选中立绘后常驻显示，固定在舞台右侧，绝不遮挡舞台；
             滑块实时驱动立绘（位置 / 缩放）变化，所见即所得 */}
         {selectedCharId && state.characters[selectedCharId] && (
-          <aside className="flex w-52 shrink-0 flex-col gap-3 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
+          <aside className="absolute right-0 top-0 bottom-0 z-30 flex w-52 shrink-0 flex-col gap-3 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-semibold text-fg">
                 立绘编辑 · {getDisplayName(selectedCharId)}
