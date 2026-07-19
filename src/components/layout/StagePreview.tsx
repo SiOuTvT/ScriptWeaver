@@ -491,6 +491,12 @@ export default function StagePreview() {
     )
   }, [dragAssetType, dragOverZone])
 
+  // 背景图加载检测：hook 必须在提前 return 之前无条件调用，遵守 React Rules of Hooks
+  // （此前 useImageLoaded 写在 if (!state) return 之后，导致有/无数据时 hook 数量不一致 → #310）
+  const bgAssetId = state?.background?.asset_id
+  const bgDataUrl = resolveBackgroundUrl(bgAssetId, assets)
+  const bgLoaded = useImageLoaded(bgDataUrl)
+
   if (!state) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-fg-faint">
@@ -499,9 +505,6 @@ export default function StagePreview() {
     )
   }
 
-  const bgAssetId = state.background?.asset_id
-  const bgDataUrl = resolveBackgroundUrl(bgAssetId, assets)
-  const bgLoaded = useImageLoaded(bgDataUrl)
   const bgStyle: React.CSSProperties = bgDataUrl
     ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? '#111') : '#111' }
