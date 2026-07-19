@@ -349,8 +349,8 @@ export default function AssetManager() {
               })}
             </div>
           ) : (
-            /* 图片：缩略图网格（背景图 cover 填满；立绘透明底用棋盘格 + contain 居中） */
-            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5 lg:grid-cols-6">
+            /* 图片：立绘用更少的列 + 竖版卡片（人物更大更清楚）；背景图多列小方块 cover 填满 */
+            <div className={tab === 'sprite' ? 'grid grid-cols-3 gap-2 sm:grid-cols-4' : 'grid grid-cols-4 gap-1.5 sm:grid-cols-5 lg:grid-cols-6'}>
               {filtered.map((asset) => {
                 const isSprite = asset.type === 'sprite'
                 const imgSrc = resolveAssetSrc(asset)
@@ -361,14 +361,14 @@ export default function AssetManager() {
                     onDragStart={(e) => handleAssetDragStart(e, asset)}
                     onDragEnd={handleAssetDragEnd}
                     onContextMenu={(e) => handleContextMenu(e, asset)}
-                    className={`group relative aspect-square cursor-grab overflow-hidden rounded-md transition-opacity active:cursor-grabbing ${
-                      isSprite ? 'bg-transparent' : 'bg-surface-2'
+                    className={`group relative cursor-grab overflow-hidden rounded-md transition-opacity active:cursor-grabbing ${
+                      isSprite ? 'bg-surface-2 aspect-[3/4]' : 'bg-surface-2 aspect-square'
                     }`}
                     title="拖拽到舞台或时间轴使用"
                   >
                     {imgSrc ? (
                       isSprite ? (
-                        <div className="flex h-full w-full items-center justify-center p-1">
+                        <div className="flex h-full w-full items-end justify-center p-1">
                           <img
                             src={imgSrc}
                             alt={asset.name}

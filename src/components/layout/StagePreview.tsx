@@ -630,6 +630,7 @@ export default function StagePreview() {
       e.preventDefault()
       e.stopPropagation()
       setSelectedCharId(charId)
+      const el = e.currentTarget as HTMLDivElement
       const stageEl = stageRef.current
       if (!stageEl) return
       const char = (resolvedStates[selectedIndex]?.characters ?? {})[charId]
@@ -638,10 +639,16 @@ export default function StagePreview() {
       const startX = char.pos_x ?? anchor.x
       const startY = char.pos_y ?? anchor.y
 
-      // 记录抓取点相对立绘中心的偏移：否则一拖动立绘中心就「瞬移」到光标下，看着像闪
-      const rect0 = stageEl.getBoundingClientRect()
-      const rx0 = (e.clientX - rect0.left) / rect0.width
-      const ry0 = (e.clientY - rect0.top) / rect0.height
+      // 用 getBoundingClientRect 拿到「含 scale 变换」的真实渲染尺寸，做边界夹紧，
+      // 避免缩放后的立绘在边缘被裁切（看起来「变小」）或拖出舞台。
+      const srect0 = stageEl.getBoundingClientRect()
+      const erect0 = el.getBoundingClientRect()
+      const halfWFrac = erect0.width / srect0.width / 2
+      const fullHFrac = erect0.height / srect0.height
+
+      // 抓取点相对立绘「中心-X / 底部-Y」锚点的偏移，避免一抓住立绘中心就瞬移到光标下（看着像闪）
+      const rx0 = (e.clientX - srect0.left) / srect0.width
+      const ry0 = (e.clientY - srect0.top) / srect0.height
       const offsetX = rx0 - startX
       const offsetY = ry0 - startY
 
@@ -653,26 +660,15 @@ export default function StagePreview() {
         const rect = stageEl.getBoundingClientRect()
         let rx = (ev.clientX - rect.left) / rect.width - offsetX
         let ry = (ev.clientY - rect.top) / rect.height - offsetY
-        rx = clamp(rx, 0.03, 0.97)
-        ry = clamp(ry, 0.2, 1)
-        // 锁定单轴：拖动时只改另一轴，被锁定轴维持抓取起始值（与缩放同理，位移两轴解耦）
+        // 边界夹紧：整张立绘永远完整落在舞台内（绝不被 overflow-hidden 裁切而「变小」）
+        rx = clamp(rx, halfWFrac, 1 - halfWFrac)
+        ry = clamp(ry, fullHFrac, 1)
+        // 锁定单轴：拖动时只改另一轴，被锁定轴维持抓取起始值（位移与缩放解耦）
         if (lockAxisRef.current === 'x') ry = startY
         else if (lockAxisRef.current === 'y') rx = startX
-        // 磁吸：仅当靠近预设站位（吸附带较窄）才吸过去，留出自由微调空间
-        let snapped = false
-        let slot = char.position_slot
-        for (const [id, a] of Object.entries(SLOT_ANCHORS)) {
-          if (Math.abs(rx - a.x) < SNAP_X) {
-            rx = a.x
-            snapped = true
-            slot = id
-            break
-          }
-        }
-        if (Math.abs(ry - SLOT_Y) < SNAP_Y) {
-          ry = SLOT_Y
-        }
-        const p = { charId, x: rx, y: ry, snapped, slot }
+        // 仅实时显示「将吸附到的站位」，拖动中不强行吸附（避免来回跳变 / 闪屏）；吸附在松手时执行
+        const slot = nearestSlot(rx)
+        const p = { charId, x: rx, y: ry, snapped: false, slot }
         dragPosRef.current = p
         setDragPos(p)
       }
@@ -684,10 +680,15 @@ export default function StagePreview() {
         document.body.style.userSelect = ''
         const p = dragPosRef.current
         if (p) {
-          const slot = p.slot
           const resolvedChar = resolvedStates[selectedIndex]?.characters[charId]
-          // 完全吸回锚点才不存偏移（保持全篇一致）；否则存独立微调
-          const atAnchor = Math.abs(p.x - SLOT_ANCHORS[slot].x) < 1e-6 && Math.abs(p.y - SLOT_Y) < 1e-6
+          const slot = p.slot
+          const ax = SLOT_ANCHORS[slot]?.x
+          // 松手时再做磁吸：足够靠近预设站位 X 或默认脚底 Y 才吸附，否则保留自由微调
+          const snapX = ax != null && Math.abs(p.x - ax) < SNAP_X
+          const snapY = Math.abs(p.y - SLOT_Y) < SNAP_Y
+          const sx = snapX ? ax! : p.x
+          const sy = snapY ? SLOT_Y : p.y
+          const atAnchor = snapX && snapY
           updateDeltaAt(selectedIndex, (prev: LineDelta) => {
             const base = prev.characters[charId] ?? {
               sprite_id: resolvedChar?.sprite_id ?? 'default',
@@ -700,8 +701,8 @@ export default function StagePreview() {
                 ...prev.characters,
                 [charId]: {
                   ...base,
-                  pos_x: p.snapped && atAnchor ? undefined : p.x,
-                  pos_y: p.snapped && atAnchor ? undefined : p.y,
+                  pos_x: atAnchor ? undefined : sx,
+                  pos_y: atAnchor ? undefined : sy,
                   position_slot: slot,
                   action: 'show' as const,
                 },
@@ -774,8 +775,17 @@ export default function StagePreview() {
 
   // 空舞台演出区占位：用 surface-3（236 输入框底），在白面板外壳内形成清晰的内嵌画布感（255→236 差 19 级，视觉分明但不刺眼）
   const stageEmptyBg = 'rgb(var(--c-surface-3))'
-  const bgStyle: React.CSSProperties = bgDataUrl
+  // 背景图：清晰整图用 contain 完整显示（不裁切）；letterbox 的空白区用「同图模糊铺满」填充，
+  // 既看得到整张背景、又不会上下留难看的纯色空白。
+  const hasBgImage = !!bgDataUrl
+  const bgBlurStyle: React.CSSProperties = hasBgImage
     ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : {}
+  const bgSharpStyle: React.CSSProperties = hasBgImage
+    ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }
+    : {}
+  const bgBaseStyle: React.CSSProperties = hasBgImage
+    ? { background: stageEmptyBg }
     : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? stageEmptyBg) : stageEmptyBg }
 
   return (
@@ -852,8 +862,19 @@ export default function StagePreview() {
         {/* 背景层 */}
         <div
           className="absolute inset-0 animate-fade-in"
-          style={bgStyle}
+          style={bgBaseStyle}
         >
+          {hasBgImage && (
+            <>
+              {/* 模糊铺满：作为 letterbox 区的同图填充，消除上下空白的突兀感 */}
+              <div
+                className="absolute inset-0"
+                style={{ ...bgBlurStyle, filter: 'blur(28px)', transform: 'scale(1.2)' }}
+              />
+              {/* 清晰整图：contain 完整显示，不裁切 */}
+              <div className="absolute inset-0" style={bgSharpStyle} />
+            </>
+          )}
           {bgDataUrl && !bgLoaded && (
             <Skeleton className="absolute inset-0" />
           )}
