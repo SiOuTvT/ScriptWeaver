@@ -73,6 +73,7 @@ function serializeProject(
     characterConfigs,
     assets: stripVolatile(assets),
     savedAt: new Date().toISOString(),
+    canvasRatio: useAppStore.getState().canvasRatio,
   }
   return JSON.stringify(project, null, 2)
 }
@@ -82,6 +83,7 @@ function deserializeProject(json: string): {
   deltas: LineDelta[]
   characterConfigs: CharacterConfig[]
   assets: AssetItem[]
+  canvasRatio?: { w: number; h: number }
 } | null {
   try {
     const data = JSON.parse(json) as ProjectFile
@@ -90,6 +92,7 @@ function deserializeProject(json: string): {
       deltas: data.draftDeltas,
       characterConfigs: data.characterConfigs ?? [],
       assets: data.assets ?? [],
+      canvasRatio: data.canvasRatio,
     }
   } catch {
     return null
@@ -124,7 +127,7 @@ export default function AppLayout() {
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
       const { deltas, characterConfigs: chars, assets: asts, projectRoot: root } = snapshotRef.current
-      saveDraft(deltas, chars, asts, root)
+      saveDraft(deltas, chars, asts, root, useAppStore.getState().canvasRatio)
     }, DEBOUNCE_MS)
   }, [])
 
@@ -139,6 +142,8 @@ export default function AppLayout() {
       if (!draft) return
       const root = draft.projectRoot ?? null
       loadProjectData({ ...draft, projectRoot: root })
+      // 恢复画布比例（缺省 16:9）
+      useAppStore.getState().setCanvasRatio(draft.canvasRatio ?? { w: 16, h: 9 })
       // 激活项目根目录：驱动 sw-asset:// 协议 + 文件夹监听 + 磁盘增量合并
       activateProjectRoot(root)
     },
@@ -249,7 +254,7 @@ export default function AppLayout() {
 
     if (result.success && result.projectDir) {
       setProjectRoot(result.projectDir)
-      saveDraft(draftDeltas, characterConfigs, assets, result.projectDir)
+      saveDraft(draftDeltas, characterConfigs, assets, result.projectDir, useAppStore.getState().canvasRatio)
       // 保存后激活项目根：主进程已开启监听，此处扫描合并磁盘素材
       activateProjectRoot(result.projectDir)
     } else if (result.error) {
@@ -271,7 +276,8 @@ export default function AppLayout() {
           const parsed = deserializeProject(reader.result as string)
           if (parsed) {
             loadProjectData({ ...parsed, projectRoot: null })
-            saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets, null)
+            useAppStore.getState().setCanvasRatio(parsed.canvasRatio ?? { w: 16, h: 9 })
+            saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets, null, parsed.canvasRatio ?? { w: 16, h: 9 })
           } else {
             alert('文件格式错误，无法打开')
           }
@@ -299,7 +305,8 @@ export default function AppLayout() {
       ...parsed,
       projectRoot: root,
     })
-    saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets, root)
+    useAppStore.getState().setCanvasRatio(parsed.canvasRatio ?? { w: 16, h: 9 })
+    saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets, root, parsed.canvasRatio ?? { w: 16, h: 9 })
 
     // 激活项目根：驱动 sw-asset:// 协议 + 文件夹监听 + 磁盘增量合并（不依赖任何 base64 回读）
     activateProjectRoot(root)

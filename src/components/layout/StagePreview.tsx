@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
+import { useRef, useEffect, useLayoutEffect, useState, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { ResolvedLineState, ResolvedCharacterState, LineDelta, AssetItem, CharacterConfig } from '@/core/types'
 import {
@@ -99,6 +99,14 @@ function nearestSlot(x: number): string {
   return best
 }
 
+/** 可选画布比例（Ren'Py 式自选）；默认 16:9 */
+const CANVAS_RATIOS = [
+  { id: '16:9', w: 16, h: 9 },
+  { id: '4:3', w: 4, h: 3 },
+  { id: '1:1', w: 1, h: 1 },
+  { id: '21:9', w: 21, h: 9 },
+]
+
 const BG_COLORS: Record<string, string> = {
   asset_bg_street_dusk: 'linear-gradient(180deg, #2d1b2e 0%, #4a3728 60%, #6b4c3b 100%)',
   asset_bg_street_night: 'linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 60%, #2a2a3e 100%)',
@@ -198,6 +206,9 @@ export default function StagePreview() {
   const draftDeltas = useAppStore((s) => s.draftDeltas)
   const scriptDrawerOpen = useAppStore((s) => s.scriptDrawerOpen)
   const toggleScriptDrawer = useAppStore((s) => s.toggleScriptDrawer)
+  // 画布比例（Ren'Py 式自选，项目级持久化）
+  const canvasRatio = useAppStore((s) => s.canvasRatio)
+  const setCanvasRatio = useAppStore((s) => s.setCanvasRatio)
 
   const currentDelta = draftDeltas[selectedIndex] ?? null
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
@@ -255,6 +266,70 @@ export default function StagePreview() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  // 通用区间夹取
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+
+  // 关键修复：把立绘「中心坐标」clamp 在「立绘永远完整可见」的范围内。
+  // 立绘用 center center 原点 + overflow-hidden 画布，若中心越过舞台边缘，半边会被裁掉，
+  // 视觉上就像「越往一边移越小」。这里按立绘真实渲染尺寸（含 transform scale）测量半宽/半高占比，
+  // 把中心限制在 [hw, 1-hw]×[hh, 1-hh]，使立绘无论怎么移动都完整显示、大小恒定、绝不裁切。
+  // 立绘中心坐标夹取：仅限制在舞台范围内 [0,1]，左右完全对称、自由，不再用半宽夹紧
+  // （半宽夹紧曾造成「往左拖不上去」的限制感；而「越往右越小」的真因是 div 的 shrink-to-fit，
+  // 已由渲染层 w-max/width:max-content 修复，与此夹取无关）。
+  const clampCharCenter = useCallback((_charId: string, rx: number, ry: number) => {
+    return {
+      rx: clamp(rx, 0, 1),
+      ry: clamp(ry, 0, 1),
+    }
+  }, [clamp])
+
+  // 切换场景行时清空立绘选中态，避免面板残留上一行已不存在的角色
+  useEffect(() => {
+    setSelectedCharId(null)
+  }, [selectedIndex])
+
+
+  // 归一化已存盘但越界的坐标：把立绘中心拉回「完整可见」范围，确保加载即完整显示、绝不裁切。
+  // 拖拽过程中（dragPosRef 非空）跳过，避免与实时拖拽互相打架。
+  useLayoutEffect(() => {
+    if (dragPosRef.current) return
+    if (!state) return
+    const chars = state.characters
+    for (const charId of Object.keys(chars)) {
+      const ch = chars[charId]
+      const ax = ch.pos_x ?? SLOT_ANCHORS[ch.position_slot]?.x ?? 0.5
+      const ay = ch.pos_y ?? SLOT_ANCHORS[ch.position_slot]?.y ?? SLOT_Y
+      const c = clampCharCenter(charId, ax, ay)
+      // 站位坐标本身（如 right=0.78）也可能让立绘超界被裁切，故即使「用站位」也要检查并修正，
+      // 确保加载即完整显示、绝不裁切、大小恒定。
+      let needsFix = false
+      if (ch.pos_x != null) {
+        if (Math.abs(c.rx - ch.pos_x) > 1e-4) needsFix = true
+      } else if (Math.abs(c.rx - ax) > 1e-4) {
+        needsFix = true
+      }
+      if (ch.pos_y != null) {
+        if (Math.abs(c.ry - ch.pos_y) > 1e-4) needsFix = true
+      } else if (Math.abs(c.ry - ay) > 1e-4) {
+        needsFix = true
+      }
+      if (needsFix) {
+        updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+          const base = prev.characters[charId]
+          if (!base) return prev
+          return {
+            ...prev,
+            characters: {
+              ...prev.characters,
+              [charId]: { ...base, pos_x: c.rx, pos_y: c.ry },
+            },
+          }
+        })
+      }
+    }
+  }, [state?.characters, selectedIndex, clampCharCenter, updateDeltaAt])
+
 
   // dialogue 变更 → 防抖写入 store
   const commitDialogue = useCallback((speaker: string, dialogue: string) => {
@@ -414,6 +489,35 @@ export default function StagePreview() {
   const [dragPos, setDragPos] = useState<{ charId: string; x: number; y: number; snapped: boolean; slot: string } | null>(null)
   const dragPosRef = useRef<typeof dragPos>(null)
 
+  // =================== 画布自适应等比缩放（Letterboxing） ===================
+  // 外层视口给足空间、内部画布按所选比例「整块等比」缩放，背景永远完整、绝不截断；
+  // 比例留白由主题灰填充（非纯黑）。面板开合/窗口缩放只改画布像素尺寸，立绘百分比坐标不变。
+  const fitWrapRef = useRef<HTMLDivElement>(null)
+  const [stageSize, setStageSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 })
+
+  useLayoutEffect(() => {
+    const el = fitWrapRef.current
+    if (!el) return
+    const ar = canvasRatio.w / canvasRatio.h
+    const compute = () => {
+      const cw = el.clientWidth
+      const ch = el.clientHeight
+      if (cw <= 0 || ch <= 0) return
+      // 先按宽度铺满，若高度超出则改按高度铺满 —— 始终整块等比、不裁切
+      let w = cw
+      let h = cw / ar
+      if (h > ch) {
+        h = ch
+        w = ch * ar
+      }
+      setStageSize({ w: Math.round(w), h: Math.round(h) })
+    }
+    compute()
+    const ro = new ResizeObserver(compute)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [canvasRatio])
+
   // 拖拽中断（卸载等）时还原全局光标与选中状态
   useEffect(() => {
     return () => {
@@ -511,7 +615,33 @@ export default function StagePreview() {
     [selectedIndex, updateDeltaAt],
   )
 
-  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+  /** 设置立绘自由坐标（X/Y，独立于缩放）。面板滑块实时驱动，所见即所得；写入前 clamp 到完整可见范围 */
+  const setCharPos = useCallback(
+    (charId: string, x: number, y: number) => {
+      const c = clampCharCenter(charId, x, y)
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+        const base = prev.characters[charId] ?? {
+          sprite_id: 'default',
+          position_slot: 'center',
+          action: 'show' as const,
+        }
+        return {
+          ...prev,
+          characters: {
+            ...prev.characters,
+            [charId]: {
+              ...base,
+              pos_x: c.rx,
+              pos_y: c.ry,
+              position_slot: prev.characters[charId]?.position_slot ?? 'center',
+              action: 'show' as const,
+            },
+          },
+        }
+      })
+    },
+    [selectedIndex, updateDeltaAt, clampCharCenter],
+  )
 
   // =================== 自动播放（Auto）引擎 ===================
   // 经典 Galgame 自动翻页：按字数估算每行停留时长，自动推进并触发演出 / 音频变化（含段落内 offset）。
@@ -659,6 +789,8 @@ export default function StagePreview() {
         // 锁定单轴：拖动时只改另一轴，被锁定轴维持抓取起始值（位移与缩放解耦）
         if (lockAxisRef.current === 'x') ry = startPy
         else if (lockAxisRef.current === 'y') rx = startPx
+        // 拖动中【不夹取】：让立绘跟手自由移动到任意位置（含贴边 / 探出画框），
+        // 「完整可见」的夹取只在松手时执行（见 up）。此前拖拽中夹紧造成「往左拖不上去」的限制感，已移除。
         // 仅实时显示「将吸附到的站位」，拖动中不强行吸附（避免来回跳变 / 闪屏）；吸附在松手时执行
         const slot = nearestSlot(rx)
         const p = { charId, x: rx, y: ry, snapped: false, slot }
@@ -680,9 +812,15 @@ export default function StagePreview() {
           // 松手时再做磁吸：足够靠近预设站位 X 或默认脚底 Y 才吸附，否则保留自由微调
           const snapX = ax != null && Math.abs(p.x - ax) < SNAP_X
           const snapY = Math.abs(p.y - SLOT_Y) < SNAP_Y
-          const sx = snapX ? ax! : p.x
-          const sy = snapY ? SLOT_Y : p.y
+          const rawX = snapX ? (ax ?? p.x) : p.x
+          const rawY = snapY ? SLOT_Y : p.y
           const atAnchor = snapX && snapY
+          // 关键修复：无论是否吸附到预设站位，落点都夹到「立绘完整可见」范围并写入具体坐标。
+          // 此前 atAnchor 时跳过夹取、直接写 anchor.x（如 right=0.78），立绘右半被 overflow-hidden
+          // 裁掉 → 视觉上「越往右越小」。现在统一夹取，立绘任何位置都完整、大小恒定、绝不裁切。
+          const cc = clampCharCenter(charId, rawX, rawY)
+          const wx = cc.rx
+          const wy = cc.ry
           updateDeltaAt(selectedIndex, (prev: LineDelta) => {
             const base = prev.characters[charId] ?? {
               sprite_id: resolvedChar?.sprite_id ?? 'default',
@@ -695,8 +833,8 @@ export default function StagePreview() {
                 ...prev.characters,
                 [charId]: {
                   ...base,
-                  pos_x: atAnchor ? undefined : sx,
-                  pos_y: atAnchor ? undefined : sy,
+                  pos_x: wx,
+                  pos_y: wy,
                   position_slot: slot,
                   action: 'show' as const,
                 },
@@ -727,7 +865,7 @@ export default function StagePreview() {
           return (
               <div
                 key={s.id}
-                className="absolute -translate-x-1/2 -translate-y-full flex flex-col items-center"
+                className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center"
                 style={{ left: pos.x, top: pos.y }}
               >
               <div
@@ -777,6 +915,24 @@ export default function StagePreview() {
       <header className="flex shrink-0 items-center justify-between border-b border-edge/10 px-3 py-1.5">
         <span className="text-[13px] font-medium text-fg">场景预览 · {state.line_id}</span>
         <div className="flex items-center gap-1">
+          {/* 画布比例选择器（Ren'Py 式自选，项目级持久化） */}
+          <div className="mr-1 flex items-center gap-1 rounded-md border border-edge/20 bg-surface-2 px-1.5 py-0.5" title="切换场景画布比例">
+            <span className="text-[12px] text-fg-subtle">画布</span>
+            <select
+              value={`${canvasRatio.w}:${canvasRatio.h}`}
+              onChange={(e) => {
+                const [w, h] = e.target.value.split(':').map(Number)
+                setCanvasRatio({ w, h })
+              }}
+              className="bg-transparent text-[13px] font-medium text-fg outline-none"
+            >
+              {CANVAS_RATIOS.map((r) => (
+                <option key={r.id} value={`${r.w}:${r.h}`} className="bg-surface text-fg">
+                  {r.id}
+                </option>
+              ))}
+            </select>
+          </div>
           <IconButton
             variant="ghost"
             size="sm"
@@ -833,20 +989,25 @@ export default function StagePreview() {
           )}
         </div>
       </header>
-      {/* 舞台视口：外层纯黑遮罩，引入 Galgame 标准电影黑边（Letterboxing）。
-          舞台核心区锁定 16:9，背景图 contain 完整显示、绝不截断，比例留白由纯黑遮罩填满。 */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-black">
+      {/* 舞台行：舞台视口（自适应等比缩放）+ 右侧立绘编辑面板（真实布局兄弟，绝不遮挡舞台） */}
+      <div className="relative flex min-h-0 flex-1">
+        {/* 自适应视口：外层主题灰 letterbox（非纯黑），内部画布按所选比例整块等比缩放 */}
+        <div
+          ref={fitWrapRef}
+          className="relative flex flex-1 items-center justify-center overflow-hidden"
+          style={{ background: 'radial-gradient(130% 130% at 50% 38%, rgb(var(--c-canvas)) 0%, rgb(var(--c-surface-1)) 100%)' }}
+        >
         <div
           ref={stageRef}
-          className="relative aspect-video max-w-full overflow-hidden bg-black shadow-2xl"
-          style={{ height: '100%' }}
+          className="relative overflow-hidden bg-canvas shadow-2xl ring-1 ring-black/10"
+          style={{ width: stageSize.w || undefined, height: stageSize.h || undefined }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDropOnStage}
           onClick={() => setSelectedCharId(null)}
         >
-        {/* 背景层：contain 完整显示整张图，绝不截断；比例留白由外层纯黑视口填充（电影黑边） */}
-        <div className="absolute inset-0 bg-black">
+        {/* 背景层：contain 完整显示整张图，绝不截断；比例留白由画布底色（主题灰）填充，非纯黑 */}
+        <div className="absolute inset-0 bg-canvas">
           {hasBgImage && (
             <div
               className="absolute inset-0 animate-fade-in bg-contain bg-center bg-no-repeat"
@@ -916,19 +1077,25 @@ export default function StagePreview() {
             return (
               <div
                 key={charId}
+                data-char={charId}
                 onMouseDown={handleCharMouseDown(charId)}
                 onClick={(e) => e.stopPropagation()}
                 onDragStart={(e) => e.preventDefault()}
-                className={`group pointer-events-auto absolute flex select-none cursor-grab flex-col items-center active:cursor-grabbing ${
+                className={`group pointer-events-auto absolute flex w-max select-none cursor-grab flex-col items-center active:cursor-grabbing ${
                   dragging ? '' : 'transition-[left,top,transform] duration-200'
                 } ${selected ? 'rounded-lg ring-2 ring-signal' : ''}`}
-                // left/top 百分比相对舞台（父容器）精确定位坐标；transform 仅做居中 translate(-50%,-100%)
-                // + 缩放 scale，围绕底部中心 origin。位移与缩放彻底解耦——移动只改 left/top，大小绝对恒定。
+                // left/top 百分比相对舞台（父容器）定位立绘中心点；transform 仅做居中 translate(-50%,-50%)
+                // + 缩放 scale，围绕中心点 origin。
+                // 【关键·真凶修复】此 div 是 absolute 且宽度 auto，浏览器对它用 shrink-to-fit：
+                // 可用宽度 = 舞台宽 − left，left 越大（越靠右）可用宽度越小 → div 被压缩 → 里面 w-auto 的
+                // img 跟着变小，这才是「越往右越小」的真因（与 scale / overflow 无关）。
+                // 加 w-max（width:max-content）让 div 按图片固有宽度渲染，彻底不受 left 位置约束。
                 style={{
                   left: `${px * 100}%`,
                   top: `${py * 100}%`,
-                  transform: `translate(-50%, -100%) scale(${scale})`,
-                  transformOrigin: 'bottom center',
+                  width: 'max-content',
+                  transform: `translate(-50%, -50%) scale(${scale})`,
+                  transformOrigin: 'center center',
                   zIndex: dragging ? 1000 : Math.round((char.pos_x ?? SLOT_ANCHORS[char.position_slot]?.x ?? 0.5) * 10) + 10,
                 }}
                 title="拖动可移动位置；靠近站位的虚线会自动吸附，拉离即自由微调。点按选中后可定点 / 缩放 / 锁定。"
@@ -1093,11 +1260,12 @@ export default function StagePreview() {
           ))}
         </div>
       </div>
+        </div>
 
-        {/* 立绘编辑侧栏：单击选中立绘后常驻显示，固定在舞台右侧，绝不遮挡舞台；
+        {/* 立绘编辑侧栏：单击选中立绘后常驻显示，真实布局兄弟占用空间，绝不遮挡舞台；
             滑块实时驱动立绘（位置 / 缩放）变化，所见即所得 */}
         {selectedCharId && state.characters[selectedCharId] && (
-          <aside className="absolute right-0 top-0 bottom-0 z-30 flex w-52 shrink-0 flex-col gap-3 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
+          <aside className="flex w-52 shrink-0 flex-col gap-3 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-semibold text-fg">
                 立绘编辑 · {getDisplayName(selectedCharId)}
@@ -1183,6 +1351,52 @@ export default function StagePreview() {
                 step={0.05}
                 value={state.characters[selectedCharId].scale ?? 1}
                 onChange={(e) => setCharScale(selectedCharId, parseFloat(e.target.value))}
+                className="w-full accent-signal"
+              />
+            </div>
+
+            {/* 位置（与缩放完全解耦，面板滑块实时驱动舞台立绘，所见即所得） */}
+            <div>
+              <div className="mb-1 flex items-center justify-between text-[11px] text-fg-subtle">
+                <span>位置 X</span>
+                <span className="tabular-nums text-fg-muted">
+                  {Math.round((state.characters[selectedCharId].pos_x ?? SLOT_ANCHORS[state.characters[selectedCharId].position_slot]?.x ?? 0.5) * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={state.characters[selectedCharId].pos_x ?? SLOT_ANCHORS[state.characters[selectedCharId].position_slot]?.x ?? 0.5}
+                onChange={(e) =>
+                  setCharPos(
+                    selectedCharId,
+                    parseFloat(e.target.value),
+                    state.characters[selectedCharId].pos_y ?? SLOT_ANCHORS[state.characters[selectedCharId].position_slot]?.y ?? SLOT_Y,
+                  )
+                }
+                className="w-full accent-signal"
+              />
+              <div className="mt-1 flex items-center justify-between text-[11px] text-fg-subtle">
+                <span>位置 Y</span>
+                <span className="tabular-nums text-fg-muted">
+                  {Math.round((state.characters[selectedCharId].pos_y ?? SLOT_ANCHORS[state.characters[selectedCharId].position_slot]?.y ?? SLOT_Y) * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={state.characters[selectedCharId].pos_y ?? SLOT_ANCHORS[state.characters[selectedCharId].position_slot]?.y ?? SLOT_Y}
+                onChange={(e) =>
+                  setCharPos(
+                    selectedCharId,
+                    state.characters[selectedCharId].pos_x ?? SLOT_ANCHORS[state.characters[selectedCharId].position_slot]?.x ?? 0.5,
+                    parseFloat(e.target.value),
+                  )
+                }
                 className="w-full accent-signal"
               />
             </div>

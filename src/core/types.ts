@@ -201,6 +201,8 @@ export interface ProjectFile {
   characterConfigs: CharacterConfig[]
   assets: AssetItem[]
   savedAt: string
+  /** 场景画布比例（Ren'Py 式自选）；缺省按 16:9 处理 */
+  canvasRatio?: { w: number; h: number }
 }
 
 // --------------- 合并后的完整行状态 ---------------
