@@ -60,6 +60,7 @@ export function applyDelta(
           position_slot: charDelta.position_slot,
           pos_x: charDelta.pos_x,
           pos_y: charDelta.pos_y,
+          scale: charDelta.scale,
           transition: charDelta.transition,
         }
         break
@@ -85,7 +86,14 @@ export function applyDelta(
     dialogue: delta.dialogue,
     background,
     characters,
-    audio: { bgm, ambient, se, voice },
+    audio: {
+      bgm,
+      ambient,
+      se,
+      voice,
+      voice_offset_ms: delta.audio.voice_offset_ms,
+      se_offset_ms: delta.audio.se_offset_ms,
+    },
   }
 }
 

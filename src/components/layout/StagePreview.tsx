@@ -9,12 +9,18 @@ import {
 } from '@/utils/assetHelpers'
 import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
-import { Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight, Plus, FileText } from 'lucide-react'
+import {
+  Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight,
+  Plus, FileText, Play, Pause, Copy, X,
+} from 'lucide-react'
 import { Skeleton, IconButton } from '@/components/ui'
+import { PRESET_SLOTS, getPresetSlot } from '@/core/positionSlots'
+import { playAudioPreview, stopBgm, stopAmbient, stopOneShots } from '@/utils/audioManager'
+import { estimateLineDurationMs } from '@/utils/playback'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
 
-type DragOverZone = 'bg' | 'ch-left' | 'ch-center' | 'ch-right' | 'audio' | null
+type DragOverZone = 'bg' | 'ch-left' | 'ch-left-center' | 'ch-center' | 'ch-right-center' | 'ch-right' | 'audio' | null
 
 interface ZoneResult {
   zone: DragOverZone
@@ -35,11 +41,8 @@ function computeZone(
   }
 
   if (cache.type === 'sprite') {
-    let slot: DragOverZone
-    if (rx < 0.33)        slot = 'ch-left'
-    else if (rx > 0.66)   slot = 'ch-right'
-    else                   slot = 'ch-center'
-    return { zone: slot, assetType: 'sprite' }
+    const slotId = nearestSlot(rx)
+    return { zone: `ch-${slotId}` as DragOverZone, assetType: 'sprite' }
   }
 
   if (cache.type === 'audio') {
@@ -68,13 +71,12 @@ function getRelativePos(
 
 // ===================== 常量 =====================
 
-/** 预设站位锚点（归一化 0-1）——作为磁吸基准，保证全篇站位一致 */
-const SLOT_ANCHORS: Record<string, { x: number; y: number }> = {
-  left: { x: 0.22, y: 0.65 },
-  center: { x: 0.5, y: 0.65 },
-  right: { x: 0.78, y: 0.65 },
-}
+/** 立绘底部对齐的归一化纵向位置（舞台留顶给 UI，65% 处为脚底基准） */
 const SLOT_Y = 0.65
+/** 由统一预设站位派生的磁吸锚点（水平中心 + 固定脚底 y），五档一致且可磁吸 */
+const SLOT_ANCHORS: Record<string, { x: number; y: number }> = Object.fromEntries(
+  PRESET_SLOTS.map((s) => [s.id, { x: s.anchor_x, y: SLOT_Y }]),
+)
 /** 磁吸阈值：拖到离预设站位这么近才吸附（留足自由微调空间，避免「被钉死」） */
 const SNAP_X = 0.035
 const SNAP_Y = 0.045
@@ -83,15 +85,15 @@ const SLOT_POSITIONS: Record<string, { x: string; y: string }> = Object.fromEntr
   Object.entries(SLOT_ANCHORS).map(([k, v]) => [k, { x: `${v.x * 100}%`, y: `${v.y * 100}%` }]),
 )
 
-/** 返回离给定 x 最近的预设站位 ID */
+/** 返回离给定 x 最近的预设站位 ID（含左偏中 / 右偏中） */
 function nearestSlot(x: number): string {
   let best = 'center'
   let bestDist = Infinity
-  for (const [id, a] of Object.entries(SLOT_ANCHORS)) {
-    const d = Math.abs(a.x - x)
+  for (const s of PRESET_SLOTS) {
+    const d = Math.abs(s.anchor_x - x)
     if (d < bestDist) {
       bestDist = d
-      best = id
+      best = s.id
     }
   }
   return best
@@ -204,6 +206,8 @@ export default function StagePreview() {
   const [localSpeaker, setLocalSpeaker] = useState(currentDelta?.speaker ?? '')
   const [localDialogue, setLocalDialogue] = useState(currentDelta?.dialogue ?? '')
   const dialogueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // 台词栏聚焦态：激活输入时给予下层立绘物理安全边距并高亮，杜绝误触
+  const [inputFocused, setInputFocused] = useState(false)
 
   // 选中行变化 → 同步本地状态
   useEffect(() => {
@@ -337,7 +341,10 @@ export default function StagePreview() {
         toast(`背景已设为 ${asset.name}`, 'success')
       } else if (zone.startsWith('ch-') && asset.type === 'sprite') {
         const charId = deriveCharacterId(asset.assetId)
-        const slot = zone.slice(3) as 'left' | 'center' | 'right'
+        const slot = zone.slice(3)
+        const slotLabel: Record<string, string> = {
+          left: '左', 'left-center': '左偏中', center: '中', 'right-center': '右偏中', right: '右',
+        }
 
         // 自动创建角色（如果不存在）
         if (!getCharacter(charId)) {
@@ -363,8 +370,7 @@ export default function StagePreview() {
             },
           },
         }))
-        const slotName = { left: '左', center: '中', right: '右' }[slot]
-        toast(`立绘 ${asset.name} 已放置到 ${slotName} 位`, 'success')
+        toast(`立绘 ${asset.name} 已放置到 ${slotLabel[slot] ?? slot} 位`, 'success')
       } else if (zone === 'audio' && asset.type === 'audio') {
         const cat = getAudioCategory(asset.assetId)
         updateDeltaAt(idx, (prev: LineDelta) => {
@@ -399,7 +405,206 @@ export default function StagePreview() {
     }
   }, [])
 
+  // =================== 立绘编辑面板（定点 / 复制 / 锁定 / 缩放） ===================
+  const [selectedCharId, setSelectedCharId] = useState<string | null>(null)
+  const [lockAxis, setLockAxis] = useState<'none' | 'x' | 'y'>('none')
+  const lockAxisRef = useRef<'none' | 'x' | 'y'>('none')
+  lockAxisRef.current = lockAxis
+
+  /** 一键定点：吸附到预设站位，清除自由微调偏移（保证全篇同站位严丝合缝） */
+  const applyPresetSlot = useCallback(
+    (charId: string, slotId: string) => {
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+        const base = prev.characters[charId] ?? {
+          sprite_id: 'default',
+          position_slot: slotId,
+          action: 'show' as const,
+        }
+        return {
+          ...prev,
+          characters: {
+            ...prev.characters,
+            [charId]: {
+              ...base,
+              position_slot: slotId,
+              pos_x: undefined,
+              pos_y: undefined,
+              action: 'show' as const,
+            },
+          },
+        }
+      })
+    },
+    [selectedIndex, updateDeltaAt],
+  )
+
+  /** 复制上一行该角色的位置 / 缩放（经典「对齐上一句同角色站位」） */
+  const copyPrevPosition = useCallback(
+    (charId: string) => {
+      const prevChar = resolvedStates[selectedIndex - 1]?.characters[charId]
+      if (!prevChar) {
+        toast('上一行没有该角色，无法复制位置', 'info')
+        return
+      }
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+        const base = prev.characters[charId] ?? {
+          sprite_id: prevChar.sprite_id,
+          position_slot: prevChar.position_slot,
+          action: 'show' as const,
+        }
+        return {
+          ...prev,
+          characters: {
+            ...prev.characters,
+            [charId]: {
+              ...base,
+              position_slot: prevChar.position_slot,
+              pos_x: prevChar.pos_x,
+              pos_y: prevChar.pos_y,
+              scale: prevChar.scale,
+              action: 'show' as const,
+            },
+          },
+        }
+      })
+      toast('已复制上一行的位置与缩放', 'success')
+    },
+    [selectedIndex, resolvedStates, updateDeltaAt],
+  )
+
+  /** 设置立绘缩放（独立于位置，不影响落点） */
+  const setCharScale = useCallback(
+    (charId: string, scale: number) => {
+      const clamped = Math.max(0.2, Math.min(2, scale))
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+        const base = prev.characters[charId] ?? {
+          sprite_id: 'default',
+          position_slot: 'center',
+          action: 'show' as const,
+        }
+        return {
+          ...prev,
+          characters: {
+            ...prev.characters,
+            [charId]: { ...base, scale: clamped, action: 'show' as const },
+          },
+        }
+      })
+    },
+    [selectedIndex, updateDeltaAt],
+  )
+
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+
+  // =================== 自动播放（Auto）引擎 ===================
+  // 经典 Galgame 自动翻页：按字数估算每行停留时长，自动推进并触发演出 / 音频变化（含段落内 offset）。
+  const [autoOn, setAutoOn] = useState(false)
+  const autoRunningRef = useRef(false)
+  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingAudioRef = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  /** 进入一行时调度该行的音频（含段落内 offset 延迟切入）；一次性事件每次重播，常驻通道仅在变化时切换 */
+  const playLineAudio = useCallback(
+    (state: ResolvedLineState | null, prev: ResolvedLineState | null) => {
+      if (!state) return
+      // 常驻通道：BGM（仅当曲目变化时切换，避免循环中断）
+      const curBgm = state.audio.bgm?.asset_id ?? null
+      const prevBgm = prev?.audio.bgm?.asset_id ?? null
+      if (curBgm !== prevBgm) {
+        stopBgm()
+        if (curBgm) {
+          const asset = assets.find((a) => a.id === curBgm)
+          if (asset) {
+            const off = state.audio.bgm?.offset_ms ?? 0
+            if (off > 0) pendingAudioRef.current.push(setTimeout(() => void playAudioPreview(asset), off))
+            else void playAudioPreview(asset)
+          }
+        }
+      }
+      // 常驻通道：环境音
+      const curAmb = state.audio.ambient?.asset_id ?? null
+      const prevAmb = prev?.audio.ambient?.asset_id ?? null
+      if (curAmb !== prevAmb) {
+        stopAmbient()
+        if (curAmb) {
+          const asset = assets.find((a) => a.id === curAmb)
+          if (asset) {
+            const off = state.audio.ambient?.offset_ms ?? 0
+            if (off > 0) pendingAudioRef.current.push(setTimeout(() => void playAudioPreview(asset), off))
+            else void playAudioPreview(asset)
+          }
+        }
+      }
+      // 一次性：音效（逐条 offset）
+      for (const seId of state.audio.se) {
+        const asset = assets.find((a) => a.id === seId)
+        if (!asset) continue
+        const off = state.audio.se_offset_ms?.[seId] ?? 0
+        if (off > 0) pendingAudioRef.current.push(setTimeout(() => void playAudioPreview(asset), off))
+        else void playAudioPreview(asset)
+      }
+      // 一次性：语音（offset）
+      if (state.audio.voice) {
+        const asset = assets.find((a) => a.id === state.audio.voice!)
+        if (asset) {
+          const off = state.audio.voice_offset_ms ?? 0
+          if (off > 0) pendingAudioRef.current.push(setTimeout(() => void playAudioPreview(asset), off))
+          else void playAudioPreview(asset)
+        }
+      }
+    },
+    [assets],
+  )
+
+  const clearAutoTimers = useCallback(() => {
+    if (autoTimerRef.current) clearTimeout(autoTimerRef.current)
+    autoTimerRef.current = null
+    pendingAudioRef.current.forEach((t) => clearTimeout(t))
+    pendingAudioRef.current = []
+  }, [])
+
+  const stopAuto = useCallback(() => {
+    autoRunningRef.current = false
+    setAutoOn(false)
+    clearAutoTimers()
+    stopOneShots() // 停止一次性 se / voice，避免停下后残留播放
+  }, [clearAutoTimers])
+
+  const runAutoFrom = useCallback(
+    (index: number) => {
+      if (!autoRunningRef.current) return
+      if (index >= resolvedStates.length) {
+        stopAuto()
+        return
+      }
+      if (selectedIndex !== index) selectLine(index)
+      const state = resolvedStates[index]
+      const prev = index > 0 ? resolvedStates[index - 1] : null
+      playLineAudio(state, prev)
+      const dur = estimateLineDurationMs(state.dialogue)
+      autoTimerRef.current = setTimeout(() => runAutoFrom(index + 1), dur)
+    },
+    [resolvedStates, selectedIndex, selectLine, playLineAudio, stopAuto],
+  )
+
+  const toggleAuto = useCallback(() => {
+    if (autoRunningRef.current) {
+      stopAuto()
+      return
+    }
+    autoRunningRef.current = true
+    setAutoOn(true)
+    runAutoFrom(selectedIndex)
+  }, [selectedIndex, runAutoFrom, stopAuto])
+
+  // 卸载时停止 Auto，避免定时器泄漏
+  useEffect(() => {
+    return () => {
+      autoRunningRef.current = false
+      if (autoTimerRef.current) clearTimeout(autoTimerRef.current)
+      pendingAudioRef.current.forEach((t) => clearTimeout(t))
+    }
+  }, [])
 
   const handleCharMouseDown = useCallback(
     (charId: string) => (e: React.MouseEvent) => {
@@ -407,6 +612,7 @@ export default function StagePreview() {
       if (e.button !== 0) return
       e.preventDefault()
       e.stopPropagation()
+      setSelectedCharId(charId)
       const stageEl = stageRef.current
       if (!stageEl) return
       const char = (resolvedStates[selectedIndex]?.characters ?? {})[charId]
@@ -432,6 +638,9 @@ export default function StagePreview() {
         let ry = (ev.clientY - rect.top) / rect.height - offsetY
         rx = clamp(rx, 0.03, 0.97)
         ry = clamp(ry, 0.2, 1)
+        // 锁定单轴：拖动时只改另一轴，被锁定轴维持抓取起始值（与缩放同理，位移两轴解耦）
+        if (lockAxisRef.current === 'x') ry = startY
+        else if (lockAxisRef.current === 'y') rx = startX
         // 磁吸：仅当靠近预设站位（吸附带较窄）才吸过去，留出自由微调空间
         let snapped = false
         let slot = char.position_slot
@@ -500,12 +709,12 @@ export default function StagePreview() {
     if (dragAssetType !== 'sprite') return null
     return (
       <div className="pointer-events-none absolute inset-0 z-20">
-        {(['left', 'center', 'right'] as const).map((slot) => {
-          const pos = SLOT_POSITIONS[slot]
-          const active = dragOverZone === `ch-${slot}`
+        {PRESET_SLOTS.map((s) => {
+          const pos = SLOT_POSITIONS[s.id]
+          const active = dragOverZone === `ch-${s.id}`
           return (
               <div
-                key={slot}
+                key={s.id}
                 className="absolute -translate-x-1/2 -translate-y-full flex flex-col items-center"
                 style={{ left: pos.x, top: pos.y }}
               >
@@ -516,7 +725,7 @@ export default function StagePreview() {
                     : 'border-edge-strong/20 bg-surface-1/20'
                 }`}
               >
-                <span className="text-xs text-fg-subtle">{slot}</span>
+                <span className="text-xs text-fg-subtle">{s.label}</span>
               </div>
             </div>
           )
@@ -561,7 +770,7 @@ export default function StagePreview() {
           <IconButton
             variant="ghost"
             size="sm"
-            disabled={selectedIndex <= 0}
+            disabled={selectedIndex <= 0 || autoOn}
             icon={<ChevronLeft size={16} strokeWidth={1.75} />}
             onClick={() => selectLine(selectedIndex - 1)}
             title="上一个场景"
@@ -573,12 +782,25 @@ export default function StagePreview() {
           <IconButton
             variant="ghost"
             size="sm"
-            disabled={selectedIndex >= resolvedStates.length - 1}
+            disabled={selectedIndex >= resolvedStates.length - 1 || autoOn}
             icon={<ChevronRight size={16} strokeWidth={1.75} />}
             onClick={() => selectLine(selectedIndex + 1)}
             title="下一个场景"
             aria-label="下一个场景"
           />
+          <button
+            type="button"
+            onClick={toggleAuto}
+            title={autoOn ? '停止自动播放' : '自动播放（Auto）'}
+            className={`ml-1 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[13px] font-medium transition-colors ${
+              autoOn
+                ? 'border-signal bg-signal text-white hover:bg-signal/90'
+                : 'border-edge/20 bg-surface-2 text-fg hover:bg-surface-hover'
+            }`}
+          >
+            {autoOn ? <Pause size={15} strokeWidth={2} /> : <Play size={15} strokeWidth={2} />}
+            Auto
+          </button>
           <button
             type="button"
             onClick={() => insertDeltaAt(selectedIndex + 1)}
@@ -607,6 +829,7 @@ export default function StagePreview() {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDropOnStage}
+        onClick={() => setSelectedCharId(null)}
       >
         {/* 背景层 */}
         <div
@@ -668,16 +891,20 @@ export default function StagePreview() {
             const anchor = SLOT_ANCHORS[char.position_slot] ?? SLOT_ANCHORS.center
             const px = dragging ? dragPos!.x : char.pos_x ?? anchor.x
             const py = dragging ? dragPos!.y : char.pos_y ?? anchor.y
+            const scale = char.scale ?? 1
             const hasOffset = char.pos_x != null || char.pos_y != null
+            const selected = selectedCharId === charId
+            const slotLabel = getPresetSlot(char.position_slot)?.label ?? char.position_slot
 
             return (
               <div
                 key={charId}
                 onMouseDown={handleCharMouseDown(charId)}
+                onClick={(e) => e.stopPropagation()}
                 onDragStart={(e) => e.preventDefault()}
                 className={`group pointer-events-auto absolute -translate-x-1/2 -translate-y-full flex select-none cursor-grab flex-col items-center active:cursor-grabbing ${
                   dragging ? '' : 'transition-[left,top] duration-200'
-                }`}
+                } ${selected ? 'rounded-lg ring-2 ring-signal' : ''}`}
                 // zIndex 动态对齐 computeZorder：按水平位置升序（越靠右越靠前），
                 // 与 Ren'Py 导出产物层级严格一致，消灭预览/导出认知分歧。
                 style={{
@@ -685,22 +912,22 @@ export default function StagePreview() {
                   top: `${py * 100}%`,
                   zIndex: Math.round((char.pos_x ?? SLOT_ANCHORS[char.position_slot]?.x ?? 0.5) * 10) + 10,
                 }}
-                title="拖动可移动位置；靠近左/中/右的虚线会自动吸附到站位，拉离即自由微调"
+                title="拖动可移动位置；靠近站位的虚线会自动吸附，拉离即自由微调。点按选中后可定点 / 缩放 / 锁定。"
               >
                 {spriteDataUrl ? (
-                  /* 真实立绘图片 */
+                  /* 真实立绘图片：外层负责定位，内层 img 仅承载 scale，缩放原点锁定底部中心 → 位移与缩放彻底解耦 */
                   <img
                     src={spriteDataUrl}
                     alt={getDisplayName(charId)}
                     draggable={false}
                     className="max-h-64 w-auto select-none object-contain drop-shadow-lg"
-                    style={{ minHeight: '80px' }}
+                    style={{ minHeight: '80px', transform: `scale(${scale})`, transformOrigin: 'bottom center' }}
                   />
                 ) : (
-                  /* 兜底色块占位 */
+                  /* 兜底色块占位（同样仅内层缩放） */
                   <div
                     className="flex w-16 flex-col items-center gap-1 rounded-t-lg px-3 pt-6 pb-3 shadow-lg"
-                    style={{ backgroundColor: spriteColor, minHeight: '100px' }}
+                    style={{ backgroundColor: spriteColor, minHeight: '100px', transform: `scale(${scale})`, transformOrigin: 'bottom center' }}
                   >
                     <span className="text-center text-[12px] font-medium text-white/80">
                       {getDisplayName(charId)}
@@ -714,16 +941,114 @@ export default function StagePreview() {
                   className={`mt-1 rounded px-1.5 text-center text-[12px] transition-colors ${
                     dragging
                       ? 'bg-signal/20 text-signal'
-                      : 'text-fg-faint opacity-0 group-hover:opacity-100'
+                      : selected
+                        ? 'bg-signal/15 text-signal'
+                        : 'text-fg-faint opacity-0 group-hover:opacity-100'
                   }`}
                 >
-                  {dragging ? dragPos!.slot : char.position_slot}
+                  {dragging ? dragPos!.slot : slotLabel}
                   {hasOffset && !dragging ? ' 微调' : ''}
+                  {scale !== 1 ? ` ×${scale.toFixed(2)}` : ''}
                   {dragging ? (dragPos!.snapped ? ' 吸附' : ` ${Math.round(px * 100)},${Math.round(py * 100)}`) : ''}
                 </div>
               </div>
             )
           },
+        )}
+
+
+        {/* 立绘编辑面板：选中立绘后浮动出现，定点 / 复制 / 锁定 / 缩放 */}
+        {selectedCharId && state.characters[selectedCharId] && (
+          <div className="absolute left-2 top-16 z-30 w-44 rounded-lg border border-edge/15 bg-surface/95 p-2.5 shadow-2 backdrop-blur-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[12px] font-semibold text-fg">
+                立绘编辑 · {getDisplayName(selectedCharId)}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedCharId(null)}
+                className="rounded p-0.5 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
+                title="关闭"
+              >
+                <X size={13} strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* 一键定点（五档经典站位） */}
+            <div className="mb-2">
+              <div className="mb-1 text-[11px] text-fg-subtle">定点</div>
+              <div className="grid grid-cols-3 gap-1">
+                {PRESET_SLOTS.map((s) => {
+                  const cur = state.characters[selectedCharId]
+                  const activeSlot = cur.position_slot === s.id && cur.pos_x == null && cur.pos_y == null
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => applyPresetSlot(selectedCharId, s.id)}
+                      className={`rounded border px-1 py-1 text-[12px] transition-colors ${
+                        activeSlot
+                          ? 'border-signal bg-signal/15 text-signal'
+                          : 'border-edge/15 text-fg-muted hover:bg-surface-hover'
+                      }`}
+                      title={`定位到${s.label}`}
+                    >
+                      {s.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* 复制上一行位置 */}
+            <button
+              type="button"
+              onClick={() => copyPrevPosition(selectedCharId)}
+              className="mb-2 flex w-full items-center justify-center gap-1 rounded border border-edge/15 px-2 py-1 text-[12px] text-fg-muted transition-colors hover:bg-surface-hover"
+              title="把上一行该角色的位置与缩放复制过来，实现同角色跨页精确对齐"
+            >
+              <Copy size={12} strokeWidth={1.75} /> 复制上一行位置
+            </button>
+
+            {/* 锁定单轴 */}
+            <div className="mb-2">
+              <div className="mb-1 text-[11px] text-fg-subtle">锁定轴</div>
+              <div className="flex gap-1">
+                {(['none', 'x', 'y'] as const).map((ax) => (
+                  <button
+                    key={ax}
+                    type="button"
+                    onClick={() => setLockAxis(ax)}
+                    className={`flex-1 rounded border px-1 py-1 text-[12px] transition-colors ${
+                      lockAxis === ax
+                        ? 'border-signal bg-signal/15 text-signal'
+                        : 'border-edge/15 text-fg-muted hover:bg-surface-hover'
+                    }`}
+                    title={ax === 'none' ? '不锁定，自由拖动' : ax === 'x' ? '锁定横向，只改纵向' : '锁定纵向，只改横向'}
+                  >
+                    {ax === 'none' ? '无' : ax === 'x' ? '锁X' : '锁Y'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 缩放（与位置完全解耦） */}
+            <div>
+              <div className="mb-1 flex items-center justify-between text-[11px] text-fg-subtle">
+                <span>缩放</span>
+                <span className="tabular-nums text-fg-muted">×{(state.characters[selectedCharId].scale ?? 1).toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                min={0.2}
+                max={2}
+                step={0.05}
+                value={state.characters[selectedCharId].scale ?? 1}
+                onChange={(e) => setCharScale(selectedCharId, parseFloat(e.target.value))}
+                className="w-full accent-signal"
+              />
+            </div>
+          </div>
         )}
 
         {/* 行号指示器 */}
@@ -771,54 +1096,6 @@ export default function StagePreview() {
           )}
         </div>
 
-        {/* 快捷台词编辑条 —— 拖入素材后直接在此写台词，无需切视图；遮罩跟随主题（浅色=浅灰渐隐） */}
-        <div
-          className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 p-3 pt-10"
-          style={{
-            background:
-              'linear-gradient(to top, rgb(var(--c-surface-3) / 0.96), rgb(var(--c-surface-3) / 0.82) 55%, transparent)',
-          }}
-        >
-          <div className="flex items-start gap-2">
-            {/* 说话人选择器 */}
-            <div className="relative shrink-0">
-              <input
-                type="text"
-                value={localSpeaker}
-                onChange={(e) => {
-                  setLocalSpeaker(e.target.value)
-                  commitDialogue(e.target.value, localDialogue)
-                }}
-                placeholder="说话人"
-                list="speaker-list"
-                className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[14px] text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
-              />
-              <datalist id="speaker-list">
-                {characterConfigs.map((c) => (
-                  <option key={c.charId} value={c.displayName}>{c.charId}</option>
-                ))}
-              </datalist>
-            </div>
-            {/* 台词输入 */}
-            <div className="min-w-0 flex-1">
-              <input
-                type="text"
-                value={localDialogue}
-                onChange={(e) => {
-                  setLocalDialogue(e.target.value)
-                  commitDialogue(localSpeaker, e.target.value)
-                }}
-                placeholder={state.speaker ? `${state.speaker}的台词...` : '旁白或台词...'}
-                className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[14px] text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
-              />
-            </div>
-          </div>
-          {/* 行信息提示 */}
-          <div className="mt-1.5 text-right text-[12px] text-fg-subtle">
-            {state.line_id} 快捷输入 {state.speaker ? `说话人 ${state.speaker}` : '旁白模式'}
-          </div>
-        </div>
-
         {/* 行进度条 */}
         <div className="absolute right-0 bottom-0 left-0 z-20 flex h-0.5">
           {resolvedStates.map((_, i) => (
@@ -831,6 +1108,57 @@ export default function StagePreview() {
               title={`跳转到 ${resolvedStates[i].line_id}`}
             />
           ))}
+        </div>
+      </div>
+
+      {/* 台词输入浮动栏：排在舞台之后（in-flow），天然把立绘顶到安全区之上——物理安全边距，彻底杜绝误触；
+          聚焦时展开更高边距 + 高亮。半透明玻璃质感，下方演出仍可见。 */}
+      <div
+        className={`relative z-40 shrink-0 border-t border-edge/10 bg-surface/90 px-3 py-2.5 backdrop-blur-md transition-all duration-150 ${
+          inputFocused ? 'py-3 ring-1 ring-inset ring-signal/40' : ''
+        }`}
+      >
+        <div className="flex items-start gap-2">
+          {/* 说话人选择器 */}
+          <div className="relative shrink-0">
+            <input
+              type="text"
+              value={localSpeaker}
+              onChange={(e) => {
+                setLocalSpeaker(e.target.value)
+                commitDialogue(e.target.value, localDialogue)
+              }}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              placeholder="说话人"
+              list="speaker-list"
+              className="w-24 rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[14px] text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
+            />
+            <datalist id="speaker-list">
+              {characterConfigs.map((c) => (
+                <option key={c.charId} value={c.displayName}>{c.charId}</option>
+              ))}
+            </datalist>
+          </div>
+          {/* 台词输入 */}
+          <div className="min-w-0 flex-1">
+            <input
+              type="text"
+              value={localDialogue}
+              onChange={(e) => {
+                setLocalDialogue(e.target.value)
+                commitDialogue(localSpeaker, e.target.value)
+              }}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              placeholder={state.speaker ? `${state.speaker}的台词...` : '旁白或台词...'}
+              className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[14px] text-fg placeholder-fg-subtle outline-none transition-colors focus:border-signal/60"
+            />
+          </div>
+        </div>
+        {/* 行信息提示 */}
+        <div className="mt-1.5 text-right text-[12px] text-fg-subtle">
+          {state.line_id} 快捷输入 {state.speaker ? `说话人 ${state.speaker}` : '旁白模式'}
         </div>
       </div>
     </main>
