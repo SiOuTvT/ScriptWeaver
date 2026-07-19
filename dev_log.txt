@@ -13,7 +13,7 @@ build started...[39m
 [36m
 build started...[39m
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m629[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m1124[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
 [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
@@ -23,12 +23,28 @@ transforming...
 rendering chunks...
 computing gzip size...
 [2mdist-electron/[22m[36mpreload.js  [39m[1m[2m2.58 kB[22m[1m[22m[2m │ gzip: 1.27 kB[22m
-[36mbuilt in 434ms.[39m
+[36mbuilt in 1286ms.[39m
 [32m✓[39m 2 modules transformed.
 rendering chunks...
 computing gzip size...
-[2mdist-electron/[22m[36mmain.js  [39m[1m[2m17.40 kB[22m[1m[22m[2m │ gzip: 5.20 kB[22m
-[36mbuilt in 525ms.[39m
+[2mdist-electron/[22m[36mmain.js  [39m[1m[2m17.84 kB[22m[1m[22m[2m │ gzip: 5.34 kB[22m
+[36mbuilt in 1371ms.[39m
 
-[40252:0719/134152.960:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[40252:0719/134152.960:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[18600:0719/152034.640:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[18600:0719/152034.640:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[36m
+build started...[39m
+[32m✓[39m 1 modules transformed.
+[2mdist-electron/[22m[36mmain.js  [39m[1m[2m18.94 kB[22m[1m[22m[2m │ gzip: 5.64 kB[22m
+[36mbuilt in 100ms.[39m
+
+[48960:0719/152812.988:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[48960:0719/152812.988:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[2m15:33:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/SceneNavPanel.tsx[22m
+[2m15:33:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/SceneNavPanel.tsx[22m
+[2m15:34:05[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/SceneNavPanel.tsx[22m
+[2m15:34:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /src/index.css[22m
+[2m15:34:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /src/index.css[22m
+[2m15:34:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /src/index.css[22m
+[2m15:35:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /src/index.css[22m
+[2m15:35:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /src/index.css[22m

@@ -24,6 +24,28 @@ let ambientId: string | null = null
 const oneShots = new Set<HTMLAudioElement>()
 const oneShotIds = new Set<string>()
 
+// ---- 轻量订阅：让 React UI 能随播放状态变化重渲染（含播放自然结束时自动复位图标）----
+let version = 0
+const listeners = new Set<() => void>()
+
+/** 订阅播放状态变化（配合 useSyncExternalStore 使用） */
+export function subscribeAudio(cb: () => void): () => void {
+  listeners.add(cb)
+  return () => {
+    listeners.delete(cb)
+  }
+}
+
+/** 当前播放状态版本号（getSnapshot） */
+export function getAudioVersion(): number {
+  return version
+}
+
+function notify(): void {
+  version++
+  for (const l of listeners) l()
+}
+
 function ensureEl(kind: 'bgm' | 'ambient'): HTMLAudioElement {
   const el = kind === 'bgm' ? bgmEl : ambientEl
   if (el) return el
@@ -41,6 +63,7 @@ function stopBgm(): void {
     bgmEl.currentTime = 0
   }
   bgmId = null
+  notify()
 }
 
 function stopAmbient(): void {
@@ -49,6 +72,7 @@ function stopAmbient(): void {
     ambientEl.currentTime = 0
   }
   ambientId = null
+  notify()
 }
 
 function stopOneShots(): void {
@@ -61,6 +85,7 @@ function stopOneShots(): void {
   }
   oneShots.clear()
   oneShotIds.clear()
+  notify()
 }
 
 /** 停止全部通道预览 */
@@ -104,11 +129,13 @@ export async function playAudioPreview(asset: AssetItem): Promise<boolean> {
     }
     try {
       await el.play()
+      notify()
       return true
     } catch (err) {
       console.error(`[AudioPreview] 播放失败: ${asset.name}`, err)
       if (cat === 'bgm') bgmId = null
       else ambientId = null
+      notify()
       return false
     }
   }
@@ -121,18 +148,22 @@ export async function playAudioPreview(asset: AssetItem): Promise<boolean> {
   el.onended = () => {
     oneShots.delete(el)
     oneShotIds.delete(asset.id)
+    notify()
   }
   el.onerror = () => {
     oneShots.delete(el)
     oneShotIds.delete(asset.id)
+    notify()
   }
   try {
     await el.play()
+    notify()
     return true
   } catch (err) {
     console.error(`[AudioPreview] 播放失败: ${asset.name}`, err)
     oneShots.delete(el)
     oneShotIds.delete(asset.id)
+    notify()
     return false
   }
 }
