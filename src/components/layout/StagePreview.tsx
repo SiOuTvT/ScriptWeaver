@@ -508,7 +508,12 @@ export default function StagePreview() {
 
   if (!state) {
     return (
-      <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-md border border-edge/10 shadow-sm overflow-hidden">
+      <main
+        className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-md border border-edge/10 shadow-sm overflow-hidden"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDropOnStage}
+      >
         <div className="flex flex-1 items-center justify-center text-sm text-fg-faint bg-[rgb(var(--c-surface-3))]">
           暂无数据
         </div>

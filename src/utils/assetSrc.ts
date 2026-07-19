@@ -14,8 +14,12 @@ export function resolveAssetSrc(asset: AssetItem | undefined | null): string | u
   if (!asset) return undefined
   // Web 降级：临时对象 URL
   if (asset.blobUrl) return asset.blobUrl
-  // Electron：协议直读（relativePath 已含 assets/ 前缀，如 "assets/images/sprite/x.png"）
+  // Electron：协议直读。
+  // 注意 sw-asset 是 standard 协议，URL 中 "sw-asset://<host>/<path>" 的 <host> 段会被
+  // URL 解析器吞掉，因此这里必须用固定哨兵主机 "asset"，并把完整 relativePath 放在 path 里：
+  //   sw-asset://asset/assets/images/sprite/x.png  →  host="asset"  pathname="/assets/images/sprite/x.png"
+  // 协议 handler 据此还原出 root/assets/images/sprite/x.png。绝对不能写成 sw-asset://assets/...（会被吃掉 assets/ 前缀 → 404）。
   if (!asset.relativePath) return undefined
   const rel = asset.relativePath.replace(/\\/g, '/').replace(/^\/+/, '')
-  return `sw-asset://${rel}`
+  return `sw-asset://asset/${rel}`
 }
