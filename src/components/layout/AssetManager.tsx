@@ -1,10 +1,43 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
 import { hashAssetColor } from '@/utils/charColor'
 import { resolveAssetSrc } from '@/utils/assetSrc'
+import {
+  setDragCache,
+  DRAG_MIME,
+  getAudioCategory,
+  type DragAssetData,
+} from '@/utils/assetHelpers'
+import {
+  toggleAssetPreview,
+  isAssetPlaying,
+  subscribeAudio,
+  getAudioVersion,
+} from '@/utils/audioManager'
 import { Tabs, Input, Button, IconButton, ConfirmDialog } from '@/components/ui'
-import { Image as ImageIcon, User, Music, Plus, Search, Pencil, Trash2 } from 'lucide-react'
+import {
+  Image as ImageIcon,
+  User,
+  Music,
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  Play,
+  Pause,
+} from 'lucide-react'
+
+// 音频类别徽标（BGM / 环境 / 音效 / 语音）
+const AUDIO_CAT_META: Record<
+  ReturnType<typeof getAudioCategory>,
+  { label: string; badge: string }
+> = {
+  bgm: { label: 'BGM', badge: 'bg-info/12 text-info' },
+  ambient: { label: '环境', badge: 'bg-success/12 text-success' },
+  se: { label: '音效', badge: 'bg-warning/14 text-warning' },
+  voice: { label: '语音', badge: 'bg-signal/14 text-signal' },
+}
 
 type TabId = AssetType
 
@@ -28,6 +61,9 @@ export default function AssetManager() {
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<AssetItem | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 订阅音频播放状态：播放/暂停/自然结束时驱动本组件重渲染，切换按钮图标
+  useSyncExternalStore(subscribeAudio, getAudioVersion)
 
   // 按 tab 过滤
   const filtered = assets
@@ -111,6 +147,26 @@ export default function AssetManager() {
     },
     [tab, addAsset],
   )
+
+  // 音频 / 图片拖拽到舞台或时间轴
+  const handleAssetDragStart = useCallback(
+    (e: React.DragEvent, asset: AssetItem) => {
+      const data: DragAssetData = {
+        type: asset.type,
+        assetId: asset.id,
+        label: asset.name,
+        name: asset.name,
+      }
+      setDragCache(data)
+      e.dataTransfer.setData(DRAG_MIME, JSON.stringify(data))
+      e.dataTransfer.effectAllowed = 'copy'
+    },
+    [],
+  )
+
+  const handleAssetDragEnd = useCallback(() => {
+    setDragCache(null)
+  }, [])
 
   // 重命名
   const startRename = useCallback((asset: AssetItem) => {
@@ -206,77 +262,126 @@ export default function AssetManager() {
               {search ? '没有匹配的素材' : '暂无素材，点击上方按钮导入'}
             </div>
           ) : tab === 'audio' ? (
-            /* 音频：紧凑列表行 */
-            <div className="space-y-0.5">
-              {filtered.map((asset) => (
-                <div
-                  key={asset.id}
-                  onContextMenu={(e) => handleContextMenu(e, asset)}
-                  className="group flex items-center gap-2 rounded-md border border-edge/12 px-2 py-1.5 transition-all hover:border-edge/20 hover:bg-surface-hover"
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-surface-1 text-fg-subtle">
-                    <Music size={16} strokeWidth={1.75} />
-                  </div>
-                  <label
-                    title="素材色（时间轴 / 总览通用）"
-                    className="relative flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-surface-hover"
+            /* 音频：卡片行（圆形播放钮 + 类别徽标 + 色 + 重命名/删除） */
+            <div className="space-y-1.5">
+              {filtered.map((asset) => {
+                const playing = isAssetPlaying(asset.id)
+                const cat = getAudioCategory(asset.id)
+                const meta = AUDIO_CAT_META[cat]
+                return (
+                  <div
+                    key={asset.id}
+                    draggable
+                    onDragStart={(e) => handleAssetDragStart(e, asset)}
+                    onDragEnd={handleAssetDragEnd}
+                    onContextMenu={(e) => handleContextMenu(e, asset)}
+                    className={`group flex cursor-grab items-center gap-2 rounded-lg border px-2 py-2 transition-all active:cursor-grabbing ${
+                      playing
+                        ? 'border-info/40 bg-info/[0.06] shadow-[0_2px_6px_rgba(28,24,18,0.10)]'
+                        : 'border-edge/12 shadow-[0_1px_2px_rgba(28,24,18,0.06)] hover:border-edge/20 hover:bg-surface-hover hover:shadow-[0_2px_4px_rgba(28,24,18,0.10)]'
+                    }`}
+                    title="拖拽到时间轴使用 · 点左侧按钮试听"
                   >
+                    {/* 圆形播放/暂停按钮（醒目） */}
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.stopPropagation()
+                        e.preventDefault()
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        e.preventDefault()
+                        toggleAssetPreview(asset)
+                      }}
+                      title={playing ? '停止试听' : '点击试听'}
+                      aria-label={playing ? '停止试听' : '点击试听'}
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+                        playing
+                          ? 'bg-info text-white shadow-sm'
+                          : 'bg-surface-2 text-fg-muted group-hover:bg-info/12 group-hover:text-info'
+                      }`}
+                    >
+                      {playing ? (
+                        <Pause size={16} strokeWidth={2} />
+                      ) : (
+                        <Play size={16} strokeWidth={2} className="ml-0.5" />
+                      )}
+                    </button>
+
+                    {/* 类别徽标 */}
                     <span
-                      className="pointer-events-none h-3.5 w-3.5 rounded-full border border-edge/30"
-                      style={{ backgroundColor: asset.color || hashAssetColor(asset.id) }}
-                    />
-                    <input
-                      type="color"
-                      value={asset.color || '#888888'}
-                      onChange={(e) => updateAsset(asset.id, { color: e.target.value })}
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                    />
-                  </label>
-                  <div className="min-w-0 flex-1">
-                    {editingId === asset.id ? (
-                      <input
-                        type="text"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        onBlur={commitRename}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') commitRename()
-                          if (e.key === 'Escape') setEditingId(null)
-                        }}
-                        autoFocus
-                        className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[12px] text-fg outline-none"
-                      />
-                    ) : (
+                      className={`shrink-0 rounded px-1.5 py-px text-[12px] font-medium leading-tight ${meta.badge}`}
+                    >
+                      {meta.label}
+                    </span>
+
+                    {/* 素材色 */}
+                    <label
+                      title="素材色（时间轴 / 总览通用）"
+                      className="relative flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-surface-hover"
+                    >
                       <span
-                        className="block truncate text-[12px] text-fg-muted group-hover:text-fg"
-                        title={asset.name}
-                      >
-                        {asset.name}
-                      </span>
-                    )}
-                    <span className="block truncate text-[12px] text-fg-subtle">{asset.fileName}</span>
+                        className="pointer-events-none h-3.5 w-3.5 rounded-full border border-edge/30"
+                        style={{ backgroundColor: asset.color || hashAssetColor(asset.id) }}
+                      />
+                      <input
+                        type="color"
+                        value={asset.color || '#888888'}
+                        onChange={(e) => updateAsset(asset.id, { color: e.target.value })}
+                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      />
+                    </label>
+
+                    {/* 名称 + 文件名 */}
+                    <div className="min-w-0 flex-1">
+                      {editingId === asset.id ? (
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onBlur={commitRename}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') commitRename()
+                            if (e.key === 'Escape') setEditingId(null)
+                          }}
+                          autoFocus
+                          className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[12px] text-fg outline-none"
+                        />
+                      ) : (
+                        <span
+                          className="block truncate text-[13px] font-medium text-fg group-hover:text-fg"
+                          title={asset.name}
+                        >
+                          {asset.name}
+                        </span>
+                      )}
+                      <span className="block truncate text-[12px] text-fg-subtle">{asset.fileName}</span>
+                    </div>
+
+                    {/* 操作 */}
+                    <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<Pencil size={13} strokeWidth={1.75} />}
+                        onClick={() => startRename(asset)}
+                        title="重命名"
+                        aria-label="重命名"
+                      />
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<Trash2 size={13} strokeWidth={1.75} />}
+                        onClick={() => requestDelete(asset)}
+                        title="删除"
+                        aria-label="删除"
+                        className="hover:bg-danger/12 hover:text-danger"
+                      />
+                    </div>
                   </div>
-                  <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={<Pencil size={13} strokeWidth={1.75} />}
-                      onClick={() => startRename(asset)}
-                      title="重命名"
-                      aria-label="重命名"
-                    />
-                    <IconButton
-                      variant="ghost"
-                      size="sm"
-                      icon={<Trash2 size={13} strokeWidth={1.75} />}
-                      onClick={() => requestDelete(asset)}
-                      title="删除"
-                      aria-label="删除"
-                      className="hover:bg-danger/12 hover:text-danger"
-                    />
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             /* 图片：缩略图网格（背景图 cover 填满；立绘透明底用棋盘格 + contain 居中） */
