@@ -1,2 +1,524 @@
-"use strict";const i=require("electron"),s=require("path"),l=require("fs"),Q=require("stream"),$={openai:{endpoint:"https://api.openai.com/v1/chat/completions",model:"gpt-4o-mini"}};function k(){return{provider:"openai",endpoint:$.openai.endpoint,apiKey:"",model:$.openai.model,temperature:.7,maxTokens:2e3}}async function Y(e,t,r,o){var y,g,m,x,R,v;const a={model:e.model,messages:t,temperature:e.temperature,max_tokens:e.maxTokens,stream:!0},n=await fetch(e.endpoint,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${e.apiKey}`},body:JSON.stringify(a),signal:o});if(!n.ok){const _=await n.text().catch(()=>"");throw new Error(`API 请求失败 (${n.status}): ${_.slice(0,200)}`)}if(!n.body){const A=((m=(g=(y=(await n.json()).choices)==null?void 0:y[0])==null?void 0:g.message)==null?void 0:m.content)??"";return r(A),A}const c=n.body.getReader(),u=new TextDecoder;let d="",f="";for(;;){const{done:_,value:A}=await c.read();if(_)break;d+=u.decode(A,{stream:!0});const K=d.split(`
-`);d=K.pop()??"";for(const X of K){const W=X.trim();if(!W.startsWith("data:"))continue;const U=W.slice(5).trim();if(U!=="[DONE]")try{const T=(v=(R=(x=JSON.parse(U).choices)==null?void 0:x[0])==null?void 0:R.delta)==null?void 0:v.content;T&&(f+=T,r(T))}catch{}}}return f}let p=null;const B=[".png",".jpg",".jpeg",".webp",".gif"],M=[".mp3",".ogg",".wav",".flac"],Z={".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".webp":"image/webp",".gif":"image/gif",".mp3":"audio/mpeg",".ogg":"audio/ogg",".wav":"audio/wav",".flac":"audio/flac"},q=s.join("images","background"),L=s.join("images","sprite"),J="audio";let w=null;i.protocol.registerSchemesAsPrivileged([{scheme:"sw-asset",privileges:{secure:!0,standard:!0,supportFetchAPI:!0,stream:!0,bypassCSP:!1}}]);function V(){p=new i.BrowserWindow({width:1400,height:900,minWidth:1024,minHeight:680,title:"ScriptWeaver",webPreferences:{preload:s.join(__dirname,"preload.js"),contextIsolation:!0,nodeIntegration:!1}}),process.env.VITE_DEV_SERVER_URL?(p.loadURL(process.env.VITE_DEV_SERVER_URL),p.webContents.openDevTools()):p.loadFile(s.join(__dirname,"../dist/index.html")),p.on("closed",()=>{p=null})}i.app.whenReady().then(()=>{te(),V(),i.app.on("activate",()=>{i.BrowserWindow.getAllWindows().length===0&&V()})});i.app.on("window-all-closed",()=>{process.platform!=="darwin"&&i.app.quit()});function h(e){l.existsSync(e)||l.mkdirSync(e,{recursive:!0})}function E(e,t){h(s.dirname(t)),l.copyFileSync(e,t)}function z(e,t){if(l.existsSync(e)){h(t);for(const r of l.readdirSync(e,{withFileTypes:!0})){const o=s.join(e,r.name),a=s.join(t,r.name);r.isDirectory()?z(o,a):E(o,a)}}}function G(){return"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,e=>{const t=Math.random()*16|0;return(e==="x"?t:t&3|8).toString(16)})}function ee(e,t){return M.includes(e)?{subdir:J,type:"audio"}:t==="background"?{subdir:q,type:"background"}:{subdir:L,type:"sprite"}}function H(e){const t=s.extname(e).toLowerCase();return M.includes(t)?"audio":B.includes(t)?e.replace(/\\/g,"/").includes("/images/background/")?"background":"sprite":null}let j=null;function P(){return j||(j=s.join(i.app.getPath("temp"),`scriptweaver-session-${Date.now()}`),h(j)),j}i.app.on("before-quit",()=>{if(F(),j&&l.existsSync(j))try{l.rmSync(j,{recursive:!0,force:!0})}catch{}});function te(){i.protocol.handle("sw-asset",e=>{try{const t=new URL(e.url),r=decodeURIComponent(t.pathname).replace(/^\/+/,"");if(!r)return new Response("bad request",{status:400});const o=[];w&&o.push(w),o.push(P());for(const a of o){const n=s.resolve(a,"assets"),c=s.resolve(a,r);if(c!==n&&!c.startsWith(n+s.sep))continue;const u=s.extname(c).toLowerCase();if(!B.includes(u)&&!M.includes(u)||!l.existsSync(c))continue;const d=Z[u]??"application/octet-stream",f=Q.Readable.toWeb(l.createReadStream(c));return new Response(f,{headers:{"Content-Type":d,"Cache-Control":"no-cache"}})}return new Response("not found",{status:404})}catch(t){return new Response(`error: ${t.message}`,{status:500})}})}let S=null,I=null;const b=new Map;function F(){if(S){try{S.close()}catch{}S=null}I=null;for(const e of b.values())clearTimeout(e);b.clear()}function N(e){if(I===e&&S)return;F();const t=s.join(e,"assets");h(t);try{S=l.watch(t,{recursive:!0},(r,o)=>{if(!o)return;const a=o.toString(),n=s.join(t,a),c=H(n);if(!c)return;const u=n,d=b.get(u);d&&clearTimeout(d),b.set(u,setTimeout(()=>{b.delete(u);const f=("assets/"+s.relative(t,n).replace(/\\/g,"/")).replace(/\/+/g,"/"),y=l.existsSync(n);p==null||p.webContents.send("asset:changed",{relativePath:f,type:c,exists:y})},150))}),I=e}catch{S=null,I=null}}const C=s.join(i.app.getPath("userData"),"ai-config.json");function O(){try{if(l.existsSync(C)){const e=JSON.parse(l.readFileSync(C,"utf-8"));return{provider:e.provider??"openai",endpoint:e.endpoint??k().endpoint,apiKey:typeof e.apiKey=="string"?e.apiKey:"",model:e.model??k().model,temperature:typeof e.temperature=="number"?e.temperature:.7,maxTokens:typeof e.maxTokens=="number"?e.maxTokens:2e3}}}catch{}return k()}function se(e){const t=O(),r={...t,...e};e.apiKey||(r.apiKey=t.apiKey);try{l.writeFileSync(C,JSON.stringify(r),"utf-8")}catch{}}i.ipcMain.handle("ai:getConfig",()=>{const e=O();return{...e,apiKey:"",hasApiKey:!!e.apiKey}});i.ipcMain.handle("ai:setConfig",(e,t)=>(se(t),{ok:!0}));let D=null;i.ipcMain.on("ai:chat",async(e,t)=>{const r=O();if(!r.apiKey){e.sender.send("ai:error","未配置 API Key（请在 AI 设置中填写，密钥仅存于本地安全区）");return}const o=new AbortController;D=o;try{const a=await Y(r,t.messages,n=>e.sender.send("ai:chunk",{delta:n}),o.signal);e.sender.send("ai:done",{full:a})}catch(a){const n=a;(n==null?void 0:n.name)==="AbortError"?e.sender.send("ai:aborted"):e.sender.send("ai:error",(n==null?void 0:n.message)??"未知错误")}finally{D=null}});i.ipcMain.on("ai:abort",()=>{D==null||D.abort()});i.ipcMain.handle("app:getVersion",()=>i.app.getVersion());i.ipcMain.handle("app:getPath",(e,t)=>i.app.getPath(t));i.ipcMain.handle("app:getSessionDir",()=>P());i.ipcMain.on("app:setNativeTheme",(e,t)=>{i.nativeTheme.themeSource=t});i.ipcMain.handle("fs:setActiveProjectRoot",(e,t)=>(w=t&&typeof t=="string"?t:null,w?N(w):F(),{success:!0}));i.ipcMain.handle("fs:scanProjectAssets",(e,t)=>{try{if(!t||typeof t!="string")return{success:!1,error:"缺少 projectRoot"};const r=s.join(t,"assets"),o=[],a=n=>{if(l.existsSync(n))for(const c of l.readdirSync(n,{withFileTypes:!0})){const u=s.join(n,c.name);if(c.isDirectory())a(u);else{const d=H(u);if(!d)continue;const f="assets/"+s.relative(r,u).replace(/\\/g,"/");o.push({id:G(),type:d,name:s.parse(u).name,fileName:s.basename(u),relativePath:f,importedAt:new Date().toISOString()})}}};return a(r),{success:!0,assets:o}}catch(r){return{success:!1,error:r.message}}});i.ipcMain.handle("dialog:saveProject",async(e,t)=>{if(!p)return{success:!1,error:"No active window"};const r=await i.dialog.showOpenDialog(p,{title:"选择项目保存目录",properties:["openDirectory","createDirectory"]});if(r.canceled||r.filePaths.length===0)return{success:!1};const o=r.filePaths[0],a=t.projectName||"untitled",n=s.join(o,"assets");try{h(s.join(n,q)),h(s.join(n,L)),h(s.join(n,J));const c=s.join(P(),"assets");l.existsSync(c)&&z(c,n);const u=s.join(o,`${a}.swproj`);return l.writeFileSync(u,t.projectJson,"utf-8"),w=o,N(o),{success:!0,projectDir:o}}catch(c){return{success:!1,error:c.message}}});i.ipcMain.handle("dialog:openProject",async()=>{if(!p)return{success:!1,error:"No active window"};const e=await i.dialog.showOpenDialog(p,{title:"打开项目",filters:[{name:"ScriptWeaver 项目",extensions:["swproj"]}],properties:["openFile"]});if(e.canceled||e.filePaths.length===0)return{success:!1};try{const t=e.filePaths[0],r=l.readFileSync(t,"utf-8"),o=s.dirname(t);return w=o,N(o),{success:!0,content:r,projectDir:o}}catch(t){return{success:!1,error:t.message}}});i.ipcMain.handle("dialog:pickAssetFiles",async(e,t)=>{if(!p)return{success:!1,error:"No active window"};const r=(t==null?void 0:t.filters)||[{name:"图片文件",extensions:["png","jpg","jpeg","webp"]},{name:"音频文件",extensions:["mp3","ogg","wav"]},{name:"所有文件",extensions:["*"]}],o=await i.dialog.showOpenDialog(p,{title:"导入素材",filters:r,properties:["openFile","multiSelections"]});if(o.canceled||o.filePaths.length===0)return{success:!1};try{const a=P(),n=[];for(const c of o.filePaths){const u=s.extname(c).toLowerCase(),d=s.basename(c),{subdir:f,type:y}=ee(u,t==null?void 0:t.kind),g=s.join(a,"assets",f);h(g);let m=s.join(g,d),x=1;for(;l.existsSync(m);){const v=s.parse(d);m=s.join(g,`${v.name}_${x}${v.ext}`),x++}E(c,m);const R=s.join("assets",f,s.basename(m)).replace(/\\/g,"/");n.push({id:G(),fileName:s.basename(m),relativePath:R,type:y})}return{success:!0,files:n}}catch(a){return{success:!1,error:a.message}}});i.ipcMain.handle("fs:exportRenpy",async(e,t)=>{if(!p)return{success:!1,error:"No active window"};const r=await i.dialog.showOpenDialog(p,{title:"选择 Ren'Py 导出目录",properties:["openDirectory","createDirectory"]});if(r.canceled||r.filePaths.length===0)return{success:!1};const o=r.filePaths[0],a=s.join(o,"game"),n=s.join(a,"images","background"),c=s.join(a,"images","sprite"),u=s.join(a,"audio");h(n),h(c),h(u);const d=w??P(),f=s.resolve(d);let y=0;for(const g of t.assets??[]){const m=s.resolve(f,g.sourceRelativePath);if(m!==f&&!m.startsWith(f+s.sep)||!l.existsSync(m))continue;const x=s.resolve(a,g.exportRelPath);try{E(m,x),y++}catch{}}try{l.writeFileSync(s.join(a,"script.rpy"),t.script??"","utf-8"),l.writeFileSync(s.join(a,"definitions.rpy"),t.definitions??"","utf-8")}catch(g){return{success:!1,error:g.message}}return{success:!0,gameDir:a,copied:y}});
+"use strict";
+const electron = require("electron");
+const path = require("path");
+const fs = require("fs");
+const stream = require("stream");
+const PROVIDER_PRESETS = {
+  openai: { endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini" }
+};
+function defaultAIConfig() {
+  return {
+    provider: "openai",
+    endpoint: PROVIDER_PRESETS.openai.endpoint,
+    apiKey: "",
+    model: PROVIDER_PRESETS.openai.model,
+    temperature: 0.7,
+    maxTokens: 2e3
+  };
+}
+async function streamChatCompletion(config, messages, onToken, signal) {
+  var _a, _b, _c, _d, _e, _f;
+  const body = {
+    model: config.model,
+    messages,
+    temperature: config.temperature,
+    max_tokens: config.maxTokens,
+    stream: true
+  };
+  const res = await fetch(config.endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.apiKey}`
+    },
+    body: JSON.stringify(body),
+    signal
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`API 请求失败 (${res.status}): ${errText.slice(0, 200)}`);
+  }
+  if (!res.body) {
+    const data = await res.json();
+    const content = ((_c = (_b = (_a = data.choices) == null ? void 0 : _a[0]) == null ? void 0 : _b.message) == null ? void 0 : _c.content) ?? "";
+    onToken(content);
+    return content;
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let full = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const payload = trimmed.slice(5).trim();
+      if (payload === "[DONE]") continue;
+      try {
+        const json = JSON.parse(payload);
+        const token = (_f = (_e = (_d = json.choices) == null ? void 0 : _d[0]) == null ? void 0 : _e.delta) == null ? void 0 : _f.content;
+        if (token) {
+          full += token;
+          onToken(token);
+        }
+      } catch {
+      }
+    }
+  }
+  return full;
+}
+let mainWindow = null;
+const IMG_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
+const AUDIO_EXTS = [".mp3", ".ogg", ".wav", ".flac"];
+const MIME_MAP = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".mp3": "audio/mpeg",
+  ".ogg": "audio/ogg",
+  ".wav": "audio/wav",
+  ".flac": "audio/flac"
+};
+const SUBDIR_BACKGROUND = path.join("images", "background");
+const SUBDIR_SPRITE = path.join("images", "sprite");
+const SUBDIR_AUDIO = "audio";
+let activeProjectRoot = null;
+electron.protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "sw-asset",
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+      stream: true,
+      bypassCSP: false
+    }
+  }
+]);
+function createWindow() {
+  mainWindow = new electron.BrowserWindow({
+    width: 1400,
+    height: 900,
+    minWidth: 1024,
+    minHeight: 680,
+    title: "ScriptWeaver",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+  }
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+}
+electron.app.whenReady().then(() => {
+  registerAssetProtocol();
+  createWindow();
+  electron.app.on("activate", () => {
+    if (electron.BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
+electron.app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    electron.app.quit();
+  }
+});
+function ensureDir(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+function copyFile(src, dest) {
+  ensureDir(path.dirname(dest));
+  fs.copyFileSync(src, dest);
+}
+function copyDir(src, dest) {
+  if (!fs.existsSync(src)) return;
+  ensureDir(dest);
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const s = path.join(src, entry.name);
+    const d = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDir(s, d);
+    } else {
+      copyFile(s, d);
+    }
+  }
+}
+function uuid() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    return (c === "x" ? r : r & 3 | 8).toString(16);
+  });
+}
+function resolveSubdir(ext, kind) {
+  if (AUDIO_EXTS.includes(ext)) return { subdir: SUBDIR_AUDIO, type: "audio" };
+  if (kind === "background") return { subdir: SUBDIR_BACKGROUND, type: "background" };
+  return { subdir: SUBDIR_SPRITE, type: "sprite" };
+}
+function classifyAsset(abs) {
+  const ext = path.extname(abs).toLowerCase();
+  if (AUDIO_EXTS.includes(ext)) return "audio";
+  if (IMG_EXTS.includes(ext)) {
+    const normalized = abs.replace(/\\/g, "/");
+    return normalized.includes("/images/background/") ? "background" : "sprite";
+  }
+  return null;
+}
+let sessionDir = null;
+function getSessionDir() {
+  if (!sessionDir) {
+    sessionDir = path.join(electron.app.getPath("temp"), `scriptweaver-session-${Date.now()}`);
+    ensureDir(sessionDir);
+  }
+  return sessionDir;
+}
+electron.app.on("before-quit", () => {
+  stopAssetWatch();
+  if (sessionDir && fs.existsSync(sessionDir)) {
+    try {
+      fs.rmSync(sessionDir, { recursive: true, force: true });
+    } catch {
+    }
+  }
+});
+function registerAssetProtocol() {
+  electron.protocol.handle("sw-asset", (request) => {
+    try {
+      const url = new URL(request.url);
+      const rel = decodeURIComponent(url.pathname).replace(/^\/+/, "");
+      if (!rel) return new Response("bad request", { status: 400 });
+      const roots = [];
+      if (activeProjectRoot) roots.push(activeProjectRoot);
+      roots.push(getSessionDir());
+      for (const root of roots) {
+        const assetsDir = path.resolve(root, "assets");
+        const abs = path.resolve(root, rel);
+        if (abs !== assetsDir && !abs.startsWith(assetsDir + path.sep)) continue;
+        const ext = path.extname(abs).toLowerCase();
+        if (!IMG_EXTS.includes(ext) && !AUDIO_EXTS.includes(ext)) continue;
+        if (!fs.existsSync(abs)) continue;
+        const mime = MIME_MAP[ext] ?? "application/octet-stream";
+        const stream$1 = stream.Readable.toWeb(fs.createReadStream(abs));
+        return new Response(stream$1, {
+          headers: { "Content-Type": mime, "Cache-Control": "no-cache" }
+        });
+      }
+      return new Response("not found", { status: 404 });
+    } catch (err) {
+      return new Response(`error: ${err.message}`, { status: 500 });
+    }
+  });
+}
+let watcher = null;
+let watchedRoot = null;
+const watchDebounce = /* @__PURE__ */ new Map();
+function stopAssetWatch() {
+  if (watcher) {
+    try {
+      watcher.close();
+    } catch {
+    }
+    watcher = null;
+  }
+  watchedRoot = null;
+  for (const t of watchDebounce.values()) clearTimeout(t);
+  watchDebounce.clear();
+}
+function startAssetWatch(projectRoot) {
+  if (watchedRoot === projectRoot && watcher) return;
+  stopAssetWatch();
+  const assetsDir = path.join(projectRoot, "assets");
+  ensureDir(assetsDir);
+  try {
+    watcher = fs.watch(assetsDir, { recursive: true }, (_event, filename) => {
+      if (!filename) return;
+      const relFile = filename.toString();
+      const abs = path.join(assetsDir, relFile);
+      const type = classifyAsset(abs);
+      if (!type) return;
+      const key = abs;
+      const prev = watchDebounce.get(key);
+      if (prev) clearTimeout(prev);
+      watchDebounce.set(
+        key,
+        setTimeout(() => {
+          watchDebounce.delete(key);
+          const relativePath = ("assets/" + path.relative(assetsDir, abs).replace(/\\/g, "/")).replace(/\/+/g, "/");
+          const exists = fs.existsSync(abs);
+          mainWindow == null ? void 0 : mainWindow.webContents.send("asset:changed", {
+            relativePath,
+            type,
+            exists
+          });
+        }, 150)
+      );
+    });
+    watchedRoot = projectRoot;
+  } catch {
+    watcher = null;
+    watchedRoot = null;
+  }
+}
+const AI_CONFIG_PATH = path.join(electron.app.getPath("userData"), "ai-config.json");
+function readAIConfig() {
+  try {
+    if (fs.existsSync(AI_CONFIG_PATH)) {
+      const p = JSON.parse(fs.readFileSync(AI_CONFIG_PATH, "utf-8"));
+      return {
+        provider: p.provider ?? "openai",
+        endpoint: p.endpoint ?? defaultAIConfig().endpoint,
+        apiKey: typeof p.apiKey === "string" ? p.apiKey : "",
+        model: p.model ?? defaultAIConfig().model,
+        temperature: typeof p.temperature === "number" ? p.temperature : 0.7,
+        maxTokens: typeof p.maxTokens === "number" ? p.maxTokens : 2e3
+      };
+    }
+  } catch {
+  }
+  return defaultAIConfig();
+}
+function writeAIConfig(incoming) {
+  const existing = readAIConfig();
+  const merged = { ...existing, ...incoming };
+  if (!incoming.apiKey) merged.apiKey = existing.apiKey;
+  try {
+    fs.writeFileSync(AI_CONFIG_PATH, JSON.stringify(merged), "utf-8");
+  } catch {
+  }
+}
+electron.ipcMain.handle("ai:getConfig", () => {
+  const c = readAIConfig();
+  return { ...c, apiKey: "", hasApiKey: !!c.apiKey };
+});
+electron.ipcMain.handle("ai:setConfig", (_event, cfg) => {
+  writeAIConfig(cfg);
+  return { ok: true };
+});
+let activeChat = null;
+electron.ipcMain.on("ai:chat", async (event, payload) => {
+  const cfg = readAIConfig();
+  if (!cfg.apiKey) {
+    event.sender.send("ai:error", "未配置 API Key（请在 AI 设置中填写，密钥仅存于本地安全区）");
+    return;
+  }
+  const controller = new AbortController();
+  activeChat = controller;
+  try {
+    const full = await streamChatCompletion(
+      cfg,
+      payload.messages,
+      (delta) => event.sender.send("ai:chunk", { delta }),
+      controller.signal
+    );
+    event.sender.send("ai:done", { full });
+  } catch (err) {
+    const e = err;
+    if ((e == null ? void 0 : e.name) === "AbortError") event.sender.send("ai:aborted");
+    else event.sender.send("ai:error", (e == null ? void 0 : e.message) ?? "未知错误");
+  } finally {
+    activeChat = null;
+  }
+});
+electron.ipcMain.on("ai:abort", () => {
+  activeChat == null ? void 0 : activeChat.abort();
+});
+electron.ipcMain.handle("app:getVersion", () => {
+  return electron.app.getVersion();
+});
+electron.ipcMain.handle("app:getPath", (_event, name) => {
+  return electron.app.getPath(name);
+});
+electron.ipcMain.handle("app:getSessionDir", () => {
+  return getSessionDir();
+});
+electron.ipcMain.on("app:setNativeTheme", (_event, theme) => {
+  electron.nativeTheme.themeSource = theme;
+});
+electron.ipcMain.handle("fs:setActiveProjectRoot", (_event, root) => {
+  activeProjectRoot = root && typeof root === "string" ? root : null;
+  if (activeProjectRoot) {
+    startAssetWatch(activeProjectRoot);
+  } else {
+    stopAssetWatch();
+  }
+  return { success: true };
+});
+electron.ipcMain.handle("fs:scanProjectAssets", (_event, projectRoot) => {
+  try {
+    if (!projectRoot || typeof projectRoot !== "string") {
+      return { success: false, error: "缺少 projectRoot" };
+    }
+    const assetsDir = path.join(projectRoot, "assets");
+    const out = [];
+    const walk = (dir) => {
+      if (!fs.existsSync(dir)) return;
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const abs = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(abs);
+        } else {
+          const type = classifyAsset(abs);
+          if (!type) continue;
+          const relativePath = "assets/" + path.relative(assetsDir, abs).replace(/\\/g, "/");
+          out.push({
+            id: uuid(),
+            type,
+            name: path.parse(abs).name,
+            fileName: path.basename(abs),
+            relativePath,
+            importedAt: (/* @__PURE__ */ new Date()).toISOString()
+          });
+        }
+      }
+    };
+    walk(assetsDir);
+    return { success: true, assets: out };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("dialog:saveProject", async (_event, data) => {
+  if (!mainWindow) return { success: false, error: "No active window" };
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "选择项目保存目录",
+    properties: ["openDirectory", "createDirectory"]
+  });
+  if (result.canceled || result.filePaths.length === 0) return { success: false };
+  const projectDir = result.filePaths[0];
+  const projectName = data.projectName || "untitled";
+  const assetsDir = path.join(projectDir, "assets");
+  try {
+    ensureDir(path.join(assetsDir, SUBDIR_BACKGROUND));
+    ensureDir(path.join(assetsDir, SUBDIR_SPRITE));
+    ensureDir(path.join(assetsDir, SUBDIR_AUDIO));
+    const sessionAssets = path.join(getSessionDir(), "assets");
+    if (fs.existsSync(sessionAssets)) {
+      copyDir(sessionAssets, assetsDir);
+    }
+    const projPath = path.join(projectDir, `${projectName}.swproj`);
+    fs.writeFileSync(projPath, data.projectJson, "utf-8");
+    activeProjectRoot = projectDir;
+    startAssetWatch(projectDir);
+    return { success: true, projectDir };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("dialog:openProject", async () => {
+  if (!mainWindow) return { success: false, error: "No active window" };
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "打开项目",
+    filters: [
+      { name: "ScriptWeaver 项目", extensions: ["swproj"] }
+    ],
+    properties: ["openFile"]
+  });
+  if (result.canceled || result.filePaths.length === 0) return { success: false };
+  try {
+    const filePath = result.filePaths[0];
+    const content = fs.readFileSync(filePath, "utf-8");
+    const projectDir = path.dirname(filePath);
+    activeProjectRoot = projectDir;
+    startAssetWatch(projectDir);
+    return { success: true, content, projectDir };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("dialog:pickAssetFiles", async (_event, options) => {
+  if (!mainWindow) return { success: false, error: "No active window" };
+  const filters = (options == null ? void 0 : options.filters) || [
+    { name: "图片文件", extensions: ["png", "jpg", "jpeg", "webp"] },
+    { name: "音频文件", extensions: ["mp3", "ogg", "wav"] },
+    { name: "所有文件", extensions: ["*"] }
+  ];
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "导入素材",
+    filters,
+    properties: ["openFile", "multiSelections"]
+  });
+  if (result.canceled || result.filePaths.length === 0) return { success: false };
+  try {
+    const sessionRoot = getSessionDir();
+    const files = [];
+    for (const srcPath of result.filePaths) {
+      const ext = path.extname(srcPath).toLowerCase();
+      const baseName = path.basename(srcPath);
+      const { subdir, type } = resolveSubdir(ext, options == null ? void 0 : options.kind);
+      const destDir = path.join(sessionRoot, "assets", subdir);
+      ensureDir(destDir);
+      let fileDest = path.join(destDir, baseName);
+      let counter = 1;
+      while (fs.existsSync(fileDest)) {
+        const parsed = path.parse(baseName);
+        fileDest = path.join(destDir, `${parsed.name}_${counter}${parsed.ext}`);
+        counter++;
+      }
+      copyFile(srcPath, fileDest);
+      const relativePath = path.join("assets", subdir, path.basename(fileDest)).replace(/\\/g, "/");
+      files.push({
+        id: uuid(),
+        fileName: path.basename(fileDest),
+        relativePath,
+        type
+      });
+    }
+    return { success: true, files };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("fs:exportRenpy", async (_event, bundle) => {
+  if (!mainWindow) return { success: false, error: "No active window" };
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "选择 Ren'Py 导出目录",
+    properties: ["openDirectory", "createDirectory"]
+  });
+  if (result.canceled || result.filePaths.length === 0) return { success: false };
+  const root = result.filePaths[0];
+  const gameDir = path.join(root, "game");
+  const imgBg = path.join(gameDir, "images", "background");
+  const imgSpr = path.join(gameDir, "images", "sprite");
+  const audDir = path.join(gameDir, "audio");
+  ensureDir(imgBg);
+  ensureDir(imgSpr);
+  ensureDir(audDir);
+  const srcRoot = activeProjectRoot ?? getSessionDir();
+  const resolvedSrcRoot = path.resolve(srcRoot);
+  let copied = 0;
+  for (const a of bundle.assets ?? []) {
+    const src = path.resolve(resolvedSrcRoot, a.sourceRelativePath);
+    if (src !== resolvedSrcRoot && !src.startsWith(resolvedSrcRoot + path.sep)) continue;
+    if (!fs.existsSync(src)) continue;
+    const dest = path.resolve(gameDir, a.exportRelPath);
+    try {
+      copyFile(src, dest);
+      copied++;
+    } catch {
+    }
+  }
+  try {
+    fs.writeFileSync(path.join(gameDir, "script.rpy"), bundle.script ?? "", "utf-8");
+    fs.writeFileSync(path.join(gameDir, "definitions.rpy"), bundle.definitions ?? "", "utf-8");
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+  return { success: true, gameDir, copied };
+});

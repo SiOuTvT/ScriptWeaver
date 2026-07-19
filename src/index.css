@@ -20,6 +20,8 @@
   --c-surface-hover: 222 220 215; /* hover */
   --c-surface-active: 210 207 201;/* 选中 */
 
+  --c-stage: 214 212 207;         /* 舞台演出区底：比 canvas(230) 略深、仍属浅灰，浅色下不黑不刺眼 */
+
   --c-edge: 23 22 20;             /* 边框色相 */
   --c-edge-strong: 23 22 20;
 
@@ -70,6 +72,8 @@
   --c-surface-3: 42 47 57;        /* 输入框底 */
   --c-surface-hover: 48 54 65;    /* hover */
   --c-surface-active: 60 67 80;   /* 选中 */
+
+  --c-stage: 17 17 17;            /* 舞台演出区底：深墨近黑，深色下衬托立绘 */
 
   --c-edge: 255 255 255;          /* 边框色相 */
   --c-edge-strong: 255 255 255;

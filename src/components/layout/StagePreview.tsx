@@ -9,7 +9,7 @@ import {
 } from '@/utils/assetHelpers'
 import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
-import { Music, AudioLines, Megaphone, Volume2 } from 'lucide-react'
+import { Music, AudioLines, Megaphone, Volume2, Image as ImageIcon } from 'lucide-react'
 import { Skeleton } from '@/components/ui'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
@@ -505,9 +505,11 @@ export default function StagePreview() {
     )
   }
 
+  // 空舞台底色跟随主题（浅色用柔和舞台灰、深色用近黑），不再硬编码死黑 #111
+  const stageEmptyBg = 'rgb(var(--c-stage))'
   const bgStyle: React.CSSProperties = bgDataUrl
     ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? '#111') : '#111' }
+    : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? stageEmptyBg) : stageEmptyBg }
 
   return (
     <main className="relative flex min-w-0 flex-1 flex-col">
@@ -534,6 +536,16 @@ export default function StagePreview() {
             </div>
           )}
         </div>
+
+        {/* 空舞台引导：无背景图且无立绘时给出下一步提示，避免大片空白显丑 */}
+        {!bgDataUrl && Object.keys(state.characters).length === 0 && (
+          <div className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 text-center">
+            <ImageIcon size={28} strokeWidth={1.5} className="text-fg-faint" />
+            <p className="max-w-[260px] text-[13px] leading-relaxed text-fg-subtle">
+              从左侧拖入背景或立绘，或直接在下方的输入框写下第一行台词
+            </p>
+          </div>
+        )}
 
         {/* 立绘拖放槽位引导线 */}
         {spriteSlotGuides}
@@ -671,8 +683,14 @@ export default function StagePreview() {
           )}
         </div>
 
-        {/* 快捷台词编辑条 —— 拖入素材后直接在此写台词，无需切视图 */} 
-        <div className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/95 via-black/85 to-transparent p-3 pt-10">
+        {/* 快捷台词编辑条 —— 拖入素材后直接在此写台词，无需切视图；遮罩跟随主题（浅色=浅灰渐隐） */}
+        <div
+          className="pointer-events-auto absolute bottom-0 left-0 right-0 z-10 p-3 pt-10"
+          style={{
+            background:
+              'linear-gradient(to top, rgb(var(--c-stage) / 0.96), rgb(var(--c-stage) / 0.82) 55%, transparent)',
+          }}
+        >
           <div className="flex items-start gap-2">
             {/* 说话人选择器 */}
             <div className="relative shrink-0">
