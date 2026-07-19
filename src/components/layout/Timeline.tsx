@@ -802,8 +802,8 @@ export default function Timeline() {
   }, [])
 
   return (
-    <div className="flex shrink-0 flex-col mt-3 bg-surface rounded-lg border border-edge/[0.14] shadow-sm relative">
-      <div className="flex items-center justify-between border-b border-edge/10 px-3 py-1.5">
+    <div className="flex shrink-0 flex-col mt-3 bg-surface rounded-xl border border-edge/[0.12] shadow-sm relative overflow-hidden">
+      <div className="flex items-center justify-between border-b border-edge/10 bg-[rgb(var(--c-surface-1))] px-3 py-1.5">
         <span className="text-[12px] font-medium text-fg-muted">时间轴</span>
         <div className="flex items-center gap-2">
           {/* 缩放控制：拉宽行距便于精细对齐 */}
@@ -834,7 +834,7 @@ export default function Timeline() {
         </div>
       </div>
 
-      <div className="flex overflow-auto" style={{ maxHeight: `${totalTracks * trackHeight + HEADER_H + 8}px` }}>
+      <div className="flex overflow-auto bg-canvas/[0.30]" style={{ maxHeight: `${totalTracks * trackHeight + HEADER_H + 8}px` }}>
         {/* 轨道标签列 */}
         <div className="shrink-0 border-r border-edge/10 bg-canvas/50">
           {/* 占位行：对齐右边行号 header（48px 高） */}
