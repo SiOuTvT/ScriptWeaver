@@ -152,7 +152,10 @@ export default function AppLayout() {
 
   useEffect(() => {
     const draft = loadDraft()
-    if (!draft || draft.deltas.length === 0) return
+    // 恢复条件：有行数据 或 有素材配置 或 有角色配置（允许"只导入素材未创作"的草稿）
+    if (!draft) return
+    const hasContent = draft.deltas.length > 0 || draft.assets.length > 0 || draft.characterConfigs.length > 0
+    if (!hasContent) return
     restoreDraft(draft)
     toast('已自动恢复上次草稿', 'info')
   }, [restoreDraft])

@@ -14,8 +14,8 @@ export function resolveAssetSrc(asset: AssetItem | undefined | null): string | u
   if (!asset) return undefined
   // Web 降级：临时对象 URL
   if (asset.blobUrl) return asset.blobUrl
-  // Electron：协议直读
+  // Electron：协议直读（relativePath 已含 assets/ 前缀，如 "assets/images/sprite/x.png"）
   if (!asset.relativePath) return undefined
   const rel = asset.relativePath.replace(/\\/g, '/').replace(/^\/+/, '')
-  return `sw-asset://asset/${rel}`
+  return `sw-asset://${rel}`
 }
