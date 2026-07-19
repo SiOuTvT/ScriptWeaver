@@ -368,7 +368,7 @@ export default function AssetManager() {
                   >
                     {imgSrc ? (
                       isSprite ? (
-                        <div className="flex h-full w-full items-center justify-center p-1">
+                        <div className="flex h-full w-full items-start justify-start p-1">
                           <img
                             src={imgSrc}
                             alt={asset.name}
