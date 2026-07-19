@@ -779,6 +779,8 @@ export default function Timeline() {
   // ========== 段落内音频偏移拖拽（SE / Voice 在单行内部的时间轴定位） ==========
   const seDragRef = useRef<{ lineIndex: number; kind: 'se' | 'voice'; id: string; offset: number } | null>(null)
   const [seDrag, setSeDrag] = useState<{ lineIndex: number; kind: 'se' | 'voice'; id: string; offset: number } | null>(null)
+  // 选中的音频块（SE / Voice），用于 Alt+方向键微调解其段落内相对时间戳
+  const [selectedAudio, setSelectedAudio] = useState<{ kind: 'se' | 'voice'; lineIndex: number; id: string } | null>(null)
 
   /**
    * 在单个 cell（即一行）内水平拖拽音频块，换算为相对该段落起点的切入延迟（offset_ms）。
@@ -788,6 +790,7 @@ export default function Timeline() {
     (lineIndex: number, kind: 'se' | 'voice', id: string, e: React.MouseEvent) => {
       e.preventDefault()
       e.stopPropagation()
+      setSelectedAudio({ kind, id, lineIndex })
       const rowEl = trackRowRefs.current.get(kind === 'se' ? 'se' : 'voice')
       if (!rowEl) return
       const rect = rowEl.getBoundingClientRect()
@@ -824,7 +827,7 @@ export default function Timeline() {
       document.addEventListener('mousemove', move)
       document.addEventListener('mouseup', up)
     },
-    [total, resolvedStates, updateDeltaAt],
+    [total, resolvedStates, updateDeltaAt, setSelectedAudio],
   )
 
   // 方向键微移监听（输入框聚焦时不拦截）
@@ -844,6 +847,32 @@ export default function Timeline() {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [selectedSpan, nudgeSelected])
+
+  // Alt+← / Alt+→ 微调解选中音频块的段落内相对时间戳（±50ms；Alt+Shift ±250ms）
+  useEffect(() => {
+    if (!selectedAudio) return
+    const handler = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) return
+      if (!e.altKey) return
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      e.preventDefault()
+      const step = (e.shiftKey ? 250 : 50) * (e.key === 'ArrowRight' ? 1 : -1)
+      const a = selectedAudio
+      const cur = a.kind === 'se'
+        ? resolvedStates[a.lineIndex]?.audio.se_offset_ms?.[a.id] ?? 0
+        : resolvedStates[a.lineIndex]?.audio.voice_offset_ms ?? 0
+      const next = Math.max(0, cur + step)
+      updateDeltaAt(a.lineIndex, (prev) => {
+        const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
+        if (a.kind === 'se') audio.se_offset_ms = { ...(prev.audio.se_offset_ms ?? {}), [a.id]: next }
+        else audio.voice_offset_ms = next
+        return { ...prev, audio }
+      })
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [selectedAudio, resolvedStates, updateDeltaAt])
 
   // 拖拽中断（卸载等）时还原全局光标与选中状态
   useEffect(() => {
@@ -986,7 +1015,7 @@ export default function Timeline() {
                 ref={setTrackRowRef(track.id)}
                 className="relative flex border-b border-edge/10"
                 style={{ height: trackHeight }}
-                onMouseDown={() => setSelectedSpan(null)}
+                onMouseDown={() => { setSelectedSpan(null); setSelectedAudio(null) }}
               >
                 {resolvedStates.map((s, i) => (
                   <DropCell key={s.line_id} lineIndex={i} trackId={track.id}
@@ -1027,7 +1056,9 @@ export default function Timeline() {
                   >
                     <div
                       onMouseDown={(e) => handleAudioOffsetDragStart(ev.index, 'se', ev.items[0], e)}
-                      className="flex h-full min-w-[28px] cursor-ew-resize items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
+                      className={`flex h-full min-w-[28px] cursor-ew-resize items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg ${
+                        selectedAudio?.kind === 'se' && selectedAudio.lineIndex === ev.index && selectedAudio.id === ev.items[0] ? 'ring-2 ring-signal' : ''
+                      }`}
                       style={{ backgroundColor: seColor + '33', borderLeftColor: seColor }}
                     >
                       <span className="truncate">{assetName(ev.items[0])}</span>
@@ -1073,8 +1104,10 @@ export default function Timeline() {
                       style={{ left: `${leftPct}%`, width: `clamp(30px, ${cellWidthPct}%, 64px)` }}
                       title={`${who ? who + ' ' : ''}${assetName(ev.voice)}（第 ${Math.round(offset)}ms 切入）`}>
                       <div
-                        onMouseDown={(e) => handleAudioOffsetDragStart(ev.index, 'voice', ev.voice, e)}
-                        className="flex h-full min-w-[28px] cursor-ew-resize items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg"
+                      onMouseDown={(e) => handleAudioOffsetDragStart(ev.index, 'voice', ev.voice, e)}
+                      className={`flex h-full min-w-[28px] cursor-ew-resize items-center justify-center overflow-hidden rounded-sm border-l-2 px-1 text-[12px] text-fg ${
+                        selectedAudio?.kind === 'voice' && selectedAudio.lineIndex === ev.index && selectedAudio.id === ev.voice ? 'ring-2 ring-signal' : ''
+                      }`}
                         style={{ backgroundColor: vColor + '33', borderLeftColor: vColor }}>
                         <span className="truncate">{who || assetName(ev.voice)}</span>
                       </div>

@@ -23,7 +23,7 @@ export default function ScriptDrawer() {
   }, [selectedIndex])
 
   // 抽屉宽度：钉住 = 348px，浮动 = 320px，收起 = 0（由外部控制显示/隐藏）
-  const width = open ? (pinned ? 'w-[348px]' : 'w-80') : 'w-0'
+  const width = open ? (pinned ? 'w-[260px]' : 'w-60') : 'w-0'
   const visibility = open ? '' : 'invisible'
 
   return (

@@ -361,8 +361,8 @@ export default function AssetManager() {
                     onDragStart={(e) => handleAssetDragStart(e, asset)}
                     onDragEnd={handleAssetDragEnd}
                     onContextMenu={(e) => handleContextMenu(e, asset)}
-                    className={`group relative aspect-square cursor-grab overflow-hidden rounded-md border border-edge/12 transition-all hover:border-edge/25 hover:shadow-2 active:cursor-grabbing ${
-                      isSprite ? 'bg-surface-3' : 'bg-surface-2'
+                    className={`group relative aspect-square cursor-grab overflow-hidden rounded-md transition-opacity active:cursor-grabbing ${
+                      isSprite ? 'bg-transparent' : 'bg-surface-2'
                     }`}
                     title="拖拽到舞台或时间轴使用"
                   >
@@ -423,8 +423,10 @@ export default function AssetManager() {
                       </button>
                     </div>
 
-                    {/* 底部名称 */}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent px-1.5 pb-1 pt-4">
+                    {/* 底部名称：立绘用透明底（不脏污），背景图保留渐变保证可读 */}
+                    <div className={`absolute inset-x-0 bottom-0 px-1.5 pb-1 pt-4 ${
+                      isSprite ? 'bg-transparent' : 'bg-gradient-to-t from-black/65 via-black/25 to-transparent'
+                    }`}>
                       {editingId === asset.id ? (
                         <input
                           type="text"
