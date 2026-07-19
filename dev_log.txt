@@ -2,7 +2,6 @@
 > scriptweaver@0.2.0 dev
 > vite
 
-Re-optimizing dependencies because vite config has changed
 [36mvite v5.4.21 [32mbuilding for development...[36m[39m
 [36m
 watching for file changes...[39m
@@ -14,29 +13,36 @@ build started...[39m
 [36m
 build started...[39m
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m757[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m459[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
 [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
 [2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
 transforming...
+transforming...
 [32m✓[39m 1 modules transformed.
 rendering chunks...
-transforming...
 computing gzip size...
 [2mdist-electron/[22m[36mpreload.js  [39m[1m[2m2.58 kB[22m[1m[22m[2m │ gzip: 1.27 kB[22m
-[36mbuilt in 876ms.[39m
+[36mbuilt in 452ms.[39m
 [32m✓[39m 2 modules transformed.
 rendering chunks...
 computing gzip size...
 [2mdist-electron/[22m[36mmain.js  [39m[1m[2m18.61 kB[22m[1m[22m[2m │ gzip: 5.59 kB[22m
-[36mbuilt in 961ms.[39m
+[36mbuilt in 509ms.[39m
 
-[21608:0719/204652.549:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[21608:0719/204652.549:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[56656:0719/210854.789:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[56656:0719/210854.789:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
 [sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= null
 [sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
 [sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
 [sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
+[2m21:31:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:31:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:32:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:32:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:32:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:32:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:33:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
