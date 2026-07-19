@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
-import { setDragCache, DRAG_MIME, type DragAssetData, getAudioCategory } from '@/utils/assetHelpers'
+import { setDragCache, DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import { toggleAssetPreview, isAssetPlaying, subscribeAudio, getAudioVersion } from '@/utils/audioManager'
 import { Tabs, Input, Button } from '@/components/ui'
@@ -14,17 +14,6 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'sprite', label: '立绘', icon: <User size={14} strokeWidth={1.75} /> },
   { id: 'audio', label: '音频', icon: <Music size={14} strokeWidth={1.75} /> },
 ]
-
-// 音频类别徽标（BGM / 环境 / 音效 / 语音），窄侧栏用短标签
-const AUDIO_CAT_META: Record<
-  ReturnType<typeof getAudioCategory>,
-  { label: string; badge: string }
-> = {
-  bgm: { label: 'BGM', badge: 'bg-info/12 text-info' },
-  ambient: { label: '环境', badge: 'bg-success/12 text-success' },
-  se: { label: '音效', badge: 'bg-warning/14 text-warning' },
-  voice: { label: '语音', badge: 'bg-signal/14 text-signal' },
-}
 
 export default function SceneNavPanel() {
   const assets = useAppStore((s) => s.assets)
@@ -183,12 +172,10 @@ export default function SceneNavPanel() {
     )
   }
 
-  // ---- 渲染音频素材卡片（醒目圆形播放钮 + 类别徽标）----
+  // ---- 渲染音频素材卡片（圆形播放钮 + 文件名）----
 
   const renderAudioCard = (asset: AssetItem) => {
     const playing = isAssetPlaying(asset.id)
-    const cat = getAudioCategory(asset.id)
-    const meta = AUDIO_CAT_META[cat]
     return (
       <div
         key={asset.id}
@@ -205,16 +192,8 @@ export default function SceneNavPanel() {
         {/* 圆形播放/暂停按钮（醒目） */}
         <button
           type="button"
-          onMouseDown={(e) => {
-            e.stopPropagation()
-            e.preventDefault()
-          }}
-          onClick={(e) => {
-            e.stopPropagation()
-            e.preventDefault()
-            // 按资产精准切换：同一素材停、不同素材叠加（四通道可同时响）
-            toggleAssetPreview(asset)
-          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); toggleAssetPreview(asset) }}
           title={playing ? '停止试听' : '点击试听'}
           aria-label={playing ? '停止试听' : '点击试听'}
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
@@ -230,21 +209,12 @@ export default function SceneNavPanel() {
           )}
         </button>
 
-        {/* 信息：名称 + 类别徽标 + 文件名 */}
+        {/* 名称 + 文件名 */}
         <div className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-medium text-fg" title={asset.name}>
             {asset.name}
           </span>
-          <div className="mt-1 flex items-center gap-1.5">
-            <span
-              className={`shrink-0 rounded px-1.5 py-px text-[12px] font-medium leading-tight ${meta.badge}`}
-            >
-              {meta.label}
-            </span>
-            <span className="min-w-0 truncate text-[12px] text-fg-subtle" title={asset.fileName}>
-              {asset.fileName}
-            </span>
-          </div>
+          <span className="block truncate text-[12px] text-fg-subtle">{asset.fileName}</span>
         </div>
 
         {/* 拖拽提示 */}

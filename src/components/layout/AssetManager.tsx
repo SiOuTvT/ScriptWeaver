@@ -6,7 +6,6 @@ import { resolveAssetSrc } from '@/utils/assetSrc'
 import {
   setDragCache,
   DRAG_MIME,
-  getAudioCategory,
   type DragAssetData,
 } from '@/utils/assetHelpers'
 import {
@@ -27,17 +26,6 @@ import {
   Play,
   Pause,
 } from 'lucide-react'
-
-// 音频类别徽标（BGM / 环境 / 音效 / 语音）
-const AUDIO_CAT_META: Record<
-  ReturnType<typeof getAudioCategory>,
-  { label: string; badge: string }
-> = {
-  bgm: { label: 'BGM', badge: 'bg-info/12 text-info' },
-  ambient: { label: '环境', badge: 'bg-success/12 text-success' },
-  se: { label: '音效', badge: 'bg-warning/14 text-warning' },
-  voice: { label: '语音', badge: 'bg-signal/14 text-signal' },
-}
 
 type TabId = AssetType
 
@@ -262,12 +250,10 @@ export default function AssetManager() {
               {search ? '没有匹配的素材' : '暂无素材，点击上方按钮导入'}
             </div>
           ) : tab === 'audio' ? (
-            /* 音频：卡片行（圆形播放钮 + 类别徽标 + 色 + 重命名/删除） */
-            <div className="space-y-1.5">
+            /* 音频：紧凑网格卡片（圆形播放钮 + 色点 + 文件名） */
+            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-5">
               {filtered.map((asset) => {
                 const playing = isAssetPlaying(asset.id)
-                const cat = getAudioCategory(asset.id)
-                const meta = AUDIO_CAT_META[cat]
                 return (
                   <div
                     key={asset.id}
@@ -275,54 +261,36 @@ export default function AssetManager() {
                     onDragStart={(e) => handleAssetDragStart(e, asset)}
                     onDragEnd={handleAssetDragEnd}
                     onContextMenu={(e) => handleContextMenu(e, asset)}
-                    className={`group flex cursor-grab items-center gap-2 rounded-lg border px-2 py-2 transition-all active:cursor-grabbing ${
+                    className={`group relative flex cursor-grab flex-col items-center gap-1.5 rounded-lg border p-2.5 transition-all active:cursor-grabbing ${
                       playing
-                        ? 'border-info/40 bg-info/[0.06] shadow-[0_2px_6px_rgba(28,24,18,0.10)]'
-                        : 'border-edge/12 shadow-[0_1px_2px_rgba(28,24,18,0.06)] hover:border-edge/20 hover:bg-surface-hover hover:shadow-[0_2px_4px_rgba(28,24,18,0.10)]'
+                        ? 'border-info/40 bg-info/[0.06]'
+                        : 'border-edge/12 hover:border-edge/20 hover:bg-surface-hover'
                     }`}
-                    title="拖拽到时间轴使用 · 点左侧按钮试听"
+                    title="拖拽到时间轴使用"
                   >
-                    {/* 圆形播放/暂停按钮（醒目） */}
+                    {/* 圆形播放/暂停按钮 */}
                     <button
                       type="button"
-                      onMouseDown={(e) => {
-                        e.stopPropagation()
-                        e.preventDefault()
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        e.preventDefault()
-                        toggleAssetPreview(asset)
-                      }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); toggleAssetPreview(asset) }}
                       title={playing ? '停止试听' : '点击试听'}
                       aria-label={playing ? '停止试听' : '点击试听'}
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${
                         playing
                           ? 'bg-info text-white shadow-sm'
                           : 'bg-surface-2 text-fg-muted group-hover:bg-info/12 group-hover:text-info'
                       }`}
                     >
-                      {playing ? (
-                        <Pause size={16} strokeWidth={2} />
-                      ) : (
-                        <Play size={16} strokeWidth={2} className="ml-0.5" />
-                      )}
+                      {playing ? <Pause size={16} strokeWidth={2} /> : <Play size={16} strokeWidth={2} className="ml-0.5" />}
                     </button>
 
-                    {/* 类别徽标 */}
-                    <span
-                      className={`shrink-0 rounded px-1.5 py-px text-[12px] font-medium leading-tight ${meta.badge}`}
-                    >
-                      {meta.label}
-                    </span>
-
-                    {/* 素材色 */}
+                    {/* 色点 */}
                     <label
-                      title="素材色（时间轴 / 总览通用）"
-                      className="relative flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-surface-hover"
+                      title="素材色"
+                      className="absolute left-1.5 top-1.5 flex h-4 w-4 cursor-pointer items-center justify-center rounded hover:bg-surface-hover"
                     >
                       <span
-                        className="pointer-events-none h-3.5 w-3.5 rounded-full border border-edge/30"
+                        className="pointer-events-none h-2.5 w-2.5 rounded-full border border-edge/30"
                         style={{ backgroundColor: asset.color || hashAssetColor(asset.id) }}
                       />
                       <input
@@ -333,8 +301,29 @@ export default function AssetManager() {
                       />
                     </label>
 
-                    {/* 名称 + 文件名 */}
-                    <div className="min-w-0 flex-1">
+                    {/* hover 操作 */}
+                    <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<Pencil size={12} strokeWidth={1.75} />}
+                        onClick={() => startRename(asset)}
+                        title="重命名"
+                        aria-label="重命名"
+                      />
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<Trash2 size={12} strokeWidth={1.75} />}
+                        onClick={() => requestDelete(asset)}
+                        title="删除"
+                        aria-label="删除"
+                        className="hover:bg-danger/12 hover:text-danger"
+                      />
+                    </div>
+
+                    {/* 名称 */}
+                    <div className="w-full min-w-0 text-center">
                       {editingId === asset.id ? (
                         <input
                           type="text"
@@ -349,35 +338,11 @@ export default function AssetManager() {
                           className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[12px] text-fg outline-none"
                         />
                       ) : (
-                        <span
-                          className="block truncate text-[13px] font-medium text-fg group-hover:text-fg"
-                          title={asset.name}
-                        >
+                        <span className="block truncate text-[13px] font-medium text-fg" title={asset.name}>
                           {asset.name}
                         </span>
                       )}
                       <span className="block truncate text-[12px] text-fg-subtle">{asset.fileName}</span>
-                    </div>
-
-                    {/* 操作 */}
-                    <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-                      <IconButton
-                        variant="ghost"
-                        size="sm"
-                        icon={<Pencil size={13} strokeWidth={1.75} />}
-                        onClick={() => startRename(asset)}
-                        title="重命名"
-                        aria-label="重命名"
-                      />
-                      <IconButton
-                        variant="ghost"
-                        size="sm"
-                        icon={<Trash2 size={13} strokeWidth={1.75} />}
-                        onClick={() => requestDelete(asset)}
-                        title="删除"
-                        aria-label="删除"
-                        className="hover:bg-danger/12 hover:text-danger"
-                      />
                     </div>
                   </div>
                 )
