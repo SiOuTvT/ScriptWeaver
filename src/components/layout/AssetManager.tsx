@@ -362,13 +362,13 @@ export default function AssetManager() {
                     onDragEnd={handleAssetDragEnd}
                     onContextMenu={(e) => handleContextMenu(e, asset)}
                     className={`group relative cursor-grab overflow-hidden rounded-md transition-opacity active:cursor-grabbing ${
-                      isSprite ? 'bg-surface-2 aspect-[3/4]' : 'bg-surface-2 aspect-square'
+                      isSprite ? 'bg-transparent aspect-square' : 'bg-surface-2 aspect-square'
                     }`}
                     title="拖拽到舞台或时间轴使用"
                   >
                     {imgSrc ? (
                       isSprite ? (
-                        <div className="flex h-full w-full items-end justify-center p-1">
+                        <div className="flex h-full w-full items-center justify-center p-1">
                           <img
                             src={imgSrc}
                             alt={asset.name}

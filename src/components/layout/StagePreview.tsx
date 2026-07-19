@@ -758,6 +758,41 @@ export default function StagePreview() {
   const bgDataUrl = resolveBackgroundUrl(bgAssetId, assets)
   const bgLoaded = useImageLoaded(bgDataUrl)
 
+  // 从背景图采样主色调，用来填充 contain 的 letterbox 区（比纯色空白自然，也比模糊铺满干净）
+  const [bgTint, setBgTint] = useState<string | undefined>(undefined)
+  useEffect(() => {
+    if (!bgDataUrl) {
+      setBgTint(undefined)
+      return
+    }
+    let active = true
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas')
+        c.width = 12
+        c.height = 12
+        const ctx = c.getContext('2d')
+        if (!ctx) {
+          if (active) setBgTint(undefined)
+          return
+        }
+        ctx.drawImage(img, 0, 0, 12, 12)
+        const d = ctx.getImageData(0, 0, 12, 12).data
+        let r = 0, g = 0, b = 0, n = 0
+        for (let i = 0; i < d.length; i += 4) {
+          r += d[i]; g += d[i + 1]; b += d[i + 2]; n++
+        }
+        if (active) setBgTint(`rgb(${Math.round(r / n)}, ${Math.round(g / n)}, ${Math.round(b / n)})`)
+      } catch {
+        if (active) setBgTint(undefined)
+      }
+    }
+    img.onerror = () => { if (active) setBgTint(undefined) }
+    img.src = bgDataUrl
+    return () => { active = false }
+  }, [bgDataUrl])
+
   if (!state) {
     return (
       <main
@@ -778,14 +813,12 @@ export default function StagePreview() {
   // 背景图：清晰整图用 contain 完整显示（不裁切）；letterbox 的空白区用「同图模糊铺满」填充，
   // 既看得到整张背景、又不会上下留难看的纯色空白。
   const hasBgImage = !!bgDataUrl
-  const bgBlurStyle: React.CSSProperties = hasBgImage
-    ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : {}
   const bgSharpStyle: React.CSSProperties = hasBgImage
     ? { backgroundImage: `url(${bgDataUrl})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }
     : {}
+  // letterbox 区用「从背景图采样的主色调」填充：既看到整张背景、又不会上下留刺眼的纯色空白
   const bgBaseStyle: React.CSSProperties = hasBgImage
-    ? { background: stageEmptyBg }
+    ? { background: bgTint ?? stageEmptyBg }
     : { background: bgAssetId ? (BG_COLORS[bgAssetId] ?? stageEmptyBg) : stageEmptyBg }
 
   return (
@@ -865,15 +898,8 @@ export default function StagePreview() {
           style={bgBaseStyle}
         >
           {hasBgImage && (
-            <>
-              {/* 模糊铺满：作为 letterbox 区的同图填充，消除上下空白的突兀感 */}
-              <div
-                className="absolute inset-0"
-                style={{ ...bgBlurStyle, filter: 'blur(28px)', transform: 'scale(1.2)' }}
-              />
-              {/* 清晰整图：contain 完整显示，不裁切 */}
-              <div className="absolute inset-0" style={bgSharpStyle} />
-            </>
+            /* 清晰整图：contain 完整显示，不裁切；letterbox 由底色(bgTint)自然填充 */
+            <div className="absolute inset-0" style={bgSharpStyle} />
           )}
           {bgDataUrl && !bgLoaded && (
             <Skeleton className="absolute inset-0" />
@@ -949,7 +975,7 @@ export default function StagePreview() {
                 style={{
                   left: `${px * 100}%`,
                   top: `${py * 100}%`,
-                  zIndex: Math.round((char.pos_x ?? SLOT_ANCHORS[char.position_slot]?.x ?? 0.5) * 10) + 10,
+                  zIndex: dragging ? 1000 : Math.round((char.pos_x ?? SLOT_ANCHORS[char.position_slot]?.x ?? 0.5) * 10) + 10,
                 }}
                 title="拖动可移动位置；靠近站位的虚线会自动吸附，拉离即自由微调。点按选中后可定点 / 缩放 / 锁定。"
               >
