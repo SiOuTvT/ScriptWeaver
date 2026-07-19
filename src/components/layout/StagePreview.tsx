@@ -9,7 +9,7 @@ import {
 } from '@/utils/assetHelpers'
 import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
-import { Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { Skeleton, IconButton } from '@/components/ui'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
@@ -186,6 +186,7 @@ export default function StagePreview() {
   const selectedIndex = useAppStore((s) => s.selectedLineIndex)
   const resolvedStates = useAppStore((s) => s.resolvedStates)
   const selectLine = useAppStore((s) => s.selectLine)
+  const insertDeltaAt = useAppStore((s) => s.insertDeltaAt)
   const updateDeltaAt = useAppStore((s) => s.updateDeltaAt)
   const getDisplayName = useAppStore((s) => s.getDisplayName)
   const getCharacter = useAppStore((s) => s.getCharacter)
@@ -551,9 +552,9 @@ export default function StagePreview() {
 
   return (
     <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm overflow-hidden">
-      {/* 场景导航头部：上一/下一 + 当前/总数，键盘 ←/→ 亦可切换 */}
+      {/* 场景导航头部：上一/下一 + 当前/总数 + 添加场景，键盘 ←/→ 亦可切换 */}
       <header className="flex shrink-0 items-center justify-between border-b border-edge/10 px-3 py-1.5">
-        <span className="text-[12px] font-medium text-fg">场景预览 · {state.line_id}</span>
+        <span className="text-[13px] font-medium text-fg">场景预览 · {state.line_id}</span>
         <div className="flex items-center gap-1">
           <IconButton
             variant="ghost"
@@ -564,7 +565,7 @@ export default function StagePreview() {
             title="上一个场景"
             aria-label="上一个场景"
           />
-          <span className="min-w-[46px] text-center text-[12px] tabular-nums text-fg-subtle">
+          <span className="min-w-[46px] text-center text-[13px] tabular-nums text-fg-subtle">
             {selectedIndex + 1} / {resolvedStates.length}
           </span>
           <IconButton
@@ -576,11 +577,20 @@ export default function StagePreview() {
             title="下一个场景"
             aria-label="下一个场景"
           />
+          <button
+            type="button"
+            onClick={() => insertDeltaAt(selectedIndex + 1)}
+            title="在当前场景之后添加新场景"
+            className="ml-1 inline-flex items-center gap-1 rounded-md border border-edge/20 bg-surface-2 px-2 py-1 text-[13px] font-medium text-fg transition-colors hover:bg-surface-hover"
+          >
+            <Plus size={15} strokeWidth={2} />
+            添加场景
+          </button>
         </div>
       </header>
       <div
         ref={stageRef}
-        className="relative flex-1 overflow-hidden rounded-lg border border-edge/16 bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
+        className="relative flex-1 overflow-hidden bg-canvas shadow-[inset_0_0_30px_rgba(0,0,0,0.08)]"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDropOnStage}

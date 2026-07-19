@@ -183,6 +183,7 @@ function registerAssetProtocol(): void {
       const url = new URL(request.url)
       // pathname 形如 "/assets/images/sprite/x.png"
       const rel = decodeURIComponent(url.pathname).replace(/^\/+/, '')
+      console.log('[sw-asset] request', request.url, '| rel=', rel, '| activeRoot=', activeProjectRoot, '| session=', sessionDir)
       if (!rel) return new Response('bad request', { status: 400 })
 
       const roots: string[] = []
@@ -199,18 +200,56 @@ function registerAssetProtocol(): void {
         ]
         for (const abs of candidates) {
           // 防目录穿越：必须在 assets 子树内
-          if (abs !== assetsDir && !abs.startsWith(assetsDir + path.sep)) continue
+          const inTree = abs === assetsDir || abs.startsWith(assetsDir + path.sep)
           const ext = path.extname(abs).toLowerCase()
-          if (!IMG_EXTS.includes(ext) && !AUDIO_EXTS.includes(ext)) continue
-          if (!fs.existsSync(abs)) continue
+          const extOk = IMG_EXTS.includes(ext) || AUDIO_EXTS.includes(ext)
+          const exists = fs.existsSync(abs)
+          if (!inTree) continue
+          if (!extOk) continue
+          if (!exists) continue
 
           const mime = MIME_MAP[ext] ?? 'application/octet-stream'
+          // 媒体元素（<audio>/<video>）会发 Range 请求并期望 206 + Content-Range，
+          // 必须正确响应范围，否则报 MEDIA_ELEMENT_ERROR 无法播放。图片不需要范围，故不影响。
+          const total = fs.statSync(abs).size
+          const range = request.headers.get('range')
+          if (range) {
+            const m = /bytes=(\d+)-(\d*)/.exec(range)
+            let start = m ? parseInt(m[1], 10) : 0
+            let end = m && m[2] ? parseInt(m[2], 10) : total - 1
+            if (isNaN(start) || isNaN(end) || start > end || end >= total) {
+              start = 0
+              end = total - 1
+            }
+            const sliceLen = end - start + 1
+            const stream = Readable.toWeb(
+              fs.createReadStream(abs, { start, end })
+            ) as unknown as ReadableStream
+            console.log('[sw-asset]  HIT(range)', abs, start, '-', end, '/', total)
+            return new Response(stream, {
+              status: 206,
+              headers: {
+                'Content-Type': mime,
+                'Content-Range': `bytes ${start}-${end}/${total}`,
+                'Accept-Ranges': 'bytes',
+                'Content-Length': String(sliceLen),
+                'Cache-Control': 'no-cache',
+              },
+            })
+          }
           const stream = Readable.toWeb(fs.createReadStream(abs)) as unknown as ReadableStream
+          console.log('[sw-asset]  HIT', abs, mime)
           return new Response(stream, {
-            headers: { 'Content-Type': mime, 'Cache-Control': 'no-cache' },
+            headers: {
+              'Content-Type': mime,
+              'Accept-Ranges': 'bytes',
+              'Content-Length': String(total),
+              'Cache-Control': 'no-cache',
+            },
           })
         }
       }
+      console.log('[sw-asset]  NOT FOUND for', rel)
       return new Response('not found', { status: 404 })
     } catch (err) {
       return new Response(`error: ${(err as Error).message}`, { status: 500 })

@@ -1,10 +1,10 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
-import { setDragCache, DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
+import { setDragCache, DRAG_MIME, type DragAssetData, getAudioCategory } from '@/utils/assetHelpers'
 import { resolveAssetSrc } from '@/utils/assetSrc'
-import { toggleAssetPreview, isAssetPlaying } from '@/utils/audioManager'
-import { Tabs, Input, Button, IconButton } from '@/components/ui'
+import { toggleAssetPreview, isAssetPlaying, subscribeAudio, getAudioVersion } from '@/utils/audioManager'
+import { Tabs, Input, Button } from '@/components/ui'
 import { Image as ImageIcon, User, Music, Plus, Play, Pause, GripVertical, Search } from 'lucide-react'
 
 type TabId = AssetType
@@ -15,6 +15,17 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'audio', label: '音频', icon: <Music size={14} strokeWidth={1.75} /> },
 ]
 
+// 音频类别徽标（BGM / 环境 / 音效 / 语音），窄侧栏用短标签
+const AUDIO_CAT_META: Record<
+  ReturnType<typeof getAudioCategory>,
+  { label: string; badge: string }
+> = {
+  bgm: { label: 'BGM', badge: 'bg-info/12 text-info' },
+  ambient: { label: '环境', badge: 'bg-success/12 text-success' },
+  se: { label: '音效', badge: 'bg-warning/14 text-warning' },
+  voice: { label: '语音', badge: 'bg-signal/14 text-signal' },
+}
+
 export default function SceneNavPanel() {
   const assets = useAppStore((s) => s.assets)
   const addAsset = useAppStore((s) => s.addAsset)
@@ -22,6 +33,9 @@ export default function SceneNavPanel() {
   const [tab, setTab] = useState<TabId>('background')
   const [search, setSearch] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 订阅音频播放状态：播放/暂停/自然结束时驱动本组件重渲染，切换按钮图标
+  useSyncExternalStore(subscribeAudio, getAudioVersion)
 
   // 按 tab + 搜索过滤
   const filtered = assets
@@ -121,10 +135,9 @@ export default function SceneNavPanel() {
     [tab, addAsset],
   )
 
-  // ---- 渲染素材卡片 ----
+  // ---- 渲染图片素材卡片（背景 / 立绘）----
 
   const renderAssetCard = (asset: AssetItem) => {
-    const isImg = asset.type !== 'audio'
     return (
       <div
         key={asset.id}
@@ -144,7 +157,7 @@ export default function SceneNavPanel() {
             />
           ) : (
             <span className="text-fg-subtle">
-              {isImg ? <ImageIcon size={16} strokeWidth={1.75} /> : <Music size={16} strokeWidth={1.75} />}
+              <ImageIcon size={16} strokeWidth={1.75} />
             </span>
           )}
         </div>
@@ -162,27 +175,77 @@ export default function SceneNavPanel() {
           </span>
         </div>
 
-        {/* 音频预览按钮 */}
-        {!isImg && (
-          <IconButton
-            variant="ghost"
-            size="sm"
-            icon={isAssetPlaying(asset.id) ? <Pause size={14} strokeWidth={1.75} /> : <Play size={14} strokeWidth={1.75} />}
-            onMouseDown={(e) => {
-              e.stopPropagation()
-              e.preventDefault()
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              e.preventDefault()
-              // 按资产精准切换：同一素材停、不同素材叠加（四通道可同时响）
-              toggleAssetPreview(asset)
-            }}
-            title="点击试听"
-            aria-label="点击试听"
-            className="hover:text-info"
-          />
-        )}
+        {/* 拖拽提示 */}
+        <span className="shrink-0 text-fg-faint opacity-0 transition-opacity group-hover:opacity-100">
+          <GripVertical size={14} strokeWidth={1.75} />
+        </span>
+      </div>
+    )
+  }
+
+  // ---- 渲染音频素材卡片（醒目圆形播放钮 + 类别徽标）----
+
+  const renderAudioCard = (asset: AssetItem) => {
+    const playing = isAssetPlaying(asset.id)
+    const cat = getAudioCategory(asset.id)
+    const meta = AUDIO_CAT_META[cat]
+    return (
+      <div
+        key={asset.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, asset)}
+        onDragEnd={handleDragEnd}
+        className={`group flex cursor-grab items-center gap-2.5 rounded-lg border px-2 py-2 transition-all active:cursor-grabbing ${
+          playing
+            ? 'border-info/40 bg-info/[0.06] shadow-[0_2px_6px_rgba(28,24,18,0.10)]'
+            : 'border-edge/12 shadow-[0_1px_2px_rgba(28,24,18,0.06)] hover:border-edge/20 hover:bg-surface-hover hover:shadow-[0_2px_4px_rgba(28,24,18,0.10)]'
+        }`}
+        title="拖拽到时间轴使用 · 点左侧按钮试听"
+      >
+        {/* 圆形播放/暂停按钮（醒目） */}
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+          }}
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            // 按资产精准切换：同一素材停、不同素材叠加（四通道可同时响）
+            toggleAssetPreview(asset)
+          }}
+          title={playing ? '停止试听' : '点击试听'}
+          aria-label={playing ? '停止试听' : '点击试听'}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+            playing
+              ? 'bg-info text-white shadow-sm'
+              : 'bg-surface-2 text-fg-muted group-hover:bg-info/12 group-hover:text-info'
+          }`}
+        >
+          {playing ? (
+            <Pause size={16} strokeWidth={2} />
+          ) : (
+            <Play size={16} strokeWidth={2} className="ml-0.5" />
+          )}
+        </button>
+
+        {/* 信息：名称 + 类别徽标 + 文件名 */}
+        <div className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-medium text-fg" title={asset.name}>
+            {asset.name}
+          </span>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span
+              className={`shrink-0 rounded px-1.5 py-px text-[12px] font-medium leading-tight ${meta.badge}`}
+            >
+              {meta.label}
+            </span>
+            <span className="min-w-0 truncate text-[12px] text-fg-subtle" title={asset.fileName}>
+              {asset.fileName}
+            </span>
+          </div>
+        </div>
 
         {/* 拖拽提示 */}
         <span className="shrink-0 text-fg-faint opacity-0 transition-opacity group-hover:opacity-100">
@@ -251,8 +314,8 @@ export default function SceneNavPanel() {
             {search ? '没有匹配的素材' : '暂无素材，点击上方导入'}
           </div>
         ) : (
-          <div className="space-y-0.5">
-            {filtered.map(renderAssetCard)}
+          <div className={tab === 'audio' ? 'space-y-1.5' : 'space-y-0.5'}>
+            {filtered.map((a) => (a.type === 'audio' ? renderAudioCard(a) : renderAssetCard(a)))}
           </div>
         )}
       </div>
