@@ -73,7 +73,7 @@ export default function LeftSidebar() {
 
       {/* 底部版本号 */}
       <div className="border-t border-edge/10 p-2 text-center font-mono text-[12px] text-fg-faint">
-        {collapsed ? 'v0.3' : 'v0.3.0'}
+        {'v0.1.0'}
       </div>
     </aside>
   )
