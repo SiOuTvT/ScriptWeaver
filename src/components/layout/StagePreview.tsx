@@ -285,7 +285,16 @@ export default function StagePreview() {
       // 优先从模块级缓存获取（比 getData 可靠）
       const asset = getDragCache()
       if (!asset) return
-      if (!state) return
+
+      // 空项目时自动创建首行再接受素材放置
+      let idx = selectedIndex
+      let curState = state
+      if (!curState) {
+        get().insertDeltaAt(0)
+        idx = 0
+        curState = get().getResolvedState(0)
+        if (!curState) return
+      }
 
       // 用 drop 时的实时坐标做最终判定
       const rect = containerRectRef.current ?? e.currentTarget.getBoundingClientRect()
@@ -296,7 +305,7 @@ export default function StagePreview() {
       if (!zone) return
 
       if (zone === 'bg' && asset.type === 'background') {
-        updateDeltaAt(selectedIndex, (prev: LineDelta) => ({
+        updateDeltaAt(idx, (prev: LineDelta) => ({
           ...prev,
           background: { asset_id: asset.assetId },
         }))
@@ -318,7 +327,7 @@ export default function StagePreview() {
         }
 
         // sprite_id 统一使用表情 ID（'default'），而非 asset ID
-        updateDeltaAt(selectedIndex, (prev: LineDelta) => ({
+        updateDeltaAt(idx, (prev: LineDelta) => ({
           ...prev,
           characters: {
             ...prev.characters,
@@ -333,7 +342,7 @@ export default function StagePreview() {
         toast(`立绘 ${asset.name} 已放置到 ${slotName} 位`, 'success')
       } else if (zone === 'audio' && asset.type === 'audio') {
         const cat = getAudioCategory(asset.assetId)
-        updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+        updateDeltaAt(idx, (prev: LineDelta) => {
           const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
           if (cat === 'bgm')
             audio.bgm = { asset_id: asset.assetId, volume: 0.7, loop: true, fade_in_ms: 1000 }
@@ -348,7 +357,7 @@ export default function StagePreview() {
         toast(`音频 ${asset.name} 已应用`, 'success')
       }
     },
-    [selectedIndex, updateDeltaAt, resetDragState, state],
+    [selectedIndex, updateDeltaAt, resetDragState, state, getCharacter, addCharacter],
   )
 
   // =================== 立绘自由拖动（磁吸预设站位 + 微调偏移） ===================
