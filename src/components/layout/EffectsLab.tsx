@@ -212,7 +212,7 @@ function DetailView({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <article className="mx-auto max-w-3xl px-5 py-6">
+        <article className="max-w-4xl px-6 py-6">
           {/* 一句话概述 */}
           <p className="text-[15px] leading-relaxed text-fg">{item.desc}</p>
 
@@ -328,7 +328,7 @@ function DetailView({
             </Section>
           )}
 
-          <div className="mt-8 rounded-lg border border-edge/10 bg-surface-2/60 p-4 text-center">
+          <div className="mt-8 rounded-lg border border-edge/10 bg-surface-2/60 p-4">
             <p className="text-[13px] text-fg-subtle">读到这里，你已经吃透了该特效的全部原理、参数与避坑。</p>
             <Button
               variant="primary"
