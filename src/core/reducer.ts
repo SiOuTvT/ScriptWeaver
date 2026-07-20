@@ -64,6 +64,7 @@ export function applyDelta(
           scale: charDelta.scale,
           transition: charDelta.transition,
           asset_id: charDelta.asset_id,
+          effects: charDelta.effects,
         }
         break
       }

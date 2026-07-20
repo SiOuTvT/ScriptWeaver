@@ -109,6 +109,28 @@ export interface AudioTrackInstruction {
  */
 export type TrackValue = AudioTrackInstruction | null | '__CLEAR__'
 
+// --------------- 挂载特效（时间轴 → 特效大本营闭环） ---------------
+
+/**
+ * 时间轴上挂载到「立绘 / 背景」的一个特效实例。
+ * 通过 effectId 关联「特效大本营」(renpyEffects) 中同 id 的 EffectItem，
+ * 实现「展示厅 → 剧本」的真正闭环；导出时由 rpyExporter 据 kind + params 生成
+ * 对应的 `with <transition>` 或 `at <transform>`（详见任务 2/2 导出闭环）。
+ */
+export interface MountedEffect {
+  /** 实例唯一 ID（单事务内稳定，用于 React key / 删除定位） */
+  uid: string
+  /**
+   * 关联特效大本营的 EffectItem.id（如 'hpunch' / 'tf-alpha' / 'shake'）。
+   * 与 renpyEffects 同源，保证「添加特效」下拉与百科一致。
+   */
+  effectId: string
+  /** 用户可调数值参数（时长 / 幅度 / 角度等），key 与 MountableEffectDef.params[].key 对齐 */
+  params: Record<string, number>
+  /** 是否启用（关闭则导出时忽略），默认 true */
+  enabled: boolean
+}
+
 // --------------- 角色指令 ---------------
 
 /**
@@ -141,6 +163,11 @@ export interface CharacterDelta {
   /** 过渡效果 */
   transition?: string
   /**
+   * 挂载到本立绘的特效/变换列表（震动、淡入、闪烁、旋转…）。
+   * 导出为 `at` 叠加 transform（kind=transform）或 `with` 过渡（kind=transition）。
+   */
+  effects?: MountedEffect[]
+  /**
    * 显式动作：
    * - "show":  出场/更新
    * - "hide":  退场（带过渡）
@@ -167,6 +194,8 @@ export interface LineDelta {
   background: {
     asset_id: string
     transition?: string
+    /** 挂载到背景的特效（淡入 / 擦除 / 闪烁…），导出为 `with` 或 `scene ... at <transform>` */
+    effects?: MountedEffect[]
   } | null
 
   /**
@@ -225,6 +254,8 @@ export interface ResolvedCharacterState {
   /** 缩放比例（独立变量，默认 1）；与位置解耦 */
   scale?: number
   transition?: string
+  /** 挂载到本立绘的特效实例（透传自 CharacterDelta） */
+  effects?: MountedEffect[]
 }
 
 export interface ResolvedAudioState {
@@ -247,6 +278,7 @@ export interface ResolvedLineState {
   background: {
     asset_id: string
     transition?: string
+    effects?: MountedEffect[]
   } | null
   characters: Record<string, ResolvedCharacterState>
   audio: ResolvedAudioState

@@ -13,7 +13,8 @@
  * sprite_id 现为表情 ID（如 "smile"），立绘图片通过 CharacterConfig → ExpressionRef → AssetItem 解析。
  */
 
-import type { LineDelta, ResolvedLineState, CharacterConfig, AssetItem, PositionSlot } from '@/core/types'
+import type { LineDelta, ResolvedLineState, CharacterConfig, AssetItem, PositionSlot, MountedEffect } from '@/core/types'
+import { getMountable } from '@/data/mountableEffects'
 
 // ======================= 类型 =======================
 
@@ -56,8 +57,9 @@ type AtClause =
 type RpyNode =
   | { kind: 'label'; name: string }
   | { kind: 'blank' }
-  | { kind: 'scene'; image: string; transition?: string }
-  | { kind: 'show'; charId: string; exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string }
+  | { kind: 'scene'; image: string; transition?: string; effectAt?: string[]; effectWith?: string }
+  | { kind: 'show'; charId: string; exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string; effectAt?: string[]; effectWith?: string }
+  | { kind: 'layer_filter'; expr: string | null }
   | { kind: 'hide'; charId: string }
   | { kind: 'playMusic'; file: string; fadein?: number; loop: boolean }
   | { kind: 'playAmbient'; file: string; fadein?: number; loop: boolean }
@@ -84,6 +86,8 @@ export interface AssetRef {
 export interface RpyBundle {
   script: string
   definitions: string
+  /** 时间轴挂载特效 → 参数化 ATL transform 自动生成（独立 transforms.rpy） */
+  transforms?: string
   assets: AssetRef[]
 }
 
@@ -164,6 +168,243 @@ function collectUsedTransitions(
     }
   }
   return set
+}
+
+// ======================= 挂载特效 → 参数化 ATL codegen =======================
+//
+// 任务 2/2 核心：把时间轴上「挂载的特效实例」(MountedEffect) 转成符合 Ren'Py
+// 官方 Scripting Manual 的标准 ATL 代码。设计要点：
+//  - 每个 distinct 特效只在 transforms.rpy 定义一次 `transform sw_custom_<id>(默认参数):`，
+//    调用处按实例参数 `at sw_custom_<id>(duration=0.5, amplitude=10)` 覆盖，零重复、必编译。
+//  - transform 型 → 追加到 `at` 子句；transition 型 → 走 `with`。
+//  - 少数内建过渡工厂（dissolve/fade/pixellate）直接 `with dissolve(0.5)`，无需自定义定义，
+//    其余一律 `sw_custom_` 前缀，彻底规避与内建名/其它自定义名的 NameError 碰撞。
+
+/** 内建过渡工厂：可直接 `with <id>(参数)` 调用，无需生成自定义 transform */
+const BUILTIN_FACTORY_TRANSITIONS = new Set([
+  'dissolve', 'fade', 'pixellate',
+  'wiperight', 'wipeleft', 'wipeup', 'wipedown',
+])
+
+/** 格式化数值参数（3 位小数，避免超长浮点污染 .rpy） */
+function num(n: number): number {
+  return round3(n)
+}
+
+/** 内建过渡工厂的参数拼接（dissolve(time) / fade(out,hold,in) / pixellate(time,steps) / wipe*(time)） */
+function builtinFactoryArgs(id: string, params: Record<string, number>): string {
+  switch (id) {
+    case 'dissolve':
+      return `${num(params.time ?? 0.5)}`
+    case 'fade':
+      return `${num(params.out_time ?? 0.5)}, ${num(params.hold_time ?? 0)}, ${num(params.in_time ?? 0.5)}`
+    case 'pixellate':
+      return `${num(params.time ?? 0.5)}, ${Math.round(params.steps ?? 4)}`
+    case 'wiperight':
+    case 'wipeleft':
+    case 'wipeup':
+    case 'wipedown':
+      return `${num(params.time ?? 0.8)}`
+    default:
+      return ''
+  }
+}
+
+/** 把单个挂载特效实例渲染为调用字符串（at/with 子句用） */
+function effectCallStr(e: MountedEffect): string | null {
+  const def = getMountable(e.effectId)
+  if (!def) return null
+  // 滤镜（filter）不走 at/with，由 layer_filter 节点单独处理
+  if (def.kind === 'filter') return null
+  // 内建过渡工厂：直接 with dissolve(0.5) / fade(...) / pixellate(...) / wiperight(...)
+  if (def.kind === 'transition' && BUILTIN_FACTORY_TRANSITIONS.has(def.id)) {
+    return `${def.id}(${builtinFactoryArgs(def.id, e.params)})`
+  }
+  // 自定义：sw_custom_<id>(k=v, ...)，参数取实例实值（缺省回退 def）
+  const args = def.params.map((p) => `${p.key}=${num(e.params[p.key] ?? p.def)}`).join(', ')
+  return `sw_custom_${def.id}(${args})`
+}
+
+/** 该特效是否需要生成 transform 定义（自定义均需；内建工厂/滤镜无需） */
+function effectNeedsDef(e: MountedEffect): boolean {
+  const def = getMountable(e.effectId)
+  if (!def) return false
+  if (def.kind === 'filter') return false
+  if (def.kind === 'transition' && BUILTIN_FACTORY_TRANSITIONS.has(def.id)) return false
+  return true
+}
+
+/** 稳定签名：仅取启用的挂载特效，用于 diff 是否变化 */
+function effectsSig(list?: MountedEffect[]): string {
+  return (list ?? [])
+    .filter((e) => e.enabled)
+    .map((e) => `${e.effectId}:${JSON.stringify(e.params)}`)
+    .join('|')
+}
+
+/** 把挂载列表拆成 {at: 变换型调用[], withCall: 首个过渡型调用} */
+function mountEffects(list?: MountedEffect[]): { at: string[]; withCall?: string } {
+  const at: string[] = []
+  let withCall: string | undefined
+  for (const e of list ?? []) {
+    if (!e.enabled) continue
+    const call = effectCallStr(e)
+    if (!call) continue
+    const def = getMountable(e.effectId)
+    if (!def) continue
+    if (def.kind === 'transition') {
+      if (!withCall) withCall = call
+    } else {
+      at.push(call)
+    }
+  }
+  return { at, withCall }
+}
+
+/** 收集全剧本所有挂载特效实例（去重前） */
+function collectMountedEffects(resolvedStates: ResolvedLineState[]): MountedEffect[] {
+  const out: MountedEffect[] = []
+  for (const s of resolvedStates) {
+    if (s.background?.effects) out.push(...s.background.effects)
+    for (const c of Object.values(s.characters)) if (c.effects) out.push(...c.effects)
+  }
+  return out
+}
+
+// ======================= 全屏滤镜 → Ren'Py matrixcolor =======================
+// 滤镜（filter 类）针对整个舞台色调/氛围，导出为 `show layer master: matrixcolor <Matrix>`。
+// 复用 Ren'Py 内建 SaturationMatrix / SepiaMatrix / HueMatrix，组合以 ` * ` 连接，零自定义 shader。
+
+/** 单个滤镜实例 → matrixcolor 表达式片段（如 SaturationMatrix(0.0)） */
+function filterMatrixExpr(e: MountedEffect): string | null {
+  const def = getMountable(e.effectId)
+  if (!def || def.kind !== 'filter') return null
+  switch (def.id) {
+    case 'monochrome':
+      // 去色：SaturationMatrix(0) 即纯灰度；1 则原色
+      return `SaturationMatrix(${num(e.params.saturation ?? 0)})`
+    case 'sepia':
+      return `SepiaMatrix()`
+    case 'colormatrix': {
+      const hue = num(e.params.hue ?? 0)
+      const sat = num(e.params.saturation ?? 1)
+      // 调色滤镜：先调饱和度再旋转色相（如血腥红光 hue≈0 sat>1、中毒绿 hue≈120）
+      return `SaturationMatrix(${sat}) * HueMatrix(${hue})`
+    }
+    default:
+      return null
+  }
+}
+
+/** 收集单行所有启用的滤镜实例，组合成 matrixcolor 表达式（多滤镜以 ` * ` 连接）；无则返回 null */
+function collectLineFilterExpr(state: ResolvedLineState): string | null {
+  const exprs: string[] = []
+  const push = (list?: MountedEffect[]) => {
+    for (const e of list ?? []) {
+      if (!e.enabled) continue
+      const def = getMountable(e.effectId)
+      if (!def || def.kind !== 'filter') continue
+      const expr = filterMatrixExpr(e)
+      if (expr) exprs.push(expr)
+    }
+  }
+  push(state.background?.effects)
+  for (const c of Object.values(state.characters)) push(c.effects)
+  return exprs.length ? exprs.join(' * ') : null
+}
+
+/**
+ * 参数化 transform 的 ATL 正文（已含 4 空格基础缩进；repeat 内层 8 空格）。
+ * 正文直接引用参数变量名（duration / amplitude…），调用处覆盖即生效。
+ */
+function effectTransformBody(id: string): string[] {
+  switch (id) {
+    // ---- transform 型（at 叠加）----
+    case 'shake':
+      return [
+        'xoffset 0',
+        'linear (duration / 4.0) xoffset -amplitude',
+        'linear (duration / 4.0) xoffset amplitude',
+        'linear (duration / 4.0) xoffset -amplitude',
+        'linear (duration / 4.0) xoffset 0',
+      ]
+    case 'alpha':
+      return ['alpha 1.0', 'linear duration alpha alpha']
+    case 'blink':
+      return [
+        'repeat:',
+        '    alpha 1.0',
+        '    linear (0.5 / frequency) alpha minAlpha',
+        '    linear (0.5 / frequency) alpha 1.0',
+      ]
+    case 'rotate':
+      return ['rotate 0', 'linear duration rotate angle']
+    case 'zoomin':
+      return ['zoom 1.0', 'linear duration zoom zoom']
+    case 'zoom':
+      return ['zoom zoom']
+    case 'blur':
+      return ['blur blur']
+    case 'breathing':
+      return ['zoom 1.0', 'repeat:', '    linear (0.5 / rate) zoom (1.0 + depth)', '    linear (0.5 / rate) zoom 1.0']
+    case 'nudge':
+      return [
+        'xoffset 0',
+        'yoffset 0',
+        'repeat:',
+        '    linear (0.5 / rate) xoffset dx',
+        '    linear (0.5 / rate) xoffset 0',
+        '    linear (0.5 / rate) yoffset dy',
+        '    linear (0.5 / rate) yoffset 0',
+      ]
+    // ---- transition 型（with 调度，自定义 ATL 过渡）----
+    case 'hpunch':
+      return ['xoffset 0', 'linear 0.06 xoffset -10', 'linear 0.06 xoffset 10', 'linear 0.06 xoffset 0']
+    case 'vpunch':
+      return ['yoffset 0', 'linear 0.06 yoffset -10', 'linear 0.06 yoffset 10', 'linear 0.06 yoffset 0']
+    case 'flash':
+      return ['alpha 0.0', 'linear 0.15 alpha 1.0']
+    case 'blinds':
+      return ['alpha 0.0', 'linear 0.3 alpha 1.0']
+    // 注：wiperight/left/up/down 已纳入内建过渡工厂，走 `with wiperight(time)`，不在此生成
+    default:
+      // 兜底：安全淡入（任何情况下都能编译运行，绝不抛错）
+      return ['alpha 0.0', 'linear 0.3 alpha 1.0']
+  }
+}
+
+/** 生成独立的 transforms.rpy：仅含需要自定义定义的挂载特效（按 distinct id 去重） */
+export function exportTransformsRpy(resolvedStates: ResolvedLineState[]): string {
+  const used = collectMountedEffects(resolvedStates).filter((e) => e.enabled && effectNeedsDef(e))
+  const seen = new Set<string>()
+  const distinct = used.filter((e) => {
+    if (seen.has(e.effectId)) return false
+    seen.add(e.effectId)
+    return true
+  })
+
+  const lines: string[] = []
+  lines.push('# ============================================================')
+  lines.push('# ScriptWeaver - transforms.rpy')
+  lines.push('# 时间轴挂载特效 → 参数化 ATL transform（自动生成，请勿手改）')
+  lines.push('# 由 rpyExporter 依据挂载实例的参数规格产出，保证编译零报错。')
+  lines.push('# ============================================================')
+  lines.push('')
+
+  if (distinct.length === 0) {
+    lines.push('# （本剧本未挂载任何需要自定义 transform 的特效）')
+    return lines.join('\n')
+  }
+
+  for (const e of distinct) {
+    const def = getMountable(e.effectId)
+    if (!def) continue
+    const sig = def.params.map((p) => `${p.key}=${num(p.def)}`).join(', ')
+    lines.push(`transform sw_custom_${def.id}(${sig}):`)
+    for (const bl of effectTransformBody(def.id)) lines.push(`    ${bl}`)
+    lines.push('')
+  }
+  return lines.join('\n')
 }
 
 /** 磁盘/导出子目录（与 C 阶段 assets/ 规范完全同名） */
@@ -413,32 +654,43 @@ function compileToNodes(
 ): RpyNode[] {
   const nodes: RpyNode[] = [{ kind: 'label', name: scriptLabel }]
 
-  let currentBg: string | null = null
+  let currentBgKey: string | null = null
   let currentBgm: string | null = null
   let currentAmbient: string | null = null
-  let currentChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string }>()
+  let currentLayerFilter: string | null = null
+  let currentChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string; effectsSig: string; effects?: MountedEffect[] }>()
 
   for (let i = 0; i < resolvedStates.length; i++) {
     const state = resolvedStates[i]
     const delta = deltas[i]
     const block: RpyNode[] = []
 
-    // ---- 背景 ----
+    // ---- 背景（资产变化 或 挂载特效变化 均重发 scene）----
     const newBg = state.background?.asset_id ?? null
-    if (newBg !== currentBg) {
-      currentBg = newBg
+    const newBgKey = newBg ? `${newBg}|${effectsSig(state.background?.effects)}` : null
+    if (newBgKey !== currentBgKey) {
+      currentBgKey = newBgKey
       if (newBg) {
         const transition = resolveTransition(state.background?.transition, customTransitions)
+        const bgFx = mountEffects(state.background?.effects)
         if (st.bgDefs.get(newBg)) {
-          block.push({ kind: 'scene', image: newBg, transition })
+          block.push({ kind: 'scene', image: newBg, transition, effectAt: bgFx.at, effectWith: bgFx.withCall })
         } else {
           block.push({ kind: 'comment', text: `[缺失背景] ${newBg}` })
         }
       }
     }
 
+    // ---- 全屏滤镜（Filters）：本行任意启用的 filter 型特效 → 整层 matrixcolor ----
+    // 与背景/立绘解耦，独立做「变化才发射」的 diff，关闭时回退 IdentityMatrix()。
+    const lineFilterExpr = collectLineFilterExpr(state)
+    if (lineFilterExpr !== currentLayerFilter) {
+      currentLayerFilter = lineFilterExpr
+      block.push({ kind: 'layer_filter', expr: lineFilterExpr })
+    }
+
     // ---- 角色：先收集本行完整状态 ----
-    const newChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string }>()
+    const newChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string; effectsSig: string; effects?: MountedEffect[] }>()
     for (const [charId, c] of Object.entries(state.characters)) {
       // 同一角色身份（char_id）在 Ren'Py 中对应同一标签；多实例退化为单标签（Ren'Py 同 tag 不可同屏多份）
       const role = c.char_id ?? charId
@@ -448,6 +700,8 @@ function compileToNodes(
         zorder: computeZorder(c, st),
         zoom: c.scale != null && c.scale !== 1 ? round3(c.scale) : undefined,
         transition: resolveTransition(c.transition, customTransitions),
+        effectsSig: effectsSig(c.effects),
+        effects: c.effects,
       })
     }
     // 退场（上一行有、本行无）
@@ -463,9 +717,11 @@ function compileToNodes(
         !atEqual(prev.at, nc.at) ||
         prev.zorder !== nc.zorder ||
         prev.zoom !== nc.zoom ||
-        prev.transition !== nc.transition
+        prev.transition !== nc.transition ||
+        prev.effectsSig !== nc.effectsSig
       if (changed) {
         const exprAsset = st.charDefs[charId]?.expressions.get(nc.exprId)
+        const fx = mountEffects(nc.effects)
         if (exprAsset) {
           block.push({
             kind: 'show',
@@ -475,6 +731,8 @@ function compileToNodes(
             zorder: nc.zorder,
             zoom: nc.zoom,
             transition: nc.transition,
+            effectAt: fx.at,
+            effectWith: fx.withCall,
           })
         } else {
           block.push({ kind: 'comment', text: `[缺失立绘] ${charId} ${nc.exprId}` })
@@ -568,16 +826,26 @@ function serializeNodes(nodes: RpyNode[], totalLines: number): string {
 
 function serializeNode(n: RpyNode): string {
   switch (n.kind) {
-    case 'scene':
-      return n.transition ? `scene ${n.image} with ${n.transition}` : `scene ${n.image}`
+    case 'scene': {
+      const atStr = n.effectAt && n.effectAt.length ? ` at ${n.effectAt.join(', ')}` : ''
+      if (n.transition) return `scene ${n.image}${atStr} with ${n.transition}`
+      if (n.effectWith) return `scene ${n.image}${atStr} with ${n.effectWith}`
+      return `scene ${n.image}${atStr}`
+    }
     case 'show': {
       const at = serializeAt(n.at, n.zoom)
-      let s = `show ${n.charId} ${n.exprId} at ${at} zorder ${n.zorder}`
-      if (n.transition) s += ` with ${n.transition}`
-      return s
+      const atStr = n.effectAt && n.effectAt.length ? `${at}, ${n.effectAt.join(', ')}` : at
+      if (n.transition) return `show ${n.charId} ${n.exprId} at ${atStr} zorder ${n.zorder} with ${n.transition}`
+      if (n.effectWith) return `show ${n.charId} ${n.exprId} at ${atStr} zorder ${n.zorder} with ${n.effectWith}`
+      return `show ${n.charId} ${n.exprId} at ${atStr} zorder ${n.zorder}`
     }
     case 'hide':
       return `hide ${n.charId}`
+    case 'layer_filter':
+      // 整层颜色矩阵：expr 为 null 表示关闭滤镜（复位为单位矩阵，避免残留染色）
+      return n.expr == null
+        ? 'show layer master:\n    matrixcolor IdentityMatrix()'
+        : `show layer master:\n    matrixcolor ${n.expr}`
     case 'playMusic': {
       let s = `play music "${n.file}"`
       if (n.loop) s += ' loop'
@@ -787,8 +1055,9 @@ export function buildBundle(
   const used = collectUsedTransitions(deltas, resolvedStates)
   const script = deltas.length === 0 ? '# No content\n' : serializeNodes(compileToNodes(deltas, resolvedStates, st, scriptLabel, used), deltas.length)
   const definitions = exportDefinitionsRpy(characterConfigs, assets, positionSlots, st, used)
+  const transforms = exportTransformsRpy(resolvedStates)
   const assetRefs = buildAssetRefs(assets)
-  return { script, definitions, assets: assetRefs }
+  return { script, definitions, transforms, assets: assetRefs }
 }
 
 // ======================= I/O 边界（A-9 Web 降级 / Electron） =======================
@@ -825,8 +1094,10 @@ export function downloadRpy(
   const script = exportToRpy(deltas, resolvedStates, characterConfigs, assets, positionSlots, label)
   const used = collectUsedTransitions(deltas, resolvedStates)
   const defs = exportDefinitionsRpy(characterConfigs, assets, positionSlots, undefined, used)
+  const transforms = exportTransformsRpy(resolvedStates)
   triggerDownload(script, scriptFilename)
   triggerDownload(defs, 'definitions.rpy')
+  triggerDownload(transforms, 'transforms.rpy')
 }
 
 export interface ExportResult {
@@ -881,9 +1152,10 @@ export async function exportProjectPackage(
   // Web 降级
   triggerDownload(bundle.script, `${scriptLabel}.rpy`)
   triggerDownload(bundle.definitions, 'definitions.rpy')
+  if (bundle.transforms) triggerDownload(bundle.transforms, 'transforms.rpy')
   return {
     mode: 'web',
     success: true,
-    message: '已通过浏览器下载 script.rpy 与 definitions.rpy（素材需手动放入 game/ 目录）。',
+    message: '已通过浏览器下载 script.rpy、definitions.rpy 与 transforms.rpy（素材需手动放入 game/ 目录）。',
   }
 }

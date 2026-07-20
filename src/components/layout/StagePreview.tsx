@@ -1,6 +1,6 @@
 import { useRef, useEffect, useLayoutEffect, useState, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import type { ResolvedLineState, ResolvedCharacterState, LineDelta, AssetItem, CharacterConfig } from '@/core/types'
+import type { ResolvedLineState, ResolvedCharacterState, LineDelta, AssetItem, CharacterConfig, MountedEffect } from '@/core/types'
 import {
   getDragCache,
   type DragAssetData,
@@ -12,9 +12,10 @@ import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import {
   Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight,
-  Plus, FileText, Play, Pause, Copy, X, Pencil, Trash2,
+  Plus, FileText, Play, Pause, Copy, X, Pencil, Trash2, Sparkles,
 } from 'lucide-react'
 import { Skeleton, IconButton } from '@/components/ui'
+import EffectMountPanel from '@/components/effects/EffectMountPanel'
 import { PRESET_SLOTS, getPresetSlot } from '@/core/positionSlots'
 import { playAudioPreview, stopBgm, stopAmbient, stopOneShots } from '@/utils/audioManager'
 import { estimateLineDurationMs } from '@/utils/playback'
@@ -620,6 +621,39 @@ export default function StagePreview() {
     [selectedIndex, updateDeltaAt],
   )
 
+  /** 设置立绘挂载特效列表（单事务提交，参数微调实时持久化） */
+  const setCharEffects = useCallback(
+    (charId: string, next: MountedEffect[]) => {
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+        const base = prev.characters[charId] ?? {
+          sprite_id: 'default',
+          position_slot: 'center',
+          action: 'show' as const,
+        }
+        return {
+          ...prev,
+          characters: {
+            ...prev.characters,
+            [charId]: { ...base, effects: next, action: 'show' as const },
+          },
+        }
+      })
+    },
+    [selectedIndex, updateDeltaAt],
+  )
+
+  /** 设置当前行背景挂载特效列表（单事务提交） */
+  const setBgEffects = useCallback(
+    (next: MountedEffect[]) => {
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+        const bg = prev.background
+        if (!bg) return prev
+        return { ...prev, background: { ...bg, effects: next } }
+      })
+    },
+    [selectedIndex, updateDeltaAt],
+  )
+
   /** 设置立绘自由坐标（X/Y，独立于缩放）。面板滑块实时驱动，所见即所得；写入前 clamp 到完整可见范围 */
   const setCharPos = useCallback(
     (charId: string, x: number, y: number) => {
@@ -1201,6 +1235,19 @@ export default function StagePreview() {
               {state.background.transition}
             </span>
           )}
+          {(() => {
+            const bgN = state.background?.effects?.filter((e) => e.enabled).length ?? 0
+            const chN = Object.values(state.characters).reduce(
+              (n, c) => n + (c.effects?.filter((e) => e.enabled).length ?? 0),
+              0,
+            )
+            const total = bgN + chN
+            return total > 0 ? (
+              <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[12px] text-amber-300" title="本行已挂载的特效数量">
+                ✦ 特效 {total}
+              </span>
+            ) : null
+          })()}
         </div>
 
         {/* 音频状态指示器 + 拖放热区 */}
@@ -1447,6 +1494,35 @@ export default function StagePreview() {
                 className="w-full accent-signal"
               />
             </div>
+
+            {/* 立绘特效挂载（时间轴 → 特效大本营 闭环） */}
+            <div className="border-t border-edge/10 pt-2">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-fg-subtle">
+                <Sparkles size={12} strokeWidth={1.75} className="text-signal" />
+                立绘特效
+              </div>
+              <EffectMountPanel
+                scope="sprite"
+                effects={state.characters[selectedCharId].effects ?? []}
+                onChange={(next) => setCharEffects(selectedCharId, next)}
+              />
+            </div>
+          </aside>
+        )}
+
+        {/* 背景特效挂载面板：当前行有背景即常驻（与立绘面板并列，互不遮挡） */}
+        {state.background && (
+          <aside className="flex w-52 shrink-0 flex-col gap-2 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
+            <div className="flex items-center gap-1.5">
+              <ImageIcon size={13} strokeWidth={1.75} className="text-signal" />
+              <span className="text-[12px] font-semibold text-fg">背景特效</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-fg-faint">应用到本行背景的演出特效。</p>
+            <EffectMountPanel
+              scope="background"
+              effects={state.background.effects ?? []}
+              onChange={(next) => setBgEffects(next)}
+            />
           </aside>
         )}
       </div>

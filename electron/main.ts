@@ -706,6 +706,7 @@ interface ExportAssetRef {
 interface RpyBundle {
   script: string
   definitions: string
+  transforms?: string
   assets: ExportAssetRef[]
 }
 
@@ -751,6 +752,9 @@ ipcMain.handle('fs:exportRenpy', async (_event, bundle: RpyBundle) => {
   try {
     fs.writeFileSync(path.join(gameDir, 'script.rpy'), bundle.script ?? '', 'utf-8')
     fs.writeFileSync(path.join(gameDir, 'definitions.rpy'), bundle.definitions ?? '', 'utf-8')
+    if (bundle.transforms && bundle.transforms.trim()) {
+      fs.writeFileSync(path.join(gameDir, 'transforms.rpy'), bundle.transforms, 'utf-8')
+    }
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message }
   }
