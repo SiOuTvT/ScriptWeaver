@@ -103,3 +103,19 @@ build started...[39m
 [2mdist-electron/[22m[36mmain.js  [39m[1m[2m21.01 kB[22m[1m[22m[2m │ gzip: 6.44 kB[22m
 [36mbuilt in 117ms.[39m
 
+[2m11:15:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Button.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:15:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Button.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:15:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:15:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:15:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:15:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:15:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:16:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:16:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:16:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:16:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:16:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:16:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:17:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:19:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Button.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:19:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Button.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
