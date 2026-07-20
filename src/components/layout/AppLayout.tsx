@@ -7,6 +7,7 @@ import Timeline from './Timeline'
 import ScriptOverview from './ScriptOverview'
 import AssetManager from './AssetManager'
 import CharacterManager from './CharacterManager'
+import EffectsLab from './EffectsLab'
 import AIPanel from './AIPanel'
 import ExportSettings from './ExportSettings'
 import ThemeSettings from './ThemeSettings'
@@ -386,6 +387,7 @@ export default function AppLayout() {
         {activeNavItem === 'script-overview' && <ScriptOverview />}
         {activeNavItem === 'assets' && <AssetManager />}
         {activeNavItem === 'characters' && <CharacterManager />}
+        {activeNavItem === 'effects' && <EffectsLab />}
         {activeNavItem === 'export' && <ExportSettings />}
         {activeNavItem === 'ai' && <AIPanel />}
         {activeNavItem === 'theme' && <ThemeSettings />}
