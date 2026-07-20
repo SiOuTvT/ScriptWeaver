@@ -37,3 +37,30 @@ computing gzip size...
 [sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
 [sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
+[2m11:28:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/LeftSidebar.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:28:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/LeftSidebar.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:28:24[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/LeftSidebar.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m11:28:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/LeftSidebar.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[36m
+build started...[39m
+[32m✓[39m 0 modules transformed.
+[2mdist-electron/[22m[36mmain.js  [39m[1m[2m21.01 kB[22m[1m[22m[2m │ gzip: 6.44 kB[22m
+[36mbuilt in 357ms.[39m
+
+[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= null
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
+[2m11:30:53[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease_build3/win-unpacked/LICENSES.chromium.html[22m
+[2m11:30:53[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease_build3/win-unpacked/LICENSES.chromium.html[22m
+[2m11:40:12[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease_build3/win-unpacked/LICENSES.chromium.html[22m
+[2m11:40:12[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease/0.3.0/win-unpacked/LICENSES.chromium.html[22m
+[2m12:04:14[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease/0.2.0-fixed/win-unpacked/LICENSES.chromium.html[22m
+[2m12:06:35[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease/0.2.0-fixed/win-unpacked/LICENSES.chromium.html[22m
+[2m12:06:35[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease/0.2.0-patched/win-unpacked/LICENSES.chromium.html[22m
+[2m12:07:32[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease_build_03/win-unpacked/LICENSES.chromium.html[22m
+[2m12:07:32[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease_build_03/win-unpacked/LICENSES.chromium.html[22m
+[2m12:13:03[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease_build_03/win-unpacked/LICENSES.chromium.html[22m
+[2m12:13:03[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease/0.3.0-patched/win-unpacked/LICENSES.chromium.html[22m

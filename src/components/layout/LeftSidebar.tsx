@@ -1,6 +1,6 @@
 import { useAppStore, NavItemId } from '@/stores/appStore'
 import { BookOpen, FileText, Images, Users, Download, Sparkles, Palette, Wand2, ChevronLeft, ChevronRight } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 interface NavItem {
   id: NavItemId
@@ -25,6 +25,11 @@ export default function LeftSidebar() {
   const activeItem = useAppStore((s) => s.activeNavItem)
   const setActive = useAppStore((s) => s.setActiveNavItem)
   const toggle = useAppStore((s) => s.toggleLeftSidebar)
+
+  const [appVersion, setAppVersion] = useState('0.2.0')
+  useEffect(() => {
+    window.electronAPI?.getVersion().then((v) => setAppVersion(v)).catch(() => {})
+  }, [])
 
   const width = collapsed ? 'w-12' : 'w-44'
 
@@ -74,7 +79,7 @@ export default function LeftSidebar() {
 
       {/* 底部版本号 */}
       <div className="border-t border-edge/10 p-2 text-center font-mono text-[12px] text-fg-faint">
-        {'v0.1.0'}
+        {`v${appVersion}`}
       </div>
     </aside>
   )
