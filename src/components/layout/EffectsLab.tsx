@@ -191,6 +191,22 @@ function DetailView({
   onEnterPreview: () => void
 }) {
   const enc = EFFECT_ENCYCLOPEDIA[item.id]
+
+  // 右侧「本页速览」目录：仅列出当前特效实际存在的板块
+  const toc = [
+    { id: 'enc-art', label: '🎭 剧情应用场景', show: !!enc?.artGuide },
+    { id: 'enc-principle', label: '底层原理机制', show: !!item.principle },
+    { id: 'enc-params', label: '📐 参数拆解手册', show: !!(enc?.paramManual?.length) },
+    { id: 'enc-params-math', label: '📐 参数数学逻辑', show: !!(item.params?.length) },
+    { id: 'enc-renpy', label: '💻 Ren\'Py 代码', show: !!item.syntax },
+    { id: 'enc-impl', label: '💻 本项目实现', show: !!enc?.cssImpl },
+    { id: 'enc-perf', label: '⚠️ 性能与避坑', show: !!enc?.perfTips },
+  ].filter((t) => t.show)
+
+  const jumpTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-canvas text-fg">
       <div className="flex items-center gap-2 border-b border-edge/10 px-4 py-2.5">
@@ -211,8 +227,10 @@ function DetailView({
         </Button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <article className="max-w-4xl px-6 py-6">
+      <div className="flex min-h-0 flex-1">
+        {/* 左：正文（限宽保证行长易读，左对齐铺开） */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <article className="max-w-3xl px-6 py-6">
           {/* 一句话概述 */}
           <p className="text-[15px] leading-relaxed text-fg">{item.desc}</p>
 
@@ -224,7 +242,7 @@ function DetailView({
 
           {/* 🎭 板块一：剧情应用场景与艺术演出指导（整合原 renpyEffects.scenario） */}
           {enc?.artGuide && (
-            <Section title="🎭 剧情应用场景与艺术演出指导">
+            <Section id="enc-art" title="🎭 剧情应用场景与艺术演出指导">
               <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{enc.artGuide}</p>
               {item.scenario && (
                 <div className="mt-4 border-t border-edge/10 pt-3">
@@ -237,7 +255,7 @@ function DetailView({
 
           {/* 底层原理（Ren'Py 官方机制，保留） */}
           {item.principle && (
-            <Section title="底层原理（Ren'Py 官方机制）">
+            <Section id="enc-principle" title="底层原理（Ren'Py 官方机制）">
               <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{item.principle}</p>
             </Section>
           )}
@@ -274,7 +292,7 @@ function DetailView({
 
           {/* 📐 原 Ren'Py 资料 · 参数底层数学逻辑（保留旧 enrich 数据，含 math） */}
           {item.params && item.params.length > 0 && (
-            <Section title="📐 参数底层数学逻辑（原 Ren'Py 资料）">
+            <Section id="enc-params-math" title="📐 参数底层数学逻辑（原 Ren'Py 资料）">
               <div className="overflow-hidden rounded-lg border border-edge/12">
                 <table className="w-full border-collapse text-[12px]">
                   <thead>
@@ -323,7 +341,7 @@ function DetailView({
 
           {/* ⚠️ 板块四：性能提示与视觉避坑 */}
           {enc?.perfTips && (
-            <Section title="⚠️ 性能提示与视觉避坑指南">
+            <Section id="enc-perf" title="⚠️ 性能提示与视觉避坑指南">
               <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{enc.perfTips}</p>
             </Section>
           )}
@@ -341,14 +359,45 @@ function DetailView({
             </Button>
           </div>
         </article>
+        </div>
+
+        {/* 右：本页速览 + 目录跳转（填掉右侧空白，长文可直跳板块） */}
+        <aside className="hidden w-60 shrink-0 overflow-y-auto border-l border-edge/10 bg-surface/40 px-4 py-6 lg:block">
+          <p className="mb-2 text-[12px] font-semibold tracking-wide text-fg-faint">本页速览</p>
+          <div className="mb-4 rounded-lg border border-edge/12 bg-surface-2/60 p-3">
+            <p className="truncate text-[13px] font-semibold text-fg">{item.cn}</p>
+            <p className="truncate font-mono text-[12px] text-signal">{item.name}</p>
+          </div>
+          <p className="mb-1.5 text-[12px] text-fg-faint">目录 · 点击跳转</p>
+          <nav className="space-y-0.5">
+            {toc.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => jumpTo(t.id)}
+                className="block w-full truncate rounded px-2 py-1.5 text-left text-[12.5px] text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<PlayCircle size={14} strokeWidth={1.75} />}
+            onClick={onEnterPreview}
+            className="mt-4 w-full"
+          >
+            进入预览舞台
+          </Button>
+        </aside>
       </div>
     </div>
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-6">
+    <section id={id} className="mt-6 scroll-mt-4">
       <h2 className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-fg-muted">
         <span className="h-3.5 w-1 rounded-full bg-signal/70" />
         {title}
