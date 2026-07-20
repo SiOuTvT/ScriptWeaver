@@ -58,12 +58,12 @@
 
 ## 🐛 修复
 
-- **严重显示问题 · 左下角版本号**：此前硬编码为 **v0.1.0**，导致 v0.2.0 安装包左下角误显 **0.1.0**。改为运行时读取 app.getVersion()（即 package.json 的 version），本版起左下角正确显示 **v0.3.0**；以后升版本只改 package.json，左下角与安装包名自动一致。
+- **严重显示问题 · 左下角版本号**：此前硬编码为 **v0.1.0**，导致 v0.2.0 安装包左下角误显 **0.1.0**。改为运行时读取 app.getVersion()（即 [package.json](https://github.com/SiOuTvT/ScriptWeaver/blob/main/package.json) 的 version），本版起左下角正确显示 **v0.3.0**；以后升版本只改 [package.json](https://github.com/SiOuTvT/ScriptWeaver/blob/main/package.json)，左下角与安装包名自动一致。
 - **音频播放协议（sw-asset://）**：<audio> 发 Range 请求期望 206 + Content-Range，原 handler 只返回整文件导致 MEDIA_ELEMENT_ERROR 播不了。修复为 Range 分支「读入内存的定长 body」返回 206 + Content-Length，整文件分支保持原样。
 - **重启 / 热重载丢素材**：导入素材原落 temp/scriptweaver-session-<时间戳> 且退出时 fs.rmSync 删除 → dev 重启 / 热重载后素材全 404。改为落持久化 userData/session-assets（稳定路径、无时间戳），退出只停监听器不再删目录；重新导入的素材跨重启 / 热重载保留。
 - **角色拖拽 clamp / 编辑器侧栏定位**：用像素 delta + 实际渲染尺寸（排除标签）计算归一化位置，修复 clamp 区间塌缩、角色卡死；修正轴锁定（startPx/startPy）；侧栏绝对定位不再遮挡舞台。
 - **舞台布局 / 精灵对齐**：居中容器 + ResizeObserver 计算最大内接舞台框，避免绝对定位子元素塌陷；精灵缩略图对齐修正。
-- **EffectsLab 导入错误**：修正预览 import 解析（引用 effects/PreviewStage），消除导入报错。
+- **EffectsLab 导入错误**：修正预览 import 解析（引用 [effects/PreviewStage](https://github.com/SiOuTvT/ScriptWeaver/blob/main/src/components/effects/PreviewStage.tsx)），消除导入报错。
 
 ---
 
