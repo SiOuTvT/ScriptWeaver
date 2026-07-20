@@ -30,7 +30,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-top': {
-    artGuide: `top 是水平居中、贴上边缘（align 0.5,0），俯视视角下的角色、头顶的招牌、吊下来的东西——总之任何「从上方垂下来或者俯着看」的画面用它。`,
+    artGuide: `top 是水平居中、贴上边缘（align 0.5,0），俯视视角下的角色、头顶的招牌、吊下来的东西，总之任何「从上方垂下来或者俯着看」的画面用它。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '等价 align(0.5, 0)', range: '—', effect: '水平居中 + 顶部贴顶。' },
     ],
@@ -57,7 +57,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-truecenter': {
-    artGuide: `truecenter 把立绘的中心点钉在屏幕正中（align 0.5,0.5），而不是脚底贴底。做特写、CG 感画面、重要人物居中的时候用它——你想让整张立绘占满视觉中心、而不是「杵在地上」时就选它。`,
+    artGuide: `truecenter 把立绘的中心点钉在屏幕正中（align 0.5,0.5），而不是脚底贴底。做特写、CG 感画面、重要人物居中的时候用它，你想让整张立绘占满视觉中心、而不是「杵在地上」时就选它。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '等价 align(0.5, 0.5)', range: '—', effect: '中心对齐屏幕正中（含中心点）。' },
     ],
@@ -66,7 +66,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-offleft': {
-    artGuide: `offscreenleft 把立绘放到屏幕左边之外（xpos 略小于 0）、脚底贴底，它是 moveinright 的入场起点——角色从画外走进来时一开始站这儿。`,
+    artGuide: `offscreenleft 把立绘放到屏幕左边之外（xpos 略小于 0）、脚底贴底，它是 moveinright 的入场起点，角色从画外走进来时一开始站这儿。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '屏外左侧', range: '—', effect: '立绘在屏幕左边缘之外，作 moveinright 起点。' },
     ],
@@ -75,7 +75,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-offright': {
-    artGuide: `offscreenright 把立绘放到屏幕右边之外，是 moveoutright 的离场终点——角色往画外走去时最后站这儿。`,
+    artGuide: `offscreenright 把立绘放到屏幕右边之外，是 moveoutright 的离场终点，角色往画外走去时最后站这儿。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '屏外右侧', range: '—', effect: '立绘在屏幕右边缘之外，作 moveoutright 终点。' },
     ],
@@ -94,7 +94,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-reset': {
-    artGuide: `reset 把所有的变换属性（pos/rotate/zoom/alpha/matrixcolor……）一键还原成默认，清掉之前叠上去的东西——等于舞台清屏重启。切换机位、重设姿态之前先 reset 一下，能防止上一轮变换的残留污染下一幕。`,
+    artGuide: `reset 把所有的变换属性（pos/rotate/zoom/alpha/matrixcolor……）一键还原成默认，清掉之前叠上去的东西，等于舞台清屏重启。切换机位、重设姿态之前先 reset 一下，能防止上一轮变换的残留污染下一幕。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '清空全部叠加', range: '—', effect: '所有 transform 属性还原默认，清除残留。' },
     ],

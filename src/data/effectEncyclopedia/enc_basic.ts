@@ -3,7 +3,7 @@ import type { Encyclopedia } from './types'
 // 一、基础转场（Basic Transitions）
 export const basicEnc: Encyclopedia = {
   dissolve: {
-    artGuide: `Dissolve 就是最普通的淡入淡出，平时切对话、换背景基本都用它。它不抢戏，情绪是连续流动的，所以适合那种「不想让玩家感觉到转场」的安静时刻——日常对话、清晨到正午的光影、角色默默掉眼泪时背景悄悄换掉。但正因为它太安全，新手最容易滥用：大转折、真相揭晓、章节切换这种该有仪式感的节点，换更有重量的转场，别拿 dissolve 轻轻带过，那样高潮也会被磨平。`,
+    artGuide: `Dissolve 就是最普通的淡入淡出，平时切对话、换背景基本都用它。它不抢戏，情绪是连续流动的，所以适合那种「不想让玩家感觉到转场」的安静时刻，日常对话、清晨到正午的光影、角色默默掉眼泪时背景悄悄换掉。但正因为它太安全，新手最容易滥用：大转折、真相揭晓、章节切换这种该有仪式感的节点，换更有重量的转场，别拿 dissolve 轻轻带过，那样高潮也会被磨平。`,
     paramManual: [
       { name: 'time', type: 'float', def: '0.5', range: '>0 秒', effect: 't 从 0→1 的线性跨度。越大过渡越慢越柔；<0.3s 会显得仓促。' },
       { name: 'alpha', type: 'bool', def: 'False', range: 'True / False', effect: 'True 时按每像素 alpha 加权混合，避免半透明边缘出现黑边；带透明通道的图建议开。' },
@@ -19,7 +19,7 @@ export const basicEnc: Encyclopedia = {
   },
 
   fade: {
-    artGuide: `Fade 是翻篇用的，中间经过一段纯色（默认黑）再回来，所以它比 dissolve 更重、更有仪式感。章节切换、时间跳跃、一段回忆的开头和结尾、情绪强烈的大转折，用这个最合适。但别往高频日常对话里塞——每次黑场都会把玩家从沉浸里弹出来。白场（color="#fff"）适合醒来、闪回、或者圣洁感的瞬间。`,
+    artGuide: `Fade 是翻篇用的，中间经过一段纯色（默认黑）再回来，所以它比 dissolve 更重、更有仪式感。章节切换、时间跳跃、一段回忆的开头和结尾、情绪强烈的大转折，用这个最合适。但别往高频日常对话里塞，每次黑场都会把玩家从沉浸里弹出来。白场（color="#fff"）适合醒来、闪回、或者圣洁感的瞬间。`,
     paramManual: [
       { name: 'out_time', type: 'float', def: '0.5', range: '≥0 秒', effect: '旧画面 alpha 1→0 淡出到纯色屏的秒数。' },
       { name: 'hold_time', type: 'float', def: '0.0', range: '≥0 秒', effect: '纯色屏保持秒数；总时长 = out + hold + in。' },
@@ -76,7 +76,7 @@ function pixelate(ctx, step) {
   },
 
   pause: {
-    artGuide: `Pause 就是让画面原样停在那儿 delay 秒，啥视觉变化都不发生。在多重转场序列里，它是两段之间的「逗号」，留一口静默的呼吸。单独用也行——就是想让某一幕多停一会儿，让玩家看清画面细节、或者读完那句关键台词。`,
+    artGuide: `Pause 就是让画面原样停在那儿 delay 秒，啥视觉变化都不发生。在多重转场序列里，它是两段之间的「逗号」，留一口静默的呼吸。单独用也行，就是想让某一幕多停一会儿，让玩家看清画面细节、或者读完那句关键台词。`,
     paramManual: [
       { name: 'delay', type: 'float', def: '1.0', range: '≥0 秒', effect: '新画面保持的秒数，纯等待不渲染变化。' },
     ],
@@ -126,7 +126,7 @@ before/after 若各自是重特效（如 pixellate），会与主转场叠加性
   },
 
   'alpha-dissolve': {
-    artGuide: `AlphaDissolve 是用一张控制图的透明度来决定新画面从哪儿先显出来：控制图不透明的地方先显、透明的地方最后显。这样你就能做出心形、星形、文字轮廓、墨迹晕开这种不规则形状的揭示——浪漫告白时爱心绽开、魔法阵勾勒成形、秘密在墨痕里浮现，都靠它。reverse 反过来，就让揭示从边缘往中心收或者反向。`,
+    artGuide: `AlphaDissolve 是用一张控制图的透明度来决定新画面从哪儿先显出来：控制图不透明的地方先显、透明的地方最后显。这样你就能做出心形、星形、文字轮廓、墨迹晕开这种不规则形状的揭示，浪漫告白时爱心绽开、魔法阵勾勒成形、秘密在墨痕里浮现，都靠它。reverse 反过来，就让揭示从边缘往中心收或者反向。`,
     paramManual: [
       { name: 'control', type: 'Displayable', def: '—', range: '带 alpha 的图', effect: '用其 alpha 通道作显形进度图：alpha=1 处先显，alpha=0 处最后显。' },
       { name: 'delay', type: 'float', def: '1.0', range: '>0 秒', effect: '全局进度 p:0→1 的秒数。' },
@@ -147,7 +147,7 @@ before/after 若各自是重特效（如 pixellate），会与主转场叠加性
   },
 
   'image-dissolve': {
-    artGuide: `ImageDissolve 跟 AlphaDissolve 差不多，但它是按控制图的亮度（灰度）决定溶解顺序：白的地方先溶进来、黑的地方最后。所以你做的是「从亮处往暗处一点点显形」——晨光洒落、灯光渐亮、由明到暗的梦境浮现，都特别贴。reverse 反过来，让暗部先显、亮部压轴。`,
+    artGuide: `ImageDissolve 跟 AlphaDissolve 差不多，但它是按控制图的亮度（灰度）决定溶解顺序：白的地方先溶进来、黑的地方最后。所以你做的是「从亮处往暗处一点点显形」，晨光洒落、灯光渐亮、由明到暗的梦境浮现，都特别贴。reverse 反过来，让暗部先显、亮部压轴。`,
     paramManual: [
       { name: 'image', type: 'Displayable', def: '—', range: '带亮度信息的图', effect: '用其亮度决定溶解顺序：亮(白)先溶入，暗(黑)最后。' },
       { name: 'time', type: 'float', def: '1.0', range: '>0 秒', effect: '全局进度 p:0→1 秒数。' },

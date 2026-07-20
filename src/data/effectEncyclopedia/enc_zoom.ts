@@ -3,7 +3,7 @@ import type { Encyclopedia } from './types'
 // 四、缩放与镜头（Zoom & Camera）
 export const zoomEnc: Encyclopedia = {
   zoomin: {
-    artGuide: `zoomin 是「放大着进来」：进场的那张立绘从比较小放大到目标尺寸，做出登场、强调的推近感。新角色、新背景要「怼到玩家眼前」、或者你想强调某个东西出现的时候，用它最有冲击力。但别往平凡的日常背景切换里塞——放大进场太张扬，会稀释掉真正需要强调的时刻。`,
+    artGuide: `zoomin 是「放大着进来」：进场的那张立绘从比较小放大到目标尺寸，做出登场、强调的推近感。新角色、新背景要「怼到玩家眼前」、或者你想强调某个东西出现的时候，用它最有冲击力。但别往平凡的日常背景切换里塞，放大进场太张扬，会稀释掉真正需要强调的时刻。`,
     paramManual: [
       { name: '(默认时长)', type: 'float', def: '≈0.5', range: '秒', effect: '缩放补间秒数，由缩放类 MoveTransition 决定。' },
     ],
@@ -27,7 +27,7 @@ export const zoomEnc: Encyclopedia = {
   },
 
   zoominout: {
-    artGuide: `zoominout 是让进来的立绘放大、出去的立绘同时缩小，两个并发，形成「一新一旧、一进一退」的强烈对比替换。最适合角色替换登场（新角色顶掉旧的）、变身前后对比、重要人物切换——一进一退的张力特别强。`,
+    artGuide: `zoominout 是让进来的立绘放大、出去的立绘同时缩小，两个并发，形成「一新一旧、一进一退」的强烈对比替换。最适合角色替换登场（新角色顶掉旧的）、变身前后对比、重要人物切换，一进一退的张力特别强。`,
     paramManual: [
       { name: '(默认时长)', type: 'float', def: '≈0.5', range: '秒', effect: '两段缩放并发补间秒数。' },
     ],

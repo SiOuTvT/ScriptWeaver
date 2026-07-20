@@ -15,7 +15,7 @@ export const tfPosEnc: Encyclopedia = {
   },
 
   'tf-align': {
-    artGuide: `align / xalign / yalign 是最常用的摆位方式：它把「位置」和「锚点」设成同一个值，于是「立绘的某比例点」精确对齐「父容器的某比例点」——xalign=0.5 就是水平居中，比 pos 直觉得多。绝大多数对话立绘的站位（居中、贴底、对齐某个比例）都用 align 搞定。`,
+    artGuide: `align / xalign / yalign 是最常用的摆位方式：它把「位置」和「锚点」设成同一个值，于是「立绘的某比例点」精确对齐「父容器的某比例点」，xalign=0.5 就是水平居中，比 pos 直觉得多。绝大多数对话立绘的站位（居中、贴底、对齐某个比例）都用 align 搞定。`,
     paramManual: [
       { name: 'align', type: '(float, float)', def: '(0, 0)', range: '0~1', effect: 'ax=xpos=xanchor，ay=ypos=yanchor；立绘的 (ax,ay) 点对齐父容器 (ax,ay) 点。' },
     ],
@@ -48,7 +48,7 @@ export const tfPosEnc: Encyclopedia = {
   },
 
   'tf-center': {
-    artGuide: `xycenter / xcenter / ycenter 是把「立绘自身中心」放到指定坐标（等价于 pos 配 anchor=(0.5,0.5)）。当你需要「立绘中心精准落在某点」而且之后还要旋转/缩放时，用它比 pos 稳——因为中心被锚定了，后续变换都绕着中心走。`,
+    artGuide: `xycenter / xcenter / ycenter 是把「立绘自身中心」放到指定坐标（等价于 pos 配 anchor=(0.5,0.5)）。当你需要「立绘中心精准落在某点」而且之后还要旋转/缩放时，用它比 pos 稳，因为中心被锚定了，后续变换都绕着中心走。`,
     paramManual: [
       { name: 'center', type: 'position', def: '(0, 0)', range: '浮点 0~1 / absolute', effect: '立绘中心目标坐标；等价 anchor=(0.5,0.5)+pos=(cx,cy)。' },
     ],
@@ -70,7 +70,7 @@ canvas { image-rendering: auto; }  /* 反义：pixelated 才跳格 */`,
   },
 
   'tf-polar': {
-    artGuide: `around / angle / radius 是用「起点 + 角度 + 半径」来表达位置，特别适合圆周运动——让立绘绕某点公转一圈，只要插值 angle 就行。angle 0° 是正上方、90° 是正右方，引擎会自动归一到 0~360。行星公转、圆周入场、指针罗盘类动画都离不开它。`,
+    artGuide: `around / angle / radius 是用「起点 + 角度 + 半径」来表达位置，特别适合圆周运动，让立绘绕某点公转一圈，只要插值 angle 就行。angle 0° 是正上方、90° 是正右方，引擎会自动归一到 0~360。行星公转、圆周入场、指针罗盘类动画都离不开它。`,
     paramManual: [
       { name: 'around', type: '(pos, pos)', def: '(0.5, 0.5)', range: '坐标', effect: '极坐标圆心（起点）。' },
       { name: 'angle', type: 'float', def: '0', range: '度（自动 0~360 归一）', effect: '0=正上, 90=正右；插值 angle 即绕点公转。' },
@@ -86,7 +86,7 @@ function polar(around, angleDeg, R){
   },
 
   'tf-polar-anchor': {
-    artGuide: `anchoraround / anchorangle / anchorradius 是把极坐标机制搬到了「锚点」上：让立绘的锚点绕某个圆心做圆周运动。这样立绘「公转」的时候，自身的悬挂点也跟着转——适合卫星绕行星（卫星始终某点朝外）、绕轴旋转的挂件。`,
+    artGuide: `anchoraround / anchorangle / anchorradius 是把极坐标机制搬到了「锚点」上：让立绘的锚点绕某个圆心做圆周运动。这样立绘「公转」的时候，自身的悬挂点也跟着转，适合卫星绕行星（卫星始终某点朝外）、绕轴旋转的挂件。`,
     paramManual: [
       { name: 'anchoraround', type: '(pos, pos)', def: '(0.5, 0.5)', range: '坐标', effect: '锚点公转圆心。' },
       { name: 'anchorangle', type: 'float', def: '0', range: '度', effect: '锚点绕圆心的角度。' },

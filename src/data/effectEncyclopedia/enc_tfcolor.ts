@@ -158,7 +158,7 @@ filter: none;`,
   },
 
   'mc-spline': {
-    artGuide: `SplineMatrix 是用样条曲线在多个矩阵之间做非线性插值，做出比线性更自然的颜色渐变——呼吸式的闪烁染色、脉动染色。线性插值是匀速混，样条让变化带上「加速-减速」的呼吸节奏。`,
+    artGuide: `SplineMatrix 是用样条曲线在多个矩阵之间做非线性插值，做出比线性更自然的颜色渐变，呼吸式的闪烁染色、脉动染色。线性插值是匀速混，样条让变化带上「加速-减速」的呼吸节奏。`,
     paramManual: [
       { name: 'matrix', type: 'Matrix', def: '—', range: '目标矩阵', effect: '插值终点矩阵。' },
       { name: 'spline', type: 'list', def: '—', range: '≥3 浮点控制点', effect: '定义插值曲线形状（加速-减速）。' },

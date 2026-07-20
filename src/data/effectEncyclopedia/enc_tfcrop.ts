@@ -3,7 +3,7 @@ import type { Encyclopedia } from './types'
 // 九、变换属性 · 裁剪与缩放
 export const tfCropEnc: Encyclopedia = {
   'tf-crop-prop': {
-    artGuide: `crop 就是个「取景框」：把立绘裁成指定的矩形 (x,y,w,h)，坐标相对子图左上角。做「镜头推近脸部特写」「聚焦局部」「模拟凑近看某处」都靠它——让 crop 从全图 (0,0,1,1) 动画缩到脸部的小框，就是在「推近特写」。`,
+    artGuide: `crop 就是个「取景框」：把立绘裁成指定的矩形 (x,y,w,h)，坐标相对子图左上角。做「镜头推近脸部特写」「聚焦局部」「模拟凑近看某处」都靠它，让 crop 从全图 (0,0,1,1) 动画缩到脸部的小框，就是在「推近特写」。`,
     paramManual: [
       { name: 'crop', type: '(4)tuple?', def: 'None（不裁剪）', range: '(x,y,w,h) 比例/像素', effect: '相对子图取景框；动画从全图缩到小框=推近特写。' },
     ],
