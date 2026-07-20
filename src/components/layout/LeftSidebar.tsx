@@ -26,7 +26,7 @@ export default function LeftSidebar() {
   const setActive = useAppStore((s) => s.setActiveNavItem)
   const toggle = useAppStore((s) => s.toggleLeftSidebar)
 
-  const [appVersion, setAppVersion] = useState('0.2.0')
+  const [appVersion, setAppVersion] = useState('0.4.0')
   useEffect(() => {
     window.electronAPI?.getVersion().then((v) => setAppVersion(v)).catch(() => {})
   }, [])
