@@ -64,3 +64,11 @@ build started...[39m
 [2m12:07:32[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease_build_03/win-unpacked/LICENSES.chromium.html[22m
 [2m12:13:03[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease_build_03/win-unpacked/LICENSES.chromium.html[22m
 [2m12:13:03[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease/0.3.0-patched/win-unpacked/LICENSES.chromium.html[22m
+[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
+[2m13:19:21[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease/0.2.0/win-unpacked/LICENSES.chromium.html[22m
+[2m13:19:21[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mrelease/0.3.0-patched/win-unpacked/LICENSES.chromium.html[22m
