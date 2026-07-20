@@ -91,7 +91,12 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit()
+    // dev 模式（存在 VITE_DEV_SERVER_URL 即为 npm run dev）：窗口被关掉不要退出整个进程（否则连带死掉、窗口再也回不来），直接重新弹窗
+    if (process.env.VITE_DEV_SERVER_URL) {
+      if (!mainWindow) createWindow()
+    } else {
+      app.quit()
+    }
   }
 })
 

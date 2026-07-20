@@ -228,7 +228,37 @@ function DetailView({
       </div>
 
       <div className="flex min-h-0 flex-1">
-        {/* 左：正文（限宽保证行长易读，左对齐铺开） */}
+        {/* 左：本页速览 + 目录跳转（放在左边，长文可直跳板块） */}
+        <aside className="hidden w-60 shrink-0 overflow-y-auto border-r border-edge/10 bg-surface/40 px-4 py-6 lg:block">
+          <p className="mb-2 text-[12px] font-semibold tracking-wide text-fg-faint">本页速览</p>
+          <div className="mb-4 rounded-lg border border-edge/12 bg-surface-2/60 p-3">
+            <p className="truncate text-[13px] font-semibold text-fg">{item.cn}</p>
+            <p className="truncate font-mono text-[12px] text-signal">{item.name}</p>
+          </div>
+          <p className="mb-1.5 text-[12px] text-fg-faint">目录 · 点击跳转</p>
+          <nav className="space-y-0.5">
+            {toc.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => jumpTo(t.id)}
+                className="block w-full truncate rounded px-2 py-1.5 text-left text-[12.5px] text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<PlayCircle size={14} strokeWidth={1.75} />}
+            onClick={onEnterPreview}
+            className="mt-4 w-full"
+          >
+            进入预览舞台
+          </Button>
+        </aside>
+
+        {/* 右：正文（限宽保证行长易读，左对齐铺开） */}
         <div className="min-h-0 flex-1 overflow-y-auto">
           <article className="max-w-3xl px-6 py-6">
           {/* 一句话概述 */}
@@ -360,36 +390,6 @@ function DetailView({
           </div>
         </article>
         </div>
-
-        {/* 右：本页速览 + 目录跳转（填掉右侧空白，长文可直跳板块） */}
-        <aside className="hidden w-60 shrink-0 overflow-y-auto border-l border-edge/10 bg-surface/40 px-4 py-6 lg:block">
-          <p className="mb-2 text-[12px] font-semibold tracking-wide text-fg-faint">本页速览</p>
-          <div className="mb-4 rounded-lg border border-edge/12 bg-surface-2/60 p-3">
-            <p className="truncate text-[13px] font-semibold text-fg">{item.cn}</p>
-            <p className="truncate font-mono text-[12px] text-signal">{item.name}</p>
-          </div>
-          <p className="mb-1.5 text-[12px] text-fg-faint">目录 · 点击跳转</p>
-          <nav className="space-y-0.5">
-            {toc.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => jumpTo(t.id)}
-                className="block w-full truncate rounded px-2 py-1.5 text-left text-[12.5px] text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
-              >
-                {t.label}
-              </button>
-            ))}
-          </nav>
-          <Button
-            variant="primary"
-            size="sm"
-            icon={<PlayCircle size={14} strokeWidth={1.75} />}
-            onClick={onEnterPreview}
-            className="mt-4 w-full"
-          >
-            进入预览舞台
-          </Button>
-        </aside>
       </div>
     </div>
   )

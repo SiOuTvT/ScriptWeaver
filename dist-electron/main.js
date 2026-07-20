@@ -136,7 +136,11 @@ electron.app.whenReady().then(() => {
 });
 electron.app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
-    electron.app.quit();
+    if (process.env.VITE_DEV_SERVER_URL) {
+      if (!mainWindow) createWindow();
+    } else {
+      electron.app.quit();
+    }
   }
 });
 function ensureDir(dir) {
