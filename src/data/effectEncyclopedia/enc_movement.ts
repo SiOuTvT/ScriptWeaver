@@ -3,8 +3,7 @@ import type { Encyclopedia } from './types'
 // 三、位移与移动（Movement）
 export const movementEnc: Encyclopedia = {
   move: {
-    artGuide: `move 是 Galgame 里「同一角色换站位」的灵魂：当 show 同 tag 立绘的 at 机位发生变化，Ren'Py 会用 0.5 秒把旧坐标平滑插值到新坐标——角色从左边走到右边、从远处走近、换个座位，全靠它。
-关键前提：新旧两帧必须是**同一 tag（同一角色）**，否则引擎无从补间、会退化成硬切。它和 movein*/moveout* 的区别在于：move 是「已经在场的角色自己挪位置」，后者是「新角色出现 / 旧角色消失」。`,
+    artGuide: `move 就是「同一个角色换站位」的核心：当你给同一个 tag 的立绘换个 at 机位，Ren'Py 会用 0.5 秒把坐标平滑补间过去——角色从左走到右、从远处走近、换个座，都靠它。前提是新旧两帧得是同一个 tag（同一个角色），不然引擎不知道怎么补，就退化成硬切了。它和 movein*/moveout* 的区别：move 是「已经在场的人自己挪」，后两个是「新人进来 / 旧人消失」。`,
     paramManual: [
       { name: '(默认时长)', type: 'float', def: '0.5', range: '秒（由 MoveTransition 决定）', effect: '位置插值总时长，默认 0.5s；可换用更长/更短的 MoveTransition 改变。' },
     ],
@@ -17,8 +16,7 @@ export const movementEnc: Encyclopedia = {
   },
 
   moveinright: {
-    artGuide: `movein* 是「新角色登场」专用：立绘之前不在场，于是让它从指定屏外缘（left/right/top/bottom）平滑滑入到 at 指定的目标机位。常用于角色第一次亮相、从门外走进、从屏幕侧边滑入。
-和 move 的区别：movein 假设「之前没这个人」，只进不出；move 是「人一直在，只是挪了位置」。`,
+    artGuide: `movein* 是专门给「新角色登场」用的：立绘之前不在场上，于是让它从指定的屏外边（left/right/top/bottom）滑进来到 at 指定的机位。角色第一次亮相、从门外走进、从屏幕侧边滑入，都用它。跟 move 的区别是：movein 假定「之前没这个人」，只进不出；move 是「人一直都在，只是挪了位置」。`,
     paramManual: [
       { name: 'side', type: "'right' 等", def: '—', range: 'left/right/top/bottom', effect: '决定立绘从哪个屏外缘进入，即初始偏移方向。' },
     ],
@@ -30,8 +28,7 @@ export const movementEnc: Encyclopedia = {
   },
 
   moveoutright: {
-    artGuide: `moveout* 是「立绘退场」专用：把当前在场的立绘朝指定屏外缘平滑滑出后 hide。常写在 hide 语句的 with 里，让退场也有动画——角色离场走去、退出对话、被「请出去」的滑出动作。
-单独 hide 不加 with 是硬切消失，毫无情绪；用 moveoutright 才「走得有戏」。`,
+    artGuide: `moveout* 是「立绘退场」专用：把当前在场的立绘朝指定的屏外边滑出去，然后 hide。常写在 hide 的 with 里，让退场也有戏——角色离场走去、退出对话、被人「请出去」那一下滑动。单独 hide 不写 with 就是硬切消失，干巴巴的一点情绪都没有；用 moveoutright 才「走得有戏」。`,
     paramManual: [
       { name: 'side', type: "'right' 等", def: '—', range: 'left/right/top/bottom', effect: '决定立绘朝哪个屏外缘离场。' },
     ],
@@ -43,8 +40,7 @@ export const movementEnc: Encyclopedia = {
   },
 
   easeinright: {
-    artGuide: `easein*/easeout* 是 movein*/moveout* 的「余弦缓动版」：把默认线性运动换成首尾柔、中间快的余弦曲线，于是移动带「重量感」与惯性，比匀速 move 更自然、更像真人走动。
-8 种组合（easein/out × left/right/top/bottom）覆盖所有「带惯性的进出」需求。`,
+    artGuide: `easein*/easeout* 是 movein*/moveout* 的「余弦缓动版」：把默认匀速换成首尾柔、中间快的余弦曲线，移动就带上了重量感和惯性，比匀速的 move 自然、更像真人走动。8 种组合（easein/out × 四个方向）覆盖了所有「带惯性的进出」需求。`,
     paramManual: [
       { name: 'variant', type: 'str', def: '—', range: 'easeinleft/right/top/bottom、easeoutleft/right/top/bottom', effect: '决定方向 + 进/出 + 余弦缓动。' },
     ],
@@ -56,8 +52,7 @@ export const movementEnc: Encyclopedia = {
   },
 
   'move-transition': {
-    artGuide: `MoveTransition 是 move / movein* / moveout* / ease* 的底层类，把「位置补间」抽象成 enter/leave 两个变换 + time_warp 缓动。当你需要自定义移动轨迹（弧形、带旋转进场）或批量生成整族时，直接调它。
-它是移动演出的「引擎」，上面的便捷转场都是它的预设实例。`,
+    artGuide: `MoveTransition 是 move、movein*、moveout*、ease* 的底层类，把「位置补间」抽象成 enter/leave 两个变换加上 time_warp 缓动。当你要自定义移动轨迹（比如走弧线、带旋转进场），或者批量生成一整族转场时，直接调它。它是移动演出的引擎，上面那些方便的转场全都是它的预设实例。`,
     paramManual: [
       { name: 'delay', type: 'float', def: '0.5', range: '>0 秒', effect: '位置插值补间秒数。' },
       { name: 'enter', type: 'Transform?', def: 'None', range: 'Transform', effect: '定义新立绘从哪来、怎么进（位移/旋转）。' },
@@ -73,8 +68,7 @@ const t = new MoveTransition(0.5,
   },
 
   'move-transitions': {
-    artGuide: `move_transitions(prefix, delay) 是个工厂函数：一行就批量 define 出 prefix、prefix_in*、prefix_out* 共 9 个移动转场，省去手写 9 条。当你想一次性拥有整族「统一风格」的移动转场（比如全部带缓动、全部带旋转）时，它是最高效的入口。
-它生成的是全局 define 名，需在游戏初始化阶段调用一次。`,
+    artGuide: `move_transitions(prefix, delay) 是个工厂函数：一行就批量 define 出 prefix、prefix_in*、prefix_out* 共 9 个移动转场，省得手写九条。当你想一次性拿到一整族「统一风格」的移动转场（比如全带缓动、全带旋转）时，它是最高效的入口。它生成的是全局 define 名，在游戏初始化阶段调一次就行。`,
     paramManual: [
       { name: 'prefix', type: 'str', def: '—', range: '任意前缀', effect: '生成 prefix / prefix_in* / prefix_out* 共 9 个转场名。' },
       { name: 'delay', type: 'float', def: '0.5', range: '>0 秒', effect: '整族统一的补间秒数。' },

@@ -13,7 +13,7 @@ build started...[39m
 [36m
 build started...[39m
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m1316[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m697[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
 [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
@@ -24,186 +24,147 @@ transforming...
 rendering chunks...
 computing gzip size...
 [2mdist-electron/[22m[36mpreload.js  [39m[1m[2m2.58 kB[22m[1m[22m[2m │ gzip: 1.27 kB[22m
-[36mbuilt in 1120ms.[39m
+[36mbuilt in 855ms.[39m
 [32m✓[39m 2 modules transformed.
 rendering chunks...
 computing gzip size...
 [2mdist-electron/[22m[36mmain.js  [39m[1m[2m18.61 kB[22m[1m[22m[2m │ gzip: 5.59 kB[22m
-[36mbuilt in 1280ms.[39m
+[36mbuilt in 931ms.[39m
 
-[22680:0720/084352.534:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[22680:0720/084352.534:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
 [sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= null
 [sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
 [sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
 [sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
-[2m08:53:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m08:53:38[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m08:54:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m08:54:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:03:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:04:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
-[2m09:05:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:05:36[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
-[2m09:11:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:11:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:11:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:11:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:11:36[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:11:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:11:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:11:38[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:11:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:11:49[22m [31m[1m[vite][22m[39m [31mInternal server error: D:\ScriptWeaver\src\components\layout\EffectsLab.tsx: Unexpected token (351:46)
-
-[0m [90m 349 |[31m }
- [90m 350 |[31m
-[31m[1m>[22m[31m[90m 351 |[31m [36mfunction[31m [33mSection[31m({ id[33m,[31m title[33m,[31m children }[33m:[31m { id[33m?[31m[33m:[31m string[33m;[31m title[33m:[31m string[33m;[31m children[33m:[31m [33mReact[31m[33m.[31m[33mReactNode[31m }) {
- [90m     |[31m                                               [31m[1m^[22m[31m
- [90m 352 |[31m   [36mreturn[31m (
- [90m 353 |[31m     [33m<[31m[33msection[31m id[33m=[31m{id} className[33m=[31m[32m"mt-6 scroll-mt-4"[31m[33m>[31m
- [90m 354 |[31m       [33m<[31m[33mh2[31m className[33m=[31m[32m"mb-2 flex items-center gap-2 text-[13px] font-semibold text-fg-muted"[31m[33m>[31m[0m[39m
-  Plugin: [35mvite:react-babel[39m
-  File: [36mD:/ScriptWeaver/src/components/layout/EffectsLab.tsx[39m:351:46
-[33m  361|  }
-  362|  
-  363|  // ============================================================
-     |         ^
-  364|  // 三级：终极整合预览舞台（三合一，右侧精简）
-  365|  // ============================================================[39m
-      at constructor (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:365:19)
-      at TypeScriptParserMixin.raise (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6616:19)
-      at TypeScriptParserMixin.unexpected (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6636:16)
-      at TypeScriptParserMixin.checkExpressionErrors (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6994:12)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10881:12)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9803:20)
-      at TypeScriptParserMixin.parseExpressionBase (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10801:23)
-      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10797:39
-      at TypeScriptParserMixin.allowInAnd (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12443:12)
-      at TypeScriptParserMixin.parseExpression (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10797:17)
-      at TypeScriptParserMixin.jsxParseExpressionContainer (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4644:31)
-      at TypeScriptParserMixin.jsxParseElementAt (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4723:36)
-      at TypeScriptParserMixin.jsxParseElement (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4761:17)
-      at TypeScriptParserMixin.parseExprAtom (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4771:19)
-      at TypeScriptParserMixin.parseExprSubscripts (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11098:23)
-      at TypeScriptParserMixin.parseUpdate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11083:21)
-      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11063:23)
-      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9854:18)
-      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10916:61)
-      at TypeScriptParserMixin.parseExprOps (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10921:23)
-      at TypeScriptParserMixin.parseMaybeConditional (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10898:23)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10848:21)
-      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9792:39
-      at TypeScriptParserMixin.tryParse (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6924:20)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9792:18)
-      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10817:39
-      at TypeScriptParserMixin.allowInAnd (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12443:12)
-      at TypeScriptParserMixin.parseMaybeAssignAllowIn (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10817:17)
-      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12510:17)
-      at TypeScriptParserMixin.parseParenAndDistinguishExpression (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11692:28)
-      at TypeScriptParserMixin.parseExprAtom (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11348:23)
-      at TypeScriptParserMixin.parseExprAtom (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4776:20)
-      at TypeScriptParserMixin.parseExprSubscripts (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11098:23)
-      at TypeScriptParserMixin.parseUpdate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11083:21)
-      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11063:23)
-      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9854:18)
-      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10916:61)
-      at TypeScriptParserMixin.parseExprOps (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10921:23)
-      at TypeScriptParserMixin.parseMaybeConditional (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10898:23)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10848:21)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9803:20)
-      at TypeScriptParserMixin.parseExpressionBase (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10801:23)
-      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10797:39
-      at TypeScriptParserMixin.allowInAnd (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12438:16)
-      at TypeScriptParserMixin.parseExpression (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10797:17)
-      at TypeScriptParserMixin.parseReturnStatement (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13159:28)
-      at TypeScriptParserMixin.parseStatementContent (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12815:21)
-      at TypeScriptParserMixin.parseStatementContent (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9525:18)
-      at TypeScriptParserMixin.parseStatementLike (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12784:17)
-      at TypeScriptParserMixin.parseStatementListItem (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12764:17)
-[2m09:11:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:12:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m09:12:51[22m [31m[1m[vite][22m[39m [31mInternal server error: D:\ScriptWeaver\src\components\layout\EffectsLab.tsx: Unexpected token (367:46)
-
-[0m [90m 365 |[31m }
- [90m 366 |[31m
-[31m[1m>[22m[31m[90m 367 |[31m [36mfunction[31m [33mSection[31m({ id[33m,[31m title[33m,[31m children }[33m:[31m { id[33m?[31m[33m:[31m string[33m;[31m title[33m:[31m string[33m;[31m children[33m:[31m [33mReact[31m[33m.[31m[33mReactNode[31m }) {
- [90m     |[31m                                               [31m[1m^[22m[31m
- [90m 368 |[31m   [36mreturn[31m (
- [90m 369 |[31m     [33m<[31m[33msection[31m id[33m=[31m{id} className[33m=[31m[32m"mt-6 scroll-mt-4"[31m[33m>[31m
- [90m 370 |[31m       [33m<[31m[33mh2[31m className[33m=[31m[32m"mb-2 flex items-center gap-2 text-[13px] font-semibold text-fg-muted"[31m[33m>[31m[0m[39m
-  Plugin: [35mvite:react-babel[39m
-  File: [36mD:/ScriptWeaver/src/components/layout/EffectsLab.tsx[39m:367:46
-[33m  377|  }
-  378|  
-  379|  // ============================================================
-     |                         ^
-  380|  // 三级：终极整合预览舞台（三合一，右侧精简）
-  381|  // ============================================================[39m
-      at constructor (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:365:19)
-      at TypeScriptParserMixin.raise (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6616:19)
-      at TypeScriptParserMixin.unexpected (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6636:16)
-      at TypeScriptParserMixin.checkExpressionErrors (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6994:12)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10881:12)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9803:20)
-      at TypeScriptParserMixin.parseExpressionBase (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10801:23)
-      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10797:39
-      at TypeScriptParserMixin.allowInAnd (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12443:12)
-      at TypeScriptParserMixin.parseExpression (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10797:17)
-      at TypeScriptParserMixin.jsxParseExpressionContainer (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4644:31)
-      at TypeScriptParserMixin.jsxParseElementAt (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4723:36)
-      at TypeScriptParserMixin.jsxParseElement (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4761:17)
-      at TypeScriptParserMixin.parseExprAtom (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4771:19)
-      at TypeScriptParserMixin.parseExprSubscripts (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11098:23)
-      at TypeScriptParserMixin.parseUpdate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11083:21)
-      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11063:23)
-      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9854:18)
-      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10916:61)
-      at TypeScriptParserMixin.parseExprOps (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10921:23)
-      at TypeScriptParserMixin.parseMaybeConditional (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10898:23)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10848:21)
-      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9792:39
-      at TypeScriptParserMixin.tryParse (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6924:20)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9792:18)
-      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10817:39
-      at TypeScriptParserMixin.allowInAnd (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12443:12)
-      at TypeScriptParserMixin.parseMaybeAssignAllowIn (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10817:17)
-      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12510:17)
-      at TypeScriptParserMixin.parseParenAndDistinguishExpression (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11692:28)
-      at TypeScriptParserMixin.parseExprAtom (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11348:23)
-      at TypeScriptParserMixin.parseExprAtom (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4776:20)
-      at TypeScriptParserMixin.parseExprSubscripts (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11098:23)
-      at TypeScriptParserMixin.parseUpdate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11083:21)
-      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11063:23)
-      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9854:18)
-      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10916:61)
-      at TypeScriptParserMixin.parseExprOps (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10921:23)
-      at TypeScriptParserMixin.parseMaybeConditional (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10898:23)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10848:21)
-      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9803:20)
-      at TypeScriptParserMixin.parseExpressionBase (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10801:23)
-      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10797:39
-      at TypeScriptParserMixin.allowInAnd (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12438:16)
-      at TypeScriptParserMixin.parseExpression (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10797:17)
-      at TypeScriptParserMixin.parseReturnStatement (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13159:28)
-      at TypeScriptParserMixin.parseStatementContent (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12815:21)
-      at TypeScriptParserMixin.parseStatementContent (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9525:18)
-      at TypeScriptParserMixin.parseStatementLike (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12784:17)
-      at TypeScriptParserMixin.parseStatementListItem (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12764:17)
-[2m09:12:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m09:18:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:05[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:06[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:08[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:55[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:56[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:18:57[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:24[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:19:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:08[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:12[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:20:55[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:12[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:13[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:21:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:06[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:12[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:13[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:42[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:45[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:55[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:56[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:56[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:56[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:22:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:23:55[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:24:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:24:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:24:56[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:25:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m
+[2m09:25:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/layout/EffectsLab.tsx[22m

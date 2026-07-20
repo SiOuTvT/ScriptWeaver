@@ -3,8 +3,7 @@ import type { Encyclopedia } from './types'
 // 二、擦除与滑动（CropMove 家族）
 export const cropEnc: Encyclopedia = {
   wiperight: {
-    artGuide: `擦除（wipe）像一块刮板把新画面沿指定方向逐段揭示，旧画面始终在底层不动。它自带「科技扫描 / 画卷铺陈 / 地图展开 / 信息载入」的叙事感，也适合做「秘密被一点点揭开」。
-别把它用在角色对话切换上——纯几何擦除太冷硬，会打断情绪流；对话场景更该用 Dissolve。`,
+    artGuide: `wipe 像一块刮板把新画面沿着某个方向一段段揭开，旧画面一直躺在底下不动。这种「逐段揭示」的质感自带科技扫描、画卷铺开、地图展开、信息载入那股劲儿，也适合「秘密一点点被揭开」的场面。但别往角色对话切换里塞——纯几何擦除太冷硬，会打断情绪，对话还是用 dissolve 更顺。`,
     paramManual: [
       { name: 'mode', type: "'wiperight' 等", def: '—', range: 'wiperight/wipeleft/wipeup/wipedown', effect: '决定裁剪盒哪条边移动及方向，即揭示从哪侧开始。' },
     ],
@@ -16,8 +15,7 @@ export const cropEnc: Encyclopedia = {
   },
 
   slideright: {
-    artGuide: `滑入（slide）是整张新画面作为刚体从屏外平移进场、完全覆盖旧图，旧图不参与运动。它强调的是「一个新东西推门而入」——新场景登场、UI 面板滑入、整屏内容替换。
-与 wipe 的区别：slide 是整块移动（有「位移感」），wipe 是就地揭示（无位移）。对话里角色换位置用 move，整屏替换才用 slide。`,
+    artGuide: `slide 是整张新画面作为一个整体从屏外平移进来、彻底盖住旧图，旧图自己不运动。它强调的是「一个新东西推门进来了」——新场景登场、UI 面板滑入、整屏内容替换都用它。跟 wipe 的区别是：slide 是整块在动（有位移感），wipe 是就地揭开（不动）。对话里角色换位置用 move，整屏替换才用 slide。`,
     paramManual: [
       { name: 'mode', type: "'slideright' 等", def: '—', range: 'slideleft/right/up/down', effect: '决定初始屏外偏移方向与平移进场方向。' },
     ],
@@ -28,8 +26,7 @@ export const cropEnc: Encyclopedia = {
   },
 
   slideawayright: {
-    artGuide: `滑出（slideaway）是旧画面整体平移出屏外、露出底层早已就位的新画面，强调「旧东西离场离去」——旧场景退场、角色走出画面、镜头跟随离去的背影。
-和 slide 反着：slide 是新进，slideaway 是旧走。两者配合可做「旧角色滑出、新角色滑入」的接力。`,
+    artGuide: `slideaway 是旧画面整体平移出屏外、露出底下早就位的新画面，强调的是「旧东西离场走人了」——旧场景退场、角色走出画面、镜头跟着离去的背影都用它。跟 slide 反过来：slide 是新进，slideaway 是旧走。两个配合能做「旧角色滑出去、新角色滑进来」的接力。`,
     paramManual: [
       { name: 'mode', type: "'slideawayright' 等", def: '—', range: 'slideawayleft/right/up/down', effect: '决定旧图离场方向（移出到哪侧屏外）。' },
     ],
@@ -41,8 +38,7 @@ export const cropEnc: Encyclopedia = {
   },
 
   pushright: {
-    artGuide: `推挤（push）是新旧两图**绑定同速、反向联动**：新图从一侧进场的同时，旧图被推着从另一侧离场，像推开门板、新场景挤走旧场景。它强调「对冲」——时代更替、对手登场逼退主角、空间被占据。
-和 slide 的关键区别就在「旧图是否动」：push 里旧图必动，slide 里旧图不动。`,
+    artGuide: `push 是新图旧图绑定在一起、同速反向联动：新图从一边进来的同时，旧图被推着从另一边出去，像推开门板、新场景把旧场景挤走。它强调的是「对冲」——时代更替、对手登场把主角逼退、空间被占。跟 slide 的关键区别在于旧图动不动：push 里旧图必定在动，slide 里旧图不动。`,
     paramManual: [
       { name: 'mode', type: "'pushright' 等", def: '—', range: 'pushleft/right/up/down', effect: '决定位移轴与方向，两图速度大小相等、方向相反。' },
     ],
@@ -56,8 +52,7 @@ export const cropEnc: Encyclopedia = {
   },
 
   iris: {
-    artGuide: `虹膜（iris）用矩形裁剪盒从角落一个点放大到全屏（irisin）或反向收束（irisout），像摄影机光圈或「聚焦框」。它天然带「聚焦某物、镜头推近、回忆聚焦点出现、进入某界面框选」的仪式感。
-irisout（收束到一点）特别适合场景结束、世界变暗、或被「吸入」某处。`,
+    artGuide: `iris 是用一个矩形裁剪框从一个角上的点放大到全屏（irisin），或者反过来收束到一点（irisout），像摄影机光圈或者取景框。这种聚焦感天生适合「盯住某个东西、镜头推近、回忆的聚焦点出现、进入某个界面时框选」。irisout 收束到一点特别适合场景结束、世界变暗、或者被「吸进」某处。`,
     paramManual: [
       { name: 'mode', type: "'irisin' / 'irisout'", def: '—', range: 'irisin / irisout', effect: 'irisin: 盒 0→满（展开）；irisout: 盒 满→0（收束）。' },
     ],
@@ -69,8 +64,7 @@ irisout 收束时画面最终只剩角落一点，注意收束中心要落在有
   },
 
   blinds: {
-    artGuide: `百叶窗（blinds）用一组垂直条带逐条揭开新画面，形如百叶窗叶片依次打开。它带复古 UI、侦探窥视、机关开启、遮掩揭开的俏皮感，也适合「恶作剧式偷偷看」。
-底层是 ImageDissolve 的条带控制图：每条纹内亮度渐变，随进度各自独立显形。`,
+    artGuide: `blinds 是一组竖条带一条条揭开新画面，像百叶窗叶片依次拉开。它自带复古 UI、侦探窥视、机关开启、遮遮掩掩揭开的俏皮感，也适合「恶作剧式偷偷看」的场面。底层是 ImageDissolve 的条带控制图，每条纹里的亮度渐变，随进度各自独立显出来。`,
     paramManual: [],
     cssImpl: `/* 重复线性渐变 mask 做竖条逐条揭示 */
 .blinds {
@@ -83,8 +77,7 @@ mask 合成在部分旧 GPU 上略慢，移动端注意。`,
   },
 
   squares: {
-    artGuide: `方块揭示（squares）把画面切成方格、逐格随机/顺序显形，制造「像素拼图 / 故障重组 / 魔法阵凝聚 / 监控画面拼合」质感。它比 blinds 更「碎」、更数字感。
-底层是 ImageDissolve 的方格控制图，按离中心距离决定显形先后，形成由内向外的拼合。`,
+    artGuide: `squares 是把画面切成方格、一个格子一个格子地显出来，做出「像素拼图、故障重组、魔法阵凝聚、监控画面拼合」的质感。它比 blinds 更碎、更数字感。底层是 ImageDissolve 的方格控制图，按离中心的距离决定显形先后，由内向外拼起来。`,
     paramManual: [],
     cssImpl: `/* 用 grid + 逐格延迟做方块揭示 */
 .grid { display: grid; grid-template: repeat(n,1fr)/repeat(n,1fr); }
@@ -96,8 +89,7 @@ mask 合成在部分旧 GPU 上略慢，移动端注意。`,
   },
 
   'cropmove-class': {
-    artGuide: `CropMove 是所有 wipe/slide/slideaway/iris 的底层基类。当你需要官方没提供的「奇葩几何转场」——斜向擦拭、缩放式揭示、自定义 iris 形状——就用 mode="custom" 手写 startcrop/startpos/endcrop/endpos 端点。
-它是「转场界的乐高」，会的人能用它拼出任何几何想象。`,
+    artGuide: `CropMove 是 wipe、slide、slideaway、iris 这些转场的底层基类。当你要官方没给的「奇葩几何转场」——斜着擦、缩放式揭示、自定义形状的 iris——就用 mode="custom" 自己手写 startcrop/startpos/endcrop/endpos 这几个端点。它是转场界的乐高，会玩的人能用它拼出任何几何想象。`,
     paramManual: [
       { name: 'time', type: 'float', def: '1.0', range: '>0 秒', effect: 'crop/pos 从 start→end 的插值秒数。' },
       { name: 'mode', type: 'str', def: '—', range: "wipe*/slide*/slideaway*/iris*/custom", effect: '预设端点；custom 时由下方参数自定义。' },
@@ -117,8 +109,7 @@ mask 合成在部分旧 GPU 上略慢，移动端注意。`,
   },
 
   'pushmove-class': {
-    artGuide: `PushMove 是推挤类转场的基类，对旧图和新图施加等大反向位移。当你需要自定义推挤的时长/方向（而非官方预设的 pushright 等）时使用它。
-和 CropMove 的区别：CropMove 是单图裁剪+位移，PushMove 是双图联动位移。`,
+    artGuide: `PushMove 是推挤类转场的基类，给旧图和新图施加等大反向的位移。当你要自定义推挤的时长或者方向（而不是官方预设的那几个 pushright 之类）时用它。跟 CropMove 的区别：CropMove 是单图裁剪加位移，PushMove 是双图联动位移。`,
     paramManual: [
       { name: 'time', type: 'float', def: '1.0', range: '>0 秒', effect: '双图位移的秒数。' },
       { name: 'mode', type: 'str', def: '—', range: 'pushright/left/up/down', effect: '决定位移轴与方向。' },

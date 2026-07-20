@@ -3,8 +3,7 @@ import type { Encyclopedia } from './types'
 // 十一、缓动函数（Warpers / Easing）
 export const warpersEnc: Encyclopedia = {
   'w-linear': {
-    artGuide: `linear 是绝对匀速——进度 p(t)=t，斜率恒为 1，无任何加速减速。它最机械、最「程序感」，适合数字读数、机械运动、进度条等需要「绝对匀速」的场合。
-但也正因无缓动，人物走动用它会显得僵硬不自然。`,
+    artGuide: `linear 就是纯匀速，进度跟时间成直线，没有任何快慢变化。数字跳动、进度条、机械臂这种「程序感」强的东西用它最合适；但人物走动千万别用，会僵硬得像机器人迈步。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0, 0, 1, 1)', range: 'CSS cubic-bezier', effect: '线性曲线，全程匀速无缓动。' },
     ],
@@ -14,7 +13,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-ease': {
-    artGuide: `ease 是 Ren'Py 默认缓动：首尾柔、中间快，自然不突兀。它是标准 CSS ease 贝塞尔，是大多数补间的默认选择——不想思考缓动时，用它就对了。`,
+    artGuide: `ease 是 Ren'Py 的默认缓动，开头慢一拍、中间快、结尾再收一下，看着最自然。你懒得想用哪个曲线的时候，闭眼选它就对了。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.25, 0.1, 0.25, 1)', range: 'CSS cubic-bezier', effect: '开头慢加速、中段最快、结尾柔减速。' },
     ],
@@ -23,7 +22,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-easein': {
-    artGuide: `easein 开头慢、结尾快，像「蓄力后加速冲出」——适合物体冲出屏幕、加速离场、发射。它把张力攒在开头，末端猛地到位。`,
+    artGuide: `easein 是「先憋着后冲出去」：开头几乎是静止的，越往后越快。东西要猛地冲出屏幕、发射、加速离场的时候很带感。但反过来如果是入场，easein 会让它磨磨蹭蹭半天才冒出来——入场该用 easeout。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.42, 0, 1, 1)', range: 'CSS cubic-bezier', effect: '起点缓、终点陡，加速冲出。' },
     ],
@@ -32,7 +31,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-easeout': {
-    artGuide: `easeout 开头快、结尾慢，像「冲进来后轻柔落定」——适合物体减速入场、轻轻落下、柔和显形。它把缓冲放在末端，落点安稳。`,
+    artGuide: `easeout 反过来：一上来就猛，后段慢慢收住。东西从远处冲进来、轻轻落地、柔柔显形，用这个落点最稳。不过要从特别远的地方冲过来，纯 easeout 起步太突兀，换成 easeinout 更顺。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0, 0, 0.58, 1)', range: 'CSS cubic-bezier', effect: '起点陡、终点柔，减速落定。' },
     ],
@@ -41,7 +40,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-easeinout': {
-    artGuide: `easeinout 两端都柔、中间快，是 ease 的「两端对称加强版」，最顺滑无突兀。角色走动、镜头平移、几乎所有平滑补间都用它。`,
+    artGuide: `easeinout 两端都收、中间快，是 ease 的加强顺滑版。角色走路、镜头平移、基本上所有丝滑补间都用它。缺点也明显：太顺了反而没性格，真正的大爆点还是换带过冲的 spring/back 更炸。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.42, 0, 0.58, 1)', range: 'CSS cubic-bezier', effect: '首尾都柔、中间快，最顺滑。' },
     ],
@@ -50,7 +49,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-spring': {
-    artGuide: `spring 带过冲回弹，像被弹簧拉到位，活泼有弹性。它模拟弹簧/阻尼振荡，物体会「冲过终点再弹回」，适合弹窗弹出、俏皮 UI、果冻感元素。`,
+    artGuide: `spring 带过冲回弹，像被弹簧拽到位，活泼有弹性。弹窗蹦出来、俏皮的 UI、果冻感的元素，用这个就对了。注意过冲会让元素短暂越界，外层记得 overflow:hidden 或者留点余量，不然弹出一半被裁掉。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.68, -0.55, 0.27, 1.55)', range: '含负/超1 控制点', effect: '进度会冲过终点(>1)再回弹(负值)。' },
     ],
@@ -59,7 +58,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-zoomin': {
-    artGuide: `zoomin 是专用于缩放进场的缓动，中段有过冲(1.2)使缩放「先略大再回弹到目标」，配套 zoomin 转场的推近登场——怼脸切入更有弹性。`,
+    artGuide: `zoomin 是专为缩放进场调的缓动，中段会略微过冲到 1.2 再弹回目标，所以放大登场时有一点点「先怼大再缩回」的弹性，配 zoomin 转场怼脸切入更带感。过冲那一下立绘会瞬间比目标大一点，别和 crop 边界打架。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.34, 1.2, 0.64, 1)', range: '中段超 1', effect: '中段过冲使缩放先略大再回弹。' },
     ],
@@ -77,7 +76,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-bounce': {
-    artGuide: `bounce 落地后多次小弹跳，俏皮、Q 弹。它用 >1 控制点制造「到终点后小幅回弹」，模拟物体落地的多次弹跳余韵。`,
+    artGuide: `bounce 落地后小弹几下，俏皮、Q 弹。落地余韵、蹦出来的按钮、果冻元素都合适。弹跳幅度受外层限制，元素终点附近留点空间，不然回弹那下被裁。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.34, 1.56, 0.64, 1)', range: '含超1', effect: '到终点后小幅回弹，Q 弹。' },
     ],
@@ -86,7 +85,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-back': {
-    artGuide: `ease_back（Penner back）先微退再冲过、最后回弹就位，有「蓄力感」。它起手反向微退（蓄力），再冲过终点，最后回弹，强烈「蓄力→弹出」感——按钮弹出、强调登场。`,
+    artGuide: `ease_back（Penner back）会先往反方向微退一下再冲过去、最后回弹，有一种「蓄力」的感觉。按钮弹出、强调登场用它最有戏。但那个先退的动作会让入场元素短暂往反方向挪，确认这点反向位移不会露出空白或者穿帮。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.68, -0.55, 0.27, 1.55)', range: '含负/超1', effect: '先反向微退蓄力，再冲过回弹就位。' },
     ],
@@ -95,7 +94,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-bounce-p': {
-    artGuide: `ease_bounce（Penner bounce）是标准 Penner 弹跳曲线，落地回弹逐次减半，比 CSS bounce 更「物理」。它精确模拟重力落地后衰减的弹跳余韵。`,
+    artGuide: `ease_bounce 就是标准 Penner 弹跳曲线，落地回弹一次比一次小，比 CSS 那个 bounce 更物理。注意单条 cubic-bezier 表达不了它，真实实现是分段曲线，Web 里用多关键帧近似。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.34, 1.56, 0.64, 1)', range: '含超1', effect: '逐次减半的弹跳衰减。' },
     ],
@@ -105,7 +104,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-circ': {
-    artGuide: `ease_circ 用四分之一圆周函数，起步极缓、收尾极陡（加速度持续增大），适合「慢慢起势后骤然到位」——蓄力大招、能量汇聚后爆发。`,
+    artGuide: `ease_circ 用四分之一圆，起步极慢、收尾极陡，加速度一直往上加。适合「慢慢蓄势然后一下子到位」——放大招、能量汇聚后爆发。但如果是进度条，circ 会让人误判还剩多少。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.08, 0.82, 0.17, 1)', range: 'CSS cubic-bezier', effect: '起步极缓、收尾极陡。' },
     ],
@@ -114,7 +113,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-cubic': {
-    artGuide: `ease_cubic 用三次多项式，比二次(quad)更柔更缓，起止都更克制。需要比 quad 更柔的通用缓动时用它。`,
+    artGuide: `ease_cubic 是三次多项式，比二次 quad 更柔更缓，起止都更克制。需要比 quad 更柔一点的通用缓动就用它，差别其实挺微妙。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.65, 0, 0.35, 1)', range: 'CSS cubic-bezier', effect: '三次缓动，比 quad 更柔。' },
     ],
@@ -123,7 +122,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-elastic': {
-    artGuide: `ease_elastic 用衰减正弦叠加，进度会大幅来回震荡多次才归位，弹性张力极强，戏剧化。夸张登场、魔法弹簧、需要「震一下」的强调。`,
+    artGuide: `ease_elastic 用衰减正弦，进度会大幅来回晃好几下才归位，弹性张力拉满。夸张登场、魔法弹簧、需要「震一下」的强调用它。晃动幅度很大，容器务必留足余量；光敏或眩晕的人对大幅回弹也比较敏感。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.68, -0.55, 0.27, 1.55)', range: '近似（真实为多段）', effect: '大幅来回震荡后归位，弹性张力强。' },
     ],
@@ -133,7 +132,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-expo': {
-    artGuide: `ease_expo 用指数函数，起步极快（瞬间冲出）或收尾极柔（无限趋近），对比极端。闪电瞬移、极速入场、柔和消散。`,
+    artGuide: `ease_expo 是指数函数，起步极快（瞬间窜出）或者收尾极柔（无限逼近），对比很极端。闪电瞬移、极速入场、柔柔消散都行。起步太快玩家可能根本没看清，配点音效或残影更清楚。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(1, 0, 0, 1)', range: 'CSS cubic-bezier', effect: '指数级加速/减速，极端对比。' },
     ],
@@ -142,7 +141,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-quad': {
-    artGuide: `ease_quad 用二次多项式，最轻量的缓入缓出，比 cubic 更「直」一点。需要比 cubic 更轻的通用缓动时用它。`,
+    artGuide: `ease_quad 二次多项式，最轻量的缓入缓出，比 cubic 稍微直一点。需要比 cubic 更轻的通用缓动用它，差别很小，跟 cubic 二选一统一风格就行。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.45, 0, 0.55, 1)', range: 'CSS cubic-bezier', effect: '二次缓动，轻量柔和。' },
     ],
@@ -151,7 +150,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-quart': {
-    artGuide: `ease_quart 用四次多项式，缓入缓出比 cubic 更夸张（两端更平、中间更陡）。需要更强缓动对比时。`,
+    artGuide: `ease_quart 四次多项式，缓入缓出比 cubic 更夸张（两端更平、中间更陡）。想要更强对比的缓动时用它。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.76, 0, 0.24, 1)', range: 'CSS cubic-bezier', effect: '四次缓动，对比更强。' },
     ],
@@ -160,7 +159,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-quint': {
-    artGuide: `ease_quint 用五次多项式，缓入缓出最极致，两端极平、中间极陡，最「丝滑厚重」。顶级丝滑补间、电影级运镜。`,
+    artGuide: `ease_quint 五次多项式，缓入缓出最极致，两端极平、中间极陡，最丝滑厚重。电影级运镜、顶级丝滑补间。但两端「几乎不动」的区间比较长，急性子玩家可能觉得慢。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.83, 0, 0.17, 1)', range: 'CSS cubic-bezier', effect: '五次缓动，极致丝滑。' },
     ],
@@ -169,7 +168,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-sine': {
-    artGuide: `ease_sine 用正弦半波，过渡最平滑无拐点，有「呼吸般」的自然感。呼吸动画、漂浮、轻柔往复。`,
+    artGuide: `ease_sine 正弦半波，过渡最平滑没有拐点，有呼吸一样的自然感。呼吸动画、漂浮、轻柔往复用它最合适。但缺少落点感，需要明确停住的动画别用它。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.37, 0, 0.63, 1)', range: 'CSS cubic-bezier', effect: '正弦曲线，最平滑呼吸感。' },
     ],
@@ -178,8 +177,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-penner-variants': {
-    artGuide: `Penner 三态变体：上述 10 种基函数（back/bounce/circ/cubic/elastic/expo/quad/quart/quint/sine）各有 in（仅缓入）、out（仅缓出）、inout（两端都缓）三种形态，合共 30 种，覆盖几乎所有「加速/减速/回弹/弹跳」需求。
-在插值语句里直接用，如 \`ease_inout_elastic 1.0 xpos 0.5\`。`,
+    artGuide: `Penner 那 10 个基函数（back/bounce/circ/cubic/elastic/expo/quad/quart/quint/sine）每个都有 in（只缓入）、out（只缓出）、inout（两端都缓）三种形态，加起来 30 种，基本覆盖所有加速、减速、回弹、弹跳的需求。插值里直接写，比如 \`ease_inout_elastic 1.0 xpos 0.5\`。30 种里挑最贴的就行，不用穷举。`,
     paramManual: [
       { name: 'in 变体', type: 'warper', def: 'ease_in_*', range: '10 种', effect: '仅缓入，适合加速离场/冲出。' },
       { name: 'out 变体', type: 'warper', def: 'ease_out_*', range: '10 种', effect: '仅缓出，适合减速入场/落定。' },

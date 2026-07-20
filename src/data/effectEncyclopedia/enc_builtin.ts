@@ -3,8 +3,7 @@ import type { Encyclopedia } from './types'
 // 十三、内置定位变换（Built-in Transforms）
 export const builtinEnc: Encyclopedia = {
   'bi-center': {
-    artGuide: `center 是 Galgame 对话立绘的「家」：水平居中、脚底贴底（align (0.5,1.0)）。绝大多数角色说话时都站这里，是默认、最不抢戏的站位。
-当一段对话没有特别的空间调度需求时，center 永远是对的默认选择。`,
+    artGuide: `center 就是立绘的「老位置」：水平居中、脚底贴着底边（align 0.5,1.0）。绝大多数角色说话都站这儿，最不抢戏。只要这段对话没啥空间上的讲究，无脑用 center 准没错。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '等价 align(0.5, 1.0)', range: '—', effect: '水平居中 + 脚底贴底，纯定位预设。' },
     ],
@@ -13,7 +12,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-left': {
-    artGuide: `left 把立绘对齐屏幕左下角（align (0,1.0)），是双人对话里的「左位」。当玩家视角习惯「主角在左、对手在右」时，left 给主角最稳的归属地。`,
+    artGuide: `left 把立绘贴到屏幕左下角（align 0,1.0），双人对话时主角站这儿。玩家习惯「主角在左、对手在右」的话，left 就是主角的固定归属地。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '等价 align(0, 1.0)', range: '—', effect: '左边缘贴左 + 脚底贴底。' },
     ],
@@ -22,7 +21,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-right': {
-    artGuide: `right 把立绘对齐屏幕右下角（align (1,1.0)），是双人对话里的「右位」。对手、旁白者、新登场的第二人，常落在 right。`,
+    artGuide: `right 贴到右下角（align 1,1.0），双人对话里对手、旁白者、或者刚登场的第二个人常站这儿。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '等价 align(1, 1.0)', range: '—', effect: '右边缘贴右 + 脚底贴底。' },
     ],
@@ -31,7 +30,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-top': {
-    artGuide: `top 水平居中、与屏幕顶部对齐（align (0.5,0)），适合俯视角色、头顶招牌、悬挂物——任何「从上方垂下来 / 俯视看」的画面。`,
+    artGuide: `top 是水平居中、贴上边缘（align 0.5,0），俯视视角下的角色、头顶的招牌、吊下来的东西——总之任何「从上方垂下来或者俯着看」的画面用它。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '等价 align(0.5, 0)', range: '—', effect: '水平居中 + 顶部贴顶。' },
     ],
@@ -40,7 +39,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-topleft': {
-    artGuide: `topleft 对齐屏幕左上角（align (0,0)），是角落站位/角落 UI 的落点——小图标立绘、角落窥视的配角、界面装饰都可用。`,
+    artGuide: `topleft 怼到左上角（align 0,0），角落站位或者角落 UI 的落点。小图标立绘、在角落偷偷窥视的配角、界面装饰都能放这。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '等价 align(0, 0)', range: '—', effect: '左上角对齐屏幕左上。' },
     ],
@@ -49,7 +48,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-topright': {
-    artGuide: `topright 对齐屏幕右上角（align (1,0)），与 topleft 镜像，用于右侧角落的 UI/配角/装饰。`,
+    artGuide: `topright 怼到右上角（align 1,0），跟 topleft 左右镜像，右侧角落的 UI、配角、装饰用。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '等价 align(1, 0)', range: '—', effect: '右上角对齐屏幕右上。' },
     ],
@@ -58,7 +57,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-truecenter': {
-    artGuide: `truecenter 让立绘**绝对中心**对齐屏幕正中（align (0.5,0.5)），而非脚底贴底。它适合特写、CG 感画面、重要人物居中——当你想让整张立绘充满视觉中心、而非「站在地上」时使用。`,
+    artGuide: `truecenter 把立绘的中心点钉在屏幕正中（align 0.5,0.5），而不是脚底贴底。做特写、CG 感画面、重要人物居中的时候用它——你想让整张立绘占满视觉中心、而不是「杵在地上」时就选它。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '等价 align(0.5, 0.5)', range: '—', effect: '中心对齐屏幕正中（含中心点）。' },
     ],
@@ -67,7 +66,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-offleft': {
-    artGuide: `offscreenleft 把立绘放到屏幕左侧之外（xpos 略小于 0）、脚底贴底，是 moveinright 的**入场起点**——角色从画外走进来的起始站位。`,
+    artGuide: `offscreenleft 把立绘放到屏幕左边之外（xpos 略小于 0）、脚底贴底，它是 moveinright 的入场起点——角色从画外走进来时一开始站这儿。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '屏外左侧', range: '—', effect: '立绘在屏幕左边缘之外，作 moveinright 起点。' },
     ],
@@ -76,7 +75,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-offright': {
-    artGuide: `offscreenright 把立绘放到屏幕右侧之外，是 moveoutright 的**离场终点**——角色向画外走去的收尾站位。`,
+    artGuide: `offscreenright 把立绘放到屏幕右边之外，是 moveoutright 的离场终点——角色往画外走去时最后站这儿。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '屏外右侧', range: '—', effect: '立绘在屏幕右边缘之外，作 moveoutright 终点。' },
     ],
@@ -85,7 +84,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-default': {
-    artGuide: `default（config.default_transform）是每次 show/scene 未指定 at 时使用的变换，默认等同 center。想让全项目立绘默认就站某个机位（比如全部贴底偏左），重写它就是全局开关。`,
+    artGuide: `default（也就是 config.default_transform）是每次 show/scene 没写 at 时用的变换，默认等于 center。想让整个项目立绘默认就站某个机位（比如全部贴底偏左一点），改它就是个全局开关。`,
     paramManual: [
       { name: 'config.default_transform', type: 'Transform', def: 'center', range: '任意变换', effect: '未指定 at 时的默认登场变换。' },
     ],
@@ -95,7 +94,7 @@ export const builtinEnc: Encyclopedia = {
   },
 
   'bi-reset': {
-    artGuide: `reset 把**所有**变换属性（pos/rotate/zoom/alpha/matrixcolor…）还原为默认值，清除历史叠加——相当于舞台「清屏重启」。在切换机位、重设姿态前先 reset，能防止上一轮变换残留污染下一幕。`,
+    artGuide: `reset 把所有的变换属性（pos/rotate/zoom/alpha/matrixcolor……）一键还原成默认，清掉之前叠上去的东西——等于舞台清屏重启。切换机位、重设姿态之前先 reset 一下，能防止上一轮变换的残留污染下一幕。`,
     paramManual: [
       { name: '(无独立参数)', type: '—', def: '清空全部叠加', range: '—', effect: '所有 transform 属性还原默认，清除残留。' },
     ],
