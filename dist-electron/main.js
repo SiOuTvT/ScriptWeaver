@@ -2,6 +2,7 @@
 const electron = require("electron");
 const path = require("path");
 const fs = require("fs");
+const zlib = require("zlib");
 const stream = require("stream");
 const PROVIDER_PRESETS = {
   openai: { endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini" }
@@ -73,6 +74,8 @@ async function streamChatCompletion(config, messages, onToken, signal) {
   return full;
 }
 let mainWindow = null;
+let tray = null;
+let isQuiting = false;
 const IMG_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
 const AUDIO_EXTS = [".mp3", ".ogg", ".wav", ".flac"];
 const MIME_MAP = {
@@ -121,13 +124,87 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
+  mainWindow.on("close", (e) => {
+    if (!isQuiting) {
+      e.preventDefault();
+      mainWindow == null ? void 0 : mainWindow.hide();
+    }
+  });
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
 }
+function showMainWindow() {
+  if (!mainWindow) {
+    createWindow();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+function createTray() {
+  if (tray) return;
+  const iconPath = path.join(__dirname, "../assets/tray.png");
+  let icon = fs.existsSync(iconPath) ? electron.nativeImage.createFromPath(iconPath) : makeFallbackTrayIcon();
+  if (icon.isEmpty()) icon = makeFallbackTrayIcon();
+  icon = icon.resize({ width: 32, height: 32 });
+  tray = new electron.Tray(icon);
+  tray.setToolTip("ScriptWeaver");
+  tray.setContextMenu(
+    electron.Menu.buildFromTemplate([
+      { label: "显示窗口", click: () => showMainWindow() },
+      { type: "separator" },
+      { label: "退出", click: () => {
+        isQuiting = true;
+        electron.app.quit();
+      } }
+    ])
+  );
+  tray.on("click", () => showMainWindow());
+}
+function makeFallbackTrayIcon() {
+  const size = 32;
+  const [r, g, b, a] = [30, 41, 59, 255];
+  const raw = [];
+  for (let y = 0; y < size; y++) {
+    raw.push(0);
+    for (let x = 0; x < size; x++) raw.push(r, g, b, a);
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  const idat = zlib.deflateSync(Buffer.from(raw));
+  const buf = Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pngChunk("IHDR", ihdr),
+    pngChunk("IDAT", idat),
+    pngChunk("IEND", Buffer.alloc(0))
+  ]);
+  return electron.nativeImage.createFromBuffer(buf);
+}
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length, 0);
+  const typeBuf = Buffer.from(type, "ascii");
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])) >>> 0, 0);
+  return Buffer.concat([len, typeBuf, data, crc]);
+}
+function crc32(buf) {
+  let c = -1;
+  for (let i = 0; i < buf.length; i++) {
+    c ^= buf[i];
+    for (let k = 0; k < 8; k++) c = c >>> 1 ^ 3988292384 & -(c & 1);
+  }
+  return ~c >>> 0;
+}
 electron.app.whenReady().then(() => {
   registerAssetProtocol();
   createWindow();
+  createTray();
   electron.app.on("activate", () => {
     if (electron.BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -136,7 +213,9 @@ electron.app.whenReady().then(() => {
 });
 electron.app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
-    if (process.env.VITE_DEV_SERVER_URL) {
+    if (isQuiting) {
+      electron.app.quit();
+    } else if (process.env.VITE_DEV_SERVER_URL) {
       if (!mainWindow) createWindow();
     } else {
       electron.app.quit();

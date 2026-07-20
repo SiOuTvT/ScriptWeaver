@@ -2,3 +2,31 @@
 [53812:0720/104015.817:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
 [9720:0720/104035.308:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
 [9720:0720/104035.308:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[19820:0720/110225.595:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[19820:0720/110225.595:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[57940:0720/110258.236:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[57940:0720/110258.236:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[43188:0720/110353.029:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[43188:0720/110353.029:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[43188:0720/110353.029:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[43188:0720/110353.036:ERROR:disk_cache.cc(208)] Unable to create cache
+[43188:0720/110353.036:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[43188:0720/110353.036:ERROR:disk_cache.cc(208)] Unable to create cache
+[43188:0720/110353.036:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[43188:0720/110353.036:ERROR:disk_cache.cc(208)] Unable to create cache
+[43188:0720/110353.036:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[43188:0720/110358.584:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[43188:0720/110358.584:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[50720:0720/110403.674:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[50720:0720/110403.674:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[7796:0720/110432.751:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[7796:0720/110432.751:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[7796:0720/110432.751:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[7796:0720/110432.758:ERROR:disk_cache.cc(208)] Unable to create cache
+[7796:0720/110432.758:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[7796:0720/110432.758:ERROR:disk_cache.cc(208)] Unable to create cache
+[7796:0720/110432.758:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[7796:0720/110432.758:ERROR:disk_cache.cc(208)] Unable to create cache
+[7796:0720/110432.758:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[7796:0720/110438.942:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[7796:0720/110438.942:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)

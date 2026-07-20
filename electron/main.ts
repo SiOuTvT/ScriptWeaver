@@ -1,11 +1,16 @@
-import { app, BrowserWindow, ipcMain, dialog, nativeTheme, protocol } from 'electron'
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, nativeTheme, protocol } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import zlib from 'zlib'
 import { Readable } from 'stream'
 // AI 编排逻辑（纯函数）由主进程持有：密钥不进渲染进程，渲染端只发 prompt 收文本
 import { streamChatCompletion, defaultAIConfig, type AIConfig, type ChatMessage } from '../src/utils/aiDirector'
 
 let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+// 托盘常驻模式下，仅当用户通过托盘「退出」或显式 quit 时才真正关闭，
+// 平时点窗口 X 只隐藏到托盘（见 createWindow 的 close 拦截）
+let isQuiting = false
 
 // --------------- 资产常量 ---------------
 
@@ -73,14 +78,97 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
+  // 点窗口 X：默认仅隐藏到托盘（进程常驻），避免“窗口又没了”
+  mainWindow.on('close', (e) => {
+    if (!isQuiting) {
+      e.preventDefault()
+      mainWindow?.hide()
+    }
+  })
   mainWindow.on('closed', () => {
     mainWindow = null
   })
 }
 
+// ===================== 系统托盘（常驻 + 一键唤回） =====================
+function showMainWindow() {
+  if (!mainWindow) {
+    createWindow()
+    return
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+}
+
+function createTray() {
+  if (tray) return
+  const iconPath = path.join(__dirname, '../assets/tray.png')
+  let icon = fs.existsSync(iconPath)
+    ? nativeImage.createFromPath(iconPath)
+    : makeFallbackTrayIcon()
+  if (icon.isEmpty()) icon = makeFallbackTrayIcon()
+  // Windows 托盘使用小尺寸，避免模糊/过大
+  icon = icon.resize({ width: 32, height: 32 })
+  tray = new Tray(icon)
+  tray.setToolTip('ScriptWeaver')
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: '显示窗口', click: () => showMainWindow() },
+      { type: 'separator' },
+      { label: '退出', click: () => { isQuiting = true; app.quit() } },
+    ]),
+  )
+  // Windows 上托盘图标点击即唤回窗口
+  tray.on('click', () => showMainWindow())
+}
+
+// 运行时生成纯色方形 PNG，作为缺图标文件时的兜底，确保托盘永不创建失败
+function makeFallbackTrayIcon(): nativeImage {
+  const size = 32
+  const [r, g, b, a] = [30, 41, 59, 255]
+  const raw: number[] = []
+  for (let y = 0; y < size; y++) {
+    raw.push(0) // 每行 filter type 0
+    for (let x = 0; x < size; x++) raw.push(r, g, b, a)
+  }
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(size, 0)
+  ihdr.writeUInt32BE(size, 4)
+  ihdr[8] = 8 // bit depth
+  ihdr[9] = 6 // color type RGBA
+  const idat = zlib.deflateSync(Buffer.from(raw))
+  const buf = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', idat),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ])
+  return nativeImage.createFromBuffer(buf)
+}
+
+function pngChunk(type: string, data: Buffer): Buffer {
+  const len = Buffer.alloc(4)
+  len.writeUInt32BE(data.length, 0)
+  const typeBuf = Buffer.from(type, 'ascii')
+  const crc = Buffer.alloc(4)
+  crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])) >>> 0, 0)
+  return Buffer.concat([len, typeBuf, data, crc])
+}
+
+function crc32(buf: Buffer): number {
+  let c = ~0
+  for (let i = 0; i < buf.length; i++) {
+    c ^= buf[i]
+    for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1))
+  }
+  return ~c >>> 0
+}
+
 app.whenReady().then(() => {
   registerAssetProtocol()
   createWindow()
+  createTray()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -91,8 +179,11 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    // dev 模式（存在 VITE_DEV_SERVER_URL 即为 npm run dev）：窗口被关掉不要退出整个进程（否则连带死掉、窗口再也回不来），直接重新弹窗
-    if (process.env.VITE_DEV_SERVER_URL) {
+    // 显式退出（托盘「退出」已置 isQuiting）必须真正退出，否则会残留在无窗口状态
+    if (isQuiting) {
+      app.quit()
+    } else if (process.env.VITE_DEV_SERVER_URL) {
+      // dev 模式：窗口一般不会走到这里（close 已拦截为 hide），兜底重建
       if (!mainWindow) createWindow()
     } else {
       app.quit()
