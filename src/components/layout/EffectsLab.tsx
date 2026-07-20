@@ -222,10 +222,16 @@ function DetailView({
             </div>
           )}
 
-          {/* 🎭 板块一：剧情应用场景与艺术演出指导 */}
+          {/* 🎭 板块一：剧情应用场景与艺术演出指导（整合原 renpyEffects.scenario） */}
           {enc?.artGuide && (
             <Section title="🎭 剧情应用场景与艺术演出指导">
               <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{enc.artGuide}</p>
+              {item.scenario && (
+                <div className="mt-4 border-t border-edge/10 pt-3">
+                  <p className="mb-1 text-[12px] font-medium text-fg-faint">原 Ren'Py 资料 · 适用情景清单</p>
+                  <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg-subtle">{item.scenario}</p>
+                </div>
+              )}
             </Section>
           )}
 
@@ -236,8 +242,8 @@ function DetailView({
             </Section>
           )}
 
-          {/* 📐 板块二：完备的底层参数拆解手册 */}
-          {enc?.paramManual && enc.paramManual.length > 0 ? (
+          {/* 📐 板块二：完备的底层参数拆解手册（新四大板块） */}
+          {enc?.paramManual && enc.paramManual.length > 0 && (
             <Section title="📐 完备的底层参数拆解手册">
               <div className="overflow-hidden rounded-lg border border-edge/12">
                 <table className="w-full border-collapse text-[12px]">
@@ -264,33 +270,34 @@ function DetailView({
                 </table>
               </div>
             </Section>
-          ) : (
-            item.params && item.params.length > 0 && (
-              <Section title="📐 完备的底层参数拆解手册">
-                <div className="overflow-hidden rounded-lg border border-edge/12">
-                  <table className="w-full border-collapse text-[12px]">
-                    <thead>
-                      <tr className="bg-surface-2 text-left text-fg-faint">
-                        <th className="px-2.5 py-1.5 font-medium">参数</th>
-                        <th className="px-2.5 py-1.5 font-medium">类型</th>
-                        <th className="px-2.5 py-1.5 font-medium">用途</th>
-                        <th className="px-2.5 py-1.5 font-medium">底层数学 / 取值逻辑</th>
+          )}
+
+          {/* 📐 原 Ren'Py 资料 · 参数底层数学逻辑（保留旧 enrich 数据，含 math） */}
+          {item.params && item.params.length > 0 && (
+            <Section title="📐 参数底层数学逻辑（原 Ren'Py 资料）">
+              <div className="overflow-hidden rounded-lg border border-edge/12">
+                <table className="w-full border-collapse text-[12px]">
+                  <thead>
+                    <tr className="bg-surface-2 text-left text-fg-faint">
+                      <th className="px-2.5 py-1.5 font-medium">参数</th>
+                      <th className="px-2.5 py-1.5 font-medium">类型</th>
+                      <th className="px-2.5 py-1.5 font-medium">用途</th>
+                      <th className="px-2.5 py-1.5 font-medium">底层数学 / 取值逻辑</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {item.params.map((p, i) => (
+                      <tr key={i} className="border-t border-edge/10 align-top">
+                        <td className="px-2.5 py-1.5 font-mono text-signal">{p.name}</td>
+                        <td className="px-2.5 py-1.5 font-mono text-fg-subtle">{p.type}</td>
+                        <td className="px-2.5 py-1.5 text-fg-subtle">{p.desc}</td>
+                        <td className="px-2.5 py-1.5 text-fg-muted">{p.math ?? '—'}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {item.params.map((p, i) => (
-                        <tr key={i} className="border-t border-edge/10 align-top">
-                          <td className="px-2.5 py-1.5 font-mono text-signal">{p.name}</td>
-                          <td className="px-2.5 py-1.5 font-mono text-fg-subtle">{p.type}</td>
-                          <td className="px-2.5 py-1.5 text-fg-subtle">{p.desc}</td>
-                          <td className="px-2.5 py-1.5 text-fg-muted">{p.math ?? '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Section>
-            )
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
           )}
 
           {/* 💻 板块三：双引擎原生代码示例对照 */}
