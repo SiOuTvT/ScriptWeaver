@@ -23,7 +23,7 @@ export const impactEnc: Encyclopedia = {
   },
 
   vpunch: {
-    artGuide: `vpunch 是「垂直猛击」：让整个画面在垂直方向猛抖 0.25 秒，像地震、重物砸地、从上劈下来的重击、剧烈颠簸。它跟 hpunch 是同构的，只是抖的轴换成垂直方向。同样别高频滥用——垂直抖动比水平更容易让人晕，留给真正的「天崩地裂」时刻。`,
+    artGuide: `vpunch 是「垂直猛击」：让整个画面在垂直方向猛抖 0.25 秒，像地震、重物砸地、从上劈下来的重击、剧烈颠簸。它跟 hpunch 是同构的，只是抖的轴换成垂直方向。同样别高频滥用，垂直抖动比水平更容易让人晕，留给真正的「天崩地裂」时刻。`,
     paramManual: [
       { name: 'dist', type: 'float（Shake 实例参数）', def: '≈屏幕高 3%', range: '像素', effect: '垂直抖动最大位移；越大震得越狠。' },
       { name: '时长', type: 'float', def: '0.5（Shake 的 delay）', range: '秒', effect: '整屏抖动总时长。' },
@@ -43,7 +43,7 @@ export const impactEnc: Encyclopedia = {
   },
 
   shake: {
-    artGuide: `Shake 是比 hpunch/vpunch 更可控的抖动工厂：它在一个 (x,y,w,h) 偏移盒里对目标做高频随机扰动，能指定时长和强度，做出持续的颤动——角色吓得发抖、受伤哆嗦、引擎轰鸣、飞机颠簸、紧张等待，全靠它。它是「状态性抖动」而不是「一下子的冲击」，适合让某个立绘长时间抖个不停。`,
+    artGuide: `Shake 是比 hpunch/vpunch 更可控的抖动工厂：它在一个 (x,y,w,h) 偏移盒里对目标做高频随机扰动，能指定时长和强度，做出持续的颤动，角色吓得发抖、受伤哆嗦、引擎轰鸣、飞机颠簸、紧张等待，全靠它。它是「状态性抖动」而不是「一下子的冲击」，适合让某个立绘长时间抖个不停。`,
     paramManual: [
       { name: 'offset', type: '(4)tuple', def: '(0,0,0,0)', range: '(x,y,w,h) 偏移盒', effect: '每帧随机位移的范围；w,h 越大抖得越狠、覆盖区域越广。' },
       { name: 'child', type: 'Displayable', def: '—', range: '任意显示件', effect: '被抖动的立绘/图层。' },

@@ -22,7 +22,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-easein': {
-    artGuide: `easein 是「先憋着后冲出去」：开头几乎是静止的，越往后越快。东西要猛地冲出屏幕、发射、加速离场的时候很带感。但反过来如果是入场，easein 会让它磨磨蹭蹭半天才冒出来——入场该用 easeout。`,
+    artGuide: `easein 是「先憋着后冲出去」：开头几乎是静止的，越往后越快。东西要猛地冲出屏幕、发射、加速离场的时候很带感。但反过来如果是入场，easein 会让它磨磨蹭蹭半天才冒出来，入场该用 easeout。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.42, 0, 1, 1)', range: 'CSS cubic-bezier', effect: '起点缓、终点陡，加速冲出。' },
     ],
@@ -67,7 +67,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-zoomout': {
-    artGuide: `zoomout 专用于缩放离场的缓动，起步快、末端带轻微负向回弹，配套 zoomout 转场的远去感——缩小消逝更自然。`,
+    artGuide: `zoomout 专用于缩放离场的缓动，起步快、末端带轻微负向回弹，配套 zoomout 转场的远去感，缩小消逝更自然。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.36, 0, 0.66, -0.2)', range: '末端负向', effect: '起步快、末端轻微负向回弹远去。' },
     ],
@@ -104,7 +104,7 @@ export const warpersEnc: Encyclopedia = {
   },
 
   'w-circ': {
-    artGuide: `ease_circ 用四分之一圆，起步极慢、收尾极陡，加速度一直往上加。适合「慢慢蓄势然后一下子到位」——放大招、能量汇聚后爆发。但如果是进度条，circ 会让人误判还剩多少。`,
+    artGuide: `ease_circ 用四分之一圆，起步极慢、收尾极陡，加速度一直往上加。适合「慢慢蓄势然后一下子到位」，放大招、能量汇聚后爆发。但如果是进度条，circ 会让人误判还剩多少。`,
     paramManual: [
       { name: 'bezier', type: '(4)控制点', def: '(0.08, 0.82, 0.17, 1)', range: 'CSS cubic-bezier', effect: '起步极缓、收尾极陡。' },
     ],

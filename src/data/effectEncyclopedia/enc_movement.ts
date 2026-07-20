@@ -3,7 +3,7 @@ import type { Encyclopedia } from './types'
 // 三、位移与移动（Movement）
 export const movementEnc: Encyclopedia = {
   move: {
-    artGuide: `move 就是「同一个角色换站位」的核心：当你给同一个 tag 的立绘换个 at 机位，Ren'Py 会用 0.5 秒把坐标平滑补间过去——角色从左走到右、从远处走近、换个座，都靠它。前提是新旧两帧得是同一个 tag（同一个角色），不然引擎不知道怎么补，就退化成硬切了。它和 movein*/moveout* 的区别：move 是「已经在场的人自己挪」，后两个是「新人进来 / 旧人消失」。`,
+    artGuide: `move 就是「同一个角色换站位」的核心：当你给同一个 tag 的立绘换个 at 机位，Ren'Py 会用 0.5 秒把坐标平滑补间过去，角色从左走到右、从远处走近、换个座，都靠它。前提是新旧两帧得是同一个 tag（同一个角色），不然引擎不知道怎么补，就退化成硬切了。它和 movein*/moveout* 的区别：move 是「已经在场的人自己挪」，后两个是「新人进来 / 旧人消失」。`,
     paramManual: [
       { name: '(默认时长)', type: 'float', def: '0.5', range: '秒（由 MoveTransition 决定）', effect: '位置插值总时长，默认 0.5s；可换用更长/更短的 MoveTransition 改变。' },
     ],
@@ -28,7 +28,7 @@ export const movementEnc: Encyclopedia = {
   },
 
   moveoutright: {
-    artGuide: `moveout* 是「立绘退场」专用：把当前在场的立绘朝指定的屏外边滑出去，然后 hide。常写在 hide 的 with 里，让退场也有戏——角色离场走去、退出对话、被人「请出去」那一下滑动。单独 hide 不写 with 就是硬切消失，干巴巴的一点情绪都没有；用 moveoutright 才「走得有戏」。`,
+    artGuide: `moveout* 是「立绘退场」专用：把当前在场的立绘朝指定的屏外边滑出去，然后 hide。常写在 hide 的 with 里，让退场也有戏，角色离场走去、退出对话、被人「请出去」那一下滑动。单独 hide 不写 with 就是硬切消失，干巴巴的一点情绪都没有；用 moveoutright 才「走得有戏」。`,
     paramManual: [
       { name: 'side', type: "'right' 等", def: '—', range: 'left/right/top/bottom', effect: '决定立绘朝哪个屏外缘离场。' },
     ],
