@@ -23,6 +23,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { EFFECT_CATEGORIES, ALL_EFFECTS, type EffectItem, type PreviewSpec } from '@/data/renpyEffects'
+import { EFFECT_ENCYCLOPEDIA } from '@/data/effectEncyclopedia'
 import PreviewStage, { type ActiveSpec } from '../effects/PreviewStage'
 import { Button, IconButton } from '@/components/ui'
 import { useAppStore } from '@/stores/appStore'
@@ -189,6 +190,7 @@ function DetailView({
   onBack: () => void
   onEnterPreview: () => void
 }) {
+  const enc = EFFECT_ENCYCLOPEDIA[item.id]
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-canvas text-fg">
       <div className="flex items-center gap-2 border-b border-edge/10 px-4 py-2.5">
@@ -220,9 +222,80 @@ function DetailView({
             </div>
           )}
 
-          {/* 代码示例 */}
+          {/* 🎭 板块一：剧情应用场景与艺术演出指导 */}
+          {enc?.artGuide && (
+            <Section title="🎭 剧情应用场景与艺术演出指导">
+              <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{enc.artGuide}</p>
+            </Section>
+          )}
+
+          {/* 底层原理（Ren'Py 官方机制，保留） */}
+          {item.principle && (
+            <Section title="底层原理（Ren'Py 官方机制）">
+              <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{item.principle}</p>
+            </Section>
+          )}
+
+          {/* 📐 板块二：完备的底层参数拆解手册 */}
+          {enc?.paramManual && enc.paramManual.length > 0 ? (
+            <Section title="📐 完备的底层参数拆解手册">
+              <div className="overflow-hidden rounded-lg border border-edge/12">
+                <table className="w-full border-collapse text-[12px]">
+                  <thead>
+                    <tr className="bg-surface-2 text-left text-fg-faint">
+                      <th className="px-2.5 py-1.5 font-medium">参数</th>
+                      <th className="px-2.5 py-1.5 font-medium">类型</th>
+                      <th className="px-2.5 py-1.5 font-medium">默认值</th>
+                      <th className="px-2.5 py-1.5 font-medium">取值范围 / 单位</th>
+                      <th className="px-2.5 py-1.5 font-medium">改了会怎样</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {enc.paramManual.map((p, i) => (
+                      <tr key={i} className="border-t border-edge/10 align-top">
+                        <td className="px-2.5 py-1.5 font-mono text-signal">{p.name}</td>
+                        <td className="px-2.5 py-1.5 font-mono text-fg-subtle">{p.type}</td>
+                        <td className="px-2.5 py-1.5 font-mono text-fg-subtle">{p.def}</td>
+                        <td className="px-2.5 py-1.5 text-fg-subtle">{p.range}</td>
+                        <td className="px-2.5 py-1.5 text-fg-muted">{p.effect}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          ) : (
+            item.params && item.params.length > 0 && (
+              <Section title="📐 完备的底层参数拆解手册">
+                <div className="overflow-hidden rounded-lg border border-edge/12">
+                  <table className="w-full border-collapse text-[12px]">
+                    <thead>
+                      <tr className="bg-surface-2 text-left text-fg-faint">
+                        <th className="px-2.5 py-1.5 font-medium">参数</th>
+                        <th className="px-2.5 py-1.5 font-medium">类型</th>
+                        <th className="px-2.5 py-1.5 font-medium">用途</th>
+                        <th className="px-2.5 py-1.5 font-medium">底层数学 / 取值逻辑</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {item.params.map((p, i) => (
+                        <tr key={i} className="border-t border-edge/10 align-top">
+                          <td className="px-2.5 py-1.5 font-mono text-signal">{p.name}</td>
+                          <td className="px-2.5 py-1.5 font-mono text-fg-subtle">{p.type}</td>
+                          <td className="px-2.5 py-1.5 text-fg-subtle">{p.desc}</td>
+                          <td className="px-2.5 py-1.5 text-fg-muted">{p.math ?? '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Section>
+            )
+          )}
+
+          {/* 💻 板块三：双引擎原生代码示例对照 */}
           {item.syntax && (
-            <Section title="Ren'Py 代码示例">
+            <Section title="💻 双引擎原生代码示例对照 · Ren'Py 标准语法">
               <pre className="overflow-x-auto rounded-lg border border-edge/12 bg-surface-2 px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-fg-subtle">
                 {item.syntax}
               </pre>
@@ -233,51 +306,23 @@ function DetailView({
               )}
             </Section>
           )}
-
-          {/* 底层原理 */}
-          {item.principle && (
-            <Section title="底层原理">
-              <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{item.principle}</p>
+          {enc?.cssImpl && (
+            <Section title="💻 双引擎原生代码示例对照 · 本项目实现（Electron + React + CSS）">
+              <pre className="overflow-x-auto rounded-lg border border-edge/12 bg-[#0d1117] px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-emerald-200/90">
+                {enc.cssImpl}
+              </pre>
             </Section>
           )}
 
-          {/* 参数详解（含数学逻辑） */}
-          {item.params && item.params.length > 0 && (
-            <Section title="参数详解与底层数学逻辑">
-              <div className="overflow-hidden rounded-lg border border-edge/12">
-                <table className="w-full border-collapse text-[12px]">
-                  <thead>
-                    <tr className="bg-surface-2 text-left text-fg-faint">
-                      <th className="px-2.5 py-1.5 font-medium">参数</th>
-                      <th className="px-2.5 py-1.5 font-medium">类型</th>
-                      <th className="px-2.5 py-1.5 font-medium">用途</th>
-                      <th className="px-2.5 py-1.5 font-medium">底层数学 / 取值逻辑</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {item.params.map((p, i) => (
-                      <tr key={i} className="border-t border-edge/10 align-top">
-                        <td className="px-2.5 py-1.5 font-mono text-signal">{p.name}</td>
-                        <td className="px-2.5 py-1.5 font-mono text-fg-subtle">{p.type}</td>
-                        <td className="px-2.5 py-1.5 text-fg-subtle">{p.desc}</td>
-                        <td className="px-2.5 py-1.5 text-fg-muted">{p.math ?? '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Section>
-          )}
-
-          {/* 适用场景 */}
-          {item.scenario && (
-            <Section title="适合在什么剧情场景下使用">
-              <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{item.scenario}</p>
+          {/* ⚠️ 板块四：性能提示与视觉避坑 */}
+          {enc?.perfTips && (
+            <Section title="⚠️ 性能提示与视觉避坑指南">
+              <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{enc.perfTips}</p>
             </Section>
           )}
 
           <div className="mt-8 rounded-lg border border-edge/10 bg-surface-2/60 p-4 text-center">
-            <p className="text-[13px] text-fg-subtle">读到这里，你已经掌握了该特效的全部原理与用法。</p>
+            <p className="text-[13px] text-fg-subtle">读到这里，你已经吃透了该特效的全部原理、参数与避坑。</p>
             <Button
               variant="primary"
               size="md"
