@@ -4,7 +4,7 @@ import fs from 'fs'
 import zlib from 'zlib'
 import { Readable } from 'stream'
 // AI 编排逻辑（纯函数）由主进程持有：密钥不进渲染进程，渲染端只发 prompt 收文本
-import { streamChatCompletion, defaultAIConfig, type AIConfig, type ChatMessage } from '../src/utils/aiDirector'
+import { streamChatCompletion, describeAIError, defaultAIConfig, type AIConfig, type ChatMessage } from '../src/utils/aiDirector'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -476,9 +476,12 @@ ipcMain.on('ai:chat', async (event, payload: { messages: ChatMessage[] }) => {
     )
     event.sender.send('ai:done', { full })
   } catch (err: unknown) {
-    const e = err as { name?: string; message?: string }
-    if (e?.name === 'AbortError') event.sender.send('ai:aborted')
-    else event.sender.send('ai:error', e?.message ?? '未知错误')
+    const e = err as { name?: string }
+    if (e?.name === 'AbortError') {
+      event.sender.send('ai:aborted')
+      return
+    }
+    event.sender.send('ai:error', describeAIError(err))
   } finally {
     activeChat = null
   }

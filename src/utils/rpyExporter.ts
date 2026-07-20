@@ -57,7 +57,7 @@ type RpyNode =
   | { kind: 'label'; name: string }
   | { kind: 'blank' }
   | { kind: 'scene'; image: string; transition?: string }
-  | { kind: 'show'; charId: string; exprId: string; at: AtClause; zorder: number; zoom?: number }
+  | { kind: 'show'; charId: string; exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string }
   | { kind: 'hide'; charId: string }
   | { kind: 'playMusic'; file: string; fadein?: number; loop: boolean }
   | { kind: 'playAmbient'; file: string; fadein?: number; loop: boolean }
@@ -103,10 +103,67 @@ function escapeDialogue(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
-/** 过渡映射：'None'/空 → 不输出 with；其余原样透传（含 fade/dissolve 等 Ren'Py 原生过渡） */
-function normalizeTransition(t?: string): string | undefined {
-  if (!t || t === 'None') return undefined
-  return t
+// ======================= 过渡 / 特效映射 =======================
+
+/**
+ * Ren'Py 内建过渡（含可当过渡使用的 transform）。命中则原样透传，无需额外定义。
+ * 仅收录确证存在的内建名，避免把不存在的变量名原样发射成 `with xxx` 导致 NameError。
+ */
+const BUILTIN_TRANSITIONS = new Set<string>([
+  'dissolve', 'fade', 'flash', 'pixellate', 'blinds', 'glitter',
+  'irisin', 'irisout', 'move',
+  'moveinleft', 'moveinright', 'moveinup', 'moveindown',
+  'moveoutleft', 'moveoutright', 'moveoutup', 'moveoutdown',
+  'pushleft', 'pushright', 'pushup', 'pushdown',
+  'slideleft', 'slideright', 'slideup', 'slidedown',
+  'wipeleft', 'wiperight', 'wipeup', 'wipedown',
+  'squeezeleft', 'squeezeright', 'squeezeup', 'squeezedown',
+  'easeinleft', 'easeinright', 'easeinup', 'easeindown',
+  'easeoutleft', 'easeoutright', 'easeoutup', 'easeoutdown',
+  'facin', 'facout', 'vpunch', 'hpunch',
+])
+
+/** 把任意过渡字符串清洗为合法 Python 标识符（小写、仅 [a-z0-9_]） */
+function sanitizeIdent(t: string): string {
+  return (
+    t
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'dissolve'
+  )
+}
+
+/**
+ * 解析过渡名：
+ *  - 空 / 'None' / 'none' → undefined（不输出 with）
+ *  - 内建过渡 → 原样返回
+ *  - 其余（自定义特效名）→ 清洗为标识符并返回，同时记入 custom 集合，
+ *    由 definitions.rpy 生成对应 transform，保证 `with <name>` 必定存在、必定可编译。
+ */
+function resolveTransition(raw: string | undefined, custom: Set<string>): string | undefined {
+  if (!raw || raw === 'None' || raw.trim() === '') return undefined
+  const id = sanitizeIdent(raw)
+  if (id === 'none') return undefined
+  if (BUILTIN_TRANSITIONS.has(id)) return id
+  custom.add(id)
+  return id
+}
+
+/** 扫描整篇剧本实际用到的过渡名（供 definitions 生成 transform 定义） */
+function collectUsedTransitions(
+  _deltas: LineDelta[],
+  resolvedStates: ResolvedLineState[],
+): Set<string> {
+  const set = new Set<string>()
+  for (const s of resolvedStates) {
+    if (s.background?.transition) resolveTransition(s.background.transition, set)
+    for (const c of Object.values(s.characters)) {
+      if (c.transition) resolveTransition(c.transition, set)
+    }
+  }
+  return set
 }
 
 /** 磁盘/导出子目录（与 C 阶段 assets/ 规范完全同名） */
@@ -233,22 +290,23 @@ export function validateExportNames(
 
     // 2) 角色 sprite_id（表情 ID）校验
     for (const [charId, char] of Object.entries(delta.characters)) {
-      if (!allCharIds.has(charId)) {
+      const role = char.char_id ?? charId
+      if (!allCharIds.has(role)) {
         errors.push({
           lineId: lid,
           field: 'characters.key',
           value: charId,
-          message: `角色 "${charId}" 未在角色管理中找到配置。`,
+          message: `角色 "${role}" 未在角色管理中找到配置。`,
         })
       }
-      const validExpressions = charExpressions[charId]
+      const validExpressions = charExpressions[role]
       if (validExpressions && char.sprite_id && !validExpressions.has(char.sprite_id)) {
         const available = [...validExpressions].join(', ')
         errors.push({
           lineId: lid,
           field: 'characters.sprite_id',
           value: char.sprite_id,
-          message: `表情 "${char.sprite_id}" 不在角色 "${charId}" 的表情列表中。可用表情：[${available}]。`,
+          message: `表情 "${char.sprite_id}" 不在角色 "${role}" 的表情列表中。可用表情：[${available}]。`,
         })
       }
     }
@@ -327,9 +385,19 @@ function atEqual(a: AtClause, b: AtClause): boolean {
   return false
 }
 
-function serializeAt(at: AtClause): string {
-  if (at.kind === 'slot') return at.slotId
-  return `semislotted(${at.xpos}, ${at.ypos})`
+/**
+ * 生成 `at` 子句：
+ *  - 槽位且无缩放 → 直接使用槽位 transform（如 left / center / right，内建或 definitions 定义）
+ *  - 槽位 + 缩放 → `left, sw_zoom(1.2)`（sw_zoom 为合规 transform，非属性）
+ *  - 自由坐标 → `sw_pos(x, y, zoom)`（sw_pos 为 definitions 定义的合规参数化 transform）
+ * 注意：绝不能把 zoom 当作 transform 调用（旧版 `at left, zoom(1.2)` 属非法语法）。
+ */
+function serializeAt(at: AtClause, zoom?: number): string {
+  if (at.kind === 'slot') {
+    if (zoom != null && zoom !== 1) return `${at.slotId}, sw_zoom(${zoom})`
+    return at.slotId
+  }
+  return `sw_pos(${at.xpos}, ${at.ypos}, ${zoom ?? 1})`
 }
 
 /**
@@ -341,13 +409,14 @@ function compileToNodes(
   resolvedStates: ResolvedLineState[],
   st: SymbolTable,
   scriptLabel: string,
+  customTransitions: Set<string>,
 ): RpyNode[] {
   const nodes: RpyNode[] = [{ kind: 'label', name: scriptLabel }]
 
   let currentBg: string | null = null
   let currentBgm: string | null = null
   let currentAmbient: string | null = null
-  let currentChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number }>()
+  let currentChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string }>()
 
   for (let i = 0; i < resolvedStates.length; i++) {
     const state = resolvedStates[i]
@@ -359,19 +428,26 @@ function compileToNodes(
     if (newBg !== currentBg) {
       currentBg = newBg
       if (newBg) {
-        const transition = normalizeTransition(state.background?.transition)
-        block.push({ kind: 'scene', image: newBg, transition })
+        const transition = resolveTransition(state.background?.transition, customTransitions)
+        if (st.bgDefs.get(newBg)) {
+          block.push({ kind: 'scene', image: newBg, transition })
+        } else {
+          block.push({ kind: 'comment', text: `[缺失背景] ${newBg}` })
+        }
       }
     }
 
     // ---- 角色：先收集本行完整状态 ----
-    const newChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number }>()
+    const newChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string }>()
     for (const [charId, c] of Object.entries(state.characters)) {
-      newChars.set(charId, {
+      // 同一角色身份（char_id）在 Ren'Py 中对应同一标签；多实例退化为单标签（Ren'Py 同 tag 不可同屏多份）
+      const role = c.char_id ?? charId
+      newChars.set(role, {
         exprId: c.sprite_id,
         at: resolveAt(c, st),
         zorder: computeZorder(c, st),
         zoom: c.scale != null && c.scale !== 1 ? round3(c.scale) : undefined,
+        transition: resolveTransition(c.transition, customTransitions),
       })
     }
     // 退场（上一行有、本行无）
@@ -382,9 +458,27 @@ function compileToNodes(
     for (const [charId, nc] of newChars) {
       const prev = currentChars.get(charId)
       const changed =
-        !prev || prev.exprId !== nc.exprId || !atEqual(prev.at, nc.at) || prev.zorder !== nc.zorder || prev.zoom !== nc.zoom
+        !prev ||
+        prev.exprId !== nc.exprId ||
+        !atEqual(prev.at, nc.at) ||
+        prev.zorder !== nc.zorder ||
+        prev.zoom !== nc.zoom ||
+        prev.transition !== nc.transition
       if (changed) {
-        block.push({ kind: 'show', charId, exprId: nc.exprId, at: nc.at, zorder: nc.zorder, zoom: nc.zoom })
+        const exprAsset = st.charDefs[charId]?.expressions.get(nc.exprId)
+        if (exprAsset) {
+          block.push({
+            kind: 'show',
+            charId,
+            exprId: nc.exprId,
+            at: nc.at,
+            zorder: nc.zorder,
+            zoom: nc.zoom,
+            transition: nc.transition,
+          })
+        } else {
+          block.push({ kind: 'comment', text: `[缺失立绘] ${charId} ${nc.exprId}` })
+        }
       }
     }
 
@@ -477,9 +571,10 @@ function serializeNode(n: RpyNode): string {
     case 'scene':
       return n.transition ? `scene ${n.image} with ${n.transition}` : `scene ${n.image}`
     case 'show': {
-      let at = serializeAt(n.at)
-      if (n.zoom != null && n.zoom !== 1) at += `, zoom(${n.zoom})`
-      return `show ${n.charId} ${n.exprId} at ${at} zorder ${n.zorder}`
+      const at = serializeAt(n.at, n.zoom)
+      let s = `show ${n.charId} ${n.exprId} at ${at} zorder ${n.zorder}`
+      if (n.transition) s += ` with ${n.transition}`
+      return s
     }
     case 'hide':
       return `hide ${n.charId}`
@@ -528,7 +623,8 @@ export function exportToRpy(
 ): string {
   if (deltas.length === 0) return '# No content\n'
   const st = buildSymbolTable(deltas, characterConfigs, assets, positionSlots)
-  const nodes = compileToNodes(deltas, resolvedStates, st, scriptLabel)
+  const custom = collectUsedTransitions(deltas, resolvedStates)
+  const nodes = compileToNodes(deltas, resolvedStates, st, scriptLabel, custom)
   return serializeNodes(nodes, deltas.length)
 }
 
@@ -539,6 +635,7 @@ export function exportDefinitionsRpy(
   assets: AssetItem[] = [],
   positionSlots?: PositionSlot[],
   st?: SymbolTable,
+  usedTransitions?: Set<string>,
 ): string {
   const symbol = st ?? buildSymbolTable([], characterConfigs, assets, positionSlots)
   const lines: string[] = []
@@ -567,11 +664,46 @@ export function exportDefinitionsRpy(
     }
   }
 
-  // ---- 微调通用 Transform（承载自由微调坐标，A-4）----
-  lines.push('# ---- 自由微调通用 Transform ----')
-  lines.push('transform semislotted(xpos, ypos):')
-  lines.push('    xpos xpos ypos ypos xanchor 0.5 yanchor 1.0')
+  // ---- 自由微调通用 Transform（承载自由坐标 + 缩放，A-4）----
+  // 注意：sw_pos / sw_zoom 均为合规 transform，可被 `at` / `with` 合法引用。
+  lines.push('# ---- 位置/缩放通用 Transform ----')
+  lines.push('transform sw_pos(xpos, ypos, zoom=1.0):')
+  lines.push('    xpos xpos')
+  lines.push('    ypos ypos')
+  lines.push('    xanchor 0.5')
+  lines.push('    yanchor 1.0')
+  lines.push('    zoom zoom')
   lines.push('')
+  lines.push('transform sw_zoom(z):')
+  lines.push('    zoom z')
+  lines.push('')
+
+  // ---- 自定义特效 Transform 库（保证 with <name> 必定存在，编译无忧）----
+  lines.push('# ---- 自定义特效 Transform 库 ----')
+  // 命中下列已知特效名时给出更贴近的动效；其余一律安全淡入兜底。
+  const effectDefs: Record<string, string[]> = {
+    flash: ['alpha 0.0', 'linear 0.15 alpha 1.0'],
+    vpunch: ['ypos 0.0', 'linear 0.06 ypos -0.02', 'linear 0.06 ypos 0.0'],
+    hpunch: ['xpos 0.0', 'linear 0.06 xpos -0.02', 'linear 0.06 xpos 0.0'],
+    shake: ['xpos 0.0', 'linear 0.05 xpos -0.015', 'linear 0.05 xpos 0.015', 'linear 0.05 xpos 0.0'],
+    zoomin: ['zoom 1.3', 'linear 0.4 zoom 1.0'],
+    zoomout: ['zoom 0.7', 'linear 0.4 zoom 1.0'],
+    push: ['xpos 1.0', 'linear 0.4 xpos 0.0'],
+    slide: ['xpos 1.0', 'linear 0.4 xpos 0.0'],
+    rotate: ['rotate 0', 'linear 0.4 rotate 8', 'linear 0.4 rotate 0'],
+  }
+  for (const id of usedTransitions ?? []) {
+    lines.push(`transform ${id}:`)
+    const body = effectDefs[id]
+    if (body) {
+      for (const l of body) lines.push(`    ${l}`)
+    } else {
+      // 安全兜底：淡入（alpha 为合法 ATL 属性，任何情况下都能编译运行）
+      lines.push('    alpha 0.0')
+      lines.push('    linear 0.3 alpha 1.0')
+    }
+    lines.push('')
+  }
 
   // ---- Character 声明 ----
   if (characterConfigs.length > 0) {
@@ -652,8 +784,9 @@ export function buildBundle(
   scriptLabel: string = 'start',
 ): RpyBundle {
   const st = buildSymbolTable(deltas, characterConfigs, assets, positionSlots)
-  const script = deltas.length === 0 ? '# No content\n' : serializeNodes(compileToNodes(deltas, resolvedStates, st, scriptLabel), deltas.length)
-  const definitions = exportDefinitionsRpy(characterConfigs, assets, positionSlots, st)
+  const used = collectUsedTransitions(deltas, resolvedStates)
+  const script = deltas.length === 0 ? '# No content\n' : serializeNodes(compileToNodes(deltas, resolvedStates, st, scriptLabel, used), deltas.length)
+  const definitions = exportDefinitionsRpy(characterConfigs, assets, positionSlots, st, used)
   const assetRefs = buildAssetRefs(assets)
   return { script, definitions, assets: assetRefs }
 }
@@ -690,7 +823,8 @@ export function downloadRpy(
   }
   const label = scriptFilename.replace(/\.rpy$/i, '') || 'start'
   const script = exportToRpy(deltas, resolvedStates, characterConfigs, assets, positionSlots, label)
-  const defs = exportDefinitionsRpy(characterConfigs, assets, positionSlots)
+  const used = collectUsedTransitions(deltas, resolvedStates)
+  const defs = exportDefinitionsRpy(characterConfigs, assets, positionSlots, undefined, used)
   triggerDownload(script, scriptFilename)
   triggerDownload(defs, 'definitions.rpy')
 }

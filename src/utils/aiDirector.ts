@@ -335,6 +335,7 @@ export function resolveDirectiveToDelta(
       sprite_id: c.sprite_id,
       position_slot: resolveSlot(c.position_slot, ctx.slots),
       action: c.action,
+      char_id: charId,
     }
     if (typeof c.pos_x === 'number') charDelta.pos_x = c.pos_x
     if (typeof c.pos_y === 'number') charDelta.pos_y = c.pos_y
@@ -447,18 +448,110 @@ export function buildUserPrompt(desc: string, mode: AIMode): string {
   return `剧情需求：${desc}\n请生成 5-12 行剧本元数据。`
 }
 
+// ===================== 错误类型与分类 =====================
+
+/** 结构化 AI 请求错误：携带 HTTP 状态与错误类别，便于前端精准提示 */
+export class AIRequestError extends Error {
+  status: number
+  kind: 'http' | 'timeout' | 'network' | 'unknown'
+  constructor(message: string, status = 0, kind: AIRequestError['kind'] = 'unknown') {
+    super(message)
+    this.name = 'AIRequestError'
+    this.status = status
+    this.kind = kind
+  }
+}
+
+/** 将上游 HTTP 错误转为可读中文提示（401/403/404/429/5xx 分级） */
+function classifyHttpError(status: number, raw: string): string {
+  let detail = ''
+  try {
+    const j = JSON.parse(raw)
+    detail = j?.error?.message || j?.error?.type || ''
+  } catch {
+    /* 非 JSON 错误体 */
+  }
+  const tail = detail ? `（${detail.slice(0, 160)}）` : raw ? `（${raw.slice(0, 160)}）` : ''
+  switch (status) {
+    case 401:
+      return `API 密钥无效或未授权（401）。请到 AI 设置中检查 Key 是否正确、是否过期${tail}`
+    case 403:
+      return `密钥无权访问该模型（403）。请确认账户权限或改用可用模型${tail}`
+    case 404:
+      return `请求的端点或模型不存在（404）。请检查 API 端点与模型名${tail}`
+    case 429:
+      return `触发频率限制（429）。请稍后重试，或降低并发 / 调小 max_tokens${tail}`
+    default:
+      if (status >= 500) return `模型服务端错误（${status}）。上游暂时不可用，请稍后重试${tail}`
+      return `API 请求失败（${status}）${tail}`
+  }
+}
+
+/** 统一错误描述：主进程回传与渲染端兜底共用，避免用户看到裸英文异常 */
+export function describeAIError(err: unknown): string {
+  const e = err as { name?: string; message?: string }
+  if (e?.name === 'TimeoutError') return e.message || '请求超时'
+  if (e instanceof AIRequestError) return e.message
+  if (e?.name === 'TypeError')
+    return '网络请求失败：无法连接到该端点。请检查 API 地址、本地网络或代理设置（桌面端也需可访问外网）。'
+  return e?.message || '未知错误'
+}
+
 // ===================== SSE 流式读取 =====================
+
+/** 总超时：从发起请求到完整收尾的最长时间（毫秒） */
+export const AI_REQUEST_TIMEOUT_MS = 180_000
+/** 静默超时：流式过程中连续多久未收到任何数据即判定断流 */
+export const AI_STALL_TIMEOUT_MS = 30_000
+
+/**
+ * 带静默保护的单次读取：在 stallMs 内未返回则标记超时并主动 abort，
+ * 避免服务端“假死”导致界面永久卡在“生成中”。
+ */
+async function readChunk(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  ctrl: AbortController,
+  stallMs: number,
+  markTimeout: () => void,
+): Promise<{ done: boolean; value?: Uint8Array }> {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const timer = setTimeout(() => {
+      if (settled) return
+      settled = true
+      markTimeout()
+      ctrl.abort()
+      reject(new Error('数据流中断'))
+    }, stallMs)
+    reader
+      .read()
+      .then((r) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        resolve(r)
+      })
+      .catch((err) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        reject(err)
+      })
+  })
+}
 
 /**
  * 支持 SSE 的流式补全。逐块回调 onToken 用于打字机展示；
  * 流式期间不写 store，返回完整文本供调用方在流结束后一次性提交。
- * 若端点不支持流式（无 body），自动降级为一次性 JSON 解析。
+ * 健壮性：①总超时 ②流式静默断流检测 ③HTTP 状态分级报错
+ * ④网络异常兜底（DNS/CORS/ECONNREFUSED）⑤非流式端点自动降级。
  */
 export async function streamChatCompletion(
   config: AIConfig,
   messages: ChatMessage[],
   onToken: (token: string) => void,
   signal?: AbortSignal,
+  timeoutMs: number = AI_REQUEST_TIMEOUT_MS,
 ): Promise<string> {
   const body = {
     model: config.model,
@@ -468,56 +561,100 @@ export async function streamChatCompletion(
     stream: true,
   }
 
-  const res = await fetch(config.endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify(body),
-    signal,
-  })
+  const ctrl = new AbortController()
+  let timedOut = false
+  const markTimeout = () => {
+    timedOut = true
+  }
+  const onUserAbort = () => ctrl.abort()
+  if (signal) {
+    if (signal.aborted) ctrl.abort()
+    else signal.addEventListener('abort', onUserAbort, { once: true })
+  }
+  const overall = setTimeout(() => {
+    markTimeout()
+    ctrl.abort()
+  }, timeoutMs)
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '')
-    throw new Error(`API 请求失败 (${res.status}): ${errText.slice(0, 200)}`)
+  const cleanup = () => {
+    clearTimeout(overall)
+    if (signal) signal.removeEventListener('abort', onUserAbort)
   }
 
-  // 降级：非流式响应
-  if (!res.body) {
-    const data = await res.json()
-    const content = data.choices?.[0]?.message?.content ?? ''
-    onToken(content)
-    return content
-  }
+  try {
+    const res = await fetch(config.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    })
 
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let full = ''
+    if (!res.ok) {
+      const raw = await res.text().catch(() => '')
+      throw new AIRequestError(classifyHttpError(res.status, raw), res.status, 'http')
+    }
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
-    for (const line of lines) {
-      const trimmed = line.trim()
-      if (!trimmed.startsWith('data:')) continue
-      const payload = trimmed.slice(5).trim()
-      if (payload === '[DONE]') continue
-      try {
-        const json = JSON.parse(payload)
-        const token: string | undefined = json.choices?.[0]?.delta?.content
-        if (token) {
-          full += token
-          onToken(token)
+    // 降级：非流式响应
+    if (!res.body) {
+      const data = await res.json()
+      const content = data.choices?.[0]?.message?.content ?? ''
+      if (content) onToken(content)
+      return content
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let full = ''
+
+    while (true) {
+      const { done, value } = await readChunk(reader, ctrl, AI_STALL_TIMEOUT_MS, markTimeout)
+      if (done) break
+      if (value) buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed.startsWith('data:')) continue
+        const payload = trimmed.slice(5).trim()
+        if (payload === '[DONE]') continue
+        try {
+          const json = JSON.parse(payload)
+          const token: string | undefined = json.choices?.[0]?.delta?.content
+          if (token) {
+            full += token
+            onToken(token)
+          }
+        } catch {
+          /* 忽略不完整片段 */
         }
-      } catch {
-        /* 忽略不完整片段 */
       }
     }
+    return full
+  } catch (err) {
+    if (timedOut) {
+      throw new AIRequestError(
+        `请求超时（>${Math.round(timeoutMs / 1000)}s 无响应 / 数据流中断），请检查网络连通性或端点是否正确`,
+        0,
+        'timeout',
+      )
+    }
+    if (err instanceof AIRequestError) throw err
+    const e = err as { name?: string }
+    if (e?.name === 'AbortError') throw err // 用户主动取消，交上层判定为 ai:aborted
+    if (e?.name === 'TypeError') {
+      throw new AIRequestError(
+        '网络请求失败：无法连接到该端点，请检查 API 地址、本地网络或代理设置。',
+        0,
+        'network',
+      )
+    }
+    throw err
+  } finally {
+    cleanup()
   }
-  return full
 }

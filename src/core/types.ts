@@ -121,6 +121,10 @@ export interface CharacterDelta {
   sprite_id: string
   /** 引用命名槽位ID（作为吸附基准 / 未微调时的落点） */
   position_slot: string
+  /** 角色身份 ID（如 "alice"），由素材派生；即便同一角色多次落点生成不同实例，身份保持一致，用于显示名 / 配色 / 导出。可选：旧数据或 AI 生成未携带时回退到 characters map 的 key */
+  char_id?: string
+  /** 该实例专属绑定的素材 ID；存在时舞台直接按此素材渲染图片，实现「多立绘各自独立图片、互不覆盖」 */
+  asset_id?: string
   /**
    * 自由微调坐标（归一化 0-1，舞台内绝对位置）。
    * 未设置时按 position_slot 落点；设置后覆盖槽位，用于「预设吸附 + 自由微调」。
@@ -166,7 +170,8 @@ export interface LineDelta {
   } | null
 
   /**
-   * 角色指令集合。key 为角色 ID（charId），value 为该角色在本行的变更。
+   * 角色指令集合。key 为全局唯一「实例 ID」（由拖拽落点生成，形如 "<角色>__<时间戳+随机>"），
+   * 保证同一角色多次落点、多个不同立绘都能各自独立存在；角色身份记录在 value.char_id 中。
    */
   characters: Record<string, CharacterDelta>
 
@@ -209,6 +214,10 @@ export interface ProjectFile {
 
 export interface ResolvedCharacterState {
   sprite_id: string
+  /** 角色身份 ID（同 CharacterDelta.char_id）；缺省时回退到 characters map 的 key */
+  char_id?: string
+  /** 该实例专属素材 ID（同 CharacterDelta.asset_id）；存在时优先作为渲染图片源 */
+  asset_id?: string
   position_slot: string
   /** 自由微调坐标（归一化 0-1）；未设置时按 position_slot 落点 */
   pos_x?: number

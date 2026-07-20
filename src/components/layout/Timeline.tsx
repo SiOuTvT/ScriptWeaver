@@ -59,9 +59,19 @@ function computeCharacterTracks(
   const allChars = new Set<string>()
   for (const s of states) Object.keys(s.characters).forEach((c) => allChars.add(c))
 
-  const tracks = Array.from(allChars).map((id) => ({
-    id, label: id, color: resolveCharColor(id, characterConfigs),
-  }))
+  // 实例 key 即角色身份回退：优先取首个出现行的 char_id
+  const roleOf = (cid: string): string => {
+    for (const s of states) {
+      const ch = s.characters[cid]
+      if (ch?.char_id) return ch.char_id
+    }
+    return cid
+  }
+
+  const tracks = Array.from(allChars).map((id) => {
+    const role = roleOf(id)
+    return { id, label: role, color: resolveCharColor(role, characterConfigs) }
+  })
 
   const spans: CharacterTracksResult['spans'] = []
   for (const cid of allChars) {
@@ -76,12 +86,15 @@ function computeCharacterTracks(
           spanSlot = states[i].characters[cid].position_slot
         }
       } else if (spanStart !== -1) {
-        spans.push({ charId: cid, label: cid, start: spanStart, end: i - 1, color: resolveCharColor(cid, characterConfigs), sprite_id: spanSprite, position_slot: spanSlot })
+        const role = roleOf(cid)
+        spans.push({ charId: cid, label: role, start: spanStart, end: i - 1, color: resolveCharColor(role, characterConfigs), sprite_id: spanSprite, position_slot: spanSlot })
         spanStart = -1
       }
     }
-    if (spanStart !== -1)
-      spans.push({ charId: cid, label: cid, start: spanStart, end: states.length - 1, color: resolveCharColor(cid, characterConfigs), sprite_id: spanSprite, position_slot: spanSlot })
+    if (spanStart !== -1) {
+      const role = roleOf(cid)
+      spans.push({ charId: cid, label: role, start: spanStart, end: states.length - 1, color: resolveCharColor(role, characterConfigs), sprite_id: spanSprite, position_slot: spanSlot })
+    }
   }
   return { tracks, spans }
 }
@@ -458,7 +471,7 @@ export default function Timeline() {
       acceptAssetType: 'sprite' as const,
       spans: charData.spans.map((s) => ({
         start: s.start, end: s.end,
-        label: charDisplayName(s.charId),
+        label: s.label,
         color: s.color,
         charId: s.charId,
       })),

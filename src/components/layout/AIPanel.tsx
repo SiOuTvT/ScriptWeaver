@@ -19,6 +19,7 @@ import {
   resolveDirectiveToDelta,
   composeDeltas,
   streamChatCompletion,
+  describeAIError,
 } from '@/utils/aiDirector'
 
 const STORAGE_MODE_KEY = 'scriptweaver_ai_mode'
@@ -191,7 +192,11 @@ export default function AIPanel() {
       const onDone = (d: { full: string }) => {
         api.removeAiListeners()
         setLoading(false)
-        finish(d.full)
+        try {
+          finish(d.full)
+        } catch (err: any) {
+          setError(err?.message ?? '解析 AI 返回的剧本数据失败，请重试或调整指令。')
+        }
       }
       const onErr = (msg: string) => {
         api.removeAiListeners()
@@ -202,6 +207,8 @@ export default function AIPanel() {
         api.removeAiListeners()
         setLoading(false)
       }
+      // 注册前先清掉可能残留的旧监听，杜绝重复触发
+      api.removeAiListeners()
       api.onAiChunk(onChunk)
       api.onAiDone(onDone)
       api.onAiError(onErr)
@@ -223,7 +230,7 @@ export default function AIPanel() {
       finish(full)
     } catch (err: any) {
       if (err?.name === 'AbortError') return
-      setError(err?.message ?? '未知错误')
+      setError(describeAIError(err))
     } finally {
       setLoading(false)
       abortRef.current = null

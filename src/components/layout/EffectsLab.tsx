@@ -20,10 +20,22 @@ import {
   Upload,
   X,
   PlayCircle,
+  Volume2,
+  Timer,
+  Aperture,
+  Replace,
   type LucideIcon,
 } from 'lucide-react'
 import { EFFECT_CATEGORIES, ALL_EFFECTS, type EffectItem, type PreviewSpec } from '@/data/renpyEffects'
 import { EFFECT_ENCYCLOPEDIA } from '@/data/effectEncyclopedia'
+import {
+  buildCompanion,
+  type Companion,
+  type ComboItem,
+  type ClassicScene,
+  type PitfallItem,
+  type ComboKind,
+} from '@/data/effectEncyclopedia/encCompanion'
 import PreviewStage, { type ActiveSpec } from '../effects/PreviewStage'
 import { Button, IconButton } from '@/components/ui'
 import { useAppStore } from '@/stores/appStore'
@@ -191,6 +203,7 @@ function DetailView({
   onEnterPreview: () => void
 }) {
   const enc = EFFECT_ENCYCLOPEDIA[item.id]
+  const companion = buildCompanion(item)
 
   // 右侧「本页速览」目录：仅列出当前特效实际存在的板块
   const toc = [
@@ -249,9 +262,10 @@ function DetailView({
           </Button>
         </aside>
 
-        {/* 右：正文（限宽保证行长易读，左对齐铺开） */}
+        {/* 中 + 右：正文（限宽保证行长易读）+ 右栏专业副栏（填满右侧空白） */}
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <article className="max-w-3xl px-6 py-6">
+          <div className="grid grid-cols-1 gap-6 px-6 py-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+          <article className="max-w-2xl min-w-0">
           {/* 一句话概述 */}
           <p className="text-[15px] leading-relaxed text-fg">{item.desc}</p>
 
@@ -367,9 +381,170 @@ function DetailView({
             </Section>
           )}
 
-        </article>
+          </article>
+
+          {/* 右栏：专业副栏（概念演示 / 组合 / 名场面 / 避坑），撑满右侧空白 */}
+          <aside className="space-y-5 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+            <MiniDemo spec={item.preview} />
+            <RightRailCompanion companion={companion} />
+          </aside>
         </div>
       </div>
+    </div>
+  </div>
+  )
+}
+
+// ============================================================
+// 右侧专业副栏组件：概念演示 / 组合 / 名场面 / 避坑
+// ============================================================
+
+/** 循环播放的概念演示：复用 PreviewStage，不需要素材也能跑 */
+function MiniDemo({ spec }: { spec: PreviewSpec }) {
+  const [token, setToken] = useState(0)
+  const [playing, setPlaying] = useState(true)
+  useEffect(() => {
+    setToken((t) => t + 1)
+  }, [spec])
+  useEffect(() => {
+    if (!playing) return
+    const id = setInterval(() => setToken((t) => t + 1), 2800)
+    return () => clearInterval(id)
+  }, [playing])
+  const active: ActiveSpec = useMemo(() => ({ spec, token }), [spec, token])
+  return (
+    <div className="rounded-xl border border-edge/12 bg-surface-2/50 p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="eyebrow">动态演示 · 概念拆解</span>
+        <button
+          onClick={() => setPlaying((p) => !p)}
+          className="rounded-md border border-edge/15 px-2 py-0.5 text-[12px] text-fg-subtle transition-colors hover:border-signal/40 hover:text-fg"
+        >
+          {playing ? '暂停循环' : '播放循环'}
+        </button>
+      </div>
+      <PreviewStage active={active} duration={1200} amp={1} />
+      <p className="mt-2 text-[12px] leading-relaxed text-fg-faint">Web 近似实现，语义与 Ren'Py 一致 · 循环播放</p>
+    </div>
+  )
+}
+
+const COMBO_ICON: Record<ComboKind, LucideIcon> = {
+  音效: Volume2,
+  转场: Replace,
+  镜头: Aperture,
+  特效: Sparkles,
+  节奏: Timer,
+}
+
+function RightRailCompanion({ companion }: { companion: Companion }) {
+  return (
+    <>
+      <CombosBlock combos={companion.combos} />
+      <ClassicBlock classic={companion.classic} />
+      <PitfallsBlock pitfalls={companion.pitfalls} />
+    </>
+  )
+}
+
+function RailHead({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="mb-2.5 flex items-center gap-2 text-[13px] font-semibold text-fg-muted">
+      <span className="h-3.5 w-1 rounded-full bg-signal/70" />
+      {children}
+    </h3>
+  )
+}
+
+function CombosBlock({ combos }: { combos: ComboItem[] }) {
+  return (
+    <section>
+      <RailHead>推荐动效组合搭配</RailHead>
+      <div className="space-y-2">
+        {combos.map((c, i) => {
+          const Icon = COMBO_ICON[c.kind]
+          return (
+            <div key={i} className="rounded-lg border border-edge/12 bg-surface-2/50 p-3">
+              <div className="mb-1 flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 rounded bg-primary/[0.10] px-1.5 py-0.5 text-[11px] font-medium text-signal">
+                  <Icon size={11} strokeWidth={2} /> {c.kind}
+                </span>
+                <span className="text-[13px] font-medium text-fg">{c.title}</span>
+              </div>
+              <p className="text-[12px] leading-relaxed text-fg-subtle">{c.note}</p>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+function ClassicBlock({ classic }: { classic: ClassicScene[] }) {
+  return (
+    <section>
+      <RailHead>经典 Galgame 名场面参考</RailHead>
+      <div className="space-y-2">
+        {classic.map((s, i) => (
+          <div key={i} className="rounded-lg border border-edge/12 bg-surface-2/50 p-3">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="truncate text-[13px] font-medium text-fg">{s.work}</span>
+              <span className="shrink-0 rounded bg-surface px-1.5 py-0.5 text-[11px] text-fg-muted">{s.mood}</span>
+            </div>
+            <p className="text-[12px] leading-relaxed text-fg-subtle">{s.scene}</p>
+            <div className="mt-2 flex items-center gap-1">
+              {[0, 1, 2].map((d) => (
+                <span
+                  key={d}
+                  className="h-1.5 w-1.5 rounded-full bg-signal/50 animate-pulse"
+                  style={{ animationDelay: `${d * 240}ms` }}
+                />
+              ))}
+              <span className="ml-1 text-[11px] text-fg-faint">名场面节奏拆解</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function PitfallsBlock({ pitfalls }: { pitfalls: PitfallItem[] }) {
+  return (
+    <section>
+      <RailHead>常见错误用法避坑</RailHead>
+      <div className="space-y-2">
+        {pitfalls.map((p, i) => (
+          <PitfallCard key={i} p={p} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function PitfallCard({ p }: { p: PitfallItem }) {
+  const [good, setGood] = useState(false)
+  return (
+    <div className="overflow-hidden rounded-lg border border-edge/12 bg-surface-2/50">
+      <div className="flex border-b border-edge/10 text-[12px]">
+        <button
+          onClick={() => setGood(false)}
+          className={`flex-1 px-2 py-1.5 font-medium transition-colors ${
+            !good ? 'bg-rose-500/15 text-rose-400' : 'text-fg-faint hover:text-fg-subtle'
+          }`}
+        >
+          拉跨用法
+        </button>
+        <button
+          onClick={() => setGood(true)}
+          className={`flex-1 border-l border-edge/10 px-2 py-1.5 font-medium transition-colors ${
+            good ? 'bg-emerald-500/15 text-emerald-400' : 'text-fg-faint hover:text-fg-subtle'
+          }`}
+        >
+          高级用法
+        </button>
+      </div>
+      <p className="p-3 text-[12px] leading-relaxed text-fg">{good ? p.good : p.bad}</p>
     </div>
   )
 }

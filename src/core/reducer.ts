@@ -58,10 +58,12 @@ export function applyDelta(
         characters[charId] = {
           sprite_id: charDelta.sprite_id,
           position_slot: charDelta.position_slot,
+          char_id: charDelta.char_id,
           pos_x: charDelta.pos_x,
           pos_y: charDelta.pos_y,
           scale: charDelta.scale,
           transition: charDelta.transition,
+          asset_id: charDelta.asset_id,
         }
         break
       }

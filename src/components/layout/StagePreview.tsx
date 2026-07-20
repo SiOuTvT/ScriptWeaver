@@ -5,13 +5,14 @@ import {
   getDragCache,
   type DragAssetData,
   deriveCharacterId,
+  genInstanceId,
   getAudioCategory,
 } from '@/utils/assetHelpers'
 import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import {
   Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight,
-  Plus, FileText, Play, Pause, Copy, X, Pencil,
+  Plus, FileText, Play, Pause, Copy, X, Pencil, Trash2,
 } from 'lucide-react'
 import { Skeleton, IconButton } from '@/components/ui'
 import { PRESET_SLOTS, getPresetSlot } from '@/core/positionSlots'
@@ -450,15 +451,19 @@ export default function StagePreview() {
           })
         }
 
-        // sprite_id 统一使用表情 ID（'default'），而非 asset ID
+        // 每个落点生成「全局唯一实例 ID」作 map key，角色身份记在 char_id；
+        // asset_id 绑定本次拖入的素材，使每个立绘各自渲染自己的图片、互不覆盖。
+        const instanceId = genInstanceId(charId)
         updateDeltaAt(idx, (prev: LineDelta) => ({
           ...prev,
           characters: {
             ...prev.characters,
-            [charId]: {
+            [instanceId]: {
               sprite_id: 'default',
               position_slot: slot,
               action: 'show',
+              char_id: charId,
+              asset_id: asset.assetId,
             },
           },
         }))
@@ -643,6 +648,36 @@ export default function StagePreview() {
     [selectedIndex, updateDeltaAt, clampCharCenter],
   )
 
+  /** 从舞台当前场景直接删除某立绘，并立刻同步时间轴（resolvedStates 由 updateDeltaAt 重算） */
+  const deleteChar = useCallback(
+    (charId: string) => {
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+        if (!prev.characters[charId]) return prev
+        const nextChars = { ...prev.characters }
+        delete nextChars[charId]
+        return { ...prev, characters: nextChars }
+      })
+      setSelectedCharId((cur) => (cur === charId ? null : cur))
+      toast(`已删除立绘 ${getDisplayName(state?.characters[charId]?.char_id ?? charId)}`, 'success')
+    },
+    [selectedIndex, updateDeltaAt, getDisplayName, state],
+  )
+
+  // 快捷键：选中立绘后按 Delete / Backspace 直接在舞台上删除，并同步时间轴
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return
+      if (!selectedCharId) return
+      const el = document.activeElement as HTMLElement | null
+      const tag = (el?.tagName || '').toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || el?.isContentEditable) return
+      e.preventDefault()
+      deleteChar(selectedCharId)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedCharId, deleteChar])
+
   // =================== 自动播放（Auto）引擎 ===================
   // 经典 Galgame 自动翻页：按字数估算每行停留时长，自动推进并触发演出 / 音频变化（含段落内 offset）。
   const [autoOn, setAutoOn] = useState(false)
@@ -803,7 +838,6 @@ export default function StagePreview() {
         document.removeEventListener('mouseup', up)
         document.body.style.cursor = ''
         document.body.style.userSelect = ''
-        setSelectedCharId(charId)
         const p = dragPosRef.current
         if (p) {
           const resolvedChar = resolvedStates[selectedIndex]?.characters[charId]
@@ -1060,7 +1094,7 @@ export default function StagePreview() {
         {Object.entries(state.characters).map(
           ([charId, char]: [string, ResolvedCharacterState]) => {
             const { dataUrl: spriteDataUrl, color: spriteColor } = resolveSpriteImage(
-              char.sprite_id,
+              char.asset_id ?? char.sprite_id,
               assets,
               characterConfigs,
             )
@@ -1080,6 +1114,7 @@ export default function StagePreview() {
                 data-char={charId}
                 onMouseDown={handleCharMouseDown(charId)}
                 onClick={(e) => e.stopPropagation()}
+                onDoubleClick={(e) => { e.stopPropagation(); setSelectedCharId(charId) }}
                 onDragStart={(e) => e.preventDefault()}
                 className={`group pointer-events-auto absolute flex w-max select-none cursor-grab flex-col items-center active:cursor-grabbing ${
                   dragging ? '' : 'transition-[left,top,transform] duration-200'
@@ -1098,12 +1133,12 @@ export default function StagePreview() {
                   transformOrigin: 'center center',
                   zIndex: dragging ? 1000 : Math.round((char.pos_x ?? SLOT_ANCHORS[char.position_slot]?.x ?? 0.5) * 10) + 10,
                 }}
-                title="拖动可移动位置；靠近站位的虚线会自动吸附，拉离即自由微调。点按选中后可定点 / 缩放 / 锁定。"
+                title="拖动可移动位置；靠近站位的虚线会自动吸附，拉离即自由微调。双击打开右侧编辑面板（定点 / 缩放 / 锁定）。"
               >
                 {spriteDataUrl ? (
                   <img
                     src={spriteDataUrl}
-                    alt={getDisplayName(charId)}
+                    alt={getDisplayName(char.char_id ?? charId)}
                     draggable={false}
                     className="max-h-64 w-auto select-none object-contain drop-shadow-lg"
                     style={{ minHeight: '80px' }}
@@ -1114,12 +1149,24 @@ export default function StagePreview() {
                     style={{ backgroundColor: spriteColor, minHeight: '100px' }}
                   >
                     <span className="text-center text-[12px] font-medium text-white/80">
-                      {getDisplayName(charId)}
+                      {getDisplayName(char.char_id ?? charId)}
                     </span>
                     <span className="text-center text-[12px] text-white/50">
                       {char.sprite_id}
                     </span>
                   </div>
+                )}
+                {/* 选中态：右上角显眼删除按钮，直接从舞台删除该立绘 */}
+                {selected && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => { e.stopPropagation(); deleteChar(charId) }}
+                    className="absolute -top-2 -right-2 z-30 flex h-6 w-6 items-center justify-center rounded-full border border-danger/60 bg-danger text-white shadow-lg transition-colors hover:bg-danger/90"
+                    title="删除此立绘（Delete / Backspace）"
+                  >
+                    <Trash2 size={13} strokeWidth={2} />
+                  </button>
                 )}
                 {/* 标签脱离文档流（absolute），避免占位高度干扰脚底锚点定位精度 */}
                 <div
@@ -1268,7 +1315,7 @@ export default function StagePreview() {
           <aside className="flex w-52 shrink-0 flex-col gap-3 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-semibold text-fg">
-                立绘编辑 · {getDisplayName(selectedCharId)}
+                立绘编辑 · {getDisplayName(state.characters[selectedCharId]?.char_id ?? selectedCharId)}
               </span>
               <button
                 type="button"
