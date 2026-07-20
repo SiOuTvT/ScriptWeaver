@@ -13,109 +13,27 @@ build started...[39m
 [36m
 build started...[39m
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m668[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m953[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
 [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
 [2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
 transforming...
-transforming...
 [32m✓[39m 1 modules transformed.
+transforming...
 rendering chunks...
 computing gzip size...
 [2mdist-electron/[22m[36mpreload.js  [39m[1m[2m2.58 kB[22m[1m[22m[2m │ gzip: 1.27 kB[22m
-[36mbuilt in 724ms.[39m
+[36mbuilt in 958ms.[39m
 [32m✓[39m 2 modules transformed.
 rendering chunks...
 computing gzip size...
-[2mdist-electron/[22m[36mmain.js  [39m[1m[2m18.69 kB[22m[1m[22m[2m │ gzip: 5.60 kB[22m
-[36mbuilt in 779ms.[39m
-
-[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= null
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
-[36m
-build started...[39m
-[32m✓[39m 1 modules transformed.
-[2mdist-electron/[22m[36mmain.js  [39m[1m[2m18.72 kB[22m[1m[22m[2m │ gzip: 5.60 kB[22m
-[36mbuilt in 122ms.[39m
-
-[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= null
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
-[36m
-build started...[39m
-[32m✓[39m 1 modules transformed.
-[2mdist-electron/[22m[36mmain.js  [39m[1m[2m18.72 kB[22m[1m[22m[2m │ gzip: 5.60 kB[22m
-[36mbuilt in 180ms.[39m
-
-[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= null
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
-[36m
-build started...[39m
-[32m✓[39m 1 modules transformed.
-[2mdist-electron/[22m[36mmain.js  [39m[1m[2m18.72 kB[22m[1m[22m[2m │ gzip: 5.60 kB[22m
-[36mbuilt in 106ms.[39m
-
-[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= null
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
-[36m
-build started...[39m
-[32m✓[39m 1 modules transformed.
-[2mdist-electron/[22m[36mmain.js  [39m[1m[2m18.85 kB[22m[1m[22m[2m │ gzip: 5.63 kB[22m
-[36mbuilt in 80ms.[39m
-
-[36m
-build started...[39m
-[32m✓[39m 1 modules transformed.
-[2mdist-electron/[22m[36mmain.js  [39m[1m[2m20.95 kB[22m[1m[22m[2m │ gzip: 6.43 kB[22m
-[36mbuilt in 56ms.[39m
-
-[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= null
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
-[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
-[36m
-build started...[39m
-[32m✓[39m 1 modules transformed.
 [2mdist-electron/[22m[36mmain.js  [39m[1m[2m21.01 kB[22m[1m[22m[2m │ gzip: 6.44 kB[22m
-[36mbuilt in 117ms.[39m
+[36mbuilt in 1021ms.[39m
 
-[2m11:15:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Button.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:15:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Button.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:15:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:15:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:15:49[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:15:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:15:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:16:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:16:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:16:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:16:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:16:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:16:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:17:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:19:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Button.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
-[2m11:19:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ui/Button.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= null
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
