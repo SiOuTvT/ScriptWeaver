@@ -194,13 +194,13 @@ function DetailView({
 
   // 右侧「本页速览」目录：仅列出当前特效实际存在的板块
   const toc = [
-    { id: 'enc-art', label: '🎭 剧情应用场景', show: !!enc?.artGuide },
-    { id: 'enc-principle', label: '底层原理机制', show: !!item.principle },
-    { id: 'enc-params', label: '📐 参数拆解手册', show: !!(enc?.paramManual?.length) },
-    { id: 'enc-params-math', label: '📐 参数数学逻辑', show: !!(item.params?.length) },
-    { id: 'enc-renpy', label: '💻 Ren\'Py 代码', show: !!item.syntax },
-    { id: 'enc-impl', label: '💻 本项目实现', show: !!enc?.cssImpl },
-    { id: 'enc-perf', label: '⚠️ 性能与避坑', show: !!enc?.perfTips },
+    { id: 'enc-art', label: '剧情用法', show: !!enc?.artGuide },
+    { id: 'enc-principle', label: '底层原理', show: !!item.principle },
+    { id: 'enc-params', label: '参数拆解', show: !!(enc?.paramManual?.length) },
+    { id: 'enc-params-math', label: '参数数学逻辑', show: !!(item.params?.length) },
+    { id: 'enc-renpy', label: 'Ren\'Py 代码', show: !!item.syntax },
+    { id: 'enc-impl', label: '本项目实现', show: !!enc?.cssImpl },
+    { id: 'enc-perf', label: '性能与避坑', show: !!enc?.perfTips },
   ].filter((t) => t.show)
 
   const jumpTo = (id: string) => {
@@ -216,15 +216,6 @@ function DetailView({
           <h1 className="truncate text-[15px] font-semibold leading-tight">{item.cn}</h1>
           <div className="font-mono text-[12px] text-signal">{item.name}</div>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          icon={<PlayCircle size={14} strokeWidth={1.75} />}
-          onClick={onEnterPreview}
-          className="ml-auto shrink-0"
-        >
-          进入预览舞台
-        </Button>
       </div>
 
       <div className="flex min-h-0 flex-1">
@@ -272,7 +263,7 @@ function DetailView({
 
           {/* 🎭 板块一：剧情应用场景与艺术演出指导（整合原 renpyEffects.scenario） */}
           {enc?.artGuide && (
-            <Section id="enc-art" title="🎭 剧情应用场景与艺术演出指导">
+            <Section id="enc-art" title="剧情里的用法与演出建议">
               <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{enc.artGuide}</p>
               {item.scenario && (
                 <div className="mt-4 border-t border-edge/10 pt-3">
@@ -292,7 +283,7 @@ function DetailView({
 
           {/* 📐 板块二：完备的底层参数拆解手册（新四大板块） */}
           {enc?.paramManual && enc.paramManual.length > 0 && (
-            <Section title="📐 完备的底层参数拆解手册">
+            <Section title="参数拆解手册">
               <div className="overflow-hidden rounded-lg border border-edge/12">
                 <table className="w-full border-collapse text-[12px]">
                   <thead>
@@ -322,7 +313,7 @@ function DetailView({
 
           {/* 📐 原 Ren'Py 资料 · 参数底层数学逻辑（保留旧 enrich 数据，含 math） */}
           {item.params && item.params.length > 0 && (
-            <Section id="enc-params-math" title="📐 参数底层数学逻辑（原 Ren'Py 资料）">
+            <Section id="enc-params-math" title="参数的数学逻辑">
               <div className="overflow-hidden rounded-lg border border-edge/12">
                 <table className="w-full border-collapse text-[12px]">
                   <thead>
@@ -350,7 +341,7 @@ function DetailView({
 
           {/* 💻 板块三：双引擎原生代码示例对照 */}
           {item.syntax && (
-            <Section title="💻 双引擎原生代码示例对照 · Ren'Py 标准语法">
+            <Section title="Ren'Py 代码示例">
               <pre className="overflow-x-auto rounded-lg border border-edge/12 bg-surface-2 px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-fg-subtle">
                 {item.syntax}
               </pre>
@@ -362,7 +353,7 @@ function DetailView({
             </Section>
           )}
           {enc?.cssImpl && (
-            <Section title="💻 双引擎原生代码示例对照 · 本项目实现（Electron + React + CSS）">
+            <Section title="本项目实现（Electron + React + CSS）">
               <pre className="overflow-x-auto rounded-lg border border-edge/12 bg-[#0d1117] px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-emerald-200/90">
                 {enc.cssImpl}
               </pre>
@@ -371,23 +362,11 @@ function DetailView({
 
           {/* ⚠️ 板块四：性能提示与视觉避坑 */}
           {enc?.perfTips && (
-            <Section id="enc-perf" title="⚠️ 性能提示与视觉避坑指南">
+            <Section id="enc-perf" title="性能提示与视觉避坑">
               <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{enc.perfTips}</p>
             </Section>
           )}
 
-          <div className="mt-8 rounded-lg border border-edge/10 bg-surface-2/60 p-4">
-            <p className="text-[13px] text-fg-subtle">读到这里，你已经吃透了该特效的全部原理、参数与避坑。</p>
-            <Button
-              variant="primary"
-              size="md"
-              icon={<PlayCircle size={15} strokeWidth={1.75} />}
-              onClick={onEnterPreview}
-              className="mt-3"
-            >
-              进入预览舞台 · 实际演示一遍
-            </Button>
-          </div>
         </article>
         </div>
       </div>
