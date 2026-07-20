@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   Upload,
   X,
+  PlayCircle,
   type LucideIcon,
 } from 'lucide-react'
 import { EFFECT_CATEGORIES, ALL_EFFECTS, type EffectItem, type PreviewSpec } from '@/data/renpyEffects'
@@ -73,6 +74,8 @@ function firstLine(s: string): string {
   const i = s.search(/[。；;]/)
   return i > 0 ? s.slice(0, i) : s
 }
+
+type View = 'home' | 'detail' | 'preview'
 
 // ============================================================
 // 素材选择器（三级保底：默认首图 / 列表直选 / 本地选择）
@@ -175,6 +178,352 @@ function EffectCard({ item, active, onClick }: { item: EffectItem; active: boole
 }
 
 // ============================================================
+// 二级：纯百科页（无舞台，含「进入预览舞台」按钮）
+// ============================================================
+function DetailView({
+  item,
+  onBack,
+  onEnterPreview,
+}: {
+  item: EffectItem
+  onBack: () => void
+  onEnterPreview: () => void
+}) {
+  return (
+    <div className="flex h-full w-full flex-col overflow-hidden bg-canvas text-fg">
+      <div className="flex items-center gap-2 border-b border-edge/10 px-4 py-2.5">
+        <IconButton variant="ghost" size="sm" icon={<ArrowLeft size={15} strokeWidth={1.75} />} onClick={onBack} title="返回卡片墙" aria-label="返回卡片墙" />
+        <Sparkles size={16} strokeWidth={1.75} className="text-signal" />
+        <div className="min-w-0">
+          <h1 className="truncate text-[15px] font-semibold leading-tight">{item.cn}</h1>
+          <div className="font-mono text-[12px] text-signal">{item.name}</div>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          icon={<PlayCircle size={14} strokeWidth={1.75} />}
+          onClick={onEnterPreview}
+          className="ml-auto shrink-0"
+        >
+          进入预览舞台
+        </Button>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <article className="mx-auto max-w-3xl px-5 py-6">
+          {/* 一句话概述 */}
+          <p className="text-[15px] leading-relaxed text-fg">{item.desc}</p>
+
+          {item.renpyClass && (
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary/[0.08] px-2 py-1 text-[12px] text-fg-muted">
+              可实例化的转场 / 变换类
+            </div>
+          )}
+
+          {/* 代码示例 */}
+          {item.syntax && (
+            <Section title="Ren'Py 代码示例">
+              <pre className="overflow-x-auto rounded-lg border border-edge/12 bg-surface-2 px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-fg-subtle">
+                {item.syntax}
+              </pre>
+              {item.syntax2 && (
+                <pre className="mt-2 overflow-x-auto rounded-lg border border-edge/12 bg-surface-2 px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-fg-subtle">
+                  {item.syntax2}
+                </pre>
+              )}
+            </Section>
+          )}
+
+          {/* 底层原理 */}
+          {item.principle && (
+            <Section title="底层原理">
+              <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{item.principle}</p>
+            </Section>
+          )}
+
+          {/* 参数详解（含数学逻辑） */}
+          {item.params && item.params.length > 0 && (
+            <Section title="参数详解与底层数学逻辑">
+              <div className="overflow-hidden rounded-lg border border-edge/12">
+                <table className="w-full border-collapse text-[12px]">
+                  <thead>
+                    <tr className="bg-surface-2 text-left text-fg-faint">
+                      <th className="px-2.5 py-1.5 font-medium">参数</th>
+                      <th className="px-2.5 py-1.5 font-medium">类型</th>
+                      <th className="px-2.5 py-1.5 font-medium">用途</th>
+                      <th className="px-2.5 py-1.5 font-medium">底层数学 / 取值逻辑</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {item.params.map((p, i) => (
+                      <tr key={i} className="border-t border-edge/10 align-top">
+                        <td className="px-2.5 py-1.5 font-mono text-signal">{p.name}</td>
+                        <td className="px-2.5 py-1.5 font-mono text-fg-subtle">{p.type}</td>
+                        <td className="px-2.5 py-1.5 text-fg-subtle">{p.desc}</td>
+                        <td className="px-2.5 py-1.5 text-fg-muted">{p.math ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+          )}
+
+          {/* 适用场景 */}
+          {item.scenario && (
+            <Section title="适合在什么剧情场景下使用">
+              <p className="whitespace-pre-line text-[13px] leading-[1.85] text-fg">{item.scenario}</p>
+            </Section>
+          )}
+
+          <div className="mt-8 rounded-lg border border-edge/10 bg-surface-2/60 p-4 text-center">
+            <p className="text-[13px] text-fg-subtle">读到这里，你已经掌握了该特效的全部原理与用法。</p>
+            <Button
+              variant="primary"
+              size="md"
+              icon={<PlayCircle size={15} strokeWidth={1.75} />}
+              onClick={onEnterPreview}
+              className="mt-3"
+            >
+              进入预览舞台 · 实际演示一遍
+            </Button>
+          </div>
+        </article>
+      </div>
+    </div>
+  )
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-6">
+      <h2 className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-fg-muted">
+        <span className="h-3.5 w-1 rounded-full bg-signal/70" />
+        {title}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
+// ============================================================
+// 三级：终极整合预览舞台（三合一，右侧精简）
+// ============================================================
+function PreviewView({
+  selected,
+  catId,
+  duration,
+  amp,
+  onDuration,
+  onAmp,
+  onReplay,
+  onBack,
+  onSelectInPreview,
+  onSelectCategory,
+  bgList,
+  spriteList,
+  bgUrl,
+  spriteUrl,
+  selBgId,
+  selSpriteId,
+  localBg,
+  localSprite,
+  onSelBg,
+  onSelSprite,
+  onLocalBg,
+  onLocalSprite,
+  onClearLocalBg,
+  onClearLocalSprite,
+  bgFileRef,
+  spFileRef,
+  active,
+}: {
+  selected: EffectItem
+  catId: string
+  duration: number
+  amp: number
+  onDuration: (v: number) => void
+  onAmp: (v: number) => void
+  onReplay: () => void
+  onBack: () => void
+  onSelectInPreview: (it: EffectItem) => void
+  onSelectCategory: (c: (typeof EFFECT_CATEGORIES)[number]) => void
+  bgList: AssetItem[]
+  spriteList: AssetItem[]
+  bgUrl?: string
+  spriteUrl?: string
+  selBgId: string | null
+  selSpriteId: string | null
+  localBg: { url: string; name: string } | null
+  localSprite: { url: string; name: string } | null
+  onSelBg: (id: string) => void
+  onSelSprite: (id: string) => void
+  onLocalBg: (f: File) => void
+  onLocalSprite: (f: File) => void
+  onClearLocalBg: () => void
+  onClearLocalSprite: () => void
+  bgFileRef: RefObject<HTMLInputElement>
+  spFileRef: RefObject<HTMLInputElement>
+  active: ActiveSpec | null
+}) {
+  const catItems = useMemo(() => EFFECT_CATEGORIES.find((c) => c.id === catId)?.items ?? [], [catId])
+  const ampApplies = AMP_KINDS.has(selected.preview.kind)
+
+  return (
+    <div className="flex h-full w-full flex-col overflow-hidden bg-canvas text-fg">
+      <div className="flex items-center gap-2 border-b border-edge/10 px-4 py-2.5">
+        <IconButton variant="ghost" size="sm" icon={<ArrowLeft size={15} strokeWidth={1.75} />} onClick={onBack} title="返回百科" aria-label="返回百科" />
+        <Sparkles size={16} strokeWidth={1.75} className="text-signal" />
+        <div className="min-w-0">
+          <h1 className="truncate text-[15px] font-semibold leading-tight">{selected.cn}</h1>
+          <div className="font-mono text-[12px] text-signal">{selected.name}</div>
+        </div>
+        <Button variant="outline" size="sm" icon={<RotateCw size={13} strokeWidth={1.75} />} onClick={onReplay} className="ml-auto">
+          重新播放
+        </Button>
+      </div>
+
+      <div className="flex min-h-0 flex-1">
+        {/* ========== 左：本类特效列表 + 参数滑块 ========== */}
+        <aside className="flex w-60 shrink-0 flex-col border-r border-edge/12 bg-surface/60">
+          <div className="flex items-center gap-1 overflow-x-auto border-b border-edge/10 p-2">
+            {EFFECT_CATEGORIES.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => onSelectCategory(c)}
+                className={`shrink-0 rounded-md px-2 py-1 text-[12px] transition-colors ${
+                  c.id === catId ? 'bg-primary/[0.12] text-fg' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+                }`}
+              >
+                {c.name.replace(/（.*?）|·.*/g, '').slice(0, 4)}
+              </button>
+            ))}
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            <div className="mb-1.5 px-1 text-[12px] font-medium text-fg-muted">本类特效</div>
+            <div className="space-y-0.5">
+              {catItems.map((it) => (
+                <button
+                  key={it.id}
+                  onClick={() => onSelectInPreview(it)}
+                  className={`w-full rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
+                    selected.id === it.id
+                      ? 'bg-primary/[0.10] text-fg ring-1 ring-primary/30'
+                      : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+                  }`}
+                >
+                  <span className="block">{it.cn}</span>
+                  <span className="block font-mono text-[12px] text-fg-faint">{it.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3 border-t border-edge/10 p-3">
+            <div>
+              <div className="mb-1 flex items-center justify-between text-[12px]">
+                <span className="text-fg-muted">时长</span>
+                <span className="font-mono text-fg-subtle">{(duration / 1000).toFixed(1)}s</span>
+              </div>
+              <input
+                type="range"
+                min={300}
+                max={3000}
+                step={100}
+                value={duration}
+                onChange={(e) => onDuration(Number(e.target.value))}
+                onPointerUp={() => onReplay()}
+                onKeyUp={() => onReplay()}
+                className="w-full accent-signal"
+              />
+            </div>
+            <div>
+              <div className="mb-1 flex items-center justify-between text-[12px]">
+                <span className="text-fg-muted">幅度 {ampApplies ? '' : '(本特效以时长为主)'}</span>
+                <span className="font-mono text-fg-subtle">{amp.toFixed(1)}x</span>
+              </div>
+              <input
+                type="range"
+                min={0.3}
+                max={1.6}
+                step={0.1}
+                value={amp}
+                onChange={(e) => onAmp(Number(e.target.value))}
+                onPointerUp={() => onReplay()}
+                onKeyUp={() => onReplay()}
+                className="w-full accent-signal"
+                disabled={!ampApplies}
+              />
+            </div>
+          </div>
+        </aside>
+
+        {/* ========== 中：素材条 + 预览舞台 ========== */}
+        <main className="flex min-w-0 flex-1 flex-col gap-3 p-4">
+          <div className="flex flex-col gap-2 rounded-lg border border-edge/12 bg-surface-2 p-2.5">
+            <MatPicker
+              label="背景"
+              list={bgList}
+              selectedId={selBgId}
+              local={localBg}
+              onSelect={onSelBg}
+              onLocal={onLocalBg}
+              onClearLocal={onClearLocalBg}
+              fileRef={bgFileRef}
+            />
+            <MatPicker
+              label="立绘"
+              list={spriteList}
+              selectedId={selSpriteId}
+              local={localSprite}
+              onSelect={onSelSprite}
+              onLocal={onLocalSprite}
+              onClearLocal={onClearLocalSprite}
+              fileRef={spFileRef}
+            />
+          </div>
+
+          <div className="min-h-0 flex-1">
+            <PreviewStage active={active} bgUrl={bgUrl} spriteUrl={spriteUrl} duration={duration} amp={amp} />
+          </div>
+
+          <p className="text-center text-[12px] text-fg-faint">
+            点击左侧特效即时演示 · 上方切换背景/立绘测试不同素材 · 预览为 Web 近似实现，语义与 Ren&apos;Py 一致
+          </p>
+        </main>
+
+        {/* ========== 右：精简说明（不密密麻麻） ========== */}
+        <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-edge/12 bg-surface/60 p-4">
+          <div className="mb-1 text-[12px] font-medium text-fg-muted">当前演示</div>
+          <h2 className="text-[16px] font-semibold tracking-tight">{selected.cn}</h2>
+          <div className="mt-0.5 font-mono text-[12px] text-signal">{selected.name}</div>
+
+          <p className="mt-3 text-[13px] leading-relaxed text-fg-subtle">{selected.brief ?? firstLine(selected.desc)}</p>
+
+          <div className="mt-4 space-y-2 rounded-lg border border-edge/12 bg-surface-2 p-3">
+            <div className="flex items-center justify-between text-[12px]">
+              <span className="text-fg-muted">时长</span>
+              <span className="font-mono text-fg">{(duration / 1000).toFixed(1)}s</span>
+            </div>
+            <div className="flex items-center justify-between text-[12px]">
+              <span className="text-fg-muted">幅度</span>
+              <span className="font-mono text-fg">{ampApplies ? `${amp.toFixed(1)}x` : '—（以时长为主）'}</span>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-1.5 text-[12px] leading-relaxed text-fg-faint">
+            <p>· 拖动左侧滑块实时调节，松手即重播</p>
+            <p>· 点「重新播放」可重看当前特效</p>
+            <p>· 想看完整原理与代码，点左上「返回百科」</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
 // 主组件
 // ============================================================
 export default function EffectsLab() {
@@ -182,7 +531,7 @@ export default function EffectsLab() {
   const bgList = useMemo(() => assets.filter((a) => a.type === 'background'), [assets])
   const spriteList = useMemo(() => assets.filter((a) => a.type === 'sprite'), [assets])
 
-  const [view, setView] = useState<'home' | 'detail'>('home')
+  const [view, setView] = useState<View>('home')
   const [selected, setSelected] = useState<EffectItem | null>(null)
   const [catId, setCatId] = useState<string>(EFFECT_CATEGORIES[0].id)
   const [query, setQuery] = useState('')
@@ -228,7 +577,24 @@ export default function EffectsLab() {
     setSelected(item)
     setCatId(catOfItem.get(item.id) ?? EFFECT_CATEGORIES[0].id)
     setView('detail')
+  }
+
+  const enterPreview = () => {
     setPlayToken((t) => t + 1)
+    setView('preview')
+  }
+
+  // 在预览页内切换特效（保持 preview 视图）
+  const selectInPreview = (item: EffectItem) => {
+    setSelected(item)
+    setCatId(catOfItem.get(item.id) ?? catId)
+    setPlayToken((t) => t + 1)
+  }
+
+  const selectCategory = (c: (typeof EFFECT_CATEGORIES)[number]) => {
+    const first = c.items[0]
+    setCatId(c.id)
+    if (first) selectInPreview(first)
   }
 
   const replay = () => setPlayToken((t) => t + 1)
@@ -257,9 +623,6 @@ export default function EffectsLab() {
         : null,
     [q],
   )
-
-  const catItems = useMemo(() => EFFECT_CATEGORIES.find((c) => c.id === catId)?.items ?? [], [catId])
-  const ampApplies = selected ? AMP_KINDS.has(selected.preview.kind) : false
 
   const active: ActiveSpec | null = selected ? { spec: selected.preview, token: playToken } : null
 
@@ -327,194 +690,49 @@ export default function EffectsLab() {
     )
   }
 
-  // ---------------- 二级：三合一整合页 ----------------
+  if (!selected) return null
+
+  // ---------------- 二级：纯百科页 ----------------
+  if (view === 'detail') {
+    return (
+      <DetailView
+        item={selected}
+        onBack={() => setView('home')}
+        onEnterPreview={enterPreview}
+      />
+    )
+  }
+
+  // ---------------- 三级：终极整合预览舞台 ----------------
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-canvas text-fg">
-      <div className="flex items-center gap-2 border-b border-edge/10 px-4 py-2.5">
-        <IconButton variant="ghost" size="sm" icon={<ArrowLeft size={15} strokeWidth={1.75} />} onClick={() => setView('home')} title="返回卡片墙" aria-label="返回卡片墙" />
-        <Sparkles size={16} strokeWidth={1.75} className="text-signal" />
-        <div className="min-w-0">
-          <h1 className="truncate text-[15px] font-semibold leading-tight">{selected?.cn}</h1>
-          <div className="font-mono text-[12px] text-signal">{selected?.name}</div>
-        </div>
-        <div className="ml-auto flex items-center gap-1.5">
-          <Button variant="outline" size="sm" icon={<RotateCw size={13} strokeWidth={1.75} />} onClick={replay}>
-            重新播放
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex min-h-0 flex-1">
-        {/* ========== 左：本类特效列表 + 参数滑块 ========== */}
-        <aside className="flex w-60 shrink-0 flex-col border-r border-edge/12 bg-surface/60">
-          <div className="flex items-center gap-1 overflow-x-auto border-b border-edge/10 p-2">
-            {EFFECT_CATEGORIES.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => {
-                  const first = c.items[0]
-                  if (first) openItem(first)
-                  else setCatId(c.id)
-                }}
-                className={`shrink-0 rounded-md px-2 py-1 text-[12px] transition-colors ${
-                  c.id === catId ? 'bg-primary/[0.12] text-fg' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
-                }`}
-              >
-                {c.name.replace(/（.*?）|·.*/g, '').slice(0, 4)}
-              </button>
-            ))}
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto p-2">
-            <div className="mb-1.5 px-1 text-[12px] font-medium text-fg-muted">本类特效</div>
-            <div className="space-y-0.5">
-              {catItems.map((it) => (
-                <button
-                  key={it.id}
-                  onClick={() => openItem(it)}
-                  className={`w-full rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
-                    selected?.id === it.id
-                      ? 'bg-primary/[0.10] text-fg ring-1 ring-primary/30'
-                      : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
-                  }`}
-                >
-                  <span className="block">{it.cn}</span>
-                  <span className="block font-mono text-[12px] text-fg-faint">{it.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-3 border-t border-edge/10 p-3">
-            <div>
-              <div className="mb-1 flex items-center justify-between text-[12px]">
-                <span className="text-fg-muted">时长</span>
-                <span className="font-mono text-fg-subtle">{(duration / 1000).toFixed(1)}s</span>
-              </div>
-              <input
-                type="range"
-                min={300}
-                max={3000}
-                step={100}
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-                onPointerUp={() => setPlayToken((t) => t + 1)}
-                onKeyUp={() => setPlayToken((t) => t + 1)}
-                className="w-full accent-signal"
-              />
-            </div>
-            <div>
-              <div className="mb-1 flex items-center justify-between text-[12px]">
-                <span className="text-fg-muted">幅度 {ampApplies ? '' : '(本特效以时长为主)'}</span>
-                <span className="font-mono text-fg-subtle">{amp.toFixed(1)}x</span>
-              </div>
-              <input
-                type="range"
-                min={0.3}
-                max={1.6}
-                step={0.1}
-                value={amp}
-                onChange={(e) => setAmp(Number(e.target.value))}
-                onPointerUp={() => setPlayToken((t) => t + 1)}
-                onKeyUp={() => setPlayToken((t) => t + 1)}
-                className="w-full accent-signal"
-                disabled={!ampApplies}
-              />
-            </div>
-          </div>
-        </aside>
-
-        {/* ========== 中：素材条 + 预览舞台 ========== */}
-        <main className="flex min-w-0 flex-1 flex-col gap-3 p-4">
-          <div className="flex flex-col gap-2 rounded-lg border border-edge/12 bg-surface-2 p-2.5">
-            <MatPicker
-              label="背景"
-              list={bgList}
-              selectedId={selBgId}
-              local={localBg}
-              onSelect={setSelBgId}
-              onLocal={handleLocalBg}
-              onClearLocal={() => setLocalBg(null)}
-              fileRef={bgFileRef}
-            />
-            <MatPicker
-              label="立绘"
-              list={spriteList}
-              selectedId={selSpriteId}
-              local={localSprite}
-              onSelect={setSelSpriteId}
-              onLocal={handleLocalSprite}
-              onClearLocal={() => setLocalSprite(null)}
-              fileRef={spFileRef}
-            />
-          </div>
-
-          <div className="min-h-0 flex-1">
-            <PreviewStage active={active} bgUrl={bgUrl} spriteUrl={spriteUrl} duration={duration} amp={amp} />
-          </div>
-
-          <p className="text-center text-[12px] text-fg-faint">
-            点击左侧特效即时演示 · 上方切换背景/立绘测试不同素材 · 预览为 Web 近似实现，语义与 Ren&apos;Py 一致
-          </p>
-        </main>
-
-        {/* ========== 右：特效大百科 ========== */}
-        <aside className="flex w-80 shrink-0 flex-col overflow-y-auto border-l border-edge/12 bg-surface/60 p-4">
-          <div className="mb-1 text-[12px] font-medium text-fg-muted">特效大百科</div>
-          <h2 className="text-[18px] font-semibold tracking-tight">{selected?.cn}</h2>
-          <div className="mt-0.5 font-mono text-[13px] text-signal">{selected?.name}</div>
-
-          {selected?.syntax && (
-            <div className="mt-3">
-              <div className="mb-1 text-[12px] text-fg-muted">Ren&apos;Py 代码示例</div>
-              <pre className="overflow-x-auto rounded-lg border border-edge/12 bg-canvas px-3 py-2 font-mono text-[12px] leading-relaxed text-fg-subtle">
-                {selected.syntax}
-              </pre>
-            </div>
-          )}
-
-          <div className="mt-3">
-            <div className="mb-1 text-[12px] text-fg-muted">功能说明</div>
-            <p className="whitespace-pre-line text-[13px] leading-relaxed text-fg">{selected?.desc}</p>
-          </div>
-
-          {selected?.renpyClass && (
-            <div className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary/[0.08] px-2 py-1 text-[12px] text-fg-muted">
-              可实例化的转场 / 变换类
-            </div>
-          )}
-
-          {selected?.params && selected.params.length > 0 && (
-            <div className="mt-4">
-              <div className="mb-1.5 text-[12px] text-fg-muted">参数用途</div>
-              <div className="overflow-hidden rounded-lg border border-edge/12">
-                <table className="w-full border-collapse text-[12px]">
-                  <thead>
-                    <tr className="bg-canvas/60 text-left text-fg-faint">
-                      <th className="px-2.5 py-1.5 font-medium">参数</th>
-                      <th className="px-2.5 py-1.5 font-medium">类型</th>
-                      <th className="px-2.5 py-1.5 font-medium">用途</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selected.params.map((p, i) => (
-                      <tr key={i} className="border-t border-edge/10 align-top">
-                        <td className="px-2.5 py-1.5 font-mono text-signal">{p.name}</td>
-                        <td className="px-2.5 py-1.5 font-mono text-fg-subtle">{p.type}</td>
-                        <td className="px-2.5 py-1.5 text-fg-subtle">{p.desc}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-auto pt-4 text-[12px] leading-relaxed text-fg-faint">
-            归类与说明依据 Ren&apos;Py 官方文档整理，覆盖 Transitions / Transform Properties / matrixcolor / ATL Warpers / ATL 语句 / 内置定位变换 / 3D 舞台 全体系。
-          </div>
-        </aside>
-      </div>
-    </div>
+    <PreviewView
+      selected={selected}
+      catId={catId}
+      duration={duration}
+      amp={amp}
+      onDuration={setDuration}
+      onAmp={setAmp}
+      onReplay={replay}
+      onBack={() => setView('detail')}
+      onSelectInPreview={selectInPreview}
+      onSelectCategory={selectCategory}
+      bgList={bgList}
+      spriteList={spriteList}
+      bgUrl={bgUrl}
+      spriteUrl={spriteUrl}
+      selBgId={selBgId}
+      selSpriteId={selSpriteId}
+      localBg={localBg}
+      localSprite={localSprite}
+      onSelBg={setSelBgId}
+      onSelSprite={setSelSpriteId}
+      onLocalBg={handleLocalBg}
+      onLocalSprite={handleLocalSprite}
+      onClearLocalBg={() => setLocalBg(null)}
+      onClearLocalSprite={() => setLocalSprite(null)}
+      bgFileRef={bgFileRef}
+      spFileRef={spFileRef}
+      active={active}
+    />
   )
 }
