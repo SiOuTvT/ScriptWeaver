@@ -46,3 +46,362 @@ computing gzip size...
 [2m21:32:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
 [2m21:32:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
 [2m21:33:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:58:06[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/ExportSettings.tsx, /src/components/layout/ThemeSettings.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx[22m
+[2m21:58:07[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/ExportSettings.tsx, /src/components/layout/ThemeSettings.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx[22m
+[2m21:58:07[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/ExportSettings.tsx, /src/components/layout/ThemeSettings.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx[22m
+[2m21:58:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:58:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:58:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:58:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:59:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:59:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:59:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:59:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:59:38[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:59:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m21:59:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:00:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:00:39[22m [31m[1m[vite][22m[39m [31mInternal server error: D:\ScriptWeaver\src\components\layout\StagePreview.tsx: Unterminated JSX contents. (1269:11)
+
+[0m [90m 1267 |[31m         )}
+ [90m 1268 |[31m       [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+[31m[1m>[22m[31m[90m 1269 |[31m     [33m<[31m[33m/[31m[33mmain[31m[33m>[31m
+ [90m      |[31m            [31m[1m^[22m[31m
+ [90m 1270 |[31m   )
+ [90m 1271 |[31m }
+ [90m 1272 |[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/StagePreview.tsx[39m:1269:11
+      at constructor (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6616:19)
+      at TypeScriptParserMixin.jsxReadToken (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4460:20)
+      at TypeScriptParserMixin.getTokenFromCode (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4786:12)
+      at TypeScriptParserMixin.getTokenFromCode (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10004:11)
+      at TypeScriptParserMixin.nextToken (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:5799:10)
+      at TypeScriptParserMixin.next (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:5709:10)
+      at TypeScriptParserMixin.eat (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:5713:12)
+      at TypeScriptParserMixin.expect (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6915:15)
+      at TypeScriptParserMixin.jsxParseClosingElementAt (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4692:10)
+      at TypeScriptParserMixin.jsxParseElementAt (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4707:37)
+      at TypeScriptParserMixin.jsxParseElementAt (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4710:32)
+      at TypeScriptParserMixin.jsxParseElement (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4761:17)
+      at TypeScriptParserMixin.parseExprAtom (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4771:19)
+      at TypeScriptParserMixin.parseExprSubscripts (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11098:23)
+      at TypeScriptParserMixin.parseUpdate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11083:21)
+      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11063:23)
+      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9854:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10916:61)
+      at TypeScriptParserMixin.parseExprOps (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10921:23)
+      at TypeScriptParserMixin.parseMaybeConditional (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10898:23)
+      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10848:21)
+      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9792:39
+      at TypeScriptParserMixin.tryParse (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6924:20)
+      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9792:18)
+      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10817:39
+      at TypeScriptParserMixin.allowInAnd (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12443:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10817:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12510:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11692:28)
+      at TypeScriptParserMixin.parseExprAtom (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11348:23)
+      at TypeScriptParserMixin.parseExprAtom (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4776:20)
+      at TypeScriptParserMixin.parseExprSubscripts (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11098:23)
+      at TypeScriptParserMixin.parseUpdate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11083:21)
+      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:11063:23)
+      at TypeScriptParserMixin.parseMaybeUnary (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9854:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10916:61)
+      at TypeScriptParserMixin.parseExprOps (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10921:23)
+      at TypeScriptParserMixin.parseMaybeConditional (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10898:23)
+      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10848:21)
+      at TypeScriptParserMixin.parseMaybeAssign (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9803:20)
+      at TypeScriptParserMixin.parseExpressionBase (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10801:23)
+      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10797:39
+      at TypeScriptParserMixin.allowInAnd (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12438:16)
+      at TypeScriptParserMixin.parseExpression (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10797:17)
+      at TypeScriptParserMixin.parseReturnStatement (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13159:28)
+      at TypeScriptParserMixin.parseStatementContent (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12815:21)
+      at TypeScriptParserMixin.parseStatementContent (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9525:18)
+      at TypeScriptParserMixin.parseStatementLike (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12784:17)
+      at TypeScriptParserMixin.parseStatementListItem (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12764:17)
+[2m22:00:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:01:08[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:01:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:01:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:01:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:01:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ScriptDrawer.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:01:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:01:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:02:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m22:02:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m22:02:42[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:02:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:02:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:02:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:10:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:10:24[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:10:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:10:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:10:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:11:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:11:35[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:11:35[22m [31m[1m[vite][22m[39m [31mInternal server error: D:\ScriptWeaver\src\components\layout\StagePreview.tsx: Identifier 'clamp' has already been declared. (612:8)
+
+[0m [90m 610 |[31m   )
+ [90m 611 |[31m
+[31m[1m>[22m[31m[90m 612 |[31m   [36mconst[31m clamp [33m=[31m (v[33m:[31m number[33m,[31m lo[33m:[31m number[33m,[31m hi[33m:[31m number) [33m=>[31m [33mMath[31m[33m.[31mmax(lo[33m,[31m [33mMath[31m[33m.[31mmin(hi[33m,[31m v))
+ [90m     |[31m         [31m[1m^[22m[31m
+ [90m 613 |[31m
+ [90m 614 |[31m   [90m// =================== 自动播放（Auto）引擎 ===================[31m
+ [90m 615 |[31m   [90m// 经典 Galgame 自动翻页：按字数估算每行停留时长，自动推进并触发演出 / 音频变化（含段落内 offset）。[31m[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/StagePreview.tsx[39m:612:8
+[33m  622|    const playLineAudio = useCallback(
+  623|      (state: ResolvedLineState | null, prev: ResolvedLineState | null) => {
+  624|        if (!state) return
+     |         ^
+  625|        // 常驻通道：BGM（仅当曲目变化时切换，避免循环中断）
+  626|        const curBgm = state.audio.bgm?.asset_id ?? null[39m
+      at constructor (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:365:19)
+      at TypeScriptParserMixin.raise (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6616:19)
+      at TypeScriptScopeHandler.checkRedeclarationInScope (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:1619:19)
+      at TypeScriptScopeHandler.declareName (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:1585:12)
+      at TypeScriptScopeHandler.declareName (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4892:11)
+      at TypeScriptParserMixin.declareNameFromIdentifier (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:7584:16)
+      at TypeScriptParserMixin.checkIdentifier (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:7580:12)
+      at TypeScriptParserMixin.checkLVal (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:7517:12)
+      at TypeScriptParserMixin.parseVarId (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13429:10)
+      at TypeScriptParserMixin.parseVarId (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9769:11)
+      at TypeScriptParserMixin.parseVar (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13400:12)
+      at TypeScriptParserMixin.parseVarStatement (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13247:10)
+      at TypeScriptParserMixin.parseVarStatement (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9425:31)
+      at TypeScriptParserMixin.parseStatementContent (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12868:23)
+      at TypeScriptParserMixin.parseStatementContent (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9525:18)
+      at TypeScriptParserMixin.parseStatementLike (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12784:17)
+      at TypeScriptParserMixin.parseStatementListItem (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12764:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13333:61)
+      at TypeScriptParserMixin.parseBlockBody (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13326:10)
+      at TypeScriptParserMixin.parseBlock (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13314:10)
+      at TypeScriptParserMixin.parseFunctionBody (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12117:24)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12103:10)
+      at TypeScriptParserMixin.parseFunctionBodyAndFinish (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9189:18)
+      at d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13462:12
+      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12420:14)
+      at TypeScriptParserMixin.parseFunction (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13461:10)
+      at TypeScriptParserMixin.parseExportDefaultExpression (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13924:19)
+      at TypeScriptParserMixin.parseExportDefaultExpression (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9419:18)
+      at TypeScriptParserMixin.parseExport (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13845:25)
+      at TypeScriptParserMixin.parseExport (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9402:20)
+      at TypeScriptParserMixin.parseStatementContent (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12895:27)
+      at TypeScriptParserMixin.parseStatementContent (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9525:18)
+      at TypeScriptParserMixin.parseStatementLike (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12784:17)
+      at TypeScriptParserMixin.parseModuleItem (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12761:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13333:36)
+      at TypeScriptParserMixin.parseBlockBody (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13326:10)
+      at TypeScriptParserMixin.parseProgram (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12639:10)
+      at TypeScriptParserMixin.parseTopLevel (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12629:25)
+      at TypeScriptParserMixin.parse (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:14505:25)
+      at TypeScriptParserMixin.parse (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10143:18)
+      at parse (d:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:14539:38)
+      at parser (d:\ScriptWeaver\node_modules\@babel\core\lib\parser\index.js:41:34)
+      at parser.next (<anonymous>)
+      at normalizeFile (d:\ScriptWeaver\node_modules\@babel\core\lib\transformation\normalize-file.js:51:37)
+      at normalizeFile.next (<anonymous>)
+      at run (d:\ScriptWeaver\node_modules\@babel\core\lib\transformation\index.js:22:50)
+      at run.next (<anonymous>)
+      at transform (d:\ScriptWeaver\node_modules\@babel\core\lib\transform.js:22:33)
+      at transform.next (<anonymous>)
+      at step (d:\ScriptWeaver\node_modules\gensync\index.js:261:32)
+[2m22:11:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
+[2m22:12:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:13:23[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:13:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:19:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:21:27[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:21:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
+[2m22:26:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:26:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:26:13[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:26:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m22:26:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
+[2m07:27:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m07:28:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m07:38:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /src/components/layout/LeftSidebar.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/ExportSettings.tsx, /src/components/layout/ThemeSettings.tsx, /src/components/layout/AIPanel.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/ScriptOverview.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/Timeline.tsx, /src/components/layout/SceneNavPanel.tsx[22m
+[2m07:38:29[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/LeftSidebar.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m07:38:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m07:38:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m07:38:34[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./EffectsLab" from "src/components/layout/AppLayout.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/AppLayout.tsx[39m:10:23
+[33m  25 |  import AssetManager from "./AssetManager";
+  26 |  import CharacterManager from "./CharacterManager";
+  27 |  import EffectsLab from "./EffectsLab";
+     |                          ^
+  28 |  import AIPanel from "./AIPanel";
+  29 |  import ExportSettings from "./ExportSettings";[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 12)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+      at async viteTransformMiddleware (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:62106:24)
+[2m07:40:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/App.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m07:40:15[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./EffectsLab" from "src/components/layout/AppLayout.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/AppLayout.tsx[39m:10:23
+[33m  25 |  import AssetManager from "./AssetManager";
+  26 |  import CharacterManager from "./CharacterManager";
+  27 |  import EffectsLab from "./EffectsLab";
+     |                          ^
+  28 |  import AIPanel from "./AIPanel";
+  29 |  import ExportSettings from "./ExportSettings";[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 12)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+[2m07:40:15[22m [31m[1m[vite][22m[39m Pre-transform error: Failed to resolve import "./EffectsLab" from "src/components/layout/AppLayout.tsx". Does the file exist?
+[2m07:41:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/App.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m07:41:26[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./EffectsLab" from "src/components/layout/AppLayout.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/AppLayout.tsx[39m:10:23
+[33m  25 |  import AssetManager from "./AssetManager";
+  26 |  import CharacterManager from "./CharacterManager";
+  27 |  import EffectsLab from "./EffectsLab";
+     |                          ^
+  28 |  import AIPanel from "./AIPanel";
+  29 |  import ExportSettings from "./ExportSettings";[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 12)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+[2m07:41:26[22m [31m[1m[vite][22m[39m Pre-transform error: Failed to resolve import "./EffectsLab" from "src/components/layout/AppLayout.tsx". Does the file exist?
+[2m07:41:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/App.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m07:41:48[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./EffectsLab" from "src/components/layout/AppLayout.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/AppLayout.tsx[39m:10:23
+[33m  25 |  import AssetManager from "./AssetManager";
+  26 |  import CharacterManager from "./CharacterManager";
+  27 |  import EffectsLab from "./EffectsLab";
+     |                          ^
+  28 |  import AIPanel from "./AIPanel";
+  29 |  import ExportSettings from "./ExportSettings";[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 12)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+[2m07:41:48[22m [31m[1m[vite][22m[39m Pre-transform error: Failed to resolve import "./EffectsLab" from "src/components/layout/AppLayout.tsx". Does the file exist?
+[2m07:42:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/App.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m07:42:09[22m [31m[1m[vite][22m[39m Pre-transform error: Failed to resolve import "./effects/PreviewStage" from "src/components/layout/EffectsLab.tsx". Does the file exist?
+[2m07:42:09[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./effects/PreviewStage" from "src/components/layout/EffectsLab.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/EffectsLab.tsx[39m:23:46
+[33m  37 |  } from "lucide-react";
+  38 |  import { EFFECT_CATEGORIES, ALL_EFFECTS } from "@/data/renpyEffects";
+  39 |  import PreviewStage from "./effects/PreviewStage";
+     |                            ^
+  40 |  import { Button } from "@/components/ui";
+  41 |  const ICONS = {[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 6)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+      at async viteTransformMiddleware (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:62106:24)
+[2m07:42:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m07:42:14[22m [31m[1m[vite][22m[39m Pre-transform error: Failed to resolve import "./effects/PreviewStage" from "src/components/layout/EffectsLab.tsx". Does the file exist?
+[2m07:42:14[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "./effects/PreviewStage" from "src/components/layout/EffectsLab.tsx". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mD:/ScriptWeaver/src/components/layout/EffectsLab.tsx[39m:23:46
+[33m  37 |  } from "lucide-react";
+  38 |  import { EFFECT_CATEGORIES, ALL_EFFECTS } from "@/data/renpyEffects";
+  39 |  import PreviewStage from "./effects/PreviewStage";
+     |                            ^
+  40 |  import { Button } from "@/components/ui";
+  41 |  const ICONS = {[39m
+      at TransformPluginContext._formatError (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49258:41)
+      at TransformPluginContext.error (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49253:16)
+      at normalizeUrl (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64307:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64439:39
+      at async Promise.all (index 6)
+      at async TransformPluginContext.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:64366:7)
+      at async PluginContainer.transform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:49099:18)
+      at async loadAndTransform (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51978:27)
+      at async viteTransformMiddleware (file:///d:/ScriptWeaver/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:62106:24)
+[2m07:42:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /@fs/D:/ScriptWeaver/src/components/layout/AppLayout.tsx[22m
+[2m08:21:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/effects/PreviewStage.tsx[22m
+[2m08:21:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/effects/PreviewStage.tsx[22m
+[2m08:21:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/effects/PreviewStage.tsx[22m
+[2m08:21:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/effects/PreviewStage.tsx[22m
+[2m08:21:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/effects/PreviewStage.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:22:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:22:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/effects/PreviewStage.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:22:59[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/effects/PreviewStage.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:23:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/effects/PreviewStage.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:23:02[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:23:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:23:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:23:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:23:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:23:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/effects/PreviewStage.tsx[22m
+[2m08:23:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/effects/PreviewStage.tsx[22m
+[2m08:23:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/EffectsLab.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[2m08:23:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/D:/ScriptWeaver/src/index.css, /src/components/effects/PreviewStage.tsx[22m
+[2m08:24:13[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/effects/PreviewStage.tsx, /@fs/D:/ScriptWeaver/src/index.css[22m
+[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/bj2.jpg | rel= assets/images/background/bj2.jpg | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\background\bj2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/sprite/js4.png | rel= assets/images/sprite/js4.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js4.png image/png
+[sw-asset] request sw-asset://asset/assets/images/sprite/js1_1.png | rel= assets/images/sprite/js1_1.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js1_1.png image/png
+[sw-asset] request sw-asset://asset/assets/images/sprite/js3.png | rel= assets/images/sprite/js3.png | activeRoot= null | session= C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets
+[sw-asset]  HIT C:\Users\Dell\AppData\Roaming\scriptweaver\session-assets\assets\images\sprite\js3.png image/png
