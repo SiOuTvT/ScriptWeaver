@@ -1,10 +1,17 @@
 // ============================================================
 // ScriptWeaver · 特效预览引擎 (Effect Player)
 // ------------------------------------------------------------
-// 把 renpyEffects.ts 里声明的 PreviewSpec 翻译成浏览器可丝滑播放的动画。
-// 设计：舞台含两层立绘（sprite=当前 / spriteB=新入）、闪光层(flash)、
-// 缓动小球(ball)、说明字幕(caption)。所有效果都由 Web Animations API
-// 或 CSS transition 驱动，下一轨播放前先 reset() 清空上一轨。
+// 把 renpyEffects.ts 里的 PreviewSpec 翻译成浏览器可丝滑播放的动画。
+//
+// 【重置机制（杜绝叠加）】
+// 本引擎由外层 PreviewStage 在每次播放前通过「key 重挂载」强制销毁上一轮
+// 所有 DOM / 内联样式 / 动画，从绝对干净的初始状态重建；engine 自身 play()
+// 也会先 clear() 取消全部 Animation、清空 timers 并剥离内联 transform / opacity /
+// filter / clipPath / mask 等属性，双保险确保「点击新特效 = 单一干净演示」。
+//
+// 舞台只需两层：bg（静态背景，全屏）+ sprite（前景立绘，居中）。
+// 转场类效果在 sprite 上做「旧→新」的揭示/滑入/溶解；变换类在 sprite 上做
+// 旋转/缩放/位移/颜色；flash/ball/caption 为辅助层。
 // ============================================================
 
 import type { PreviewSpec, Dir } from '@/data/renpyEffects'
@@ -12,28 +19,51 @@ import type { PreviewSpec, Dir } from '@/data/renpyEffects'
 export interface PlayerRefs {
   stage: HTMLElement
   sprite: HTMLElement
-  spriteB: HTMLElement
   flash: HTMLElement
   ball: HTMLElement
   caption: HTMLElement
 }
 
-const DURATION = 1200
-
-/** 方向 → 位移偏移（用于 slide / push / move / wipe 的"屏外"起点） */
-function offTransform(dir: Dir, mode: 'in' | 'out'): string {
-  // mode=in：从屏外进入（起点在 dir 所指屏幕外，终点 0）
-  // mode=out：向 dir 离开（起点 0，终点在 dir 所指屏幕外）
-  const dist = '120%'
-  const map: Record<Dir, [string, string]> = {
-    right: ['translateX(-' + dist + ')', 'translateX(' + dist + ')'],
-    left: ['translateX(' + dist + ')', 'translateX(-' + dist + ')'],
-    up: ['translateY(' + dist + ')', 'translateY(-' + dist + ')'],
-    down: ['translateY(-' + dist + ')', 'translateY(' + dist + ')'],
-  }
-  const [from, to] = map[dir]
-  return mode === 'in' ? from : to
+export interface PlayOpts {
+  /** 时长（毫秒） */
+  duration: number
+  /** 幅度倍率 0.3 ~ 1.6，缩放动效强度 */
+  amp: number
 }
+
+/** 屏外位移（用于 slide / push / move / 转场揭示的起点/终点） */
+function offTransform(dir: Dir): string {
+  switch (dir) {
+    case 'right':
+      return 'translateX(120%)'
+    case 'left':
+      return 'translateX(-120%)'
+    case 'up':
+      return 'translateY(-120%)'
+    case 'down':
+      return 'translateY(120%)'
+  }
+}
+
+/** 需要被重置的内联属性清单（剥离上一轮叠加态） */
+const RESET_PROPS = [
+  'transform',
+  'opacity',
+  'filter',
+  'clipPath',
+  'maskImage',
+  'webkitMaskImage',
+  'maskPosition',
+  'webkitMaskPosition',
+  'maskSize',
+  'webkitMaskSize',
+  'transition',
+  'backgroundPosition',
+  'transformOrigin',
+  'imageRendering',
+  'left',
+  'top',
+] as const
 
 export class EffectPlayer {
   private animations: Animation[] = []
@@ -44,6 +74,7 @@ export class EffectPlayer {
     private onMessage?: (t: string) => void,
   ) {}
 
+  /** 取消全部动画 + 清空定时器 + 剥离内联动效属性 */
   private clear() {
     this.animations.forEach((a) => {
       try {
@@ -55,27 +86,25 @@ export class EffectPlayer {
     this.animations = []
     this.timers.forEach((t) => clearTimeout(t))
     this.timers = []
-    const els = [this.r.sprite, this.r.spriteB, this.r.flash, this.r.ball]
+    const els = [this.r.sprite, this.r.flash, this.r.ball, this.r.caption]
     els.forEach((el) => {
-      el.getAnimations?.().forEach((a) => a.cancel())
-      el.style.transition = ''
-      el.style.opacity = ''
-      el.style.transform = ''
-      el.style.clipPath = ''
-      el.style.webkitMaskImage = ''
-      el.style.maskImage = ''
-      el.style.webkitMaskPosition = ''
-      el.style.maskPosition = ''
-      el.style.webkitMaskSize = ''
-      el.style.maskSize = ''
-      el.style.filter = ''
-      el.style.backgroundPosition = ''
-      el.style.display = ''
+      el.getAnimations?.().forEach((a) => {
+        try {
+          a.cancel()
+        } catch {
+          /* noop */
+        }
+      })
+      RESET_PROPS.forEach((p) => {
+        el.style[p] = ''
+      })
     })
-    this.r.sprite.style.opacity = '1'
-    this.r.spriteB.style.opacity = '0'
+    // 还原辅助层基础可见性
     this.r.flash.style.opacity = '0'
     this.r.ball.style.opacity = '0'
+    this.r.caption.style.opacity = '0'
+    this.r.caption.textContent = ''
+    this.r.stage.style.perspective = ''
   }
 
   private anim(el: HTMLElement, frames: Keyframe[], opts: KeyframeAnimationOptions): Animation {
@@ -96,341 +125,363 @@ export class EffectPlayer {
     this.timers.push(t)
   }
 
-  play(spec: PreviewSpec) {
+  dispose() {
     this.clear()
-    const { sprite, spriteB, flash, ball, caption } = this.r
+  }
+
+  play(spec: PreviewSpec, opts: PlayOpts) {
+    this.clear()
+    const { sprite, flash, ball, caption } = this.r
+    const d = opts.duration
+    const amp = opts.amp
+    const off = (dir: Dir) => offTransform(dir)
 
     switch (spec.kind) {
-      // ---------- 基础转场 ----------
+      // ---------------- 基础转场（作用于 sprite 揭示） ----------------
       case 'dissolve': {
-        sprite.style.opacity = '1'
-        spriteB.style.opacity = '1'
-        this.anim(sprite, [{ opacity: 1 }, { opacity: 0 }], { duration: DURATION, easing: 'ease-in-out' })
-        this.anim(spriteB, [{ opacity: 0 }, { opacity: 1 }], { duration: DURATION, easing: 'ease-in-out' })
+        sprite.style.opacity = '0'
+        this.anim(sprite, [{ opacity: 0 }, { opacity: 1 }], { duration: d, easing: 'ease-in-out' })
         break
       }
       case 'fadeIn': {
-        // 经黑场淡入：黑幕升至满 → 中点切换 A→B → 黑幕退去
         flash.style.background = '#000'
+        sprite.style.opacity = '0'
         this.anim(flash, [{ opacity: 0 }, { opacity: 1, offset: 0.45 }, { opacity: 1, offset: 0.55 }, { opacity: 0 }], {
-          duration: DURATION,
+          duration: d,
         })
-        this.delay(DURATION * 0.5, () => {
-          sprite.style.opacity = '0'
-          spriteB.style.opacity = '1'
+        this.delay(d * 0.5, () => {
+          sprite.style.opacity = '1'
         })
         break
       }
       case 'flash': {
         flash.style.background = '#fff'
-        this.anim(flash, [{ opacity: 0 }, { opacity: 0.92, offset: 0.2 }, { opacity: 0 }], { duration: 650, easing: 'ease-out' })
+        this.anim(flash, [{ opacity: 0 }, { opacity: 0.95, offset: 0.18 }, { opacity: 0 }], {
+          duration: Math.min(700, d),
+          easing: 'ease-out',
+        })
         break
       }
       case 'pixellate': {
-        // Web 近似：先抽稀放大再还原（blur 阶梯 + 缩放脉冲）
+        sprite.style.opacity = '1'
         sprite.style.imageRendering = 'pixelated'
+        const blur = 4 + 6 * amp
         this.anim(
           sprite,
           [
             { transform: 'scale(1)', filter: 'blur(0px)' },
-            { transform: 'scale(0.82)', filter: 'blur(9px)', offset: 0.5 },
+            { transform: `scale(${(1 - 0.2 * amp).toFixed(3)})`, filter: `blur(${blur}px)`, offset: 0.5 },
             { transform: 'scale(1)', filter: 'blur(0px)' },
           ],
-          { duration: DURATION, easing: 'steps(8, end)' },
+          { duration: d, easing: 'steps(8, end)' },
         )
-        this.delay(DURATION, () => {
+        this.delay(d, () => {
           sprite.style.imageRendering = ''
+          sprite.style.filter = ''
         })
         break
       }
+
+      // ---------------- 擦除 / 滑动 / 推挤 / 虹膜（揭示 sprite） ----------------
       case 'wipe': {
+        sprite.style.opacity = '1'
         const insets: Record<Dir, string> = {
           right: 'inset(0 100% 0 0)',
           left: 'inset(0 0 0 100%)',
           up: 'inset(100% 0 0 0)',
           down: 'inset(0 0 100% 0)',
         }
-        spriteB.style.opacity = '1'
-        this.anim(spriteB, [{ clipPath: insets[spec.dir] }, { clipPath: 'inset(0 0 0 0)' }], {
-          duration: DURATION,
-          easing: 'ease-in-out',
-        })
+        sprite.style.clipPath = insets[spec.dir]
+        this.anim(
+          sprite,
+          [{ clipPath: insets[spec.dir] }, { clipPath: 'inset(0 0 0 0)' }],
+          { duration: d, easing: 'ease-in-out' },
+        )
         break
       }
       case 'slide': {
-        const off = offTransform(spec.dir, spec.mode)
+        sprite.style.opacity = '1'
         if (spec.mode === 'in') {
-          spriteB.style.opacity = '1'
-          this.anim(spriteB, [{ transform: off }, { transform: 'translate(0,0)' }], { duration: DURATION, easing: 'cubic-bezier(0.22,1,0.36,1)' })
+          sprite.style.transform = off(spec.dir)
+          this.anim(sprite, [{ transform: off(spec.dir) }, { transform: 'translate(0,0)' }], {
+            duration: d,
+            easing: 'cubic-bezier(0.22,1,0.36,1)',
+          })
         } else {
-          this.anim(sprite, [{ transform: 'translate(0,0)' }, { transform: off }], { duration: DURATION, easing: 'cubic-bezier(0.55,0,0.45,1)' })
+          this.anim(sprite, [{ transform: 'translate(0,0)' }, { transform: off(spec.dir) }], {
+            duration: d,
+            easing: 'cubic-bezier(0.55,0,0.45,1)',
+          })
         }
         break
       }
       case 'push': {
-        const offIn = offTransform(spec.dir, 'in')
-        const offOut = offTransform(spec.dir, 'out')
-        spriteB.style.opacity = '1'
-        this.anim(spriteB, [{ transform: offIn }, { transform: 'translate(0,0)' }], { duration: DURATION, easing: 'ease-in-out' })
-        this.anim(sprite, [{ transform: 'translate(0,0)' }, { transform: offOut }], { duration: DURATION, easing: 'ease-in-out' })
+        sprite.style.opacity = '1'
+        const o = off(spec.dir)
+        this.anim(sprite, [{ transform: 'translate(0,0)' }, { transform: o }], {
+          duration: d,
+          easing: 'ease-in-out',
+        })
         break
       }
       case 'iris': {
-        spriteB.style.opacity = '1'
+        sprite.style.opacity = '1'
         if (spec.mode === 'in') {
-          this.anim(spriteB, [{ clipPath: 'circle(0% at 50% 50%)' }, { clipPath: 'circle(150% at 50% 50%)' }], {
-            duration: DURATION,
+          sprite.style.clipPath = 'circle(0% at 50% 50%)'
+          this.anim(sprite, [{ clipPath: 'circle(0% at 50% 50%)' }, { clipPath: 'circle(150% at 50% 50%)' }], {
+            duration: d,
             easing: 'ease-in-out',
           })
         } else {
-          this.anim(spriteB, [{ clipPath: 'circle(150% at 50% 50%)' }, { clipPath: 'circle(0% at 50% 50%)' }], {
-            duration: DURATION,
+          sprite.style.clipPath = 'circle(150% at 50% 50%)'
+          this.anim(sprite, [{ clipPath: 'circle(150% at 50% 50%)' }, { clipPath: 'circle(0% at 50% 50%)' }], {
+            duration: d,
             easing: 'ease-in-out',
           })
         }
         break
       }
       case 'blinds': {
-        spriteB.style.opacity = '1'
-        spriteB.style.webkitMaskImage = 'repeating-linear-gradient(90deg, #000 0 13%, transparent 13% 26%)'
-        spriteB.style.maskImage = 'repeating-linear-gradient(90deg, #000 0 13%, transparent 13% 26%)'
-        this.anim(spriteB, [{ opacity: 0 }, { opacity: 1 }], { duration: DURATION, easing: 'steps(7, end)' })
+        sprite.style.opacity = '1'
+        sprite.style.webkitMaskImage = 'repeating-linear-gradient(90deg, #000 0 13%, transparent 13% 26%)'
+        sprite.style.maskImage = 'repeating-linear-gradient(90deg, #000 0 13%, transparent 13% 26%)'
+        sprite.style.opacity = '0'
+        this.anim(sprite, [{ opacity: 0 }, { opacity: 1 }], { duration: d, easing: 'steps(7, end)' })
         break
       }
       case 'squares': {
-        spriteB.style.opacity = '1'
-        spriteB.style.webkitMaskImage =
+        sprite.style.opacity = '1'
+        sprite.style.webkitMaskImage =
           'repeating-linear-gradient(0deg, #000 0 13%, transparent 13% 26%), repeating-linear-gradient(90deg, #000 0 13%, transparent 13% 26%)'
-        spriteB.style.maskImage =
+        sprite.style.maskImage =
           'repeating-linear-gradient(0deg, #000 0 13%, transparent 13% 26%), repeating-linear-gradient(90deg, #000 0 13%, transparent 13% 26%)'
-        this.anim(spriteB, [{ opacity: 0 }, { opacity: 1 }], { duration: DURATION, easing: 'steps(9, end)' })
+        sprite.style.opacity = '0'
+        this.anim(sprite, [{ opacity: 0 }, { opacity: 1 }], { duration: d, easing: 'steps(9, end)' })
+        break
+      }
+      case 'swing': {
+        sprite.style.opacity = '1'
+        this.r.stage.style.perspective = '900px'
+        sprite.style.transformOrigin = 'left center'
+        sprite.style.transform = 'rotateY(90deg)'
+        this.anim(sprite, [{ transform: 'rotateY(90deg)' }, { transform: 'rotateY(0deg)' }], {
+          duration: d,
+          easing: 'ease-in-out',
+        })
+        this.delay(d + 50, () => {
+          sprite.style.transformOrigin = ''
+          sprite.style.transform = ''
+          this.r.stage.style.perspective = ''
+        })
         break
       }
 
-      // ---------- 位移 / 移动 / 缩放 ----------
+      // ---------------- 位移 / 移动 / 缩放（作用于 sprite） ----------------
       case 'move': {
-        const off = offTransform(spec.dir, spec.mode)
+        sprite.style.opacity = '1'
+        const o = off(spec.dir)
         if (spec.mode === 'in') {
-          this.anim(sprite, [{ transform: off, opacity: 0.2 }, { transform: 'translate(0,0)', opacity: 1 }], {
-            duration: DURATION,
+          sprite.style.transform = o
+          sprite.style.opacity = '0.15'
+          this.anim(sprite, [{ transform: o, opacity: 0.15 }, { transform: 'translate(0,0)', opacity: 1 }], {
+            duration: d,
             easing: 'cubic-bezier(0.22,1,0.36,1)',
           })
         } else {
-          this.anim(sprite, [{ transform: 'translate(0,0)', opacity: 1 }, { transform: off, opacity: 0.2 }], {
-            duration: DURATION,
+          this.anim(sprite, [{ transform: 'translate(0,0)', opacity: 1 }, { transform: o, opacity: 0.15 }], {
+            duration: d,
             easing: 'cubic-bezier(0.55,0,0.45,1)',
           })
         }
         break
       }
       case 'zoom': {
+        sprite.style.opacity = '1'
+        const start = Math.max(0.12, 1 - 0.7 * amp).toFixed(3)
         if (spec.mode === 'in') {
-          this.anim(sprite, [{ transform: 'scale(0.3)', opacity: 0.4 }, { transform: 'scale(1)', opacity: 1 }], {
-            duration: DURATION,
+          sprite.style.transform = `scale(${start})`
+          sprite.style.opacity = '0.4'
+          this.anim(sprite, [{ transform: `scale(${start})`, opacity: 0.4 }, { transform: 'scale(1)', opacity: 1 }], {
+            duration: d,
             easing: 'cubic-bezier(0.34,1.2,0.64,1)',
           })
         } else if (spec.mode === 'out') {
-          this.anim(sprite, [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(0.3)', opacity: 0.4 }], {
-            duration: DURATION,
+          this.anim(sprite, [{ transform: 'scale(1)', opacity: 1 }, { transform: `scale(${start})`, opacity: 0.4 }], {
+            duration: d,
             easing: 'cubic-bezier(0.36,0,0.66,-0.2)',
           })
         } else {
-          spriteB.style.opacity = '1'
-          this.anim(sprite, [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(0.3)', opacity: 0.3 }], {
-            duration: DURATION / 2,
-            easing: 'ease-in',
-          })
-          this.anim(spriteB, [{ transform: 'scale(0.3)', opacity: 0.3 }, { transform: 'scale(1)', opacity: 1 }], {
-            duration: DURATION / 2,
-            delay: DURATION / 2,
-            easing: 'ease-out',
+          sprite.style.transform = `scale(${start})`
+          sprite.style.opacity = '0.3'
+          this.anim(sprite, [{ transform: `scale(${start})`, opacity: 0.3 }, { transform: 'scale(1)', opacity: 1 }], {
+            duration: d,
+            easing: 'ease-in-out',
           })
         }
         break
       }
 
-      // ---------- 冲击 / 抖动 ----------
+      // ---------------- 冲击 / 抖动 ----------------
       case 'shake': {
+        sprite.style.opacity = '1'
+        const m = 12 * amp
         const axis = spec.axis === 'h' ? 'translateX' : 'translateY'
-        const kf: Keyframe[] = [
+        this.anim(sprite, [
           { transform: `${axis}(0px)` },
-          { transform: `${axis}(-12px)` },
-          { transform: `${axis}(11px)` },
-          { transform: `${axis}(-9px)` },
-          { transform: `${axis}(7px)` },
-          { transform: `${axis}(-4px)` },
+          { transform: `${axis}(${-m}px)` },
+          { transform: `${axis}(${m * 0.9}px)` },
+          { transform: `${axis}(${-m * 0.7}px)` },
+          { transform: `${axis}(${m * 0.5}px)` },
+          { transform: `${axis}(${-m * 0.3}px)` },
           { transform: `${axis}(0px)` },
-        ]
-        this.anim(sprite, kf, { duration: 420, iterations: 2 })
-        break
-      }
-      case 'swing': {
-        sprite.style.transformOrigin = 'left center'
-        this.anim(sprite, [{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(-90deg)', offset: 0.5 }, { transform: 'rotateY(-90deg)', offset: 0.5 }, { transform: 'rotateY(0deg)' }], {
-          duration: DURATION,
-          easing: 'ease-in-out',
-        })
-        // 中点切换 A→B 模拟换景
-        this.delay(DURATION * 0.5, () => {
-          sprite.style.opacity = '0'
-          spriteB.style.opacity = '1'
-          spriteB.style.transformOrigin = 'left center'
-          spriteB.style.transform = 'rotateY(90deg)'
-          this.anim(spriteB, [{ transform: 'rotateY(90deg)' }, { transform: 'rotateY(0deg)' }], { duration: DURATION / 2, easing: 'ease-out' })
-        })
-        this.delay(DURATION, () => {
-          sprite.style.transformOrigin = ''
-        })
+        ], { duration: 380 * Math.min(1.4, amp + 0.3), iterations: 2 })
         break
       }
 
-      // ---------- 旋转 / 翻转 ----------
+      // ---------------- 旋转 / 翻转 ----------------
       case 'rotate': {
-        this.anim(sprite, [{ transform: 'rotate(0deg)' }, { transform: `rotate(${spec.deg}deg)` }], {
-          duration: DURATION,
+        sprite.style.opacity = '1'
+        const deg = Math.round(spec.deg * (0.5 + 0.5 * amp))
+        this.anim(sprite, [{ transform: 'rotate(0deg)' }, { transform: `rotate(${deg}deg)` }], {
+          duration: d,
           easing: 'ease-in-out',
         })
         break
       }
       case 'flip': {
+        sprite.style.opacity = '1'
         const prop = spec.axis === 'h' ? 'scaleX' : 'scaleY'
-        this.anim(sprite, [{ transform: `${prop}(1)` }, { transform: `${prop}(0)` , offset: 0.5 }, { transform: `${prop}(-1)` }], {
-          duration: DURATION * 0.8,
+        this.anim(sprite, [{ transform: `${prop}(1)` }, { transform: `${prop}(0)`, offset: 0.5 }, { transform: `${prop}(-1)` }], {
+          duration: d * 0.8,
           easing: 'ease-in-out',
         })
         break
       }
 
-      // ---------- 像素 / 颜色 ----------
+      // ---------------- 像素 / 颜色 ----------------
       case 'blur': {
-        this.anim(sprite, [{ filter: 'blur(0px)' }, { filter: 'blur(10px)', offset: 0.5 }, { filter: 'blur(0px)' }], {
-          duration: DURATION,
+        sprite.style.opacity = '1'
+        const b = 4 + 7 * amp
+        this.anim(sprite, [{ filter: 'blur(0px)' }, { filter: `blur(${b}px)`, offset: 0.5 }, { filter: 'blur(0px)' }], {
+          duration: d,
           easing: 'ease-in-out',
         })
         break
       }
       case 'color': {
-        sprite.style.transition = 'filter 0.55s ease'
+        sprite.style.opacity = '1'
+        sprite.style.transition = 'filter 0.5s ease'
+        const f = spec.filter
         this.delay(30, () => {
-          sprite.style.filter = spec.filter
+          sprite.style.filter = f
         })
-        this.delay(30 + 950, () => {
+        this.delay(30 + 900, () => {
           sprite.style.filter = 'none'
         })
-        this.delay(30 + 950 + 600, () => {
+        this.delay(30 + 900 + 550, () => {
           sprite.style.transition = ''
+          sprite.style.filter = ''
         })
         break
       }
       case 'alpha': {
-        this.anim(sprite, [{ opacity: 1 }, { opacity: 0.25, offset: 0.5 }, { opacity: 1 }], { duration: DURATION, easing: 'ease-in-out' })
+        sprite.style.opacity = '1'
+        const a = Math.max(0.05, 1 - 0.8 * amp)
+        this.anim(sprite, [{ opacity: 1 }, { opacity: a, offset: 0.5 }, { opacity: 1 }], { duration: d, easing: 'ease-in-out' })
         break
       }
       case 'additive': {
+        sprite.style.opacity = '1'
         this.anim(
           sprite,
           [
             { filter: 'brightness(1)' },
-            { filter: 'brightness(1.7) drop-shadow(0 0 16px rgba(255,255,255,0.9))', offset: 0.5 },
+            { filter: `brightness(${(1.3 + 0.6 * amp).toFixed(2)}) drop-shadow(0 0 ${(12 + 10 * amp).toFixed(0)}px rgba(255,255,255,0.9))`, offset: 0.5 },
             { filter: 'brightness(1)' },
           ],
-          { duration: DURATION, easing: 'ease-in-out' },
+          { duration: d, easing: 'ease-in-out' },
         )
         break
       }
       case 'crop': {
-        this.anim(
-          sprite,
-          [{ clipPath: 'inset(38% 32% 38% 32%)' }, { clipPath: 'inset(0% 0% 0% 0%)' }],
-          { duration: DURATION, easing: 'cubic-bezier(0.22,1,0.36,1)' },
-        )
-        break
-      }
-      case 'pan': {
-        sprite.style.background =
-          'repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0 28px, rgba(255,255,255,0.02) 28px 56px), linear-gradient(135deg,#3b82f6,#8b5cf6)'
-        sprite.style.backgroundSize = '112px 100%, 100% 100%'
-        this.anim(sprite, [{ backgroundPosition: '0px 0px' }, { backgroundPosition: '-224px 0px' }], {
-          duration: DURATION * 1.4,
-          easing: 'linear',
-          iterations: Infinity,
-          direction: 'alternate',
-        })
-        break
-      }
-      case 'tile': {
-        sprite.style.background =
-          'conic-gradient(from 0deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ef4444)'
-        sprite.style.backgroundSize = '40% 40%'
-        this.anim(sprite, [{ backgroundPosition: '0px 0px' }, { backgroundPosition: '80px 80px' }], {
-          duration: 1400,
-          easing: 'linear',
+        sprite.style.opacity = '1'
+        const k = Math.min(0.45, 0.18 + 0.18 * amp)
+        const inset = `${k * 100}% ${(k + 0.06) * 100}% ${k * 100}% ${(k + 0.06) * 100}%`
+        this.anim(sprite, [{ clipPath: `inset(${inset})` }, { clipPath: 'inset(0% 0% 0% 0%)' }], {
+          duration: d,
+          easing: 'cubic-bezier(0.22,1,0.36,1)',
         })
         break
       }
 
-      // ---------- 位置 / 极坐标 ----------
+      // ---------------- 位置 / 极坐标（统一用 transform 驱动，居中交给外层 flex） ----------------
       case 'position': {
+        sprite.style.opacity = '1'
+        const k = (28 * amp).toFixed(0)
         this.anim(
           sprite,
           [
-            { left: '50%' },
-            { left: '22%', offset: 0.4 },
-            { left: '78%', offset: 0.7 },
-            { left: '50%' },
+            { transform: 'translate(0%,0%)' },
+            { transform: `translate(-${k}%,0%)`, offset: 0.4 },
+            { transform: `translate(${k}%,0%)`, offset: 0.7 },
+            { transform: 'translate(0%,0%)' },
           ],
-          { duration: DURATION * 1.4, easing: 'ease-in-out' },
+          { duration: d * 1.3, easing: 'ease-in-out' },
         )
         break
       }
       case 'polar': {
-        sprite.style.transformOrigin = '50% 140%'
-        this.anim(sprite, [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], {
-          duration: DURATION * 1.6,
+        sprite.style.opacity = '1'
+        sprite.style.transformOrigin = '50% 150%'
+        this.anim(sprite, [{ transform: 'rotate(0deg)' }, { transform: `rotate(${Math.round(360 * amp)}deg)` }], {
+          duration: d * 1.4,
           easing: 'linear',
         })
-        this.delay(DURATION * 1.6 + 50, () => {
+        this.delay(d * 1.4 + 50, () => {
           sprite.style.transformOrigin = ''
+          sprite.style.transform = ''
         })
         break
       }
 
-      // ---------- 缓动 ----------
+      // ---------------- 缓动 ----------------
       case 'ease': {
         ball.style.opacity = '1'
         ball.style.left = '8%'
         this.anim(
           ball,
           [{ left: '8%' }, { left: '88%' }],
-          { duration: 1500, easing: `cubic-bezier(${spec.bezier.join(',')})`, iterations: Infinity, direction: 'alternate' },
+          { duration: d + 300, easing: `cubic-bezier(${spec.bezier.join(',')})`, iterations: Infinity, direction: 'alternate' },
         )
         break
       }
 
-      // ---------- 循环 / 并行 / 随机 ----------
+      // ---------------- 循环 / 并行 / 随机 ----------------
       case 'loop': {
-        this.anim(sprite, [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], {
-          duration: 1800,
+        sprite.style.opacity = '1'
+        this.anim(sprite, [{ transform: 'rotate(0deg)' }, { transform: `rotate(${Math.round(360 * amp)}deg)` }], {
+          duration: d * 1.4,
           easing: 'linear',
           iterations: Infinity,
         })
         break
       }
       case 'parallel': {
-        this.anim(sprite, [{ left: '30%' }, { left: '70%', offset: 0.5 }, { left: '30%' }], {
-          duration: 1600,
-          easing: 'ease-in-out',
-          iterations: Infinity,
-        })
-        spriteB.style.opacity = '1'
-        this.anim(spriteB, [{ top: '30%' }, { top: '75%', offset: 0.5 }, { top: '30%' }], {
-          duration: 1100,
-          easing: 'ease-in-out',
-          iterations: Infinity,
-        })
+        sprite.style.opacity = '1'
+        // 同时使用 X/Y 两组位移合成「一边横移一边上下浮」的并行观感
+        this.anim(
+          sprite,
+          [
+            { transform: 'translate(-22%,-20%)' },
+            { transform: 'translate(22%,20%)', offset: 0.5 },
+            { transform: 'translate(-22%,-20%)' },
+          ],
+          { duration: d * 1.2, easing: 'ease-in-out', iterations: Infinity },
+        )
         break
       }
       case 'choice': {
+        sprite.style.opacity = '1'
         const spots = ['20% 30%', '75% 30%', '20% 75%', '75% 75%']
         let i = 0
         const step = () => {
@@ -445,24 +496,27 @@ export class EffectPlayer {
         break
       }
 
-      // ---------- 3D ----------
+      // ---------------- 3D ----------------
       case 'rotate3d': {
+        sprite.style.opacity = '1'
         this.r.stage.style.perspective = '700px'
-        this.anim(sprite, [{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(360deg)' }], {
-          duration: DURATION * 1.4,
+        this.anim(sprite, [{ transform: 'rotateY(0deg)' }, { transform: `rotateY(${Math.round(360 * amp)}deg)` }], {
+          duration: d * 1.3,
           easing: 'ease-in-out',
         })
-        this.delay(DURATION * 1.4 + 50, () => {
+        this.delay(d * 1.3 + 50, () => {
+          sprite.style.transform = ''
           this.r.stage.style.perspective = ''
         })
         break
       }
 
-      // ---------- 概念型（无独立画面） ----------
+      // ---------------- 概念型（无独立画面） ----------------
       case 'concept': {
+        sprite.style.opacity = '1'
         caption.textContent = spec.text
         caption.style.opacity = '1'
-        this.delay(2600, () => {
+        this.delay(2800, () => {
           caption.style.opacity = '0'
         })
         break
