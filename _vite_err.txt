@@ -1,6 +1,0 @@
-X [ERROR] Could not resolve "D:\\ScriptWeaver\\vite.test.config.mts"
-
-[31mfailed to load config from D:\ScriptWeaver\vite.test.config.mts[39m
-[2m13:43:52[22m [31m[1m[vite][22m[39m Build failed with 1 error:
-error: Could not resolve "D:\\ScriptWeaver\\vite.test.config.mts"
-[2m13:43:52[22m [31m[1m[vite][22m[39m server restart failed

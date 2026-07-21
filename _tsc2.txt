@@ -1,1 +1,0 @@
-src/utils/aiDirector.ts(918,42): error TS1002: Unterminated string literal.
