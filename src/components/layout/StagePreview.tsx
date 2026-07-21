@@ -350,6 +350,19 @@ export default function StagePreview() {
     }, 300)
   }, [selectedIndex, updateDeltaAt])
 
+  // 立绘图片加载失败（素材缺失 / 404 / 格式异常）的兜底：标记后改用带角色名的色块占位，
+  // 避免「拖上去却什么都不显示」且没有任何提示的静默失败（铁律 1 下 sw-asset 404 时
+  // resolveSpriteImage 仍返回非空 dataUrl，原色块兜底不会触发，故需显式 onError 兜底）。
+  const [spriteErrors, setSpriteErrors] = useState<Set<string>>(() => new Set())
+  const markSpriteError = useCallback((key: string) => {
+    setSpriteErrors((prev) => {
+      if (prev.has(key)) return prev
+      const next = new Set(prev)
+      next.add(key)
+      return next
+    })
+  }, [])
+
   // 拖拽视觉状态
   const [dragOverZone, _setDragOverZone] = useState<DragOverZone>(null)
   const [dragAssetType, _setDragAssetType] = useState<string | null>(null)
@@ -1283,11 +1296,15 @@ export default function StagePreview() {
         {/* 角色层（可拖动：磁吸预设站位，拉离即自由微调） */}
         {Object.entries(state.characters).map(
           ([charId, char]: [string, ResolvedCharacterState]) => {
+            const spriteKey = char.asset_id ?? char.sprite_id
             const { dataUrl: spriteDataUrl, color: spriteColor } = resolveSpriteImage(
-              char.asset_id ?? char.sprite_id,
+              spriteKey,
               assets,
               characterConfigs,
             )
+            // 图片加载失败（素材缺失/404）→ 改用带角色名的色块占位，给出可见提示而非空白
+            const spriteFailed = !!spriteDataUrl && spriteErrors.has(spriteKey)
+
 
             const dragging = dragPos?.charId === charId
             const anchor = SLOT_ANCHORS[char.position_slot] ?? SLOT_ANCHORS.center
@@ -1325,25 +1342,40 @@ export default function StagePreview() {
                 }}
                 title="拖动可移动位置；靠近站位的虚线会自动吸附，拉离即自由微调。双击打开右侧编辑面板（定点 / 缩放 / 锁定）。"
               >
-                {spriteDataUrl ? (
+                {spriteDataUrl && !spriteFailed ? (
                   <img
                     src={spriteDataUrl}
                     alt={getDisplayName(char.char_id ?? charId)}
                     draggable={false}
                     className="max-h-64 w-auto select-none object-contain drop-shadow-lg"
                     style={{ minHeight: '80px' }}
+                    onError={() => markSpriteError(spriteKey)}
+                    onLoad={() => {
+                      if (spriteErrors.has(spriteKey)) {
+                        setSpriteErrors((prev) => {
+                          const next = new Set(prev)
+                          next.delete(spriteKey)
+                          return next
+                        })
+                      }
+                    }}
                   />
                 ) : (
                   <div
-                    className="flex w-16 flex-col items-center gap-1 rounded-t-lg px-3 pt-6 pb-3 shadow-lg"
+                    className={`flex w-16 flex-col items-center gap-1 rounded-t-lg px-3 pt-6 pb-3 shadow-lg ${spriteFailed ? 'ring-1 ring-danger/60' : ''}`}
                     style={{ backgroundColor: spriteColor, minHeight: '100px' }}
+                    title={spriteFailed ? '素材文件缺失或加载失败，请在素材库重新导入该图片' : undefined}
                   >
                     <span className="text-center text-[12px] font-medium text-white/80">
                       {getDisplayName(char.char_id ?? charId)}
                     </span>
-                    <span className="text-center text-[12px] text-white/50">
-                      {char.sprite_id}
-                    </span>
+                    {spriteFailed ? (
+                      <span className="text-center text-[11px] text-white/70">素材缺失</span>
+                    ) : (
+                      <span className="text-center text-[12px] text-white/50">
+                        {char.sprite_id}
+                      </span>
+                    )}
                   </div>
                 )}
                 {/* 选中态：右上角显眼删除按钮，直接从舞台删除该立绘 */}
