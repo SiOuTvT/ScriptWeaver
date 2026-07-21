@@ -409,7 +409,6 @@ export default function AppLayout() {
         {/* --- 场景导航：完整创作工作区 --- */}
         {isChapters && (
           <div className="relative flex min-h-0 flex-1 overflow-hidden">
-            <LeftSidebar />
 
             {/* 左 Dock：素材库（拖拽至舞台的素材源，可折叠为细轨） */}
             <Dock side="left" title="素材库" icon={Images} badge={assets.length} defaultOpen width={264}>

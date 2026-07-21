@@ -457,6 +457,7 @@ export default function StagePreview() {
       let curState: ResolvedLineState | null = state
       if (!curState) {
         useAppStore.getState().insertDeltaAt(0)
+        selectLine(0) // 关键：切换 selectedIndex 到 0，否则 state 始终为 null，StagePreview 永远空态
         idx = 0
         curState = useAppStore.getState().getResolvedState(0)
         if (!curState) return
@@ -529,7 +530,7 @@ export default function StagePreview() {
         toast(`音频 ${asset.name} 已应用`, 'success')
       }
     },
-    [selectedIndex, updateDeltaAt, resetDragState, state, getCharacter, addCharacter],
+    [selectedIndex, updateDeltaAt, resetDragState, state, getCharacter, addCharacter, selectLine],
   )
 
   // =================== 立绘自由拖动（磁吸预设站位 + 微调偏移） ===================
