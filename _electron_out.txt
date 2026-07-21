@@ -1,0 +1,12 @@
+
+[25908:0722/004828.860:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[25908:0722/004828.860:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[25908:0722/004828.860:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[25908:0722/004828.890:ERROR:disk_cache.cc(208)] Unable to create cache
+[25908:0722/004828.890:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[25908:0722/004828.890:ERROR:disk_cache.cc(208)] Unable to create cache
+[25908:0722/004828.890:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[25908:0722/004828.890:ERROR:disk_cache.cc(208)] Unable to create cache
+[25908:0722/004828.890:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+
+d:\ScriptWeaver>

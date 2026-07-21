@@ -9,7 +9,7 @@
 appId: com.scriptweaver.app
 productName: ScriptWeaver
 directories:
-  output: release
+  output: release_build3
   buildResources: assets
 asar: true
 files:
