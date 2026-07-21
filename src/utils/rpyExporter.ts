@@ -13,7 +13,7 @@
  * sprite_id 现为表情 ID（如 "smile"），立绘图片通过 CharacterConfig → ExpressionRef → AssetItem 解析。
  */
 
-import type { LineDelta, ResolvedLineState, CharacterConfig, AssetItem, PositionSlot, MountedEffect } from '@/core/types'
+import type { LineDelta, ResolvedLineState, CharacterConfig, AssetItem, PositionSlot, MountedEffect, GlobalVariable, VariableOperation, ChoiceItem } from '@/core/types'
 import { getMountable } from '@/data/mountableEffects'
 
 // ======================= 类型 =======================
@@ -68,6 +68,8 @@ type RpyNode =
   | { kind: 'stopMusic'; fadeout: number }
   | { kind: 'stopAmbient' }
   | { kind: 'say'; speaker?: string; text: string }
+  | { kind: 'python'; expr: string }
+  | { kind: 'menu'; prompt?: string; choices: { text: string; target_label: string; condition?: string; ops?: string[]; defined?: boolean }[] }
   | { kind: 'comment'; text: string }
   | { kind: 'return' }
 
@@ -310,7 +312,37 @@ function collectLineFilterExpr(state: ResolvedLineState): string | null {
   }
   push(state.background?.effects)
   for (const c of Object.values(state.characters)) push(c.effects)
+  // 舞台级全局滤镜（scope: 'stage'）同样贡献整层 matrixcolor
+  push(state.stageEffects)
   return exprs.length ? exprs.join(' * ') : null
+}
+
+// ======================= 全局变量操作 → Ren'Py `$` 语句 =======================
+// 严格对齐 Ren'Py 的标准 Python 表达式语法，导出为 `$ <expr>`。
+// 例如：`$ tsundere_points += 1`、`$ has_key = True`、`$ has_key = not has_key`。
+
+/** 把 boolean / number 初始值格式化为 Python 字面量（boolean 必须大写 True/False） */
+function pyLiteral(v: boolean | number): string {
+  if (typeof v === 'boolean') return v ? 'True' : 'False'
+  return `${round3(v)}`
+}
+
+/** 单个变量操作 → `$` 后的 Python 表达式（如 `tsundere_points += 1`）；非法返回 null */
+function varOpExpr(op: VariableOperation): string | null {
+  const name = op.varName
+  if (!name) return null
+  switch (op.op) {
+    case 'set':
+      return `${name} = ${pyLiteral(op.value ?? false)}`
+    case 'add':
+      return `${name} += ${num(op.value != null ? (op.value as number) : 0)}`
+    case 'subtract':
+      return `${name} -= ${num(op.value != null ? (op.value as number) : 0)}`
+    case 'toggle':
+      return `${name} = not ${name}`
+    default:
+      return null
+  }
 }
 
 /**
@@ -504,6 +536,8 @@ export function validateExportNames(
   assets: AssetItem[] = [],
 ): ValidationError[] {
   const errors: ValidationError[] = []
+  // 'start' 为入口 label 保留字，禁止作为剧情块标签（避免遮蔽入口）
+  const seenLabels = new Set<string>(['start'])
   const { allCharIds, speakerToCharId, allBgIds } = lookups
   const audioIds = lookups.allAudioIds ?? new Set(assets.filter((a) => a.type === 'audio').map((a) => a.id))
 
@@ -583,6 +617,51 @@ export function validateExportNames(
         })
       }
     }
+
+    // 6) 选择支行校验
+    if (delta.line_type === 'choice') {
+      const choices = delta.choices ?? []
+      if (choices.length === 0) {
+        errors.push({
+          lineId: lid,
+          field: 'choices',
+          value: '',
+          message: '选择支行至少需要一个选项。',
+        })
+      }
+      choices.forEach((c, idx) => {
+        if (!c.text || !c.text.trim()) {
+          errors.push({
+            lineId: lid,
+            field: `choices[${idx}].text`,
+            value: c.text ?? '',
+            message: `第 ${idx + 1} 个选项文本为空，玩家将无法看到该选项。`,
+          })
+        }
+      })
+    }
+
+    // 7) 剧情块标签（Label）校验
+    if (delta.label?.trim()) {
+      const lab = delta.label.trim()
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(lab)) {
+        errors.push({
+          lineId: lid,
+          field: 'label',
+          value: lab,
+          message: `标签名 "${lab}" 不是合法标识符（须以字母或下划线开头，仅含字母、数字、下划线）。`,
+        })
+      } else if (seenLabels.has(lab)) {
+        errors.push({
+          lineId: lid,
+          field: 'label',
+          value: lab,
+          message: `标签 "${lab}" 重复，剧情块标签必须项目内唯一。`,
+        })
+      } else {
+        seenLabels.add(lab)
+      }
+    }
   }
 
   return errors
@@ -652,7 +731,29 @@ function compileToNodes(
   scriptLabel: string,
   customTransitions: Set<string>,
 ): RpyNode[] {
-  const nodes: RpyNode[] = [{ kind: 'label', name: scriptLabel }]
+  const nodes: RpyNode[] = []
+
+  // ---- 标签符号表（供 menu 安全跳转与代码段收尾）----
+  // 已定义标签 = 入口 label + 所有行携带的 delta.label
+  const definedLabels = new Set<string>([scriptLabel])
+  // 被引用标签 = 所有 choice 选项的 target_label
+  const referencedLabels = new Set<string>()
+  for (const d of deltas) {
+    if (d.label?.trim()) definedLabels.add(d.label.trim())
+    if (d.line_type === 'choice') {
+      for (const c of d.choices ?? []) {
+        const t = c.target_label?.trim()
+        if (t) referencedLabels.add(t)
+      }
+    }
+  }
+
+  // 入口 label（Ren'Py 游戏起点）
+  nodes.push({ kind: 'label', name: scriptLabel })
+  let lastWasLabel = true // 刚推入 label，下一行 block 前不加空行
+  // 当前代码段是否是被 jump 引用的分支段（决定段尾是否补 return 兜底，避免穿透进下一剧情块）
+  let segmentReferenced = referencedLabels.has(scriptLabel)
+  let segmentEndedTerminal = false
 
   let currentBgKey: string | null = null
   let currentBgm: string | null = null
@@ -664,6 +765,22 @@ function compileToNodes(
     const state = resolvedStates[i]
     const delta = deltas[i]
     const block: RpyNode[] = []
+
+    // ---- 标签节点化：本行携带 label → 新开一个剧情块（label）----
+    const lineLabel = delta.label?.trim()
+    if (lineLabel) {
+      // 收尾上一代码段：若为被引用的分支段且未以 return 收尾，补 return 避免穿透进下一剧情块
+      if (i > 0 && segmentReferenced && !segmentEndedTerminal) {
+        nodes.push({ kind: 'return' })
+        lastWasLabel = false
+        segmentEndedTerminal = true
+      }
+      if (i > 0 && !lastWasLabel) nodes.push({ kind: 'blank' })
+      nodes.push({ kind: 'label', name: lineLabel })
+      lastWasLabel = true
+      segmentReferenced = referencedLabels.has(lineLabel)
+      segmentEndedTerminal = false
+    }
 
     // ---- 背景（资产变化 或 挂载特效变化 均重发 scene）----
     const newBg = state.background?.asset_id ?? null
@@ -782,24 +899,66 @@ function compileToNodes(
       if (asset) block.push({ kind: 'voice', file: `audio/${asset.fileName}` })
     }
 
-    // ---- 台词 ----
-    if (state.speaker) {
-      const resolved = st.speakerToCharId[state.speaker] ?? state.speaker
-      block.push({ kind: 'say', speaker: resolved, text: state.dialogue })
+    // ---- 变量操作（本行触发，在台词前发射 `$ <python 表达式>`）----
+    for (const op of delta.variableOps ?? []) {
+      const expr = varOpExpr(op)
+      if (expr) block.push({ kind: 'python', expr })
+    }
+
+    // ---- 选择支行：导出为 Ren'Py `menu:` 块（含选项内联变量操作与跳转）----
+    if (delta.line_type === 'choice') {
+      const choices = (delta.choices ?? []).map((c: ChoiceItem) => {
+        const t = (c.target_label ?? '').trim()
+        const ops = (c.ops ?? [])
+          .map((op) => varOpExpr(op))
+          .filter((e): e is string => !!e)
+        return {
+          text: c.text,
+          target_label: t,
+          condition: c.condition?.trim() ? c.condition.trim() : undefined,
+          ops,
+          // 空目标（顺序继续）恒合法；非空目标需命中已定义标签，否则序列化时安全降级
+          defined: t ? definedLabels.has(t) : true,
+        }
+      })
+      if (choices.length > 0) {
+        block.push({
+          kind: 'menu',
+          prompt: delta.prompt?.trim() ? delta.prompt.trim() : undefined,
+          choices,
+        })
+      }
     } else {
-      block.push({ kind: 'say', text: state.dialogue })
+      // ---- 台词 ----
+      if (state.speaker) {
+        const resolved = st.speakerToCharId[state.speaker] ?? state.speaker
+        block.push({ kind: 'say', speaker: resolved, text: state.dialogue })
+      } else {
+        block.push({ kind: 'say', text: state.dialogue })
+      }
     }
 
     block.push({ kind: 'comment', text: delta.line_id })
 
     if (block.length > 0) {
-      if (i > 0) nodes.push({ kind: 'blank' })
+      if (!lastWasLabel) nodes.push({ kind: 'blank' })
       nodes.push(...block)
+      lastWasLabel = false
+      // 仅当本段最后一条语句是 return 时才算已收尾（menu/say/comment 均非终态）
+      segmentEndedTerminal = block[block.length - 1].kind === 'return'
     }
     currentChars = newChars
   }
 
-  nodes.push({ kind: 'return' })
+  // 收尾最后一段：被引用的分支段若未 return，补 return 兜底（铁律4：绝不穿透/崩溃）
+  if (segmentReferenced && !segmentEndedTerminal) {
+    nodes.push({ kind: 'return' })
+    segmentEndedTerminal = true
+  }
+  // 文件级收尾：确保脚本以 return 结束，杜绝末尾标签穿透导致的未定义行为
+  if (nodes.length === 0 || nodes[nodes.length - 1].kind !== 'return') {
+    nodes.push({ kind: 'return' })
+  }
   return nodes
 }
 
@@ -872,6 +1031,34 @@ function serializeNode(n: RpyNode): string {
     }
     case 'comment':
       return `# ${n.text}`
+    case 'python':
+      return `$ ${n.expr}`
+    case 'menu': {
+      // menu: 4 空格基础缩进；选项 8 空格、选项内语句 12 空格。
+      // 选项内联变量操作（ops）紧跟选项下方并正确缩进；随后按 target_label 决定
+      // jump / pass / 安全降级（铁律4：未定义目标绝不发射 jump，改为注释 + return）。
+      const inner: string[] = []
+      if (n.prompt) inner.push(`        "${escapeDialogue(n.prompt)}"`)
+      for (const ch of n.choices) {
+        const cond = ch.condition ? ` if ${ch.condition}` : ''
+        inner.push(`        "${escapeDialogue(ch.text)}"${cond}:`)
+        const ops = ch.ops ?? []
+        for (const op of ops) inner.push(`            $ ${op}`)
+        if (ch.target_label) {
+          if (ch.defined) {
+            inner.push(`            jump ${ch.target_label}`)
+          } else {
+            // 铁律4：未定义/缺失的跳转目标绝不发射 jump（避免 NameError），降级为注释 + return
+            inner.push(`            # [ScriptWeaver] 跳转目标 "${ch.target_label}" 未定义，已安全降级`)
+            inner.push(`            return`)
+          }
+        } else if (ops.length === 0) {
+          // 无跳转目标且无内联操作：落到 menu 之后继续，用 pass 占位保证语法完整
+          inner.push(`            pass`)
+        }
+      }
+      return `menu:\n${inner.join('\n')}`
+    }
     case 'return':
       return 'return'
     default:
@@ -904,6 +1091,7 @@ export function exportDefinitionsRpy(
   positionSlots?: PositionSlot[],
   st?: SymbolTable,
   usedTransitions?: Set<string>,
+  variables: GlobalVariable[] = [],
 ): string {
   const symbol = st ?? buildSymbolTable([], characterConfigs, assets, positionSlots)
   const lines: string[] = []
@@ -983,6 +1171,15 @@ export function exportDefinitionsRpy(
     lines.push('')
   }
 
+  // ---- 全局变量声明（default）----
+  if (variables.length > 0) {
+    lines.push('# ---- 全局变量声明（default）----')
+    for (const v of variables) {
+      lines.push(`default ${v.name} = ${pyLiteral(v.initial)}`)
+    }
+    lines.push('')
+  }
+
   // ---- 立绘 Image 声明（路径对齐 C 阶段 images/sprite，真实扩展名）----
   const spriteAssets = assets.filter((a) => a.type === 'sprite')
   if (characterConfigs.length > 0 && spriteAssets.length > 0) {
@@ -1050,11 +1247,12 @@ export function buildBundle(
   assets: AssetItem[] = [],
   positionSlots?: PositionSlot[],
   scriptLabel: string = 'start',
+  variables: GlobalVariable[] = [],
 ): RpyBundle {
   const st = buildSymbolTable(deltas, characterConfigs, assets, positionSlots)
   const used = collectUsedTransitions(deltas, resolvedStates)
   const script = deltas.length === 0 ? '# No content\n' : serializeNodes(compileToNodes(deltas, resolvedStates, st, scriptLabel, used), deltas.length)
-  const definitions = exportDefinitionsRpy(characterConfigs, assets, positionSlots, st, used)
+  const definitions = exportDefinitionsRpy(characterConfigs, assets, positionSlots, st, used, variables)
   const transforms = exportTransformsRpy(resolvedStates)
   const assetRefs = buildAssetRefs(assets)
   return { script, definitions, transforms, assets: assetRefs }
@@ -1082,6 +1280,7 @@ export function downloadRpy(
   assets: AssetItem[] = [],
   positionSlots?: PositionSlot[],
   scriptFilename: string = 'script.rpy',
+  variables: GlobalVariable[] = [],
 ): void {
   // 校验（沿用全量校验，含 voice/se）
   const lookups = resolveLookups(deltas, characterConfigs, assets)
@@ -1093,7 +1292,7 @@ export function downloadRpy(
   const label = scriptFilename.replace(/\.rpy$/i, '') || 'start'
   const script = exportToRpy(deltas, resolvedStates, characterConfigs, assets, positionSlots, label)
   const used = collectUsedTransitions(deltas, resolvedStates)
-  const defs = exportDefinitionsRpy(characterConfigs, assets, positionSlots, undefined, used)
+  const defs = exportDefinitionsRpy(characterConfigs, assets, positionSlots, undefined, used, variables)
   const transforms = exportTransformsRpy(resolvedStates)
   triggerDownload(script, scriptFilename)
   triggerDownload(defs, 'definitions.rpy')
@@ -1119,6 +1318,7 @@ export async function exportProjectPackage(
   assets: AssetItem[] = [],
   positionSlots?: PositionSlot[],
   scriptLabel: string = 'start',
+  variables: GlobalVariable[] = [],
 ): Promise<ExportResult> {
   const lookups = resolveLookups(deltas, characterConfigs, assets)
   const errors = validateExportNames(deltas, lookups, characterConfigs, assets)
@@ -1127,7 +1327,7 @@ export async function exportProjectPackage(
     return { mode: 'web', success: false, message: '校验失败，已中止导出。' }
   }
 
-  const bundle = buildBundle(deltas, resolvedStates, characterConfigs, assets, positionSlots, scriptLabel)
+  const bundle = buildBundle(deltas, resolvedStates, characterConfigs, assets, positionSlots, scriptLabel, variables)
 
   const api = (window as unknown as { electronAPI?: {
     exportRenpy?: (b: RpyBundle) => Promise<{ success: boolean; gameDir?: string; copied?: number; error?: string }>

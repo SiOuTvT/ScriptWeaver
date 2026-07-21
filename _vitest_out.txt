@@ -1,0 +1,18 @@
+
+ RUN  v4.1.10 d:/ScriptWeaver
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/utils/__tests__/rpyExporter.test.ts [ src/utils/__tests__/rpyExporter.test.ts ]
+TypeError: Cannot read properties of undefined (reading 'config')
+ ❯ src/utils/__tests__/rpyExporter.test.ts:109:1
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  21:54:23
+   Duration  1.39s (transform 109ms, setup 98ms, import 0ms, tests 0ms, environment 898ms)
+

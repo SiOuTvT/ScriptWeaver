@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useRef, memo, useState, useEffect } from 'react'
-import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut } from 'lucide-react'
+import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut, ListTree, Tag } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import type { ResolvedLineState, LineDelta, CharacterConfig } from '@/core/types'
 import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
@@ -397,6 +397,9 @@ export default function Timeline() {
   const insertDeltaAt = useAppStore((s) => s.insertDeltaAt)
   const deleteDeltaAt = useAppStore((s) => s.deleteDeltaAt)
   const moveDelta = useAppStore((s) => s.moveDelta)
+  const setLineType = useAppStore((s) => s.setLineType)
+  const setLineLabel = useAppStore((s) => s.setLineLabel)
+  const selectedDelta = useAppStore((s) => s.draftDeltas[s.selectedLineIndex])
   const getAsset = useAppStore((s) => s.getAsset)
   const assets = useAppStore((s) => s.assets)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
@@ -898,8 +901,36 @@ export default function Timeline() {
   return (
     <div className="flex shrink-0 flex-col mt-3 bg-surface rounded-xl border border-edge/[0.12] shadow-sm relative overflow-hidden">
       <div className="flex items-center justify-between border-b border-edge/10 px-3 py-1.5">
-        <span className="text-[12px] font-medium text-fg">时间轴</span>
         <div className="flex items-center gap-2">
+          <span className="text-[12px] font-medium text-fg">时间轴</span>
+          {selectedDelta && (
+            <div className="flex items-center gap-1 rounded bg-canvas/60 px-1.5 py-0.5" title="为该行设置剧情块标签（Label），作为选择支跳转的落点">
+              <Tag size={12} strokeWidth={1.75} className="text-fg-subtle" />
+              <input
+                value={selectedDelta.label ?? ''}
+                onChange={(e) => setLineLabel(selectedIndex, e.target.value)}
+                placeholder="剧情块标签"
+                spellCheck={false}
+                className="w-28 bg-transparent font-mono text-[12px] text-fg outline-none placeholder:text-fg-faint"
+              />
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {/* 行类型切换：对话 ↔ 选择支（单事务） */}
+          <button
+            onClick={() => selectedDelta && setLineType(selectedIndex, selectedDelta.line_type === 'choice' ? 'dialogue' : 'choice')}
+            disabled={!selectedDelta}
+            title={selectedDelta?.line_type === 'choice' ? '切换为对话行' : '切换为选择支行'}
+            className={`flex h-5 items-center gap-1 rounded px-1.5 text-[12px] transition-colors ${
+              selectedDelta?.line_type === 'choice'
+                ? 'bg-signal/15 text-signal'
+                : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+            }`}
+          >
+            <ListTree size={13} strokeWidth={1.75} />
+            {selectedDelta?.line_type === 'choice' ? '选择支' : '转选择支'}
+          </button>
           {/* 缩放控制：拉宽行距便于精细对齐 */}
           <div className="flex items-center gap-0.5">
             <button
@@ -973,8 +1004,18 @@ export default function Timeline() {
                     >
                       <span className="font-mono leading-none text-[12px]">{s.line_id}</span>
                       <span className="w-full truncate text-center text-[12px] leading-tight text-fg-subtle">
-                        {s.speaker ? `${s.speaker}：${s.dialogue}` : s.dialogue}
+                        {s.line_type === 'choice'
+                          ? `选择支 · ${(s.choices ?? []).length} 选项`
+                          : s.speaker ? `${s.speaker}：${s.dialogue}` : s.dialogue}
                       </span>
+                      {s.label && (
+                        <span
+                          className="mt-0.5 max-w-full truncate rounded bg-signal/15 px-1 text-[11px] text-signal"
+                          title={`剧情块标签：${s.label}`}
+                        >
+                          #{s.label}
+                        </span>
+                      )}
                     </button>
 
                     {/* 行操作按钮（hover 出现） */}

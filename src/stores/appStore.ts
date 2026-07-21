@@ -1,7 +1,9 @@
 import { create } from 'zustand'
-import type { LineDelta, ResolvedLineState, AssetItem, CharacterConfig } from '@/core/types'
+import type { LineDelta, ResolvedLineState, AssetItem, CharacterConfig, GlobalVariable, LineType, VariableOperation } from '@/core/types'
 import { reduceLines } from '@/core/reducer'
 import { DEFAULT_ACCENT } from '@/utils/themeColor'
+import type { RuntimeValues } from '@/utils/varRuntime'
+import { initRuntimeValues, applyOps } from '@/utils/varRuntime'
 
 // 生成唯一 ID
 let _uidCounter = 0
@@ -24,7 +26,7 @@ function nextLineId(deltas: LineDelta[]): string {
 }
 
 /** 创建一行空白 Delta */
-function createEmptyDelta(nextId: string): LineDelta {
+function createEmptyDelta(nextId: string, lineType: LineType = 'dialogue'): LineDelta {
   return {
     line_id: nextId,
     speaker: null,
@@ -32,6 +34,8 @@ function createEmptyDelta(nextId: string): LineDelta {
     background: null,
     characters: {},
     audio: { bgm: null, ambient: null, se: [], voice: null },
+    line_type: lineType,
+    ...(lineType === 'choice' ? { choices: [], prompt: '' } : {}),
   }
 }
 
@@ -41,6 +45,7 @@ interface HistorySnapshot {
   draftDeltas: LineDelta[]
   assets: AssetItem[]
   characterConfigs: CharacterConfig[]
+  variables: GlobalVariable[]
   selectedLineIndex: number
 }
 
@@ -59,6 +64,10 @@ interface AppState {
   assets: AssetItem[]
   /** 角色配置 */
   characterConfigs: CharacterConfig[]
+  /** 全局变量中央数据库 */
+  variables: GlobalVariable[]
+  /** 预览调试器运行时变量值（仅播放/调试时临时使用，不入 .swproj） */
+  runtimeValues: RuntimeValues
   /** 当前项目根目录（.swproj 所在目录），null = 尚未保存 */
   projectRoot: string | null
 
@@ -99,6 +108,19 @@ interface AppState {
   deleteAsset: (id: string) => { ok: boolean; refs: string[] }
   getAsset: (id: string) => AssetItem | undefined
 
+  // ===== 全局变量 CRUD =====
+  addVariable: (variable: GlobalVariable) => void
+  updateVariable: (name: string, patch: Partial<GlobalVariable>) => void
+  deleteVariable: (name: string) => void
+
+  // ===== 预览调试器：运行时变量值 =====
+  /** 手动设置某个运行时变量当前值（预览测试时手控调参） */
+  setRuntimeValue: (name: string, value: number | boolean) => void
+  /** 用变量声明的初始值重置全部运行时变量 */
+  resetRuntimeValues: () => void
+  /** 原子地顺序应用一组变量操作（播放器执行 $ 语句 / 选项内联操作时调用） */
+  applyRuntimeOps: (ops: VariableOperation[]) => void
+
   // ===== 项目操作 =====
   /** 新建空白项目（清空所有数据） */
   newProject: () => void
@@ -108,6 +130,7 @@ interface AppState {
     deltas: LineDelta[]
     assets: AssetItem[]
     characterConfigs: CharacterConfig[]
+    variables?: GlobalVariable[]
     projectRoot: string | null
   }) => void
   setProjectRoot: (root: string | null) => void
@@ -117,6 +140,11 @@ interface AppState {
   /** 以不可变方式更新第 index 行 Delta */
   updateDeltaAt: (index: number, updater: (prev: LineDelta) => LineDelta) => void
   batchUpdateDeltas: (updates: { index: number; updater: (prev: LineDelta) => LineDelta }[]) => void
+  /** 切换第 index 行的行类型（对话 ↔ 选择支），单事务提交 */
+  setLineType: (index: number, type: LineType) => void
+  /** 为第 index 行设置/清除剧情块标签（Label 节点化），单事务提交 */
+  setLineLabel: (index: number, label: string) => void
+
 
   /** 行管理：插入 / 删除 / 移动 */
   insertDeltaAt: (index: number, delta?: LineDelta) => void
@@ -152,6 +180,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   resolvedStates: reduceLines([]),
   assets: [],
   characterConfigs: [],
+  variables: [],
+  runtimeValues: {},
   projectRoot: null,
 
   // ---- 选中 ----
@@ -310,6 +340,36 @@ export const useAppStore = create<AppState>((set, get) => ({
     return get().assets.find((a) => a.id === id)
   },
 
+  // ===== 全局变量 CRUD =====
+  addVariable: (variable) => {
+    get()._pushHistory()
+    set((s) => ({ variables: [...s.variables, variable] }))
+  },
+
+  updateVariable: (name, patch) => {
+    get()._pushHistory()
+    set((s) => ({
+      variables: s.variables.map((v) => (v.name === name ? { ...v, ...patch } : v)),
+    }))
+  },
+
+  deleteVariable: (name) => {
+    get()._pushHistory()
+    set((s) => ({ variables: s.variables.filter((v) => v.name !== name) }))
+  },
+
+  setRuntimeValue: (name, value) => {
+    set((s) => ({ runtimeValues: { ...s.runtimeValues, [name]: value } }))
+  },
+
+  resetRuntimeValues: () => {
+    set((s) => ({ runtimeValues: initRuntimeValues(s.variables) }))
+  },
+
+  applyRuntimeOps: (ops) => {
+    set((s) => ({ runtimeValues: applyOps(s.runtimeValues, ops) }))
+  },
+
   // ===== 项目操作 =====
   newProject: () => {
     get()._pushHistory()
@@ -319,6 +379,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       resolvedStates: reduceLines(empty),
       assets: [],
       characterConfigs: [],
+      variables: [],
+      runtimeValues: {},
       projectRoot: null,
       selectedLineIndex: 0,
       _history: [],
@@ -337,6 +399,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       resolvedStates: reduceLines(data.deltas),
       assets: data.assets,
       characterConfigs: data.characterConfigs,
+      variables: data.variables ?? [],
       projectRoot: data.projectRoot,
       selectedLineIndex: 0,
       _history: [],
@@ -371,6 +434,38 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (index < 0 || index >= deltas.length) continue
       deltas[index] = updater(deltas[index])
     }
+    set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
+  },
+
+  setLineType: (index, type) => {
+    get()._pushHistory()
+    const deltas = [...get().draftDeltas]
+    if (index < 0 || index >= deltas.length) return
+    const prev = deltas[index]
+    // 场景上下文（背景/角色/音频/滤镜）保留，仅切换行类型与专属字段
+    const next: LineDelta = { ...prev, line_type: type }
+    if (type === 'choice') {
+      next.speaker = null
+      next.dialogue = ''
+      next.choices = prev.choices ?? []
+      next.prompt = prev.prompt ?? ''
+    } else {
+      delete next.choices
+      delete next.prompt
+    }
+    deltas[index] = next
+    set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
+  },
+
+  setLineLabel: (index, label) => {
+    get()._pushHistory()
+    const deltas = [...get().draftDeltas]
+    if (index < 0 || index >= deltas.length) return
+    const trimmed = label.trim()
+    const next: LineDelta = { ...deltas[index] }
+    if (trimmed) next.label = trimmed
+    else delete next.label
+    deltas[index] = next
     set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
   },
 
@@ -513,6 +608,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       draftDeltas: structuredClone(s.draftDeltas),
       assets: structuredClone(s.assets),
       characterConfigs: structuredClone(s.characterConfigs),
+      variables: structuredClone(s.variables),
       selectedLineIndex: s.selectedLineIndex,
     }
     set((st) => ({
@@ -529,6 +625,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       draftDeltas: structuredClone(s.draftDeltas),
       assets: structuredClone(s.assets),
       characterConfigs: structuredClone(s.characterConfigs),
+      variables: structuredClone(s.variables),
       selectedLineIndex: s.selectedLineIndex,
     }
     set({
@@ -536,6 +633,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       resolvedStates: reduceLines(prev.draftDeltas),
       assets: prev.assets,
       characterConfigs: prev.characterConfigs,
+      variables: prev.variables,
       selectedLineIndex: prev.selectedLineIndex,
       _history: s._history.slice(0, -1),
       _future: [...s._future, current],
@@ -550,6 +648,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       draftDeltas: structuredClone(s.draftDeltas),
       assets: structuredClone(s.assets),
       characterConfigs: structuredClone(s.characterConfigs),
+      variables: structuredClone(s.variables),
       selectedLineIndex: s.selectedLineIndex,
     }
     set({
@@ -557,6 +656,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       resolvedStates: reduceLines(next.draftDeltas),
       assets: next.assets,
       characterConfigs: next.characterConfigs,
+      variables: next.variables,
       selectedLineIndex: next.selectedLineIndex,
       _future: s._future.slice(0, -1),
       _history: [...s._history, current],

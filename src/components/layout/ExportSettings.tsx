@@ -109,6 +109,8 @@ export default function ExportSettings() {
   const resolvedStates = useAppStore((s) => s.resolvedStates)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
   const assets = useAppStore((s) => s.assets)
+  const variables = useAppStore((s) => s.variables)
+
 
   const [scriptLabel, setScriptLabel] = useState('start')
   const [validationResult, setValidationResult] = useState<{ ok: boolean; message: string } | null>(null)
@@ -142,12 +144,12 @@ export default function ExportSettings() {
   }, [draftDeltas, characterConfigs])
 
   const handleExportScript = useCallback(() => {
-    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, DEFAULT_POSITION_SLOTS, `${scriptLabel}.rpy`)
+    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, DEFAULT_POSITION_SLOTS, `${scriptLabel}.rpy`, variables)
     setStage((s) => ({ ...s, script: 'done' }))
-  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel])
+  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel, variables])
 
   const handleExportDefs = useCallback(() => {
-    const content = exportDefinitionsRpy(characterConfigs, assets, DEFAULT_POSITION_SLOTS)
+    const content = exportDefinitionsRpy(characterConfigs, assets, DEFAULT_POSITION_SLOTS, undefined, undefined, variables)
     const blob = new Blob([content], { type: 'text/x-renpy;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -158,11 +160,11 @@ export default function ExportSettings() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     setStage((s) => ({ ...s, defs: 'done' }))
-  }, [characterConfigs, assets])
+  }, [characterConfigs, assets, variables])
 
   const handleExportBoth = useCallback(() => {
-    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, DEFAULT_POSITION_SLOTS, `${scriptLabel}.rpy`)
-    const defs = exportDefinitionsRpy(characterConfigs, assets, DEFAULT_POSITION_SLOTS)
+    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, DEFAULT_POSITION_SLOTS, `${scriptLabel}.rpy`, variables)
+    const defs = exportDefinitionsRpy(characterConfigs, assets, DEFAULT_POSITION_SLOTS, undefined, undefined, variables)
     const blob = new Blob([defs], { type: 'text/x-renpy;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -173,7 +175,7 @@ export default function ExportSettings() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     setStage((s) => ({ ...s, script: 'done', defs: 'done' }))
-  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel])
+  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel, variables])
 
   const handleExportPackage = useCallback(async () => {
     const res = await exportProjectPackage(
@@ -183,10 +185,11 @@ export default function ExportSettings() {
       assets,
       DEFAULT_POSITION_SLOTS,
       scriptLabel,
+      variables,
     )
     setPackageResult({ ok: res.success, message: res.message })
     setStage((s) => (res.success ? { ...s, pack: 'done', done: 'done' } : { ...s, pack: 'error' }))
-  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel])
+  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel, variables])
 
   const totalLines = draftDeltas.length
   const speakerCount = new Set(draftDeltas.map((d) => d.speaker).filter(Boolean)).size

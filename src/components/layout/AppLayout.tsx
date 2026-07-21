@@ -4,6 +4,7 @@ import ManagementPanel from './ManagementPanel'
 import StagePreview from './StagePreview'
 import ScriptDrawer from './ScriptDrawer'
 import Timeline from './Timeline'
+import ScriptGraph from './ScriptGraph'
 import ScriptOverview from './ScriptOverview'
 import AssetManager from './AssetManager'
 import CharacterManager from './CharacterManager'
@@ -11,6 +12,7 @@ import EffectsLab from './EffectsLab'
 import AIPanel from './AIPanel'
 import ExportSettings from './ExportSettings'
 import ThemeSettings from './ThemeSettings'
+import ChoiceEditor from './ChoiceEditor'
 import { applyAccent } from '@/utils/themeColor'
 import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
@@ -20,7 +22,7 @@ import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 import { subscribe, getToastItems, toast, type ToastItem } from '@/utils/toast'
 import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown } from 'lucide-react'
 import { Button, IconButton, ConfirmDialog } from '@/components/ui'
-import type { ProjectFile, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
+import type { ProjectFile, LineDelta, CharacterConfig, AssetItem, GlobalVariable } from '@/core/types'
 
 /** 剥离 assets 中的 blobUrl 易失字段 —— 仅 Web 降级内存渲染使用，不入 .swproj / localStorage */
 function stripVolatile(assets: AssetItem[]): AssetItem[] {
@@ -73,6 +75,7 @@ function serializeProject(
     draftDeltas: deltas,
     characterConfigs,
     assets: stripVolatile(assets),
+    variables: useAppStore.getState().variables,
     savedAt: new Date().toISOString(),
     canvasRatio: useAppStore.getState().canvasRatio,
   }
@@ -84,6 +87,7 @@ function deserializeProject(json: string): {
   deltas: LineDelta[]
   characterConfigs: CharacterConfig[]
   assets: AssetItem[]
+  variables: GlobalVariable[]
   canvasRatio?: { w: number; h: number }
 } | null {
   try {
@@ -93,6 +97,7 @@ function deserializeProject(json: string): {
       deltas: data.draftDeltas,
       characterConfigs: data.characterConfigs ?? [],
       assets: data.assets ?? [],
+      variables: data.variables ?? [],
       canvasRatio: data.canvasRatio,
     }
   } catch {
@@ -104,6 +109,7 @@ const DEBOUNCE_MS = 800
 
 export default function AppLayout() {
   const draftDeltas = useAppStore((s) => s.draftDeltas)
+  const selectedLineIndex = useAppStore((s) => s.selectedLineIndex)
   const resolvedStates = useAppStore((s) => s.resolvedStates)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
   const assets = useAppStore((s) => s.assets)
@@ -214,7 +220,7 @@ export default function AppLayout() {
   // ---- 操作 ----
 
   const handleExport = () => {
-    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, DEFAULT_POSITION_SLOTS, 'script.rpy')
+    downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, DEFAULT_POSITION_SLOTS, 'script.rpy', useAppStore.getState().variables)
   }
 
   const handleNewClick = () => {
@@ -315,6 +321,18 @@ export default function AppLayout() {
 
   const totalLines = draftDeltas.length
   const isChapters = activeNavItem === 'chapters'
+  const showChoiceEditor = draftDeltas[selectedLineIndex]?.line_type === 'choice'
+  const selectLine = useAppStore((s) => s.selectLine)
+
+  // 底部视图：时间轴 / 节点图谱 一键切换；图谱点击节点/连线联动定位到时间轴对应行
+  const [bottomView, setBottomView] = useState<'timeline' | 'graph'>('timeline')
+  const handleFocusLine = useCallback(
+    (index: number) => {
+      selectLine(index)
+      setBottomView('timeline')
+    },
+    [selectLine],
+  )
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-canvas text-fg">
@@ -378,9 +396,39 @@ export default function AppLayout() {
               <StagePreview />
               <div className="col-divider" aria-hidden />
               <ScriptDrawer />
+              {showChoiceEditor && (
+                <>
+                  <div className="col-divider" aria-hidden />
+                  <ChoiceEditor />
+                </>
+              )}
             </div>
-            <Timeline />
-          </div>
+    {/* 底部视图：时间轴 / 节点图谱 一键切换 */}
+    <div className="flex min-h-0 flex-col border-t border-edge/10">
+      <div className="flex h-9 shrink-0 items-center gap-1 border-b border-edge/10 bg-surface/60 px-3">
+        <button
+          onClick={() => setBottomView('timeline')}
+          className={`rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors ${
+            bottomView === 'timeline' ? 'bg-primary/[0.08] text-fg' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+          }`}
+        >
+          时间轴
+        </button>
+        <button
+          onClick={() => setBottomView('graph')}
+          className={`rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors ${
+            bottomView === 'graph' ? 'bg-primary/[0.08] text-fg' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+          }`}
+        >
+          节点图谱
+        </button>
+      </div>
+      <div className="min-h-0 flex-1">
+        {bottomView === 'timeline' ? <Timeline /> : <ScriptGraph onFocusLine={handleFocusLine} />}
+      </div>
+    </div>
+  </div>
+
         )}
 
         {/* --- 其他页面：独立全屏视图 --- */}

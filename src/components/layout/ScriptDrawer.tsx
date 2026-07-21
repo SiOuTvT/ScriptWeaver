@@ -88,17 +88,27 @@ export default function ScriptDrawer() {
                   <span className="text-xs font-medium text-fg-muted">
                     {delta.speaker ?? '旁白'}
                   </span>
+                  {delta.label && (
+                    <span
+                      className="rounded bg-signal/15 px-1 py-0.5 text-[12px] text-signal"
+                      title={`剧情块标签：${delta.label}`}
+                    >
+                      #{delta.label}
+                    </span>
+                  )}
                   {/* 变更指示 */}
                   <ChangeIndicators delta={delta} />
                 </div>
 
-                {/* 台词 */}
+                {/* 台词 / 选择支摘要 */}
                 <p
                   className={`text-xs leading-relaxed ${
                     isSelected ? 'text-fg' : 'text-fg-subtle'
                   }`}
                 >
-                  {delta.dialogue}
+                  {delta.line_type === 'choice'
+                    ? `选择支 · ${(delta.choices ?? []).length} 选项`
+                    : delta.dialogue}
                 </p>
 
                 {/* 合并状态摘要 */}

@@ -131,6 +131,62 @@ export interface MountedEffect {
   enabled: boolean
 }
 
+// --------------- 全局变量中央数据库 ---------------
+
+export type GlobalVarType = 'boolean' | 'number'
+
+/**
+ * 全局变量声明（导出为 Ren'Py 的 `default` 语句）。
+ * 例如：tsundere_points = 0、has_key = False。
+ */
+export interface GlobalVariable {
+  /** Ren'Py 合法变量名：小写字母开头，仅含 [a-z0-9_]，如 tsundere_points */
+  name: string
+  type: GlobalVarType
+  /** 初始值：boolean 存 true/false，number 存任意数值 */
+  initial: boolean | number
+  /** 用户备注（可选） */
+  note?: string
+}
+
+/**
+ * 单行触发的变量操作（导出为 `$ <python 表达式>`）。
+ * 例如：tsundere_points += 1、has_key = True、has_key = not has_key。
+ */
+export interface VariableOperation {
+  /** 关联全局变量名 */
+  varName: string
+  /** 操作类型 */
+  op: 'set' | 'add' | 'subtract' | 'toggle'
+  /** 操作数：set 赋的值（boolean | number）；add/subtract 的增量（number）；toggle 忽略 */
+  value?: boolean | number
+}
+
+// --------------- 选择支行（Choices） ---------------
+
+/** 行类型：对话行（默认）或选择支行 */
+export type LineType = 'dialogue' | 'choice'
+
+/**
+ * 单个选项（选择支行的一枝）。
+ * 导出为 Ren'Py `menu:` 下的一项，带可选 `if <condition>` 门槛与 `jump <target_label>` 跳转。
+ */
+export interface ChoiceItem {
+  /** 选项唯一 ID（单事务内稳定，用作 React key） */
+  uid: string
+  /** 选项按钮文本（玩家可见） */
+  text: string
+  /** 目标跳转标签名（Ren'Py label）；空字符串 = 顺序继续（不 jump，落到 menu 之后） */
+  target_label: string
+  /** 前置变量条件（Python 表达式），如 "tsundere_points >= 5"；空 = 无门槛、始终显示 */
+  condition?: string
+  /**
+   * 选项内联变量操作（在 jump 之前、选项分支内发射的 `$ <python 表达式>`）。
+   * 例如选择「调戏她」后立刻 `tsundere_points += 1`。导出时紧跟选项下方并正确缩进。
+   */
+  ops?: VariableOperation[]
+}
+
 // --------------- 角色指令 ---------------
 
 /**
@@ -219,6 +275,37 @@ export interface LineDelta {
     se_offset_ms?: Record<string, number>
   }
 
+  /**
+   * 舞台级全局滤镜（scope: 'stage'）。
+   * 仅接受 filter 类目（Monochrome / Sepia / ColorMatrix）。
+   * 与立绘/背景特效挂载解耦，导出为整层 `show layer master: matrixcolor`；
+   * 后续无滤镜的行自动复位 IdentityMatrix()，杜绝染色残留。
+   * undefined = 继承上一行；null/[] = 显式清空（无滤镜）。
+   */
+  stageEffects?: MountedEffect[] | null
+
+  /**
+   * 本行触发的变量操作（在台词前发射 `$ <python 表达式>`）。
+   * 例如 tsundere_points += 1、has_key = True。
+   */
+  variableOps?: VariableOperation[]
+
+  /** 行类型：'dialogue'（对话，默认）或 'choice'（选择支）。缺省 'dialogue' 以兼容旧数据。 */
+  line_type?: LineType
+
+  /** 选择支行选项数组（仅 line_type === 'choice' 时生效）。 */
+  choices?: ChoiceItem[]
+
+  /** 选择支提示语（menu 标题，可选），如「你要怎么做？」 */
+  prompt?: string
+
+  /**
+   * 剧情块标签（Label）节点化：为该行在导出的 .rpy 中打上 `label <name>:` 锚点，
+   * 使选择支的 jump 有合法落点。空 = 不标记（顺延进上一剧情块）。
+   * 必须是合法 Python 标识符且项目内唯一；缺省空。
+   */
+  label?: string
+
   /** AI 生成的元数据（阶段四使用，当前预留） */
   ai_meta?: {
     confidence: number
@@ -234,6 +321,8 @@ export interface ProjectFile {
   draftDeltas: LineDelta[]
   characterConfigs: CharacterConfig[]
   assets: AssetItem[]
+  /** 全局变量中央数据库（导出为 definitions.rpy 的 default 语句） */
+  variables: GlobalVariable[]
   savedAt: string
   /** 场景画布比例（Ren'Py 式自选）；缺省按 16:9 处理 */
   canvasRatio?: { w: number; h: number }
@@ -282,4 +371,14 @@ export interface ResolvedLineState {
   } | null
   characters: Record<string, ResolvedCharacterState>
   audio: ResolvedAudioState
+  /** 合并后的舞台级全局滤镜（继承上一行；空数组表示无滤镜） */
+  stageEffects?: MountedEffect[]
+  /** 行类型（合并透传） */
+  line_type?: LineType
+  /** 合并后的选择支选项（仅选择支行） */
+  choices?: ChoiceItem[]
+  /** 选择支提示语 */
+  prompt?: string
+  /** 合并透传的剧情块标签（label 节点名） */
+  label?: string
 }

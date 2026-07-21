@@ -9,6 +9,7 @@ import type {
   ResolvedLineState,
   ResolvedCharacterState,
   AudioTrackInstruction,
+  MountedEffect,
 } from './types'
 
 // --------------- 常量 ---------------
@@ -44,6 +45,14 @@ export function applyDelta(
   // null = 继承上一行背景；对象 = 切换新背景
   const background =
     delta.background !== null ? delta.background : prev?.background ?? null
+
+  // --- 舞台级全局滤镜（scope: 'stage'）---
+  // undefined = 继承上一行；null/[] = 显式清空
+  const stageEffects: MountedEffect[] =
+    delta.stageEffects !== undefined
+      ? delta.stageEffects ?? []
+      : prev?.stageEffects ?? []
+
 
   // --- 角色 ---
   // 1. 继承上一行所有角色状态（浅拷贝）
@@ -89,6 +98,11 @@ export function applyDelta(
     dialogue: delta.dialogue,
     background,
     characters,
+    stageEffects,
+    line_type: delta.line_type ?? 'dialogue',
+    choices: delta.line_type === 'choice' ? (delta.choices ?? []) : undefined,
+    prompt: delta.line_type === 'choice' ? (delta.prompt ?? '') : undefined,
+    label: delta.label?.trim() ? delta.label.trim() : undefined,
     audio: {
       bgm,
       ambient,

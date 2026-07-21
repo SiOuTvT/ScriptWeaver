@@ -1,4 +1,22 @@
-[46192:0720/112544.486:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[46192:0720/112544.487:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[39264:0720/113012.781:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[39264:0720/113012.781:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[25776:0721/075004.511:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[25776:0721/075004.511:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[25776:0721/075004.511:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[25776:0721/075004.527:ERROR:disk_cache.cc(208)] Unable to create cache
+[25776:0721/075004.527:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[25776:0721/075004.527:ERROR:disk_cache.cc(208)] Unable to create cache
+[25776:0721/075004.527:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[25776:0721/075004.527:ERROR:disk_cache.cc(208)] Unable to create cache
+[25776:0721/075004.527:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[25776:0721/075016.704:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[25776:0721/075016.704:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[56196:0721/081605.225:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[56196:0721/081605.225:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[56196:0721/081605.225:ERROR:cache_util_win.cc(20)] Unable to move the cache: 拒绝访问。 (0x5)
+[56196:0721/081605.227:ERROR:disk_cache.cc(208)] Unable to create cache
+[56196:0721/081605.227:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[56196:0721/081605.227:ERROR:disk_cache.cc(208)] Unable to create cache
+[56196:0721/081605.227:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[56196:0721/081605.227:ERROR:disk_cache.cc(208)] Unable to create cache
+[56196:0721/081605.227:ERROR:gpu_disk_cache.cc(711)] Gpu Cache Creation failed: -2
+[56196:0721/081612.113:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[56196:0721/081612.113:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)

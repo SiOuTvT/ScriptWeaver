@@ -1,6 +1,6 @@
 import { useRef, useEffect, useLayoutEffect, useState, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import type { ResolvedLineState, ResolvedCharacterState, LineDelta, AssetItem, CharacterConfig, MountedEffect } from '@/core/types'
+import type { ResolvedLineState, ResolvedCharacterState, LineDelta, AssetItem, CharacterConfig, MountedEffect, ChoiceItem } from '@/core/types'
 import {
   getDragCache,
   type DragAssetData,
@@ -12,13 +12,15 @@ import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import {
   Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight,
-  Plus, FileText, Play, Pause, Copy, X, Pencil, Trash2, Sparkles,
+  Plus, FileText, Play, Pause, Square, Copy, X, Pencil, Trash2, Sparkles,
 } from 'lucide-react'
 import { Skeleton, IconButton } from '@/components/ui'
 import EffectMountPanel from '@/components/effects/EffectMountPanel'
 import { PRESET_SLOTS, getPresetSlot } from '@/core/positionSlots'
 import { playAudioPreview, stopBgm, stopAmbient, stopOneShots } from '@/utils/audioManager'
 import { estimateLineDurationMs } from '@/utils/playback'
+import VariableDebugger from './VariableDebugger'
+import { evalCondition, findLabelIndex } from '@/utils/varRuntime'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
 
@@ -211,6 +213,10 @@ export default function StagePreview() {
   // 画布比例（Ren'Py 式自选，项目级持久化）
   const canvasRatio = useAppStore((s) => s.canvasRatio)
   const setCanvasRatio = useAppStore((s) => s.setCanvasRatio)
+  // 变量调试器 / 交互播放器：运行时变量
+  const runtimeValues = useAppStore((s) => s.runtimeValues)
+  const applyRuntimeOps = useAppStore((s) => s.applyRuntimeOps)
+  const resetRuntimeValues = useAppStore((s) => s.resetRuntimeValues)
 
   const currentDelta = draftDeltas[selectedIndex] ?? null
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
@@ -822,6 +828,110 @@ export default function StagePreview() {
     }
   }, [])
 
+  // =================== 交互播放（预览调试）引擎 ===================
+  // 逐步推进 selectedIndex 驱动舞台；遇 $ 语句更新 runtimeValues（调试器高亮跳变），
+  // 遇选择支行暂停并弹出选项，选中后应用内联 ops 并按 target_label 跳转（缺失目标降级顺序继续）。
+  const [playMode, setPlayMode] = useState<'idle' | 'playing' | 'paused'>('idle')
+  const [pendingChoiceIndex, setPendingChoiceIndex] = useState<number | null>(null)
+  const playTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const playRunningRef = useRef(false)
+
+  const stopPlayback = useCallback(() => {
+    playRunningRef.current = false
+    if (playTimerRef.current) clearTimeout(playTimerRef.current)
+    playTimerRef.current = null
+    setPlayMode('idle')
+    setPendingChoiceIndex(null)
+    stopOneShots()
+  }, [stopOneShots])
+
+  const advanceTo = useCallback(
+    (index: number) => {
+      if (!playRunningRef.current) return
+      if (index >= draftDeltas.length) {
+        stopPlayback()
+        return
+      }
+      const delta = draftDeltas[index]
+      // 本行变量操作（在台词前发射的 $ 语句）
+      if (delta.variableOps && delta.variableOps.length > 0) {
+        applyRuntimeOps(delta.variableOps)
+      }
+      selectLine(index)
+      if (delta.line_type === 'choice') {
+        playRunningRef.current = false
+        setPendingChoiceIndex(index)
+        setPlayMode('paused')
+        return
+      }
+      const dur = estimateLineDurationMs(delta.dialogue)
+      playTimerRef.current = setTimeout(() => advanceTo(index + 1), dur)
+    },
+    [draftDeltas, selectLine, applyRuntimeOps, stopPlayback],
+  )
+
+  const startPlayback = useCallback(
+    (from: number) => {
+      stopAuto()
+      resetRuntimeValues()
+      if (playTimerRef.current) clearTimeout(playTimerRef.current)
+      playRunningRef.current = true
+      setPendingChoiceIndex(null)
+      setPlayMode('playing')
+      advanceTo(from)
+    },
+    [stopAuto, resetRuntimeValues, advanceTo],
+  )
+
+  const chooseOption = useCallback(
+    (choiceIndex: number, choice: ChoiceItem) => {
+      if (choice.ops && choice.ops.length > 0) applyRuntimeOps(choice.ops)
+      let target = choiceIndex + 1
+      if (choice.target_label) {
+        const idx = findLabelIndex(draftDeltas, choice.target_label)
+        if (idx >= 0) target = idx
+        // 未定义目标：降级顺序继续（铁律4 精神：不崩溃、不跳转 undefined）
+      }
+      setPendingChoiceIndex(null)
+      if (playRunningRef.current) {
+        setPlayMode('playing')
+        advanceTo(target)
+      } else {
+        selectLine(target)
+      }
+    },
+    [draftDeltas, applyRuntimeOps, advanceTo, selectLine],
+  )
+
+  const togglePlayPause = useCallback(() => {
+    if (playMode === 'idle') {
+      startPlayback(selectedIndex)
+      return
+    }
+    if (playMode === 'playing') {
+      playRunningRef.current = false
+      if (playTimerRef.current) clearTimeout(playTimerRef.current)
+      playTimerRef.current = null
+      setPlayMode('paused')
+      return
+    }
+    // paused：等待选择支行时无法跳过；否则从当前行继续
+    if (pendingChoiceIndex !== null) return
+    playRunningRef.current = true
+    setPlayMode('playing')
+    advanceTo(selectedIndex)
+  }, [playMode, pendingChoiceIndex, selectedIndex, startPlayback, advanceTo])
+
+  // 卸载清理交互播放定时器
+  useEffect(() => {
+    return () => {
+      if (playTimerRef.current) clearTimeout(playTimerRef.current)
+      playRunningRef.current = false
+    }
+  }, [])
+
+
+
   const handleCharMouseDown = useCallback(
     (charId: string) => (e: React.MouseEvent) => {
       // 只接管左键，避免与右键菜单等冲突
@@ -1024,17 +1134,56 @@ export default function StagePreview() {
           />
           <button
             type="button"
+            disabled={playMode !== 'idle'}
             onClick={toggleAuto}
             title={autoOn ? '停止自动播放' : '自动播放（Auto）'}
             className={`ml-1 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[13px] font-medium transition-colors ${
-              autoOn
-                ? 'border-signal bg-signal text-white hover:bg-signal/90'
-                : 'border-edge/20 bg-surface-2 text-fg hover:bg-surface-hover'
+              playMode !== 'idle'
+                ? 'cursor-not-allowed border-edge/15 bg-surface-1 text-fg-faint opacity-50'
+                : autoOn
+                  ? 'border-signal bg-signal text-white hover:bg-signal/90'
+                  : 'border-edge/20 bg-surface-2 text-fg hover:bg-surface-hover'
             }`}
           >
             {autoOn ? <Pause size={15} strokeWidth={2} /> : <Play size={15} strokeWidth={2} />}
             Auto
           </button>
+          {/* 交互播放（预览调试）：遇选择支暂停弹出选项，变量变化时调试器实时跳变 */}
+          <button
+            type="button"
+            disabled={playMode === 'paused' && pendingChoiceIndex !== null}
+            onClick={togglePlayPause}
+            title={
+              playMode === 'idle'
+                ? '从头交互播放（预览调试）'
+                : playMode === 'playing'
+                  ? '暂停播放'
+                  : pendingChoiceIndex !== null
+                    ? '请在舞台中选择分支后继续'
+                    : '继续播放'
+            }
+            className={`ml-1 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[13px] font-medium transition-colors ${
+              playMode === 'paused' && pendingChoiceIndex !== null
+                ? 'cursor-not-allowed border-edge/15 bg-surface-1 text-fg-faint opacity-50'
+                : playMode === 'idle'
+                  ? 'border-edge/20 bg-surface-2 text-fg hover:bg-surface-hover'
+                  : 'border-signal bg-signal text-white hover:bg-signal/90'
+            }`}
+          >
+            {playMode === 'playing' ? <Pause size={15} strokeWidth={2} /> : <Play size={15} strokeWidth={2} />}
+            {playMode === 'idle' ? '播放' : playMode === 'playing' ? '暂停' : '继续'}
+          </button>
+          {playMode !== 'idle' && (
+            <button
+              type="button"
+              onClick={stopPlayback}
+              title="停止播放并复位"
+              className="ml-1 inline-flex items-center gap-1 rounded-md border border-edge/20 bg-surface-2 px-2 py-1 text-[13px] font-medium text-fg transition-colors hover:bg-surface-hover"
+            >
+              <Square size={15} strokeWidth={2} />
+              停止
+            </button>
+          )}
           <button
             type="button"
             onClick={() => insertDeltaAt(selectedIndex + 1)}
@@ -1057,6 +1206,10 @@ export default function StagePreview() {
           )}
         </div>
       </header>
+
+      {/* 变量实时监视调试器浮层（右上角，可折叠；仅播放/调试时观察运行时变量跳变） */}
+      <VariableDebugger />
+
       {/* 舞台行：舞台视口（自适应等比缩放）+ 右侧立绘编辑面板（真实布局兄弟，绝不遮挡舞台） */}
       <div className="relative flex min-h-0 flex-1">
         {/* 自适应视口：外层主题灰 letterbox（非纯黑），内部画布按所选比例整块等比缩放 */}
@@ -1074,12 +1227,17 @@ export default function StagePreview() {
           onDrop={handleDropOnStage}
           onClick={() => setSelectedCharId(null)}
         >
-        {/* 背景层：contain 完整显示整张图，绝不截断；比例留白由画布底色（主题灰）填充，非纯黑 */}
+        {/* 背景层：contain 完整显示整张图，绝不截断；比例留白由画布底色（主题灰）填充，非纯黑。
+            注意：必须用 <img src> 而非 CSS background-image——Electron 的 BrowserWindow 在 CSS
+            上下文里对自定义 sw-asset:// 协议不渲染 background-image（请求会发出并 200，但画面空白）；
+            <img src> 直读协议是铁律 1 下已验证可用的消费路径（与 PreviewStage 一致）。 */}
         <div className="absolute inset-0 bg-canvas">
           {hasBgImage && (
-            <div
-              className="absolute inset-0 animate-fade-in bg-contain bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${bgDataUrl})` }}
+            <img
+              src={bgDataUrl}
+              alt=""
+              draggable={false}
+              className="pointer-events-none absolute inset-0 h-full w-full animate-fade-in object-contain object-center"
             />
           )}
           {bgDataUrl && !bgLoaded && (
@@ -1355,6 +1513,41 @@ export default function StagePreview() {
         </div>
       </div>
         </div>
+
+        {/* 选择支交互浮层（交互播放在 menu 处暂停时弹出，条件不满足的选项自动禁用） */}
+        {pendingChoiceIndex !== null && (() => {
+          const pc = draftDeltas[pendingChoiceIndex]
+          if (!pc || pc.line_type !== 'choice') return null
+          const choices = pc.choices ?? []
+          return (
+            <div className="absolute bottom-4 left-1/2 z-40 w-[min(680px,94%)] -translate-x-1/2 rounded-xl border border-signal/30 bg-surface/90 p-3 shadow-2 backdrop-blur-md">
+              {pc.prompt && <p className="mb-2 text-center text-[13px] text-fg-muted">{pc.prompt}</p>}
+              <div className="flex flex-col gap-2">
+                {choices.map((c) => {
+                  const ok = evalCondition(c.condition, runtimeValues)
+                  return (
+                    <button
+                      key={c.uid}
+                      disabled={!ok}
+                      onClick={() => chooseOption(pendingChoiceIndex, c)}
+                      className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[14px] transition-colors ${
+                        ok
+                          ? 'border-edge/20 bg-surface-2 text-fg hover:border-signal hover:bg-signal/10'
+                          : 'cursor-not-allowed border-edge/10 bg-surface-1 text-fg-faint opacity-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {c.text || '（空选项）'}
+                        {c.ops && c.ops.length > 0 && <span className="text-[12px] text-fg-faint">$ {c.ops.length} 项</span>}
+                      </span>
+                      {c.condition && <span className="shrink-0 font-mono text-[12px] text-fg-faint">[{c.condition}]</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* 立绘编辑侧栏：单击选中立绘后常驻显示，真实布局兄弟占用空间，绝不遮挡舞台；
             滑块实时驱动立绘（位置 / 缩放）变化，所见即所得 */}

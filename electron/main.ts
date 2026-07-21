@@ -276,8 +276,16 @@ function registerAssetProtocol(): void {
   protocol.handle('sw-asset', (request) => {
     try {
       const url = new URL(request.url)
-      // pathname 形如 "/assets/images/sprite/x.png"
-      const rel = decodeURIComponent(url.pathname).replace(/^\/+/, '')
+      // pathname 形如 "/assets/images/sprite/x.png"，可能含中文/空格的百分号编码。
+      // decodeURIComponent 对真实文件名里偶发的非法 % 序列会抛错 → 必须容错，
+      // 否则协议 handler 抛异常会直接 500，导致整张图渲染断裂（铁律 1 严禁）。
+      let rel: string
+      try {
+        rel = decodeURIComponent(url.pathname)
+      } catch {
+        rel = url.pathname
+      }
+      rel = rel.replace(/^\/+/, '')
       console.log('[sw-asset] request', request.url, '| rel=', rel, '| activeRoot=', activeProjectRoot, '| session=', sessionDir)
       if (!rel) return new Response('bad request', { status: 400 })
 
