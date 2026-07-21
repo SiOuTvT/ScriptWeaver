@@ -4,6 +4,8 @@ import type { AssetItem, AssetType } from '@/core/types'
 import { hashAssetColor } from '@/utils/charColor'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import { setDragCache, DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
+import { evictAssetCache, downloadAsset } from '@/utils/cloudSync'
+import { toast } from '@/utils/toast'
 import { Button, IconButton, Input, ConfirmDialog } from '@/components/ui'
 import {
   Image as ImageIcon,
@@ -22,6 +24,10 @@ import {
   Square,
   Link2,
   UploadCloud,
+  DownloadCloud,
+  Cloud,
+  CloudOff,
+  RefreshCw,
   Play,
   Pause,
   Volume2,
@@ -755,6 +761,89 @@ function audioCardProps(props: GridProps, a: AssetItem) {
   }
 }
 
+// ============================ 云端同步工具条（素材缓存轻量化） ============================
+
+/**
+ * 单个素材的云端态标识 + 缓存操作：
+ *  - 徽标：本地 / 云端
+ *  - 「同步」：标记为已同步云端（可选填 remoteUrl，供按需重下载）
+ *  - 「释放」：删除本地磁盘文件，保留库内元数据（省磁盘；云端态可随时重下）
+ *  - 「重下」：从 remoteUrl 重新下载到本地
+ * 注：当前为桌面端无后端，remoteUrl 需指向真实可访问的云端地址方生效。
+ */
+function AssetCloudBar({ asset }: { asset: AssetItem }) {
+  const isCloud = asset.cloudState === 'cloud' || asset.cloudState === 'cached'
+
+  const markCloud = () => {
+    const url = window.prompt(
+      '可选的云端地址（remoteUrl），用于按需重新下载。留空则仅标记为已同步：',
+      asset.remoteUrl ?? '',
+    )
+    if (url === null) return
+    useAppStore.getState().updateAsset(asset.id, {
+      cloudState: 'cloud',
+      remoteUrl: url.trim() || undefined,
+    })
+    toast('已标记为云端同步', 'success')
+  }
+
+  const releaseCache = async () => {
+    const ok = await evictAssetCache(asset.relativePath)
+    toast(ok ? '已释放本地缓存，可随时按需重下载' : '释放失败（文件可能不在本地）', ok ? 'info' : 'warning')
+  }
+
+  const redownload = async () => {
+    if (!asset.remoteUrl) {
+      toast('未配置云端地址，无法重新下载', 'warning')
+      return
+    }
+    const ok = await downloadAsset(asset.remoteUrl, asset.relativePath)
+    toast(ok ? '已从云端重新下载' : '重新下载失败（请检查云端地址或网络）', ok ? 'success' : 'error')
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 border-t border-edge/8 px-2 py-1.5 text-[11px]">
+      <span
+        className={`flex items-center gap-1 ${isCloud ? 'text-info' : 'text-fg-faint'}`}
+        title={isCloud ? '已同步云端' : '仅本地存储'}
+      >
+        {isCloud ? <Cloud size={12} strokeWidth={1.75} /> : <CloudOff size={12} strokeWidth={1.75} />}
+        {isCloud ? '云端' : '本地'}
+      </span>
+      <div className="ml-auto flex items-center gap-0.5">
+        {!isCloud ? (
+          <button
+            onClick={markCloud}
+            className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
+            title="标记为已同步云端"
+          >
+            <UploadCloud size={12} strokeWidth={1.75} /> 同步
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => void releaseCache()}
+              className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
+              title="释放本地缓存以节省磁盘"
+            >
+              <CloudOff size={12} strokeWidth={1.75} /> 释放
+            </button>
+            {asset.remoteUrl && (
+              <button
+                onClick={() => void redownload()}
+                className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
+                title="从云端重新下载到本地"
+              >
+                <DownloadCloud size={12} strokeWidth={1.75} /> 重下
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ============================ 图片卡片 ============================
 
 interface ImageCardProps {
@@ -780,6 +869,7 @@ function ImageCard(p: ImageCardProps) {
   const imgSrc = resolveAssetSrc(asset)
   const [size, setSize] = useState<number | null>(null)
   const [dims, setDims] = useState<string>(asset.width && asset.height ? `${asset.width}×${asset.height}` : '—')
+  const [broken, setBroken] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -802,7 +892,7 @@ function ImageCard(p: ImageCardProps) {
     >
       {/* 预览区 */}
       <div className={`relative ${ratio} overflow-hidden bg-surface-2`}>
-        {imgSrc ? (
+        {imgSrc && !broken ? (
           <div className="flex h-full w-full items-center justify-center overflow-hidden">
             <div className="relative flex h-full w-full items-center justify-center p-1.5">
               {isPng && isSprite && (
@@ -815,6 +905,7 @@ function ImageCard(p: ImageCardProps) {
                 src={imgSrc}
                 alt={asset.name}
                 draggable={false}
+                onError={() => setBroken(true)}
                 onLoad={(e) => {
                   const el = e.currentTarget
                   if (el.naturalWidth && el.naturalHeight) setDims(`${el.naturalWidth}×${el.naturalHeight}`)
@@ -890,6 +981,9 @@ function ImageCard(p: ImageCardProps) {
         <span className="truncate font-mono">{dims}</span>
         <span className="shrink-0 font-mono">{formatBytes(size)}</span>
       </div>
+
+      {/* 云端同步工具条 */}
+      <AssetCloudBar asset={asset} />
     </div>
   )
 }
@@ -1109,6 +1203,9 @@ function AudioCard(p: AudioCardProps) {
           </button>
         </div>
       </div>
+
+      {/* 云端同步工具条 */}
+      <AssetCloudBar asset={asset} />
     </div>
   )
 }

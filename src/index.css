@@ -332,3 +332,13 @@
   0%, 100% { box-shadow: 0 0 0 3px rgb(var(--c-signal) / 0.16); opacity: 1; }
   50% { box-shadow: 0 0 0 5px rgb(var(--c-signal) / 0.06); opacity: 0.7; }
 }
+
+/* 配音播放时的嘴型（说话）动画：立绘轻微纵向起伏，模拟开口闭合 */
+@keyframes sw-talk {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.9); }
+}
+.sw-talking img {
+  animation: sw-talk 200ms ease-in-out infinite;
+  transform-origin: center 72%;
+}

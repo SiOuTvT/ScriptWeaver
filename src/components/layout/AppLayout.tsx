@@ -19,17 +19,17 @@ import { applyAccent } from '@/utils/themeColor'
 import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
+import { deserializeProject, restoreProjectFromJson, serializeProject } from '@/utils/projectFile'
 import { bindAssetWatcher } from '@/services/assetSync'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 import { subscribe, getToastItems, toast, type ToastItem } from '@/utils/toast'
-import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown, Images, FileText, Activity, GitBranch, ChevronUp, ChevronDown } from 'lucide-react'
+import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown, Images, FileText, Activity, GitBranch, Cloud, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button, IconButton, ConfirmDialog } from '@/components/ui'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem, GlobalVariable } from '@/core/types'
+import { createSnapshot } from '@/utils/cloudSync'
+import VersionHistory from './VersionHistory'
+import CollabPanel from './CollabPanel'
 
-/** 剥离 assets 中的 blobUrl 易失字段 —— 仅 Web 降级内存渲染使用，不入 .swproj / localStorage */
-function stripVolatile(assets: AssetItem[]): AssetItem[] {
-  return assets.map(({ blobUrl: _blobUrl, ...rest }) => rest)
-}
 
 /**
  * 合并磁盘扫描出的素材：仅新增库中尚未存在（按 relativePath 去重）的文件，
@@ -66,47 +66,6 @@ async function activateProjectRoot(root: string | null): Promise<void> {
   }
 }
 
-/** 序列化完整项目数据为 JSON（不含 dataUrl） */
-function serializeProject(
-  deltas: LineDelta[],
-  characterConfigs: CharacterConfig[],
-  assets: AssetItem[],
-): string {
-  const project: ProjectFile = {
-    version: 1,
-    draftDeltas: deltas,
-    characterConfigs,
-    assets: stripVolatile(assets),
-    variables: useAppStore.getState().variables,
-    savedAt: new Date().toISOString(),
-    canvasRatio: useAppStore.getState().canvasRatio,
-  }
-  return JSON.stringify(project, null, 2)
-}
-
-/** 反序列化项目 JSON，校验基本结构 */
-function deserializeProject(json: string): {
-  deltas: LineDelta[]
-  characterConfigs: CharacterConfig[]
-  assets: AssetItem[]
-  variables: GlobalVariable[]
-  canvasRatio?: { w: number; h: number }
-} | null {
-  try {
-    const data = JSON.parse(json) as ProjectFile
-    if (!data.draftDeltas || !Array.isArray(data.draftDeltas)) return null
-    return {
-      deltas: data.draftDeltas,
-      characterConfigs: data.characterConfigs ?? [],
-      assets: data.assets ?? [],
-      variables: data.variables ?? [],
-      canvasRatio: data.canvasRatio,
-    }
-  } catch {
-    return null
-  }
-}
-
 const DEBOUNCE_MS = 800
 
 export default function AppLayout() {
@@ -124,7 +83,28 @@ export default function AppLayout() {
 
   // ---- 对话框状态 ----
   const [showNewConfirm, setShowNewConfirm] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [showCollab, setShowCollab] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
+
+  // ---- 自动静默备份：编辑停顿 4 分钟后自动建档（防丢稿） ----
+  const autoBackupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (autoBackupTimer.current) clearTimeout(autoBackupTimer.current)
+    autoBackupTimer.current = setTimeout(() => {
+      const s = useAppStore.getState()
+      if (s.draftDeltas.length === 0 && s.assets.length === 0 && s.characterConfigs.length === 0) return
+      void createSnapshot(
+        serializeProject(s.draftDeltas, s.characterConfigs, s.assets),
+        '自动备份',
+        true,
+      )
+    }, 4 * 60 * 1000)
+    return () => {
+      if (autoBackupTimer.current) clearTimeout(autoBackupTimer.current)
+    }
+  }, [draftDeltas, characterConfigs, assets, projectRoot])
+
 
   // ---- auto-save refs ----
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -266,6 +246,12 @@ export default function AppLayout() {
       saveDraft(draftDeltas, characterConfigs, assets, result.projectDir, useAppStore.getState().canvasRatio)
       // 保存后激活项目根：主进程已开启监听，此处扫描合并磁盘素材
       activateProjectRoot(result.projectDir)
+      // 保存即静默建档，防止覆盖式保存丢失历史版本
+      try {
+        await createSnapshot(serializeProject(draftDeltas, characterConfigs, assets), '自动备份·保存', true)
+      } catch {
+        /* 建档失败不阻断保存 */
+      }
     } else if (result.error) {
       alert(`保存失败：${result.error}`)
     }
@@ -303,22 +289,20 @@ export default function AppLayout() {
       return
     }
 
-    const parsed = deserializeProject(result.content)
-    if (!parsed) {
-      alert('文件格式错误，无法打开')
-      return
-    }
-
     const root = result.projectDir ?? null
-    loadProjectData({
-      ...parsed,
-      projectRoot: root,
-    })
-    useAppStore.getState().setCanvasRatio(parsed.canvasRatio ?? { w: 16, h: 9 })
-    saveDraft(parsed.deltas, parsed.characterConfigs, parsed.assets, root, parsed.canvasRatio ?? { w: 16, h: 9 })
+    const ok = await restoreProjectFromJson(result.content, root)
+    if (!ok) alert('文件格式错误，无法打开')
 
-    // 激活项目根：驱动 sw-asset:// 协议 + 文件夹监听 + 磁盘增量合并（不依赖任何 base64 回读）
-    activateProjectRoot(root)
+    // 自动建档：打开即静默备份一份，防止后续误操作丢失
+    try {
+      await createSnapshot(
+        serializeProject(useAppStore.getState().draftDeltas, useAppStore.getState().characterConfigs, useAppStore.getState().assets),
+        '自动备份·打开',
+        true,
+      )
+    } catch {
+      /* 建档失败不阻断 */
+    }
   }
 
   const totalLines = draftDeltas.length
@@ -372,6 +356,12 @@ export default function AppLayout() {
           </Button>
           <Button variant="ghost" size="md" icon={<Save size={14} strokeWidth={1.75} />} onClick={handleSave}>
             保存
+          </Button>
+          <Button variant="ghost" size="md" icon={<GitBranch size={14} strokeWidth={1.75} />} onClick={() => setShowHistory(true)}>
+            历史
+          </Button>
+          <Button variant="ghost" size="md" icon={<Cloud size={14} strokeWidth={1.75} />} onClick={() => setShowCollab(true)}>
+            协作
           </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
           <Button variant="outline" size="md" icon={<FileDown size={14} strokeWidth={1.75} />} onClick={handleExport}>
@@ -500,6 +490,7 @@ export default function AppLayout() {
               success: 'bg-success/90',
               info: 'bg-info/90',
               warning: 'bg-warning/90',
+              error: 'bg-danger/90',
             }
             return (
               <div
@@ -512,6 +503,12 @@ export default function AppLayout() {
           })}
         </div>
       )}
+
+      {/* ===== 版本历史（云端备份 / 回滚） ===== */}
+      {showHistory && <VersionHistory open={showHistory} onClose={() => setShowHistory(false)} />}
+
+      {/* ===== 协作空间（邀请码 / 多端协同脚手架） ===== */}
+      {showCollab && <CollabPanel open={showCollab} onClose={() => setShowCollab(false)} />}
     </div>
   )
 }

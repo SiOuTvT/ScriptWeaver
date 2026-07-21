@@ -10,6 +10,7 @@ import {
   exportDefinitionsRpy,
   exportProjectPackage,
 } from '@/utils/rpyExporter'
+import { buildWebProject } from '@/utils/webExporter'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 
 type StageStatus = 'pending' | 'active' | 'done' | 'error'
@@ -49,7 +50,7 @@ const PLATFORMS: PlatformDef[] = [
     label: 'Web 端',
     sub: 'HTML5 / 在线托管',
     icon: <Globe size={18} strokeWidth={1.75} />,
-    hint: '导出为 WebGL 构建，可直接部署到任意静态托管；注意控制立绘与音频体积。',
+    hint: '导出为纯前端网页工程，生成 index.html / player.js 与全部素材；部署到任意静态托管即可在浏览器试玩，无需安装。',
   },
 ]
 
@@ -110,6 +111,9 @@ export default function ExportSettings() {
   const characterConfigs = useAppStore((s) => s.characterConfigs)
   const assets = useAppStore((s) => s.assets)
   const variables = useAppStore((s) => s.variables)
+  const canvasRatio = useAppStore((s) => s.canvasRatio)
+  const projectTitle = characterConfigs[0]?.displayName || 'ScriptWeaver'
+
 
 
   const [scriptLabel, setScriptLabel] = useState('start')
@@ -191,6 +195,38 @@ export default function ExportSettings() {
     setStage((s) => (res.success ? { ...s, pack: 'done', done: 'done' } : { ...s, pack: 'error' }))
   }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel, variables])
 
+  const handleExportWeb = useCallback(async () => {
+    const api = window.electronAPI
+    if (!api?.exportWeb) {
+      setPackageResult({ ok: false, message: '当前环境不支持 Web 导出（需在 Electron 桌面端运行）。' })
+      return
+    }
+    const bundle = buildWebProject({
+      deltas: draftDeltas,
+      characterConfigs,
+      assets,
+      variables,
+      canvasRatio,
+      title: projectTitle,
+    })
+    const res = await api.exportWeb({
+      gameJson: bundle.gameJson,
+      assetRefs: bundle.assetRefs,
+      title: bundle.title,
+    })
+    if (res.success) {
+      let msg = `已生成 Web 独立包：\n${res.outDir}\n\n包含 index.html / player.js / style.css / game.json 与 ${res.copied} 个素材文件。\n将整个目录托管到任意静态服务器，即可在浏览器中直接试玩。`
+      if (bundle.missing.length) {
+        msg += `\n\n${bundle.missing.length} 个素材未找到（已跳过，对应立绘 / 音频将不显示）。`
+      }
+      setPackageResult({ ok: true, message: msg })
+      setStage((s) => ({ ...s, pack: 'done', done: 'done' }))
+    } else {
+      setPackageResult({ ok: false, message: res.error || '导出失败' })
+      setStage((s) => ({ ...s, pack: 'error' }))
+    }
+  }, [draftDeltas, characterConfigs, assets, variables, canvasRatio, projectTitle])
+
   const totalLines = draftDeltas.length
   const speakerCount = new Set(draftDeltas.map((d) => d.speaker).filter(Boolean)).size
   const charInScene = characterConfigs.length
@@ -208,9 +244,9 @@ export default function ExportSettings() {
         <header className="mb-6">
           <div className="flex items-center gap-2">
             <span className="signal-dot" />
-            <span className="eyebrow">Export Ren'Py</span>
+            <span className="eyebrow">Export</span>
           </div>
-          <h2 className="t-h1 mt-1.5">Ren'Py 导出设置</h2>
+          <h2 className="t-h1 mt-1.5">导出设置</h2>
           <p className="mt-0.5 t-subtitle">选择导出目标、配置打包偏好并校验脚本完整性</p>
         </header>
 
@@ -272,29 +308,35 @@ export default function ExportSettings() {
                 </div>
               </div>
               <p className="mb-2 t-micro leading-relaxed text-fg-subtle">{activePlatform.hint}</p>
-              <div className="rounded-md border border-edge/10 bg-surface-1 px-3">
-                <Switch
-                  checked={opts.includeAssets}
-                  onChange={() => setOpts((o) => ({ ...o, includeAssets: !o.includeAssets }))}
-                  label="内嵌素材"
-                  hint="将立绘 / 背景 / 音频随包复制，免手动搬运。"
-                />
-                <Switch
-                  checked={opts.generateDefs}
-                  onChange={() => setOpts((o) => ({ ...o, generateDefs: !o.generateDefs }))}
-                  label="生成 definitions.rpy"
-                  hint="角色声明、image / transform 与素材路径清单。"
-                />
-                <Switch
-                  checked={opts.minify}
-                  onChange={() => setOpts((o) => ({ ...o, minify: !o.minify }))}
-                  label="压缩空白"
-                  hint="导出时剔除注释与空行，减小体积。"
-                />
-              </div>
+              {platform === 'web' ? (
+                <p className="t-micro leading-relaxed text-fg-subtle">
+                  网页包将自动打包全部被引用的素材（背景 / 立绘 / 音频），并生成可直接托管的静态工程。无需额外配置。
+                </p>
+              ) : (
+                <div className="rounded-md border border-edge/10 bg-surface-1 px-3">
+                  <Switch
+                    checked={opts.includeAssets}
+                    onChange={() => setOpts((o) => ({ ...o, includeAssets: !o.includeAssets }))}
+                    label="内嵌素材"
+                    hint="将立绘 / 背景 / 音频随包复制，免手动搬运。"
+                  />
+                  <Switch
+                    checked={opts.generateDefs}
+                    onChange={() => setOpts((o) => ({ ...o, generateDefs: !o.generateDefs }))}
+                    label="生成 definitions.rpy"
+                    hint="角色声明、image / transform 与素材路径清单。"
+                  />
+                  <Switch
+                    checked={opts.minify}
+                    onChange={() => setOpts((o) => ({ ...o, minify: !o.minify }))}
+                    label="压缩空白"
+                    hint="导出时剔除注释与空行，减小体积。"
+                  />
+                </div>
+              )}
             </section>
 
-            {/* 脚本入口 */}
+            {platform !== 'web' && (
             <section className="panel p-4">
               <div className="eyebrow mb-3">脚本入口 Label</div>
               <label className="mb-1 block t-label">Ren'Py Script Label</label>
@@ -309,31 +351,47 @@ export default function ExportSettings() {
               </div>
               <p className="mt-1.5 t-micro">导出的脚本将以该 label 开头，Ren'Py 通过它定位剧本入口。</p>
             </section>
+            )}
 
             {/* 导出操作 */}
             <section className="panel p-4">
               <div className="eyebrow mb-3">导出操作 Export</div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={handleValidate}>
-                  校验引用
-                </Button>
-                <Button variant="primary" onClick={handleExportScript} disabled={totalLines === 0}>
-                  导出 script.rpy
-                </Button>
-                <Button variant="outline" onClick={handleExportDefs} disabled={characterConfigs.length === 0}>
-                  导出 definitions.rpy
-                </Button>
-                <Button variant="primary" onClick={handleExportBoth} disabled={totalLines === 0}>
-                  一并导出
-                </Button>
-                <Button variant="ghost" onClick={handleExportPackage} disabled={totalLines === 0}>
-                  导出 Ren'Py 项目包
-                </Button>
-              </div>
-              <p className="mt-2 t-micro">
-                「项目包」会生成完整 <code className="text-signal">game/</code> 目录（含 script.rpy / definitions.rpy / images / audio），
-                Electron 下自动建目录并磁盘直拷素材；纯浏览器环境回落为双文件下载。
-              </p>
+              {platform === 'web' ? (
+                <>
+                  <Button variant="primary" onClick={handleExportWeb} disabled={totalLines === 0}>
+                    导出 Web 独立包
+                  </Button>
+                  <p className="mt-2 t-micro">
+                    生成 <code className="text-signal">index.html</code> / <code className="text-signal">player.js</code> /{' '}
+                    <code className="text-signal">style.css</code> / <code className="text-signal">game.json</code> 与全部素材，复制到所选目录。
+                    将目录托管到任意静态服务器即可在浏览器中试玩，支持 PC 与移动端、点击 / 触摸 / 键盘推进，进度自动存于浏览器 localStorage。
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={handleValidate}>
+                      校验引用
+                    </Button>
+                    <Button variant="primary" onClick={handleExportScript} disabled={totalLines === 0}>
+                      导出 script.rpy
+                    </Button>
+                    <Button variant="outline" onClick={handleExportDefs} disabled={characterConfigs.length === 0}>
+                      导出 definitions.rpy
+                    </Button>
+                    <Button variant="primary" onClick={handleExportBoth} disabled={totalLines === 0}>
+                      一并导出
+                    </Button>
+                    <Button variant="ghost" onClick={handleExportPackage} disabled={totalLines === 0}>
+                      导出 Ren'Py 项目包
+                    </Button>
+                  </div>
+                  <p className="mt-2 t-micro">
+                    「项目包」会生成完整 <code className="text-signal">game/</code> 目录（含 script.rpy / definitions.rpy / images / audio），
+                    Electron 下自动建目录并磁盘直拷素材；纯浏览器环境回落为双文件下载。
+                  </p>
+                </>
+              )}
             </section>
 
             {/* 导出流水线看板 */}

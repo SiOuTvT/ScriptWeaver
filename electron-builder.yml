@@ -16,6 +16,11 @@ files:
   - dist/**/*
   - dist-electron/**/*
 
+# Web 导出模板（纯前端播放器）随包进入 resources/web-player，运行时由主进程复制到导出目录
+extraResources:
+  - from: web-player
+    to: web-player
+
 # ---- 自动更新发布源（替换为你的静态托管地址即可启用 OTA） ----
 publish:
   provider: generic

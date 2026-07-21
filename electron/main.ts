@@ -258,6 +258,15 @@ function getSessionDir(): string {
   return sessionDir
 }
 
+// Web 导出模板目录：开发期指向仓库根 web-player，打包后随 extraResources 进入 resources/web-player
+function getWebTemplateDir(): string {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'web-player')
+  }
+  return path.join(__dirname, '..', 'web-player')
+}
+
+
 // 应用退出时只停监听器，不再删除素材目录（素材已落在持久化的 userData 下，
 // 删除会导致下次启动全部 404；如需彻底清空，由「新建项目」等显式动作处理）。
 app.on('before-quit', () => {
@@ -433,6 +442,7 @@ function readAIConfig(): AIConfig {
         model: p.model ?? defaultAIConfig().model,
         temperature: typeof p.temperature === 'number' ? p.temperature : 0.7,
         maxTokens: typeof p.maxTokens === 'number' ? p.maxTokens : 2000,
+        ttsModel: typeof p.ttsModel === 'string' && p.ttsModel.trim() ? p.ttsModel : 'tts-1',
       }
     }
   } catch {
@@ -810,4 +820,219 @@ ipcMain.handle('fs:exportRenpy', async (_event, bundle: RpyBundle) => {
   }
 
   return { success: true, gameDir, copied }
+})
+
+// ===================== 导出 Web 独立包（纯前端试玩） =====================
+
+interface WebAssetRef {
+  assetId: string
+  type: string
+  sourceRelativePath: string
+  exportRelPath: string
+}
+
+ipcMain.handle('fs:exportWeb', async (_event, bundle: { gameJson: string; assetRefs: WebAssetRef[]; title: string }) => {
+  if (!mainWindow) return { success: false, error: 'No active window' }
+
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: '选择 Web 导出目录',
+    properties: ['openDirectory', 'createDirectory'],
+  })
+  if (result.canceled || result.filePaths.length === 0) return { success: false }
+  const root = result.filePaths[0]
+
+  const tpl = getWebTemplateDir()
+  // 源根：已保存项目用 projectRoot，否则回落会话目录
+  const srcRoot = activeProjectRoot ?? getSessionDir()
+  const resolvedSrcRoot = path.resolve(srcRoot)
+
+  try {
+    // 复制播放器模板（index.html / style.css / player.js）
+    for (const f of ['index.html', 'style.css', 'player.js']) {
+      const src = path.join(tpl, f)
+      if (fs.existsSync(src)) copyFile(src, path.join(root, f))
+    }
+    // 复制被引用的素材（磁盘→磁盘，二进制不进内存），带防目录穿越校验
+    let copied = 0
+    for (const a of bundle.assetRefs ?? []) {
+      const src = path.resolve(resolvedSrcRoot, a.sourceRelativePath)
+      if (src !== resolvedSrcRoot && !src.startsWith(resolvedSrcRoot + path.sep)) continue
+      if (!fs.existsSync(src)) continue
+      const dest = path.resolve(root, a.exportRelPath)
+      try {
+        copyFile(src, dest)
+        copied++
+      } catch {
+        /* 单文件失败不阻断整体导出 */
+      }
+    }
+    // 写入游戏数据
+    fs.writeFileSync(path.join(root, 'game.json'), bundle.gameJson, 'utf-8')
+    return { success: true, outDir: root, copied }
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message }
+  }
+})
+
+// ===================== 云端同步与版本快照（本地版本库） =====================
+// 说明：当前为纯桌面端，无后端服务器，版本库落地于 userData/snapshots/<projectId>/。
+// 该目录结构即为「云端同步」的本地等价物；接入真实云后端时，只需将下方落盘/读取
+// 替换为对云存储的读写（CloudSyncProvider 抽象已在渲染端预留）。
+
+function getSnapshotsDir(projectId: string): string {
+  const safe = (projectId || 'unsaved').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64)
+  return path.join(app.getPath('userData'), 'snapshots', safe)
+}
+
+const MAX_SNAPSHOTS = 60
+
+/** 创建版本快照（手动或自动静默备份） */
+ipcMain.handle(
+  'fs:snapshotProject',
+  async (_event, payload: { projectId: string; projectJson: string; label?: string; auto?: boolean }) => {
+    try {
+      const dir = getSnapshotsDir(payload.projectId)
+      ensureDir(dir)
+      let parsed: { draftDeltas?: unknown[]; assets?: unknown[]; characterConfigs?: unknown[] } = {}
+      try {
+        parsed = JSON.parse(payload.projectJson)
+      } catch {
+        /* 仍按原样建档 */
+      }
+      const now = new Date()
+      const ts = now.toISOString().replace(/[:.]/g, '-')
+      const id = `${ts}__${uuid().slice(0, 6)}`
+      const meta = {
+        id,
+        createdAt: now.toISOString(),
+        label: payload.label || (payload.auto ? '自动备份' : '手动快照'),
+        lineCount: Array.isArray(parsed.draftDeltas) ? parsed.draftDeltas.length : 0,
+        assetCount: Array.isArray(parsed.assets) ? parsed.assets.length : 0,
+        charCount: Array.isArray(parsed.characterConfigs) ? parsed.characterConfigs.length : 0,
+        sizeBytes: Buffer.byteLength(payload.projectJson, 'utf-8'),
+        auto: !!payload.auto,
+        projectJson: payload.projectJson,
+      }
+      fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(meta, null, 2), 'utf-8')
+
+      // 自动修剪：超出上限删除最旧的非自动快照优先，其次最旧的自动快照
+      const files = fs
+        .readdirSync(dir)
+        .filter((f) => f.endsWith('.json'))
+        .map((f) => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
+        .sort((a, b) => a.t - b.t)
+      while (files.length > MAX_SNAPSHOTS) {
+        const victim = files.shift()!
+        fs.rmSync(path.join(dir, victim.f), { force: true })
+      }
+      return { success: true, id }
+    } catch (err: unknown) {
+      return { success: false, error: (err as Error).message }
+    }
+  },
+)
+
+/** 列出某项目的版本快照（轻量元数据，不含工程体） */
+ipcMain.handle('fs:listSnapshots', (_event, projectId: string) => {
+  try {
+    const dir = getSnapshotsDir(projectId)
+    if (!fs.existsSync(dir)) return { success: true, snapshots: [] as unknown[] }
+    const list = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => {
+        try {
+          const m = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8'))
+          const { projectJson: _p, ...meta } = m
+          return meta
+        } catch {
+          return null
+        }
+      })
+      .filter(Boolean)
+      .sort((a: { createdAt: string }, b: { createdAt: string }) => (a.createdAt < b.createdAt ? 1 : -1))
+    return { success: true, snapshots: list }
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message, snapshots: [] as unknown[] }
+  }
+})
+
+/** 读取快照完整工程（用于回滚） */
+ipcMain.handle('fs:restoreSnapshot', (_event, projectId: string, id: string) => {
+  try {
+    const dir = getSnapshotsDir(projectId)
+    const fp = path.join(dir, `${id}.json`)
+    if (!fs.existsSync(fp)) return { success: false, error: '快照不存在' }
+    const m = JSON.parse(fs.readFileSync(fp, 'utf-8'))
+    return { success: true, projectJson: m.projectJson as string }
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message }
+  }
+})
+
+/** 删除快照 */
+ipcMain.handle('fs:deleteSnapshot', (_event, projectId: string, id: string) => {
+  try {
+    const dir = getSnapshotsDir(projectId)
+    const fp = path.join(dir, `${id}.json`)
+    if (fs.existsSync(fp)) fs.rmSync(fp, { force: true })
+    return { success: true }
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message }
+  }
+})
+
+// --------------- 素材本地缓存释放 / 按需重下载（大体积素材轻量化同步） ---------------
+
+/** 释放本地缓存：删除磁盘上的素材文件（保留库内元数据），释放磁盘空间 */
+ipcMain.handle('fs:evictAssetCache', async (_event, relativePath: string) => {
+  try {
+    const rel = (relativePath || '').replace(/\\/g, '/').replace(/^\/+/, '')
+    if (!rel || rel.includes('..')) return { success: false, error: '非法路径' }
+    const roots: string[] = []
+    if (activeProjectRoot) roots.push(activeProjectRoot)
+    roots.push(getSessionDir())
+    let removed = false
+    for (const root of roots) {
+      const fp = path.resolve(root, rel)
+      if (!fp.startsWith(path.resolve(root) + path.sep)) continue
+      if (fs.existsSync(fp)) {
+        fs.rmSync(fp, { force: true })
+        removed = true
+      }
+    }
+    return { success: true, removed }
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message }
+  }
+})
+
+/** 按需重新下载：从云端地址取回素材写入会话目录（接入真实云后端后生效） */
+ipcMain.handle('fs:downloadAsset', async (_event, remoteUrl: string, relativePath: string) => {
+  try {
+    if (!remoteUrl || !/^https?:\/\//i.test(remoteUrl)) {
+      return { success: false, error: '未配置有效的云端地址（remoteUrl）' }
+    }
+    const rel = (relativePath || '').replace(/\\/g, '/').replace(/^\/+/, '')
+    if (!rel || rel.includes('..')) return { success: false, error: '非法路径' }
+    const dir = path.join(getSessionDir(), path.dirname(rel))
+    ensureDir(dir)
+    const dest = path.join(getSessionDir(), rel)
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 120000)
+    let resp: Response
+    try {
+      resp = await fetch(remoteUrl, { signal: ctrl.signal })
+    } catch (e) {
+      clearTimeout(timer)
+      return { success: false, error: `下载失败：${(e as Error).message}` }
+    }
+    clearTimeout(timer)
+    if (!resp.ok) return { success: false, error: `云端返回 ${resp.status}` }
+    const buf = Buffer.from(await resp.arrayBuffer())
+    fs.writeFileSync(dest, buf)
+    return { success: true, bytes: buf.length }
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message }
+  }
 })

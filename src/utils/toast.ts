@@ -3,7 +3,7 @@
  * 在 AppLayout 中挂载 <ToastContainer /> 后，任意位置调用 toast() 即可。
  */
 
-type ToastType = 'success' | 'info' | 'warning'
+type ToastType = 'success' | 'info' | 'warning' | 'error'
 
 interface ToastItem {
   id: number

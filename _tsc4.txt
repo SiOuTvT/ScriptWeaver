@@ -1,0 +1,3 @@
+src/components/layout/Timeline.tsx(453,50): error TS2345: Argument of type '"error"' is not assignable to parameter of type 'ToastType | undefined'.
+src/components/layout/Timeline.tsx(518,7): error TS2345: Argument of type '"error" | "success"' is not assignable to parameter of type 'ToastType | undefined'.
+  Type '"error"' is not assignable to type 'ToastType | undefined'.

@@ -53,6 +53,60 @@ const api = {
     ipcRenderer.removeAllListeners('ai:aborted')
   },
 
+  /** TTS 一键合成：主进程复用 AI 配置的密钥调用兼容接口，音频落盘会话目录后返回素材元数据 */
+  ttsSynthesize: (payload: {
+    text: string
+    voiceId: string
+    charId: string
+    lineTag: string
+    speed?: number
+    pitch?: number
+    format?: 'mp3' | 'wav' | 'ogg'
+  }): Promise<{
+    success: boolean
+    asset?: { id: string; fileName: string; relativePath: string }
+    error?: string
+  }> => ipcRenderer.invoke('tts:synthesize', payload),
+
+  /** 导出 Web 独立包：主进程复制播放器模板 + 素材 + 写入 game.json 到目标目录 */
+  exportWeb: (bundle: {
+    gameJson: string
+    assetRefs: { assetId: string; type: string; sourceRelativePath: string; exportRelPath: string }[]
+    title: string
+  }): Promise<{ success: boolean; outDir?: string; copied?: number; error?: string }> =>
+    ipcRenderer.invoke('fs:exportWeb', bundle),
+
+  // ----- 云端同步 / 版本快照（本地版本库） -----
+  /** 创建版本快照（手动或自动静默备份） */
+  snapshotProject: (payload: {
+    projectId: string
+    projectJson: string
+    label?: string
+    auto?: boolean
+  }): Promise<{ success: boolean; id?: string; error?: string }> =>
+    ipcRenderer.invoke('fs:snapshotProject', payload),
+
+  /** 列出某项目的版本快照（轻量元数据） */
+  listSnapshots: (projectId: string): Promise<{ success: boolean; snapshots: unknown[]; error?: string }> =>
+    ipcRenderer.invoke('fs:listSnapshots', projectId),
+
+  /** 读取快照完整工程 JSON（用于回滚） */
+  restoreSnapshot: (projectId: string, id: string): Promise<{ success: boolean; projectJson?: string; error?: string }> =>
+    ipcRenderer.invoke('fs:restoreSnapshot', projectId, id),
+
+  /** 删除快照 */
+  deleteSnapshot: (projectId: string, id: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('fs:deleteSnapshot', projectId, id),
+
+  /** 释放素材本地缓存（删除磁盘文件，保留库内元数据） */
+  evictAssetCache: (relativePath: string): Promise<{ success: boolean; removed?: boolean; error?: string }> =>
+    ipcRenderer.invoke('fs:evictAssetCache', relativePath),
+
+  /** 按需从云端地址重新下载素材到会话目录 */
+  downloadAsset: (remoteUrl: string, relativePath: string): Promise<{ success: boolean; bytes?: number; error?: string }> =>
+    ipcRenderer.invoke('fs:downloadAsset', remoteUrl, relativePath),
+
+
   /** 保存项目：选目录 → 复制素材 → 写 .swproj */
   saveProject: (data: {
     projectJson: string

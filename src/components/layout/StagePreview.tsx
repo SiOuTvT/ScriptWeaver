@@ -195,6 +195,19 @@ function useImageLoaded(url?: string): boolean {
 
 // ===================== 组件 =====================
 
+/**
+ * 计算一行在自动/交互播放中的停留时长（毫秒）。
+ * 若该行走绑定了语音且素材已知真实时长，则以语音时长为准（时长智能吸附），
+ * 否则回退到按台词字数估算。
+ */
+function getLineStayMs(state: ResolvedLineState | null, assets: AssetItem[]): number {
+  if (state?.audio.voice) {
+    const a = assets.find((x) => x.id === state.audio.voice)
+    if (a?.duration && a.duration > 0) return Math.max(900, Math.round(a.duration * 1000) + 250)
+  }
+  return estimateLineDurationMs(state?.dialogue)
+}
+
 export default function StagePreview() {
   const selectedIndex = useAppStore((s) => s.selectedLineIndex)
   const resolvedStates = useAppStore((s) => s.resolvedStates)
@@ -206,6 +219,18 @@ export default function StagePreview() {
   const assets = useAppStore((s) => s.assets)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
   const addCharacter = useAppStore((s) => s.addCharacter)
+  // 当前正在配音说话的立绘实例 ID（用于播放期间触发嘴型 / 表情联动）
+  const [speakingCharId, setSpeakingCharId] = useState<string | null>(null)
+  const speakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // 说话人显示名 → charId 映射（与 Timeline 同源逻辑）
+  const speakerToCharId = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const c of characterConfigs) {
+      m.set(c.charId.toLowerCase(), c.charId)
+      m.set(c.displayName.toLowerCase(), c.charId)
+    }
+    return m
+  }, [characterConfigs])
   const draftDeltas = useAppStore((s) => s.draftDeltas)
   const scriptDrawerOpen = useAppStore((s) => s.scriptDrawerOpen)
   const toggleScriptDrawer = useAppStore((s) => s.toggleScriptDrawer)
@@ -790,6 +815,46 @@ export default function StagePreview() {
     [assets],
   )
 
+  /** 清除说话状态（停止动画 / 定时器） */
+  const clearSpeaking = useCallback(() => {
+    if (speakTimerRef.current) {
+      clearTimeout(speakTimerRef.current)
+      speakTimerRef.current = null
+    }
+    setSpeakingCharId(null)
+  }, [])
+
+  /** 进入一行时设置「正在说话」的立绘实例，并在语音时长后自动复位（唇形 / 表情联动） */
+  const setSpeaking = useCallback(
+    (state: ResolvedLineState | null) => {
+      if (speakTimerRef.current) {
+        clearTimeout(speakTimerRef.current)
+        speakTimerRef.current = null
+      }
+      if (!state?.audio.voice) {
+        setSpeakingCharId(null)
+        return
+      }
+      const vchar = state.speaker ? speakerToCharId.get(state.speaker.toLowerCase()) : undefined
+      let instId: string | null = null
+      if (vchar) {
+        for (const [k, ch] of Object.entries(state.characters)) {
+          if ((ch.char_id ?? k) === vchar) {
+            instId = k
+            break
+          }
+        }
+      }
+      setSpeakingCharId(instId)
+      if (instId) {
+        const a = assets.find((x) => x.id === state.audio.voice)
+        const stay = a?.duration ? a.duration * 1000 : estimateLineDurationMs(state.dialogue)
+        speakTimerRef.current = setTimeout(() => setSpeakingCharId(null), Math.max(800, stay))
+      }
+    },
+    [assets, speakerToCharId],
+  )
+
   const clearAutoTimers = useCallback(() => {
     if (autoTimerRef.current) clearTimeout(autoTimerRef.current)
     autoTimerRef.current = null
@@ -802,7 +867,8 @@ export default function StagePreview() {
     setAutoOn(false)
     clearAutoTimers()
     stopOneShots() // 停止一次性 se / voice，避免停下后残留播放
-  }, [clearAutoTimers])
+    clearSpeaking()
+  }, [clearAutoTimers, clearSpeaking])
 
   const runAutoFrom = useCallback(
     (index: number) => {
@@ -815,10 +881,11 @@ export default function StagePreview() {
       const state = resolvedStates[index]
       const prev = index > 0 ? resolvedStates[index - 1] : null
       playLineAudio(state, prev)
-      const dur = estimateLineDurationMs(state.dialogue)
+      setSpeaking(state)
+      const dur = getLineStayMs(state, assets)
       autoTimerRef.current = setTimeout(() => runAutoFrom(index + 1), dur)
     },
-    [resolvedStates, selectedIndex, selectLine, playLineAudio, stopAuto],
+    [resolvedStates, selectedIndex, selectLine, playLineAudio, setSpeaking, stopAuto],
   )
 
   const toggleAuto = useCallback(() => {
@@ -837,8 +904,9 @@ export default function StagePreview() {
       autoRunningRef.current = false
       if (autoTimerRef.current) clearTimeout(autoTimerRef.current)
       pendingAudioRef.current.forEach((t) => clearTimeout(t))
+      clearSpeaking()
     }
-  }, [])
+  }, [clearSpeaking])
 
   // =================== 交互播放（预览调试）引擎 ===================
   // 逐步推进 selectedIndex 驱动舞台；遇 $ 语句更新 runtimeValues（调试器高亮跳变），
@@ -855,7 +923,8 @@ export default function StagePreview() {
     setPlayMode('idle')
     setPendingChoiceIndex(null)
     stopOneShots()
-  }, [stopOneShots])
+    clearSpeaking()
+  }, [stopOneShots, clearSpeaking])
 
   const advanceTo = useCallback(
     (index: number) => {
@@ -876,10 +945,15 @@ export default function StagePreview() {
         setPlayMode('paused')
         return
       }
-      const dur = estimateLineDurationMs(delta.dialogue)
+      const st = resolvedStates[index]
+      if (st) {
+        playLineAudio(st, index > 0 ? resolvedStates[index - 1] : null)
+        setSpeaking(st)
+      }
+      const dur = getLineStayMs(st ?? null, assets)
       playTimerRef.current = setTimeout(() => advanceTo(index + 1), dur)
     },
-    [draftDeltas, selectLine, applyRuntimeOps, stopPlayback],
+    [draftDeltas, resolvedStates, selectLine, applyRuntimeOps, playLineAudio, setSpeaking, stopPlayback],
   )
 
   const startPlayback = useCallback(
@@ -1296,7 +1370,16 @@ export default function StagePreview() {
         {/* 角色层（可拖动：磁吸预设站位，拉离即自由微调） */}
         {Object.entries(state.characters).map(
           ([charId, char]: [string, ResolvedCharacterState]) => {
-            const spriteKey = char.asset_id ?? char.sprite_id
+            const isTalking = speakingCharId === charId
+            let spriteKey = char.asset_id ?? char.sprite_id
+            // 表情联动：配音播放期间若角色有「说话」类表情，临时切换过去，结束后自动复原
+            if (isTalking) {
+              const cfg = char.char_id
+                ? characterConfigs.find((c) => c.charId === char.char_id)
+                : undefined
+              const talkExpr = cfg?.expressions.find((e) => /talk|speak|say|mouth|说话|开口/i.test(e.id))
+              if (talkExpr) spriteKey = talkExpr.assetId
+            }
             const { dataUrl: spriteDataUrl, color: spriteColor } = resolveSpriteImage(
               spriteKey,
               assets,
@@ -1325,7 +1408,7 @@ export default function StagePreview() {
                 onDragStart={(e) => e.preventDefault()}
                 className={`group pointer-events-auto absolute flex w-max select-none cursor-grab flex-col items-center active:cursor-grabbing ${
                   dragging ? '' : 'transition-[left,top,transform] duration-200'
-                } ${selected ? 'rounded-lg ring-2 ring-signal' : ''}`}
+                } ${selected ? 'rounded-lg ring-2 ring-signal' : ''} ${isTalking ? 'sw-talking' : ''}`}
                 // left/top 百分比相对舞台（父容器）定位立绘中心点；transform 仅做居中 translate(-50%,-50%)
                 // + 缩放 scale，围绕中心点 origin。
                 // 【关键·真凶修复】此 div 是 absolute 且宽度 auto，浏览器对它用 shrink-to-fit：

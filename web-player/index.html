@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>ScriptWeaver Web Play</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <!-- 顶部 HUD：自动播放 / 存读档 / 返回标题 -->
+  <div id="hud" class="hud hidden">
+    <button class="hud-btn" id="btn-auto" title="自动播放">AUTO</button>
+    <button class="hud-btn" id="btn-save" title="保存">SAVE</button>
+    <button class="hud-btn" id="btn-load" title="读取">LOAD</button>
+    <button class="hud-btn" id="btn-title" title="返回标题">MENU</button>
+  </div>
+
+  <!-- 舞台 -->
+  <div id="stage-wrap">
+    <div id="stage">
+      <div id="bg-layer"></div>
+      <div id="char-layer"></div>
+    </div>
+    <div id="dialogue" class="hidden">
+      <div id="speaker"></div>
+      <div id="text"></div>
+      <button id="next-btn" title="继续">▼</button>
+    </div>
+    <div id="choices" class="hidden"></div>
+  </div>
+
+  <!-- 标题画面 -->
+  <div id="title-screen">
+    <div class="title-card">
+      <h1 id="title-name">ScriptWeaver</h1>
+      <p id="title-sub">Web Playable</p>
+      <div class="title-actions">
+        <button id="btn-start" class="big-btn">开始游戏</button>
+        <button id="btn-continue" class="big-btn ghost hidden">继续游戏</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 存读档浮层 -->
+  <div id="save-overlay" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-head">
+        <span id="save-title">存档</span>
+        <button class="close-x" id="save-close">✕</button>
+      </div>
+      <div id="save-slots" class="save-slots"></div>
+    </div>
+  </div>
+
+  <!-- 底部提示 -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="./player.js"></script>
+</body>
+</html>

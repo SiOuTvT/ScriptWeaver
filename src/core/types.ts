@@ -52,6 +52,19 @@ export interface AssetItem {
    */
   tags?: string[]
   importedAt: string
+  /**
+   * 云端同步态标识（v0.6.0 云端资产同步）：
+   *  - 'local'：仅在本地，未同步云端（默认）
+   *  - 'cloud'：已同步至云端（云端存有副本，本地可释放缓存按需重下）
+   *  - 'cached'：云端资产，本地已下载缓存
+   * 纯本地模式无真实云端，该字段作为状态标识与缓存策略依据；接入云后端后由同步服务维护。
+   */
+  cloudState?: 'local' | 'cloud' | 'cached'
+  /**
+   * 云端资源地址（可选）。当 cloudState 为 'cloud'/'cached' 时，
+   * 用于「按需重新下载」在本地缓存被释放后从云端取回素材。
+   */
+  remoteUrl?: string
 }
 
 // --------------- 角色 ---------------
@@ -63,6 +76,18 @@ export interface ExpressionRef {
   label: string
   /** 引用素材库中立绘的 AssetItem.id */
   assetId: string
+}
+
+/** 角色专属 TTS 声音预设（一键配音用，复用项目 AI 配置中的密钥与接口） */
+export interface CharacterTtsPreset {
+  /** 音色 ID：OpenAI 系如 alloy / echo / nova；微软系如 zh-CN-XiaoxiaoNeural */
+  voiceId: string
+  /** 语速 0.25~4（OpenAI 用 speed 参数） */
+  speed?: number
+  /** 音调（相对偏移，仅 SSML 兼容提供方生效；OpenAI 等忽略） */
+  pitch?: number
+  /** 备注（可选） */
+  note?: string
 }
 
 export interface CharacterConfig {
@@ -82,6 +107,8 @@ export interface CharacterConfig {
   defaultScale?: number
   /** 立绘默认出场槽位（引用 PRESET_SLOTS 的 id，如 'center' / 'right'） */
   defaultSlot?: string
+  /** 角色专属 TTS 声音预设（一键配音时按此合成语音） */
+  tts?: CharacterTtsPreset
   createdAt: string
   updatedAt: string
 }
@@ -332,6 +359,34 @@ export interface ProjectFile {
   savedAt: string
   /** 场景画布比例（Ren'Py 式自选）；缺省按 16:9 处理 */
   canvasRatio?: { w: number; h: number }
+}
+
+// --------------- 云端同步与版本快照 ---------------
+
+/** 版本快照元数据（列表/回滚用，不含完整工程，轻量） */
+export interface VersionSnapshotMeta {
+  /** 快照唯一 ID（时间戳 + 序号） */
+  id: string
+  /** 创建时间 ISO 字符串 */
+  createdAt: string
+  /** 快照标签（手动命名或自动如「自动备份·保存」） */
+  label: string
+  /** 剧本行数 */
+  lineCount: number
+  /** 素材数 */
+  assetCount: number
+  /** 角色数 */
+  charCount: number
+  /** 工程体积（字节） */
+  sizeBytes: number
+  /** 自动生成（静默备份）还是手动创建 */
+  auto: boolean
+}
+
+/** 版本快照完整内容（含工程 JSON，用于回滚） */
+export interface VersionSnapshot extends VersionSnapshotMeta {
+  /** 完整工程 JSON 字符串（同 .swproj 内容） */
+  projectJson: string
 }
 
 // --------------- 合并后的完整行状态 ---------------

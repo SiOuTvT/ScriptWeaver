@@ -4,9 +4,10 @@ import { Button, IconButton, Input, ConfirmDialog } from '@/components/ui'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import { hashCharColor } from '@/utils/charColor'
 import { getAudioCategory } from '@/utils/assetHelpers'
-import { toggleAssetPreview, isAssetPlaying } from '@/utils/audioManager'
+import { toggleAssetPreview, isAssetPlaying, playAudioPreview } from '@/utils/audioManager'
 import { PRESET_SLOTS } from '@/core/positionSlots'
 import type { CharacterConfig, ExpressionRef, AssetItem, AssetType } from '@/core/types'
+import { synthesizeVoice } from '@/utils/tts'
 import {
   Plus,
   Pencil,
@@ -20,9 +21,26 @@ import {
   MoveUp,
   MoveDown,
   Image as ImageIcon,
+  Mic,
+  Loader2,
 } from 'lucide-react'
 
 const CHAR_ID_REGEX = /^[a-z][a-z0-9_]*$/
+
+/** 常见 TTS 音色预设（供 datalist 快速选择） */
+const TTS_VOICE_PRESETS = [
+  'alloy',
+  'echo',
+  'fable',
+  'onyx',
+  'nova',
+  'shimmer',
+  'zh-CN-XiaoxiaoNeural',
+  'zh-CN-YunxiNeural',
+  'zh-CN-YunyangNeural',
+  'ja-JP-NanamiNeural',
+  'en-US-AriaNeural',
+]
 
 // ============================ 工具 ============================
 
@@ -84,6 +102,10 @@ export default function CharacterManager() {
   const [showExprPicker, setShowExprPicker] = useState(false)
   const [exprDropActive, setExprDropActive] = useState(false)
   const [previewNameStyle, setPreviewNameStyle] = useState<'normal' | 'bold'>('bold')
+
+  // ---- TTS 试听状态 ----
+  const [ttsTesting, setTtsTesting] = useState(false)
+  const [ttsTestErr, setTtsTestErr] = useState('')
 
   const selectedChar = selectedCharId
     ? characterConfigs.find((c) => c.charId === selectedCharId) ?? null
@@ -314,6 +336,37 @@ export default function CharacterManager() {
     ? assets.find((a) => a.id === selectedChar.voiceAssetId)
     : undefined
   const voicePlaying = voiceAsset ? isAssetPlaying(voiceAsset.id) : false
+
+  // ---- TTS 试听（合成一句样本并即时预览，不污染素材库） ----
+  const handleTestTts = useCallback(async () => {
+    if (!selectedChar?.tts?.voiceId) return
+    setTtsTesting(true)
+    setTtsTestErr('')
+    try {
+      const text = `${selectedChar.displayName}。你好，欢迎来到我的世界。`
+      const r = await synthesizeVoice({
+        text,
+        voiceId: selectedChar.tts.voiceId,
+        speed: selectedChar.tts.speed,
+        pitch: selectedChar.tts.pitch,
+        charId: selectedChar.charId,
+        lineTag: 'test',
+      })
+      const tmp: AssetItem = {
+        id: r.id,
+        type: 'audio',
+        name: 'TTS 试听',
+        fileName: r.fileName,
+        relativePath: r.relativePath,
+        importedAt: new Date().toISOString(),
+      }
+      await playAudioPreview(tmp)
+    } catch (e) {
+      setTtsTestErr((e as Error).message || '合成失败')
+    } finally {
+      setTtsTesting(false)
+    }
+  }, [selectedChar])
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-canvas">
@@ -678,6 +731,133 @@ export default function CharacterManager() {
                     nameStyle={previewNameStyle}
                   />
                 </div>
+              </div>
+
+              {/* ---- TTS 语音合成预设 ---- */}
+              <div className="rounded-xl border border-edge/12 bg-surface-1 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Mic size={15} strokeWidth={1.75} className="text-signal" />
+                  <span className="eyebrow">TTS 语音合成预设</span>
+                </div>
+
+                {!selectedChar.tts ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[12px] text-fg-subtle">
+                      尚未启用 TTS。启用后可在时间轴「一键生成语音」，为本角色未绑定语音的台词批量合成配音。
+                    </p>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => updateCharacter(selectedChar.charId, { tts: { voiceId: '' } })}
+                    >
+                      启用 TTS
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* 音色 ID */}
+                    <div>
+                      <label className="mb-1 block text-[12px] text-fg-subtle">音色 Voice ID</label>
+                      <input
+                        list="tts-voice-presets"
+                        value={selectedChar.tts.voiceId}
+                        onChange={(e) =>
+                          updateCharacter(selectedChar.charId, {
+                            tts: { ...selectedChar.tts!, voiceId: e.target.value },
+                          })
+                        }
+                        placeholder="如 alloy / zh-CN-XiaoxiaoNeural"
+                        className="w-full rounded-md border border-edge/15 bg-surface-3 px-2 py-1.5 text-[13px] text-fg outline-none focus:border-signal/60"
+                      />
+                      <datalist id="tts-voice-presets">
+                        {TTS_VOICE_PRESETS.map((v) => (
+                          <option key={v} value={v}>
+                            {v}
+                          </option>
+                        ))}
+                      </datalist>
+                    </div>
+
+                    {/* 语速 */}
+                    <div>
+                      <div className="mb-1 flex items-center justify-between text-[12px] text-fg-subtle">
+                        <span>语速 Speed</span>
+                        <span className="font-mono text-fg-muted">
+                          {((selectedChar.tts.speed ?? 1)).toFixed(2)}×
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0.25}
+                        max={4}
+                        step={0.05}
+                        value={selectedChar.tts.speed ?? 1}
+                        onChange={(e) =>
+                          updateCharacter(selectedChar.charId, {
+                            tts: { ...selectedChar.tts!, speed: Number(e.target.value) },
+                          })
+                        }
+                        className="w-full accent-signal"
+                      />
+                    </div>
+
+                    {/* 音调 */}
+                    <div>
+                      <div className="mb-1 flex items-center justify-between text-[12px] text-fg-subtle">
+                        <span>音调 Pitch</span>
+                        <span className="font-mono text-fg-muted">{selectedChar.tts.pitch ?? 0} Hz</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={-20}
+                        max={20}
+                        step={1}
+                        value={selectedChar.tts.pitch ?? 0}
+                        onChange={(e) =>
+                          updateCharacter(selectedChar.charId, {
+                            tts: { ...selectedChar.tts!, pitch: Number(e.target.value) },
+                          })
+                        }
+                        className="w-full accent-signal"
+                      />
+                      <p className="mt-1 text-[11px] text-fg-faint">
+                        音调仅 SSML 兼容提供方（如微软）生效；OpenAI 等忽略。
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void handleTestTts()}
+                        disabled={ttsTesting || !selectedChar.tts.voiceId}
+                        className="text-signal hover:opacity-80"
+                      >
+                        {ttsTesting ? (
+                          <Loader2 size={13} strokeWidth={1.75} className="animate-spin" />
+                        ) : (
+                          <Mic size={13} strokeWidth={1.75} />
+                        )}
+                        {ttsTesting ? '合成中…' : '试听音色'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => updateCharacter(selectedChar.charId, { tts: undefined })}
+                      >
+                        关闭 TTS
+                      </Button>
+                      {ttsTestErr && (
+                        <span className="truncate text-[11px] text-danger" title={ttsTestErr}>
+                          {ttsTestErr}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <p className="mt-2 text-[11px] text-fg-faint">
+                  合成复用 AI 设置中的密钥与接口（OpenAI 兼容 /audio/speech），音频本地落盘并自动导入素材库。
+                </p>
               </div>
 
               {/* ---- 表情包大观墙 ---- */}

@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useRef, memo, useState, useEffect } from 'react'
-import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut, ListTree, Tag } from 'lucide-react'
+import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut, ListTree, Tag, Mic, Loader2 } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
-import type { ResolvedLineState, LineDelta, CharacterConfig } from '@/core/types'
+import type { ResolvedLineState, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
 import { estimateLineDurationMs } from '@/utils/playback'
 import {
@@ -11,6 +11,7 @@ import {
   deriveCharacterId,
   getAudioCategory,
 } from '@/utils/assetHelpers'
+import { synthesizeVoice, getAudioDuration } from '@/utils/tts'
 import { toast } from '@/utils/toast'
 
 // ===================== 轨道配置 =====================
@@ -404,6 +405,8 @@ export default function Timeline() {
   const getAsset = useAppStore((s) => s.getAsset)
   const assets = useAppStore((s) => s.assets)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
+  const setAssets = useAppStore((s) => s.setAssets)
+  const updateAsset = useAppStore((s) => s.updateAsset)
 
   const assetName = useCallback(
     (id: string | null) => (id ? (getAsset(id)?.name ?? id) : ''),
@@ -441,6 +444,81 @@ export default function Timeline() {
       .filter(Boolean) as { index: number; voice: string }[],
   [resolvedStates])
 
+  // ========== 一键生成语音（Batch Voice Gen） ==========
+  // 扫描未绑定语音、且说话人已配置 TTS 预设的台词行，批量调用 TTS 合成，
+  // 生成 voice 类音频资产并自动绑定到对应行；随后异步回填真实时长（驱动时间轴吸附）。
+  const batchGenerateVoice = useCallback(async () => {
+    const api = window.electronAPI
+    if (!api?.ttsSynthesize) {
+      toast('当前环境不支持 TTS 合成（需在 Electron 桌面端运行）', 'error')
+      return
+    }
+    const targets: { index: number; char: CharacterConfig; text: string }[] = []
+    resolvedStates.forEach((s, i) => {
+      if (s.audio.voice) return
+      if (!s.speaker) return
+      const cid = speakerMap.get(s.speaker.toLowerCase())
+      if (!cid) return
+      const char = characterConfigs.find((c) => c.charId === cid)
+      if (!char?.tts?.voiceId) return
+      targets.push({ index: i, char, text: s.dialogue || '' })
+    })
+    if (targets.length === 0) {
+      toast('没有需要生成的台词：请先为角色启用 TTS 预设，且台词尚未绑定语音', 'info')
+      return
+    }
+    setGenBusy(true)
+    let okN = 0
+    let failN = 0
+    const newAssets: AssetItem[] = []
+    const updates: { index: number; updater: (prev: LineDelta) => LineDelta }[] = []
+    for (const t of targets) {
+      try {
+        const r = await synthesizeVoice({
+          text: t.text || ' ',
+          voiceId: t.char.tts!.voiceId,
+          speed: t.char.tts!.speed,
+          pitch: t.char.tts!.pitch,
+          charId: t.char.charId,
+          lineTag: `L${t.index + 1}`,
+        })
+        const asset: AssetItem = {
+          id: r.id,
+          type: 'audio',
+          name: `${t.char.displayName} L${t.index + 1}`,
+          fileName: r.fileName,
+          relativePath: r.relativePath,
+          importedAt: new Date().toISOString(),
+        }
+        newAssets.push(asset)
+        updates.push({
+          index: t.index,
+          updater: (prev) => ({ ...prev, audio: { ...prev.audio, se: [...prev.audio.se], voice: r.id } }),
+        })
+        okN++
+      } catch (e) {
+        failN++
+        console.error('[TTS] 生成失败', e)
+      }
+    }
+    if (newAssets.length) setAssets([...useAppStore.getState().assets, ...newAssets])
+    if (updates.length) batchUpdateDeltas(updates)
+    // 异步回填真实时长，驱动时间轴吸附
+    for (const a of newAssets) {
+      try {
+        const d = await getAudioDuration(a)
+        if (d > 0) updateAsset(a.id, { duration: d })
+      } catch {
+        /* 时长读取失败不阻断 */
+      }
+    }
+    setGenBusy(false)
+    toast(
+      `已生成 ${okN} 条语音${failN ? `，${failN} 条失败（检查 AI 密钥 / 音色）` : ''}`,
+      okN ? 'success' : 'error',
+    )
+  }, [resolvedStates, characterConfigs, speakerMap, batchUpdateDeltas, setAssets, updateAsset])
+
   const total = resolvedStates.length
   const trackHeight = 36
   const HEADER_H = 48
@@ -452,6 +530,7 @@ export default function Timeline() {
   const ZOOM_MAX = 300
   const ZOOM_STEP = 40
   const [cellWidth, setCellWidth] = useState(120)
+  const [genBusy, setGenBusy] = useState(false)
   const zoomIn = useCallback(() => setCellWidth((w) => Math.min(ZOOM_MAX, w + ZOOM_STEP)), [])
   const zoomOut = useCallback(() => setCellWidth((w) => Math.max(ZOOM_MIN, w - ZOOM_STEP)), [])
   const zoomReset = useCallback(() => setCellWidth(120), [])
@@ -968,6 +1047,23 @@ export default function Timeline() {
               }`}
             ><ZoomIn size={13} strokeWidth={1.75} /></button>
           </div>
+          <button
+            onClick={() => void batchGenerateVoice()}
+            disabled={genBusy}
+            title="为未绑定语音、且已配置 TTS 预设的角色台词批量合成配音"
+            className={`flex h-5 items-center gap-1 rounded px-1.5 text-[12px] transition-colors ${
+              genBusy
+                ? 'cursor-default text-fg-faint'
+                : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+            }`}
+          >
+            {genBusy ? (
+              <Loader2 size={13} strokeWidth={1.75} className="animate-spin" />
+            ) : (
+              <Mic size={13} strokeWidth={1.75} />
+            )}
+            {genBusy ? '生成中' : '一键生成语音'}
+          </button>
           <span className="text-[12px] text-fg-subtle">{total} 行 {totalTracks} 轨</span>
         </div>
       </div>
