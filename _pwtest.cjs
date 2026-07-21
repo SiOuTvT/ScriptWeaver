@@ -32,46 +32,49 @@ waitCDP(9222, async () => {
     let page = pages.find((p) => (p.url() || '').includes('localhost:5173')) || pages[0]
     await page.waitForTimeout(5000)
 
-    const cardCount = await page.evaluate(() => document.querySelectorAll('[title="拖拽到舞台或时间轴使用"]').length)
-    console.log('SPRITE_CARD_COUNT:', cardCount)
-
-    const results = []
-    for (let i = 0; i < cardCount; i++) {
-      // 新建空场景以隔离
-      const added = await page.evaluate(() => {
-        const btn = document.querySelector('[title="在当前场景之后添加新场景"]')
-        if (btn) { btn.click(); return true }
-        return false
+    // 注入一个 blobUrl sprite 素材（模拟 OS 拖入 AssetManager 未落盘的情况）
+    const blobSrc = await page.evaluate(async () => {
+      const store = await import('/src/stores/appStore.ts')
+      const canvas = document.createElement('canvas')
+      canvas.width = 220; canvas.height = 320
+      const ctx = canvas.getContext('2d')
+      ctx.fillStyle = '#3366cc'; ctx.fillRect(0, 0, 220, 320)
+      const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'))
+      const url = URL.createObjectURL(blob)
+      store.useAppStore.getState().addAsset({
+        id: 'test_blob_sprite', type: 'sprite', name: 'blobtest', fileName: 'b.png',
+        relativePath: '', blobUrl: url, importedAt: new Date().toISOString(),
       })
-      await page.waitForTimeout(400)
-      const dragRes = await page.evaluate((idx) => {
-        const cards = document.querySelectorAll('[title="拖拽到舞台或时间轴使用"]')
-        const card = cards[idx]
-        const stage = document.querySelector('div.bg-canvas.shadow-2xl')
-        if (!card || !stage) return { ok: false, reason: 'no card/stage' }
-        const cardSrc = (card.querySelector('img') || {}).src || ''
-        const dt = new DataTransfer()
-        const mk = (type, x, y) => new DragEvent(type, { dataTransfer: dt, bubbles: true, cancelable: true, clientX: x, clientY: y })
-        card.dispatchEvent(mk('dragstart'))
-        const r = stage.getBoundingClientRect()
-        const cx = r.left + r.width / 2, cy = r.top + r.height * 0.6
-        stage.dispatchEvent(mk('dragover', cx, cy))
-        stage.dispatchEvent(mk('drop', cx, cy))
-        card.dispatchEvent(mk('dragend'))
-        return { ok: true, cardSrc }
-      }, i)
-      await page.waitForTimeout(900)
-      const check = await page.evaluate((src) => {
-        const stage = document.querySelector('div.bg-canvas.shadow-2xl')
-        if (!stage) return { found: false }
-        const imgs = Array.from(stage.querySelectorAll('img'))
-        const m = imgs.find((im) => im.src === src)
-        return { found: !!m, nat: m ? (m.naturalWidth + 'x' + m.naturalHeight) : null, stageImgCount: imgs.length }
-      }, dragRes.cardSrc || '')
-      results.push({ idx: i, added, cardSrc: (dragRes.cardSrc || '').slice(40), ok: dragRes.ok, found: check.found, nat: check.nat, stageImgCount: check.stageImgCount })
-      console.log('CARD', i, 'added=', added, 'cardSrc=', (dragRes.cardSrc || '').slice(40), 'drop_ok=', dragRes.ok, 'found_in_stage=', check.found, 'nat=', check.nat)
-    }
-    console.log('SUMMARY:', JSON.stringify(results))
+      return url
+    })
+    console.log('BLOB_SRC:', blobSrc.slice(0, 30))
+    await page.waitForTimeout(500)
+
+    // 新建场景并真实拖入（setDragCache + drop）
+    await page.evaluate(() => { const b = document.querySelector('[title="在当前场景之后添加新场景"]'); if (b) b.click() })
+    await page.waitForTimeout(300)
+    const res = await page.evaluate(async () => {
+      const { setDragCache } = await import('/src/utils/assetHelpers.ts')
+      const stage = document.querySelector('div.bg-canvas.shadow-2xl')
+      if (!stage) return { ok: false }
+      setDragCache({ type: 'sprite', assetId: 'test_blob_sprite', label: 'blobtest', name: 'blobtest' })
+      const r = stage.getBoundingClientRect()
+      const dt = new DataTransfer()
+      const mk = (t, x, y) => new DragEvent(t, { dataTransfer: dt, bubbles: true, cancelable: true, clientX: x, clientY: y })
+      stage.dispatchEvent(mk('dragover', r.left + r.width / 2, r.top + r.height * 0.6))
+      stage.dispatchEvent(mk('drop', r.left + r.width / 2, r.top + r.height * 0.6))
+      return { ok: true }
+    })
+    await page.waitForTimeout(900)
+    const check = await page.evaluate((expectedSrc) => {
+      const stage = document.querySelector('div.bg-canvas.shadow-2xl')
+      if (!stage) return { found: false }
+      const imgs = Array.from(stage.querySelectorAll('img'))
+      const m = imgs.find((im) => im.src === expectedSrc)
+      return { found: !!m, nat: m ? m.naturalWidth + 'x' + m.naturalHeight : null }
+    }, blobSrc)
+    console.log('BLOB_DROP_RESULT:', JSON.stringify({ dropOk: res.ok, found: check.found, nat: check.nat }))
+    console.log('BLOB_SUMMARY:', JSON.stringify({ dropOk: res.ok, found: check.found, nat: check.nat }))
     await browser.close()
     cleanup()
     process.exit(0)
