@@ -443,10 +443,10 @@ export default function CharacterManager() {
                   return (
                     <div
                       key={char.charId}
-                      className={`group relative overflow-hidden rounded-lg border transition-all ${
+                      className={`group relative overflow-hidden rounded-xl border transition-all duration-200 ${
                         isSelected
                           ? 'signal-bar border-edge/20 bg-surface-2'
-                          : 'border-transparent hover:bg-surface-hover'
+                          : 'border-transparent hover:border-edge/15 hover:bg-surface-hover hover:shadow-1'
                       }`}
                     >
                       {/* 主题色花纹顶条 */}
@@ -960,8 +960,8 @@ export default function CharacterManager() {
                         return (
                           <div
                             key={expr.id}
-                            className={`group relative overflow-hidden rounded-xl border bg-surface-1 transition-all hover:shadow-2 ${
-                              isDefault ? 'border-signal/60' : 'border-edge/12 hover:border-edge/25'
+                            className={`group relative overflow-hidden rounded-xl border bg-surface-1 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2 ${
+                              isDefault ? 'border-signal/60' : 'border-edge/12 hover:border-signal/30 hover:ring-1 hover:ring-signal/15'
                             }`}
                           >
                             {/* 大图缩略 */}

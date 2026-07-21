@@ -280,44 +280,46 @@ export default function ScriptOverview() {
 
       {/* ============ 滚动主体 ============ */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-        {/* ---- 沉浸式仪表盘 ---- */}
-        <section className="relative mb-4 overflow-hidden rounded-xl border border-edge/10 bg-surface shadow-2">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-surface-1/70 via-transparent to-transparent" />
-          <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-signal/10 blur-3xl" />
-          <div className="relative flex flex-wrap items-stretch divide-x divide-edge/10">
-            {metrics.map((m) => {
-              const Icon = m.icon
-              const toneColor =
-                m.tone === 'signal'
-                  ? 'rgb(var(--c-signal))'
-                  : m.tone === 'accent'
-                    ? 'rgb(var(--c-accent))'
-                    : 'rgb(var(--c-fg))'
-              return (
-                <div key={m.label} className="flex min-w-[140px] flex-1 flex-col gap-1 px-5 py-4">
-                  <div className="flex items-center gap-1.5">
-                    <Icon size={13} strokeWidth={1.75} style={{ color: toneColor }} />
-                    <span className="t-label" style={{ color: toneColor }}>
-                      {m.label}
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span
-                      className="t-mono font-semibold leading-none"
-                      style={{ fontSize: 18, color: toneColor }}
-                    >
-                      {m.value}
-                    </span>
-                    <span className="t-micro">{m.unit}</span>
-                  </div>
+        {/* ---- 全局剧本仪表盘（bento 卡片） ---- */}
+        <section className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {metrics.map((m, i) => {
+            const Icon = m.icon
+            const toneColor =
+              m.tone === 'signal'
+                ? 'rgb(var(--c-signal))'
+                : m.tone === 'accent'
+                  ? 'rgb(var(--c-accent))'
+                  : 'rgb(var(--c-fg))'
+            return (
+              <div
+                key={m.label}
+                className="group relative flex animate-slide-up flex-col gap-2 overflow-hidden rounded-2xl border border-edge/10 bg-surface p-4 shadow-1 transition-all duration-300 hover:-translate-y-0.5 hover:border-edge/20 hover:shadow-2"
+                style={{ animationDelay: `${i * 55}ms` }}
+              >
+                <div
+                  className="flex h-8 w-8 items-center justify-center rounded-lg"
+                  style={{ background: `rgb(var(--c-signal) / 0.12)`, color: toneColor }}
+                >
+                  <Icon size={16} strokeWidth={1.75} />
                 </div>
-              )
-            })}
-          </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="t-mono text-[22px] font-semibold leading-none" style={{ color: toneColor }}>
+                    {m.value}
+                  </span>
+                  <span className="t-micro">{m.unit}</span>
+                </div>
+                <span className="t-label">{m.label}</span>
+                <div
+                  className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+                  style={{ background: toneColor }}
+                />
+              </div>
+            )
+          })}
         </section>
 
-        {/* ---- 高级检索与过滤 ---- */}
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+        {/* ---- 高级检索与过滤（指令条） ---- */}
+        <div className="sticky top-0 z-10 mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-edge/10 bg-surface/90 px-3 py-2.5 shadow-1 backdrop-blur-md">
           <div className="relative">
             <Search
               size={14}

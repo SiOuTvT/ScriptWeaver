@@ -356,7 +356,8 @@ export default function AssetManager() {
   return (
     <div className="flex h-full flex-1 overflow-hidden bg-canvas">
       {/* 左侧分类树 */}
-      <aside className="flex w-40 shrink-0 flex-col border-r border-edge/12 bg-surface">
+      <aside className="relative flex w-40 shrink-0 flex-col border-r border-edge/12 bg-surface">
+        <div className="h-0.5 w-full bg-gradient-to-r from-signal/70 via-signal/20 to-transparent" />
         <div className="flex items-center gap-2 border-b border-edge/10 px-3 py-2.5">
           <span className="signal-dot" />
           <span className="eyebrow">素材库</span>
@@ -887,7 +888,7 @@ function ImageCard(p: ImageCardProps) {
       onDragStart={(e) => p.onDragStart(e, asset)}
       onDragEnd={p.onDragEnd}
       onContextMenu={(e) => p.onContextMenu(e, asset)}
-      className="group relative cursor-grab overflow-hidden rounded-xl border border-edge/12 bg-surface-1 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-edge-strong/20 hover:shadow-2 active:cursor-grabbing"
+      className="group relative cursor-grab overflow-hidden rounded-xl border border-edge/12 bg-surface-1 shadow-1 transition-all duration-300 hover:-translate-y-1 hover:border-signal/30 hover:shadow-2 hover:ring-1 hover:ring-signal/20 active:cursor-grabbing"
       title="拖拽到舞台或时间轴使用"
     >
       {/* 预览区 */}
@@ -1106,7 +1107,7 @@ function AudioCard(p: AudioCardProps) {
       onDragStart={(e) => p.onDragStart(e, asset)}
       onDragEnd={p.onDragEnd}
       onContextMenu={(e) => p.onContextMenu(e, asset)}
-      className="group relative flex cursor-grab flex-col gap-2 rounded-xl border border-edge/12 bg-surface-1 p-2.5 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-edge-strong/20 hover:shadow-2 active:cursor-grabbing"
+      className="group relative flex cursor-grab flex-col gap-2 rounded-xl border border-edge/12 bg-surface-1 p-2.5 shadow-1 transition-all duration-300 hover:-translate-y-1 hover:border-signal/30 hover:shadow-2 hover:ring-1 hover:ring-signal/20 active:cursor-grabbing"
       title="拖拽到时间轴使用"
     >
       <audio

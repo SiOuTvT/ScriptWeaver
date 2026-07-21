@@ -140,12 +140,13 @@ describe('rpyExporter · Ren\'Py 合规产出', () => {
 
   it('所有非内建 with <name> 都在 definitions 中有 transform 定义', () => {
     const builtins = new Set([
-      'dissolve', 'fade', 'flash', 'pixellate', 'blinds', 'glitter', 'irisin', 'irisout', 'move',
-      'moveinleft', 'moveinright', 'moveinup', 'moveindown', 'moveoutleft', 'moveoutright', 'moveoutup', 'moveoutdown',
+      'dissolve', 'fade', 'flash', 'pixellate', 'blinds', 'squares', 'irisin', 'irisout', 'move',
+      'moveinleft', 'moveinright', 'moveintop', 'moveinbottom', 'moveoutleft', 'moveoutright', 'moveouttop', 'moveoutbottom',
       'pushleft', 'pushright', 'pushup', 'pushdown', 'slideleft', 'slideright', 'slideup', 'slidedown',
-      'wipeleft', 'wiperight', 'wipeup', 'wipedown', 'squeezeleft', 'squeezeright', 'squeezeup', 'squeezedown',
-      'easeinleft', 'easeinright', 'easeinup', 'easeindown', 'easeoutleft', 'easeoutright', 'easeoutup', 'easeoutdown',
-      'facin', 'facout', 'vpunch', 'hpunch',
+      'slideawayleft', 'slideawayright', 'slideawayup', 'slideawaydown',
+      'wipeleft', 'wiperight', 'wipeup', 'wipedown',
+      'ease', 'easeinleft', 'easeinright', 'easeintop', 'easeinbottom', 'easeoutleft', 'easeoutright', 'easeouttop', 'easeoutbottom',
+      'zoomin', 'zoomout', 'zoominout', 'vpunch', 'hpunch',
     ])
     const bundle = buildBundle(deltas, resolvedStates, characterConfigs, assets)
     const withs = [...bundle.script.matchAll(/with (\w+)/g)].map((m) => m[1])

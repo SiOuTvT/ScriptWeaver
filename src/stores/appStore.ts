@@ -1,9 +1,19 @@
 import { create } from 'zustand'
 import type { LineDelta, ResolvedLineState, AssetItem, CharacterConfig, GlobalVariable, LineType, VariableOperation } from '@/core/types'
-import { reduceLines } from '@/core/reducer'
+import { reduceLines, normalizeDelta } from '@/core/reducer'
 import { DEFAULT_ACCENT } from '@/utils/themeColor'
 import type { RuntimeValues } from '@/utils/varRuntime'
 import { initRuntimeValues, applyOps } from '@/utils/varRuntime'
+
+/** 释放一组素材的临时 blob URL（仅 Web 降级模式有效；Electron 模式 asset 无 blobUrl） */
+function revokeAssetBlobs(assets: AssetItem[] | undefined): void {
+  if (typeof URL === 'undefined' || typeof URL.revokeObjectURL !== 'function') return
+  for (const a of assets ?? []) {
+    if (a.blobUrl) {
+      try { URL.revokeObjectURL(a.blobUrl) } catch { /* 忽略已失效的 URL */ }
+    }
+  }
+}
 
 // 生成唯一 ID
 let _uidCounter = 0
@@ -136,6 +146,8 @@ interface AppState {
   setProjectRoot: (root: string | null) => void
   setAssets: (assets: AssetItem[]) => void
   setCharacterConfigs: (configs: CharacterConfig[]) => void
+  /** 释放当前全部素材的临时 blob URL（应用卸载 / 页面关闭时调用，防内存泄漏） */
+  disposeAllBlobs: () => void
 
   /** 以不可变方式更新第 index 行 Delta */
   updateDeltaAt: (index: number, updater: (prev: LineDelta) => LineDelta) => void
@@ -290,6 +302,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
 
     get()._pushHistory()
+    // 释放被删素材的临时 blob URL，避免 Web 模式内存泄漏
+    const removed = get().assets.find((a) => a.id === id)
+    if (removed?.blobUrl) {
+      try { URL.revokeObjectURL(removed.blobUrl) } catch { /* 忽略已失效的 URL */ }
+    }
     // 级联清理 Delta 中对被删素材的引用
     const deltas = get().draftDeltas.map((d) => {
       let changed = false
@@ -373,6 +390,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // ===== 项目操作 =====
   newProject: () => {
     get()._pushHistory()
+    revokeAssetBlobs(get().assets)
     const empty: LineDelta[] = []
     set({
       draftDeltas: empty,
@@ -390,15 +408,20 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setDraftDeltas: (deltas) => {
     get()._pushHistory()
-    set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
+    const normalized = deltas.map(normalizeDelta)
+    set({ draftDeltas: normalized, resolvedStates: reduceLines(normalized) })
   },
 
   loadProjectData: (data) => {
+    // 释放被替换的旧素材 blob，避免泄漏
+    revokeAssetBlobs(get().assets)
+    // 边界校验：归一化每一行 Delta，补齐缺失字段，杜绝缺 audio 等导致崩溃
+    const normalized = (data.deltas ?? []).map(normalizeDelta)
     set({
-      draftDeltas: data.deltas,
-      resolvedStates: reduceLines(data.deltas),
-      assets: data.assets,
-      characterConfigs: data.characterConfigs,
+      draftDeltas: normalized,
+      resolvedStates: reduceLines(normalized),
+      assets: data.assets ?? [],
+      characterConfigs: data.characterConfigs ?? [],
       variables: data.variables ?? [],
       projectRoot: data.projectRoot,
       selectedLineIndex: 0,
@@ -411,11 +434,16 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setAssets: (assets) => {
     get()._pushHistory()
+    revokeAssetBlobs(get().assets)
     set({ assets })
   },
   setCharacterConfigs: (configs) => {
     get()._pushHistory()
     set({ characterConfigs: configs })
+  },
+
+  disposeAllBlobs: () => {
+    revokeAssetBlobs(get().assets)
   },
 
   updateDeltaAt: (index, updater) => {

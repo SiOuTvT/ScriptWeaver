@@ -14,6 +14,7 @@ import ExportSettings from './ExportSettings'
 import ThemeSettings from './ThemeSettings'
 import ChoiceEditor from './ChoiceEditor'
 import Dock from './Dock'
+import OverlayDrawer from './OverlayDrawer'
 import VariableDebugger from './VariableDebugger'
 import { applyAccent } from '@/utils/themeColor'
 import { useAppStore } from '@/stores/appStore'
@@ -314,6 +315,30 @@ export default function AppLayout() {
   const [bottomView, setBottomView] = useState<'timeline' | 'graph'>('timeline')
   // 底部时间轴 Dock 折叠（收起以把更多空间让给舞台）
   const [bottomCollapsed, setBottomCollapsed] = useState(false)
+
+  // 右侧浮层抽屉：默认全部关闭 → 舞台与时间轴拉满；按需从右侧细轨滑出，浮于舞台之上不挤压主区
+  const [panels, setPanels] = useState<{ script: boolean; vars: boolean; choice: boolean }>({
+    script: false,
+    vars: false,
+    choice: false,
+  })
+  const [panelWidths, setPanelWidths] = useState<{ script: number; vars: number; choice: number }>({
+    script: 300,
+    vars: 320,
+    choice: 340,
+  })
+  const togglePanel = (key: keyof typeof panels) => setPanels((p) => ({ ...p, [key]: !p[key] }))
+  const setPanelWidth = (key: keyof typeof panelWidths) => (w: number) =>
+    setPanelWidths((prev) => ({ ...prev, [key]: w }))
+  // 多抽屉从右向左堆叠：返回各抽屉距容器右缘的偏移
+  const drawerRight = (key: 'script' | 'vars' | 'choice') => {
+    let offset = 0
+    for (const k of ['choice', 'vars', 'script'] as const) {
+      if (k === key) return offset
+      if (panels[k]) offset += panelWidths[k]
+    }
+    return offset
+  }
   const handleFocusLine = useCallback(
     (index: number) => {
       selectLine(index)
@@ -383,15 +408,61 @@ export default function AppLayout() {
 
         {/* --- 场景导航：完整创作工作区 --- */}
         {isChapters && (
-          <div className="flex min-h-0 flex-1 overflow-hidden">
-            {/* ===== 左 Dock：素材库（拖拽至舞台的素材源） ===== */}
+          <div className="relative flex min-h-0 flex-1 overflow-hidden">
+            <LeftSidebar />
+
+            {/* 左 Dock：素材库（拖拽至舞台的素材源，可折叠为细轨） */}
             <Dock side="left" title="素材库" icon={Images} badge={assets.length} defaultOpen width={264}>
               <ManagementPanel embedded />
             </Dock>
 
-            {/* ===== 中央核心区：舞台（绝对核心，flex-1 最大空间）+ 底部时间轴 Dock ===== */}
+            {/* 中央核心区：舞台（绝对核心，flex-1 最大空间）+ 底部时间轴 */}
             <div className="flex min-w-0 flex-1 flex-col">
-              <StagePreview />
+              {/* 舞台区（relative：右侧浮层抽屉叠放其上，关闭时拉满、不挤压） */}
+              <div className="relative flex min-w-0 flex-1 overflow-hidden">
+                <StagePreview />
+
+                {/* 浮层抽屉：剧本流 / 变量监视 / 选择支 —— 从右滑出、浮于舞台之上 */}
+                <OverlayDrawer
+                  open={panels.script}
+                  onClose={() => togglePanel('script')}
+                  title="剧本流"
+                  icon={FileText}
+                  badge={totalLines}
+                  width={panelWidths.script}
+                  onWidthChange={setPanelWidth('script')}
+                  right={drawerRight('script')}
+                >
+                  <ScriptDrawer embedded />
+                </OverlayDrawer>
+
+                <OverlayDrawer
+                  open={panels.vars}
+                  onClose={() => togglePanel('vars')}
+                  title="变量监视"
+                  icon={Activity}
+                  width={panelWidths.vars}
+                  onWidthChange={setPanelWidth('vars')}
+                  right={drawerRight('vars')}
+                  headerless
+                >
+                  <VariableDebugger embedded />
+                </OverlayDrawer>
+
+                {showChoiceEditor && (
+                  <OverlayDrawer
+                    open={panels.choice}
+                    onClose={() => togglePanel('choice')}
+                    title="选择支"
+                    icon={GitBranch}
+                    width={panelWidths.choice}
+                    onWidthChange={setPanelWidth('choice')}
+                    right={drawerRight('choice')}
+                  >
+                    <ChoiceEditor embedded />
+                  </OverlayDrawer>
+                )}
+              </div>
 
               {/* 底部 Dock：时间轴 / 节点图谱（核心二，可折叠把空间让给舞台） */}
               <div
@@ -434,22 +505,14 @@ export default function AppLayout() {
               </div>
             </div>
 
-            {/* ===== 右 Dock：剧本流（场景行列表，可收拉） ===== */}
-            <Dock side="right" title="剧本流" icon={FileText} badge={totalLines} defaultOpen width={248}>
-              <ScriptDrawer embedded />
-            </Dock>
-
-            {/* ===== 右 Dock：变量监视（内部自带标题/重置/折叠，Dock 不重复头部） ===== */}
-            <Dock side="right" title="变量监视" icon={Activity} defaultOpen width={288} showHeader={false}>
-              <VariableDebugger embedded />
-            </Dock>
-
-            {/* ===== 条件右 Dock：选择支编辑器（仅选中选择支行时出现） ===== */}
-            {showChoiceEditor && (
-              <Dock side="right" title="选择支" icon={GitBranch} defaultOpen width={320}>
-                <ChoiceEditor embedded />
-              </Dock>
-            )}
+            {/* 右侧细轨：浮层抽屉开关（默认仅 44px，不占主空间；点击滑出对应检视面板） */}
+            <nav className="flex w-11 shrink-0 flex-col items-center gap-3 border-l border-edge/10 bg-surface/70 py-3 backdrop-blur-sm">
+              <RailToggle active={panels.script} onClick={() => togglePanel('script')} icon={FileText} title="剧本流" />
+              <RailToggle active={panels.vars} onClick={() => togglePanel('vars')} icon={Activity} title="变量监视" />
+              {showChoiceEditor && (
+                <RailToggle active={panels.choice} onClick={() => togglePanel('choice')} icon={GitBranch} title="选择支" />
+              )}
+            </nav>
           </div>
         )}
 
@@ -510,5 +573,35 @@ export default function AppLayout() {
       {/* ===== 协作空间（邀请码 / 多端协同脚手架） ===== */}
       {showCollab && <CollabPanel open={showCollab} onClose={() => setShowCollab(false)} />}
     </div>
+  )
+}
+
+/** 右侧细轨上的浮层抽屉开关按钮 */
+function RailToggle({
+  active,
+  onClick,
+  icon: Icon,
+  title,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: typeof FileText
+  title: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      aria-pressed={active}
+      className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all ${
+        active
+          ? 'bg-signal/15 text-signal shadow-[inset_0_0_0_1px_rgb(var(--c-signal)/0.35)]'
+          : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+      }`}
+    >
+      <Icon size={18} strokeWidth={1.75} />
+    </button>
   )
 }

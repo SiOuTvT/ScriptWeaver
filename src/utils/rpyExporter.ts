@@ -104,9 +104,17 @@ function round3(n: number): number {
   return Math.round(n * 1000) / 1000
 }
 
-/** 转义台词中的反斜杠与双引号（先转义反斜杠，再转义引号） */
+/**
+ * 转义 Ren'Py 双引号字符串内容（台词 / 角色显示名 / 颜色等）：
+ * 先转义反斜杠，再转义双引号，最后剔除 \r 并将 \n 转为 Ren'Py 换行转义 \\n，
+ * 杜绝字面换行/引号导致 .rpy 语法断裂（SyntaxError: EOL while scanning string literal）。
+ */
 function escapeDialogue(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, '')
+    .replace(/\n/g, '\\n')
 }
 
 // ======================= 过渡 / 特效映射 =======================
@@ -115,18 +123,26 @@ function escapeDialogue(s: string): string {
  * Ren'Py 内建过渡（含可当过渡使用的 transform）。命中则原样透传，无需额外定义。
  * 仅收录确证存在的内建名，避免把不存在的变量名原样发射成 `with xxx` 导致 NameError。
  */
+/**
+ * Ren'Py 内建过渡（经官方手册 renpy.org/doc/html/transitions.html 复核）。
+ * 命中则原样透传，无需额外定义。仅收录确证存在的内建名；
+ * 不在表中者（含旧版误列的 glitter / squeeze* / facin / facout / moveinup 等）
+ * 一律走自定义 transform 定义路径，保证 `with <name>` 必定存在、必定可编译。
+ * 注意方向后缀：上为 top/bottom（非 up/down），如 moveintop / moveinbottom。
+ */
 const BUILTIN_TRANSITIONS = new Set<string>([
-  'dissolve', 'fade', 'flash', 'pixellate', 'blinds', 'glitter',
+  'dissolve', 'fade', 'flash', 'pixellate', 'blinds', 'squares',
   'irisin', 'irisout', 'move',
-  'moveinleft', 'moveinright', 'moveinup', 'moveindown',
-  'moveoutleft', 'moveoutright', 'moveoutup', 'moveoutdown',
+  'moveinleft', 'moveinright', 'moveintop', 'moveinbottom',
+  'moveoutleft', 'moveoutright', 'moveouttop', 'moveoutbottom',
   'pushleft', 'pushright', 'pushup', 'pushdown',
   'slideleft', 'slideright', 'slideup', 'slidedown',
+  'slideawayleft', 'slideawayright', 'slideawayup', 'slideawaydown',
   'wipeleft', 'wiperight', 'wipeup', 'wipedown',
-  'squeezeleft', 'squeezeright', 'squeezeup', 'squeezedown',
-  'easeinleft', 'easeinright', 'easeinup', 'easeindown',
-  'easeoutleft', 'easeoutright', 'easeoutup', 'easeoutdown',
-  'facin', 'facout', 'vpunch', 'hpunch',
+  'ease', 'easeinleft', 'easeinright', 'easeintop', 'easeinbottom',
+  'easeoutleft', 'easeoutright', 'easeouttop', 'easeoutbottom',
+  'zoomin', 'zoomout', 'zoominout',
+  'vpunch', 'hpunch',
 ])
 
 /** 把任意过渡字符串清洗为合法 Python 标识符（小写、仅 [a-z0-9_]） */
@@ -139,6 +155,26 @@ function sanitizeIdent(t: string): string {
       .replace(/_+/g, '_')
       .replace(/^_+|_+$/g, '') || 'dissolve'
   )
+}
+
+/** 合法 Python 标识符正则（字母/下划线开头，仅含 [a-zA-Z0-9_]） */
+const PY_IDENT_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+
+/** Python 关键字（不可用作变量名） */
+const PYTHON_KEYWORDS = new Set([
+  'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 'class',
+  'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global',
+  'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return',
+  'try', 'while', 'with', 'yield',
+])
+
+/**
+ * 把变量名安全地用于 Ren'Py 代码生成：合法标识符原样返回；非法名做防御性清洗
+ * （与 default / $ 同一处理，保证自洽可编译）。导出前 validateExportNames 已负责报错提示。
+ */
+function pyVarName(name: string): string {
+  if (PY_IDENT_RE.test(name)) return name
+  return sanitizeIdent(name)
 }
 
 /**
@@ -329,8 +365,8 @@ function pyLiteral(v: boolean | number): string {
 
 /** 单个变量操作 → `$` 后的 Python 表达式（如 `tsundere_points += 1`）；非法返回 null */
 function varOpExpr(op: VariableOperation): string | null {
-  const name = op.varName
-  if (!name) return null
+  if (!op.varName) return null
+  const name = pyVarName(op.varName)
   switch (op.op) {
     case 'set':
       return `${name} = ${pyLiteral(op.value ?? false)}`
@@ -534,6 +570,7 @@ export function validateExportNames(
   lookups: ResolvedLookups,
   characterConfigs: CharacterConfig[],
   assets: AssetItem[] = [],
+  variables: GlobalVariable[] = [],
 ): ValidationError[] {
   const errors: ValidationError[] = []
   // 'start' 为入口 label 保留字，禁止作为剧情块标签（避免遮蔽入口）
@@ -661,6 +698,27 @@ export function validateExportNames(
       } else {
         seenLabels.add(lab)
       }
+    }
+  }
+
+  // 8) 全局变量名校验（4.1）：变量名必须是合法 Python 标识符且非关键字，
+  //    否则 default / $ 语句会生成非法代码导致 Ren'Py 编译失败。
+  for (const v of variables) {
+    const nm = v.name
+    if (!nm || !PY_IDENT_RE.test(nm)) {
+      errors.push({
+        lineId: '(global)',
+        field: 'variable.name',
+        value: nm ?? '',
+        message: `全局变量名 "${nm ?? ''}" 不是合法标识符（须以字母或下划线开头，仅含字母、数字、下划线）。将自动清洗为 "${pyVarName(nm ?? '')}"。`,
+      })
+    } else if (PYTHON_KEYWORDS.has(nm)) {
+      errors.push({
+        lineId: '(global)',
+        field: 'variable.name',
+        value: nm,
+        message: `全局变量名 "${nm}" 与 Python 关键字冲突，不可用作变量名。将自动清洗为 "${pyVarName(nm)}"。`,
+      })
     }
   }
 
@@ -1165,8 +1223,8 @@ export function exportDefinitionsRpy(
   if (characterConfigs.length > 0) {
     lines.push('# ---- Character 声明 ----')
     for (const char of characterConfigs) {
-      const colorArg = char.dialogueColor ? `, color="${char.dialogueColor}"` : ''
-      lines.push(`define ${char.charId} = Character("${char.displayName}"${colorArg})`)
+      const colorArg = char.dialogueColor ? `, color="${escapeDialogue(char.dialogueColor)}"` : ''
+      lines.push(`define ${char.charId} = Character("${escapeDialogue(char.displayName)}"${colorArg})`)
     }
     lines.push('')
   }
@@ -1175,7 +1233,7 @@ export function exportDefinitionsRpy(
   if (variables.length > 0) {
     lines.push('# ---- 全局变量声明（default）----')
     for (const v of variables) {
-      lines.push(`default ${v.name} = ${pyLiteral(v.initial)}`)
+      lines.push(`default ${pyVarName(v.name)} = ${pyLiteral(v.initial)}`)
     }
     lines.push('')
   }
@@ -1284,7 +1342,7 @@ export function downloadRpy(
 ): void {
   // 校验（沿用全量校验，含 voice/se）
   const lookups = resolveLookups(deltas, characterConfigs, assets)
-  const errors = validateExportNames(deltas, lookups, characterConfigs, assets)
+  const errors = validateExportNames(deltas, lookups, characterConfigs, assets, variables)
   if (errors.length > 0) {
     alert(formatValidationErrors(errors))
     return
@@ -1321,7 +1379,7 @@ export async function exportProjectPackage(
   variables: GlobalVariable[] = [],
 ): Promise<ExportResult> {
   const lookups = resolveLookups(deltas, characterConfigs, assets)
-  const errors = validateExportNames(deltas, lookups, characterConfigs, assets)
+  const errors = validateExportNames(deltas, lookups, characterConfigs, assets, variables)
   if (errors.length > 0) {
     alert(formatValidationErrors(errors))
     return { mode: 'web', success: false, message: '校验失败，已中止导出。' }

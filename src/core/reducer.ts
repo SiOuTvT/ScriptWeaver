@@ -44,7 +44,7 @@ export function applyDelta(
   // --- 背景 ---
   // null = 继承上一行背景；对象 = 切换新背景
   const background =
-    delta.background !== null ? delta.background : prev?.background ?? null
+    delta.background != null ? delta.background : prev?.background ?? null
 
   // --- 舞台级全局滤镜（scope: 'stage'）---
   // undefined = 继承上一行；null/[] = 显式清空
@@ -61,7 +61,7 @@ export function applyDelta(
     : {}
 
   // 2. 应用本行 Delta 角色指令
-  for (const [charId, charDelta] of Object.entries(delta.characters)) {
+  for (const [charId, charDelta] of Object.entries(delta.characters ?? {})) {
     switch (charDelta.action) {
       case 'show': {
         characters[charId] = {
@@ -86,11 +86,12 @@ export function applyDelta(
   }
 
   // --- 音频 ---
-  const bgm = resolveTrack(delta.audio.bgm, prev?.audio.bgm ?? null)
-  const ambient = resolveTrack(delta.audio.ambient, prev?.audio.ambient ?? null)
+  const audioRaw = delta.audio ?? {}
+  const bgm = resolveTrack(audioRaw.bgm ?? null, prev?.audio.bgm ?? null)
+  const ambient = resolveTrack(audioRaw.ambient ?? null, prev?.audio.ambient ?? null)
   // se / voice 是一次性事件，不参与继承
-  const se = delta.audio.se
-  const voice = delta.audio.voice
+  const se = audioRaw.se ?? []
+  const voice = audioRaw.voice ?? null
 
   return {
     line_id: delta.line_id,
@@ -108,8 +109,8 @@ export function applyDelta(
       ambient,
       se,
       voice,
-      voice_offset_ms: delta.audio.voice_offset_ms,
-      se_offset_ms: delta.audio.se_offset_ms,
+      voice_offset_ms: audioRaw.voice_offset_ms,
+      se_offset_ms: audioRaw.se_offset_ms,
     },
   }
 }
@@ -139,6 +140,39 @@ export function reduceLines(deltas: LineDelta[]): ResolvedLineState[] {
   }
 
   return resolved
+}
+
+/**
+ * 归一化单行 Delta，补齐缺失的嵌套字段（背景 / 角色 / 音频等），
+ * 作为"外部数据进入内核"的边界校验层，杜绝加载缺字段导致 applyDelta 崩溃。
+ * 纯函数、幂等（对已规整数据无副作用）。
+ */
+export function normalizeDelta(d: LineDelta): LineDelta {
+  const audio = {
+    bgm: d.audio?.bgm ?? null,
+    ambient: d.audio?.ambient ?? null,
+    se: d.audio?.se ?? [],
+    voice: d.audio?.voice ?? null,
+    voice_offset_ms: d.audio?.voice_offset_ms,
+    se_offset_ms: d.audio?.se_offset_ms,
+  }
+  const base: LineDelta = {
+    line_id: d.line_id,
+    speaker: d.speaker ?? null,
+    dialogue: d.dialogue ?? '',
+    background: d.background ?? null,
+    characters: d.characters ?? {},
+    audio,
+    line_type: d.line_type ?? 'dialogue',
+  }
+  if (d.line_type === 'choice' || d.choices) {
+    base.choices = d.choices ?? []
+    base.prompt = d.prompt ?? ''
+  }
+  if (d.label !== undefined) base.label = d.label
+  if (d.stageEffects !== undefined) base.stageEffects = d.stageEffects ?? []
+  if (d.variableOps) base.variableOps = d.variableOps
+  return base
 }
 
 /**
