@@ -1,6 +1,6 @@
 {
   "name": "scriptweaver",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "智能视觉小说编辑器",
   "main": "dist-electron/main.js",
   "scripts": {
