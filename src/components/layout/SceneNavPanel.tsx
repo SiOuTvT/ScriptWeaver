@@ -15,7 +15,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'audio', label: '音频', icon: <Music size={14} strokeWidth={1.75} /> },
 ]
 
-export default function SceneNavPanel() {
+export default function SceneNavPanel({ embedded = false }: { embedded?: boolean }) {
   const assets = useAppStore((s) => s.assets)
   const addAsset = useAppStore((s) => s.addAsset)
 
@@ -227,6 +227,72 @@ export default function SceneNavPanel() {
 
   // ---- 整体 ----
 
+  if (embedded) {
+    return (
+      <div className="flex h-full w-full flex-col">
+        {/* 导入按钮 */}
+        <div className="border-b border-edge/10 px-2 py-2">
+          <Button
+            variant="outline"
+            block
+            icon={<Plus size={14} strokeWidth={1.75} />}
+            onClick={handleImport}
+          >
+            导入{tab === 'audio' ? '音频' : '图片'}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={tab === 'audio' ? 'audio/*' : 'image/*'}
+            multiple
+            className="hidden"
+            onChange={handleBrowserImport}
+          />
+        </div>
+
+        {/* 搜索 */}
+        <div className="border-b border-edge/10 px-2 py-1.5">
+          <Input
+            placeholder="搜索素材..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            prefix={<Search size={12} strokeWidth={1.75} />}
+          />
+        </div>
+
+        {/* Tab 切换 */}
+        <Tabs
+          items={TABS}
+          value={tab}
+          onChange={(id) => {
+            setTab(id)
+            setSearch('')
+          }}
+          size="sm"
+        />
+
+        {/* 素材列表（可拖拽） */}
+        <div className="flex-1 overflow-y-auto p-1.5">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-1 py-8 text-[12px] text-fg-faint">
+              {search ? '没有匹配的素材' : '暂无素材，点击上方导入'}
+            </div>
+          ) : (
+            <div className={tab === 'audio' ? 'space-y-1.5' : 'space-y-0.5'}>
+              {filtered.map((a) => (a.type === 'audio' ? renderAudioCard(a) : renderAssetCard(a)))}
+            </div>
+          )}
+        </div>
+
+        {/* 底部计数 */}
+        <div className="shrink-0 border-t border-edge/10 px-2 py-1.5 text-[12px] text-fg-faint">
+          {filtered.length} 个{tab === 'audio' ? '音频' : tab === 'sprite' ? '立绘' : '背景'}
+          {search && ` 共 ${assets.filter((a) => a.type === tab).length}`}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <aside className="flex w-56 shrink-0 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm">
       {/* 标题 */}
@@ -235,6 +301,7 @@ export default function SceneNavPanel() {
         <span className="eyebrow">素材库 Assets</span>
         <span className="ml-auto text-[12px] text-fg-faint">拖拽至舞台</span>
       </div>
+
 
       {/* 导入按钮 */}
       <div className="border-b border-edge/10 px-2 py-2">

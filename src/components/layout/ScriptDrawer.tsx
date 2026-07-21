@@ -4,7 +4,7 @@ import { Pin, X, Image as ImageIcon, Music, AudioLines, Volume2, Megaphone, Door
 import type { LineDelta } from '@/core/types'
 import { IconButton } from '@/components/ui'
 
-export default function ScriptDrawer() {
+export default function ScriptDrawer({ embedded = false }: { embedded?: boolean }) {
   const deltas = useAppStore((s) => s.draftDeltas)
   const resolvedStates = useAppStore((s) => s.resolvedStates)
   const selectedIndex = useAppStore((s) => s.selectedLineIndex)
