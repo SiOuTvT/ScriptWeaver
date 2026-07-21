@@ -22,6 +22,65 @@ export default function ScriptDrawer({ embedded = false }: { embedded?: boolean 
     el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [selectedIndex])
 
+  // embedded 模式：由外层 Dock 接管折叠，直接渲染内容（无自身外框/头部）
+  if (embedded) {
+    return (
+      <div ref={listRef} className="h-full w-full overflow-y-auto">
+        {deltas.map((delta, i) => {
+          const isSelected = i === selectedIndex
+          const resolved = resolvedStates[i]
+          return (
+            <button
+              key={delta.line_id}
+              onClick={() => selectLine(i)}
+              className={`relative w-full border-b border-edge/10 px-3 py-3 text-left transition-colors hover:bg-surface-hover ${
+                isSelected ? 'signal-bar bg-signal/10' : ''
+              }`}
+            >
+              <div className="mb-0.5 flex items-center gap-2">
+                <span className="text-[12px] font-mono text-fg-subtle">{delta.line_id}</span>
+                <span className="text-xs font-medium text-fg-muted">{delta.speaker ?? '旁白'}</span>
+                {delta.label && (
+                  <span
+                    className="rounded bg-signal/15 px-1 py-0.5 text-[12px] text-signal"
+                    title={`剧情块标签：${delta.label}`}
+                  >
+                    #{delta.label}
+                  </span>
+                )}
+                <ChangeIndicators delta={delta} />
+              </div>
+              <p className={`text-xs leading-relaxed ${isSelected ? 'text-fg' : 'text-fg-subtle'}`}>
+                {delta.line_type === 'choice'
+                  ? `选择支 · ${(delta.choices ?? []).length} 选项`
+                  : delta.dialogue}
+              </p>
+              {isSelected && (
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {resolved.background && (
+                    <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[12px] text-fg-subtle">
+                      <ImageIcon size={10} strokeWidth={1.75} /> {resolved.background.asset_id}
+                    </span>
+                  )}
+                  {resolved.audio.bgm && (
+                    <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[12px] text-fg-subtle">
+                      <Music size={10} strokeWidth={1.75} /> {resolved.audio.bgm.asset_id}
+                    </span>
+                  )}
+                  {resolved.audio.ambient && (
+                    <span className="flex items-center gap-1 rounded bg-surface-1 px-1 py-0.5 text-[12px] text-fg-subtle">
+                      <AudioLines size={10} strokeWidth={1.75} /> {resolved.audio.ambient.asset_id}
+                    </span>
+                  )}
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
   // 抽屉宽度：钉住 = 208px，浮动 = 176px，收起 = 0（缩窄以把更多空间留给舞台）
   const width = open ? (pinned ? 'w-52' : 'w-44') : 'w-0'
   const visibility = open ? '' : 'invisible'

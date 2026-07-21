@@ -717,6 +717,39 @@ electron.ipcMain.handle("dialog:pickAssetFiles", async (_event, options) => {
     return { success: false, error: err.message };
   }
 });
+electron.ipcMain.handle("fs:importFilesFromPaths", async (_event, srcPaths, kind) => {
+  if (!Array.isArray(srcPaths) || srcPaths.length === 0) return { success: false, error: "未提供文件" };
+  try {
+    const sessionRoot = getSessionDir();
+    const files = [];
+    for (const srcPath of srcPaths) {
+      if (typeof srcPath !== "string" || !fs.existsSync(srcPath)) continue;
+      const ext = path.extname(srcPath).toLowerCase();
+      const baseName = path.basename(srcPath);
+      const { subdir, type } = resolveSubdir(ext, kind);
+      const destDir = path.join(sessionRoot, "assets", subdir);
+      ensureDir(destDir);
+      let fileDest = path.join(destDir, baseName);
+      let counter = 1;
+      while (fs.existsSync(fileDest)) {
+        const parsed = path.parse(baseName);
+        fileDest = path.join(destDir, `${parsed.name}_${counter}${parsed.ext}`);
+        counter++;
+      }
+      copyFile(srcPath, fileDest);
+      const relativePath = path.join("assets", subdir, path.basename(fileDest)).replace(/\\/g, "/");
+      files.push({
+        id: uuid(),
+        fileName: path.basename(fileDest),
+        relativePath,
+        type
+      });
+    }
+    return { success: true, files };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
 electron.ipcMain.handle("fs:exportRenpy", async (_event, bundle) => {
   if (!mainWindow) return { success: false, error: "No active window" };
   const result = await electron.dialog.showOpenDialog(mainWindow, {

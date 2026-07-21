@@ -13,6 +13,8 @@ import AIPanel from './AIPanel'
 import ExportSettings from './ExportSettings'
 import ThemeSettings from './ThemeSettings'
 import ChoiceEditor from './ChoiceEditor'
+import Dock from './Dock'
+import VariableDebugger from './VariableDebugger'
 import { applyAccent } from '@/utils/themeColor'
 import { useAppStore } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
@@ -20,7 +22,7 @@ import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
 import { bindAssetWatcher } from '@/services/assetSync'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 import { subscribe, getToastItems, toast, type ToastItem } from '@/utils/toast'
-import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown } from 'lucide-react'
+import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown, Images, FileText, Activity, GitBranch, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button, IconButton, ConfirmDialog } from '@/components/ui'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem, GlobalVariable } from '@/core/types'
 
@@ -326,6 +328,8 @@ export default function AppLayout() {
 
   // 底部视图：时间轴 / 节点图谱 一键切换；图谱点击节点/连线联动定位到时间轴对应行
   const [bottomView, setBottomView] = useState<'timeline' | 'graph'>('timeline')
+  // 底部时间轴 Dock 折叠（收起以把更多空间让给舞台）
+  const [bottomCollapsed, setBottomCollapsed] = useState(false)
   const handleFocusLine = useCallback(
     (index: number) => {
       selectLine(index)
@@ -389,46 +393,74 @@ export default function AppLayout() {
 
         {/* --- 场景导航：完整创作工作区 --- */}
         {isChapters && (
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="relative flex flex-1 items-stretch gap-0 overflow-hidden p-2">
-              <ManagementPanel />
-              <div className="col-divider" aria-hidden />
-              <StagePreview />
-              <div className="col-divider" aria-hidden />
-              <ScriptDrawer />
-              {showChoiceEditor && (
-                <>
-                  <div className="col-divider" aria-hidden />
-                  <ChoiceEditor />
-                </>
-              )}
-            </div>
-    {/* 底部视图：时间轴 / 节点图谱 一键切换 */}
-    <div className="flex min-h-0 flex-col border-t border-edge/10">
-      <div className="flex h-9 shrink-0 items-center gap-1 border-b border-edge/10 bg-surface/60 px-3">
-        <button
-          onClick={() => setBottomView('timeline')}
-          className={`rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors ${
-            bottomView === 'timeline' ? 'bg-primary/[0.08] text-fg' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
-          }`}
-        >
-          时间轴
-        </button>
-        <button
-          onClick={() => setBottomView('graph')}
-          className={`rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors ${
-            bottomView === 'graph' ? 'bg-primary/[0.08] text-fg' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
-          }`}
-        >
-          节点图谱
-        </button>
-      </div>
-      <div className="min-h-0 flex-1">
-        {bottomView === 'timeline' ? <Timeline /> : <ScriptGraph onFocusLine={handleFocusLine} />}
-      </div>
-    </div>
-  </div>
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            {/* ===== 左 Dock：素材库（拖拽至舞台的素材源） ===== */}
+            <Dock side="left" title="素材库" icon={Images} badge={assets.length} defaultOpen width={264}>
+              <ManagementPanel embedded />
+            </Dock>
 
+            {/* ===== 中央核心区：舞台（绝对核心，flex-1 最大空间）+ 底部时间轴 Dock ===== */}
+            <div className="flex min-w-0 flex-1 flex-col">
+              <StagePreview />
+
+              {/* 底部 Dock：时间轴 / 节点图谱（核心二，可折叠把空间让给舞台） */}
+              <div
+                className="flex shrink-0 flex-col border-t border-edge/10 bg-surface"
+                style={{ height: bottomCollapsed ? 38 : 320, transition: 'height 200ms ease' }}
+              >
+                <div className="flex h-9 shrink-0 items-center gap-1 border-b border-edge/10 bg-surface/60 px-3">
+                  <button
+                    onClick={() => setBottomView('timeline')}
+                    className={`rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors ${
+                      bottomView === 'timeline' ? 'bg-primary/[0.08] text-fg' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+                    }`}
+                  >
+                    时间轴
+                  </button>
+                  <button
+                    onClick={() => setBottomView('graph')}
+                    className={`rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors ${
+                      bottomView === 'graph' ? 'bg-primary/[0.08] text-fg' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+                    }`}
+                  >
+                    节点图谱
+                  </button>
+                  <div className="ml-auto">
+                    <button
+                      onClick={() => setBottomCollapsed((c) => !c)}
+                      title={bottomCollapsed ? '展开时间轴' : '收起时间轴'}
+                      aria-label={bottomCollapsed ? '展开时间轴' : '收起时间轴'}
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
+                    >
+                      {bottomCollapsed ? <ChevronUp size={16} strokeWidth={1.75} /> : <ChevronDown size={16} strokeWidth={1.75} />}
+                    </button>
+                  </div>
+                </div>
+                {!bottomCollapsed && (
+                  <div className="min-h-0 flex-1">
+                    {bottomView === 'timeline' ? <Timeline /> : <ScriptGraph onFocusLine={handleFocusLine} />}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ===== 右 Dock：剧本流（场景行列表，可收拉） ===== */}
+            <Dock side="right" title="剧本流" icon={FileText} badge={totalLines} defaultOpen width={248}>
+              <ScriptDrawer embedded />
+            </Dock>
+
+            {/* ===== 右 Dock：变量监视（内部自带标题/重置/折叠，Dock 不重复头部） ===== */}
+            <Dock side="right" title="变量监视" icon={Activity} defaultOpen width={288} showHeader={false}>
+              <VariableDebugger embedded />
+            </Dock>
+
+            {/* ===== 条件右 Dock：选择支编辑器（仅选中选择支行时出现） ===== */}
+            {showChoiceEditor && (
+              <Dock side="right" title="选择支" icon={GitBranch} defaultOpen width={320}>
+                <ChoiceEditor embedded />
+              </Dock>
+            )}
+          </div>
         )}
 
         {/* --- 其他页面：独立全屏视图 --- */}

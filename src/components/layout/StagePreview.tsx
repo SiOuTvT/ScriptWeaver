@@ -19,7 +19,6 @@ import EffectMountPanel from '@/components/effects/EffectMountPanel'
 import { PRESET_SLOTS, getPresetSlot } from '@/core/positionSlots'
 import { playAudioPreview, stopBgm, stopAmbient, stopOneShots } from '@/utils/audioManager'
 import { estimateLineDurationMs } from '@/utils/playback'
-import VariableDebugger from './VariableDebugger'
 import { evalCondition, findLabelIndex } from '@/utils/varRuntime'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
@@ -1207,8 +1206,7 @@ export default function StagePreview() {
         </div>
       </header>
 
-      {/* 变量实时监视调试器浮层（右上角，可折叠；仅播放/调试时观察运行时变量跳变） */}
-      <VariableDebugger />
+      {/* 变量实时监视调试器已迁出为右侧可收拉 Dock（见 AppLayout），不再以浮层遮挡舞台核心按钮 */}
 
       {/* 舞台行：舞台视口（自适应等比缩放）+ 右侧立绘编辑面板（真实布局兄弟，绝不遮挡舞台） */}
       <div className="relative flex min-h-0 flex-1">

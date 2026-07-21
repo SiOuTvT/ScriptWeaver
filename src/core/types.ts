@@ -76,6 +76,12 @@ export interface CharacterConfig {
   defaultExpression?: string
   /** 对话框专属颜色（hex），可选 */
   dialogueColor?: string
+  /** 绑定该角色的专属 CV 语音包预设（引用 voice 类音频 AssetItem.id），可选 */
+  voiceAssetId?: string
+  /** 立绘默认出场缩放比例（对应 CharacterDelta.scale，默认 1） */
+  defaultScale?: number
+  /** 立绘默认出场槽位（引用 PRESET_SLOTS 的 id，如 'center' / 'right'） */
+  defaultSlot?: string
   createdAt: string
   updatedAt: string
 }

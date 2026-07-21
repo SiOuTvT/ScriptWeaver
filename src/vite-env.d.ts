@@ -28,6 +28,16 @@ interface ElectronAPI {
     error?: string
   }>
 
+  /** 拖入素材：接收 OS 拖放的真实文件路径，二进制落盘（不返回 Base64） */
+  importFilesFromPaths: (
+    srcPaths: string[],
+    kind?: 'background' | 'sprite' | 'audio',
+  ) => Promise<{
+    success: boolean
+    files?: { id: string; fileName: string; relativePath: string; type: 'background' | 'sprite' | 'audio' }[]
+    error?: string
+  }>
+
   /** 设置活动项目根目录：驱动 sw-asset:// 协议查找 + 文件夹监听 */
   setActiveProjectRoot: (root: string | null) => Promise<{ success: boolean }>
 

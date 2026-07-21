@@ -699,6 +699,48 @@ ipcMain.handle('dialog:pickAssetFiles', async (_event, options?: {
   }
 })
 
+// ===================== 拖入素材（OS 拖放真实路径落盘，绝不返回 Base64） =====================
+
+ipcMain.handle('fs:importFilesFromPaths', async (_event, srcPaths: string[], kind?: AssetKind) => {
+  if (!Array.isArray(srcPaths) || srcPaths.length === 0) return { success: false, error: '未提供文件' }
+  try {
+    const sessionRoot = getSessionDir()
+    const files: { id: string; fileName: string; relativePath: string; type: AssetKind }[] = []
+
+    for (const srcPath of srcPaths) {
+      if (typeof srcPath !== 'string' || !fs.existsSync(srcPath)) continue
+      const ext = path.extname(srcPath).toLowerCase()
+      const baseName = path.basename(srcPath)
+      const { subdir, type } = resolveSubdir(ext, kind)
+
+      const destDir = path.join(sessionRoot, 'assets', subdir)
+      ensureDir(destDir)
+
+      let fileDest = path.join(destDir, baseName)
+      let counter = 1
+      while (fs.existsSync(fileDest)) {
+        const parsed = path.parse(baseName)
+        fileDest = path.join(destDir, `${parsed.name}_${counter}${parsed.ext}`)
+        counter++
+      }
+
+      copyFile(srcPath, fileDest)
+      const relativePath = path.join('assets', subdir, path.basename(fileDest)).replace(/\\/g, '/')
+
+      files.push({
+        id: uuid(),
+        fileName: path.basename(fileDest),
+        relativePath,
+        type,
+      })
+    }
+
+    return { success: true, files }
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message }
+  }
+})
+
 // ===================== 导出 Ren'Py 项目包 =====================
 
 interface ExportAssetRef {

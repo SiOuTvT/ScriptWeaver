@@ -392,6 +392,7 @@ export default function Timeline() {
   const resolvedStates = useAppStore((s) => s.resolvedStates)
   const selectedIndex = useAppStore((s) => s.selectedLineIndex)
   const selectLine = useAppStore((s) => s.selectLine)
+  const timelineScrollRef = useRef<HTMLDivElement>(null)
   const batchUpdateDeltas = useAppStore((s) => s.batchUpdateDeltas)
   const updateDeltaAt = useAppStore((s) => s.updateDeltaAt)
   const insertDeltaAt = useAppStore((s) => s.insertDeltaAt)
@@ -454,6 +455,18 @@ export default function Timeline() {
   const zoomIn = useCallback(() => setCellWidth((w) => Math.min(ZOOM_MAX, w + ZOOM_STEP)), [])
   const zoomOut = useCallback(() => setCellWidth((w) => Math.max(ZOOM_MIN, w - ZOOM_STEP)), [])
   const zoomReset = useCallback(() => setCellWidth(120), [])
+
+  // 选中行变化时平滑滚动到视口中央（从剧本总览/节点图谱跳转而来时精准定位）
+  useEffect(() => {
+    const el = timelineScrollRef.current
+    if (!el || total === 0) return
+    const target = selectedIndex * cellWidth
+    const view = el.clientWidth
+    el.scrollTo({
+      left: Math.max(0, target - view / 2 + cellWidth / 2),
+      behavior: 'smooth',
+    })
+  }, [selectedIndex, cellWidth, total])
 
   const allTracks = useMemo(() => [
     ...TRACKS.map((t) => ({
@@ -977,7 +990,7 @@ export default function Timeline() {
         </div>
 
         {/* 轨道内容 */}
-        <div className="flex-1 overflow-x-auto">
+        <div ref={timelineScrollRef} className="flex-1 overflow-x-auto">
           <div className="relative" style={{ width: `${total * cellWidth}px` }}>
             {/* 行号 + 行操作按钮 */}
             <div className="flex border-b border-edge/10" style={{ height: 48 }}>

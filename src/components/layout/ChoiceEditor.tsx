@@ -30,7 +30,7 @@ function opPreview(op: VariableOperation): string {
  * 当时间轴选中「选择支行」时，右侧属性面板自动切换为本品。
  * 所有变更均经 updateDeltaAt / setLineType 单事务提交，严格遵守四大铁律。
  */
-export default function ChoiceEditor() {
+export default function ChoiceEditor({ embedded = false }: { embedded?: boolean }) {
   const selectedIndex = useAppStore((s) => s.selectedLineIndex)
   const delta = useAppStore((s) => s.draftDeltas[s.selectedLineIndex])
   const variables = useAppStore((s) => s.variables)
@@ -76,7 +76,7 @@ export default function ChoiceEditor() {
   }
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col overflow-hidden rounded-lg border border-edge/[0.14] bg-surface shadow-sm transition-all">
+    <div className={embedded ? 'flex h-full w-full flex-col overflow-hidden' : 'flex w-80 shrink-0 flex-col overflow-hidden rounded-lg border border-edge/[0.14] bg-surface shadow-sm transition-all'}>
       {/* 头部 */}
       <div className="flex items-center justify-between border-b border-edge/12 px-3 py-2.5">
         <div className="flex items-center gap-2">
@@ -131,7 +131,7 @@ export default function ChoiceEditor() {
           <Plus size={14} strokeWidth={1.75} /> 新增选项
         </button>
       </div>
-    </aside>
+    </div>
   )
 }
 

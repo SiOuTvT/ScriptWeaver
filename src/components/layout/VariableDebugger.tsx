@@ -11,7 +11,7 @@ import { Sigma, RotateCcw, ChevronDown, ChevronUp, Activity } from 'lucide-react
 import { useAppStore } from '@/stores/appStore'
 import type { RuntimeValues } from '@/utils/varRuntime'
 
-export default function VariableDebugger() {
+export default function VariableDebugger({ embedded = false }: { embedded?: boolean }) {
   const variables = useAppStore((s) => s.variables)
   const runtimeValues = useAppStore((s) => s.runtimeValues)
   const setRuntimeValue = useAppStore((s) => s.setRuntimeValue)
@@ -38,8 +38,12 @@ export default function VariableDebugger() {
     prevRef.current = { ...runtimeValues }
   }, [runtimeValues, variables])
 
+  const rootCls = embedded
+    ? 'pointer-events-auto flex h-full w-full flex-col'
+    : 'pointer-events-auto absolute right-3 top-14 z-50 w-60 overflow-hidden rounded-xl border border-edge/15 bg-surface/90 shadow-2 backdrop-blur-md'
+
   return (
-    <div className="pointer-events-auto absolute right-3 top-14 z-50 w-60 overflow-hidden rounded-xl border border-edge/15 bg-surface/90 shadow-2 backdrop-blur-md">
+    <div className={rootCls}>
       {/* 标题栏 */}
       <div className="flex items-center justify-between border-b border-edge/10 bg-surface-1/50 px-2.5 py-1.5">
         <span className="flex items-center gap-1.5 text-[12px] font-semibold text-fg">
@@ -65,7 +69,7 @@ export default function VariableDebugger() {
       </div>
 
       {!collapsed && (
-        <div className="max-h-[42vh] overflow-y-auto p-2">
+        <div className={embedded ? 'min-h-0 flex-1 overflow-y-auto p-2' : 'max-h-[42vh] overflow-y-auto p-2'}>
           {variables.length === 0 ? (
             <div className="flex flex-col items-center gap-1.5 px-2 py-4 text-center">
               <Sigma size={18} strokeWidth={1.5} className="text-fg-faint" />
