@@ -9,16 +9,16 @@ interface ClearCacheButtonProps {
 }
 
 /**
- * 一键清除本地缓存：删除已导入素材（session-assets）、版本快照（snapshots），
- * 并清空草稿持久化（localStorage），随后重载软件回到纯净白板。
- * 用于打包/测试前清场，避免旧数据被带进工程。
+ * 一键清除本地缓存：删除版本快照（snapshots），并清空草稿持久化（localStorage），
+ * 随后重载软件回到纯净白板。
+ * 素材已统一存储于项目目录 assets/ 下，不再写入系统 AppData。
  */
 export function ClearCacheButton({ variant = 'outline', block = false }: ClearCacheButtonProps) {
   const [busy, setBusy] = useState(false)
 
   const handleClear = async () => {
     const confirmed = window.confirm(
-      '确定清除本地缓存吗？\n\n这会删除：\n· 已导入的素材文件（session-assets）\n· 版本快照（snapshots）\n· 当前草稿与本地设置（localStorage）\n\n操作不可撤销，软件将重置为纯净白板。',
+      '确定清除本地缓存吗？\n\n这会删除：\n 版本快照（snapshots）\n 当前草稿与本地设置（localStorage）\n\n素材文件存放在项目目录中，不会被清除。\n操作不可撤销，软件将重置为纯净白板。',
     )
     if (!confirmed) return
     setBusy(true)

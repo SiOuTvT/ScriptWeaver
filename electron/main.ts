@@ -287,19 +287,9 @@ function classifyAsset(abs: string): AssetKind | null {
   return null
 }
 
-// 会话素材目录（持久化、路径稳定）
-// 注意：必须用「稳定且持久」的路径（userData 下，不含时间戳），且退出时不删除。
-// 否则导入但未保存项目的素材会随应用退出 / dev 热重载（electron 重启触发 before-quit）
-// 而从临时目录被整体清空，导致 sw-asset 全部 404：图片看不了、音频听不了、时间轴失效。
-let sessionDir: string | null = null
-
-function getSessionDir(): string {
-  if (!sessionDir) {
-    sessionDir = path.join(app.getPath('userData'), 'session-assets')
-    ensureDir(sessionDir)
-  }
-  return sessionDir
-}
+// 所有素材统一存储在项目目录下的 assets/ 中（不再使用系统 AppData）。
+// 导入/保存/导出均直接读写 activeProjectRoot/assets/，实现"随删随清、随移随走"。
+// 导入素材前必须先保存项目（确定 projectRoot），否则返回明确错误提示。
 
 // Web 导出模板目录：开发期指向仓库根 web-player，打包后随 extraResources 进入 resources/web-player
 function getWebTemplateDir(): string {
@@ -310,8 +300,7 @@ function getWebTemplateDir(): string {
 }
 
 
-// 应用退出时只停监听器，不再删除素材目录（素材已落在持久化的 userData 下，
-// 删除会导致下次启动全部 404；如需彻底清空，由「新建项目」等显式动作处理）。
+// 应用退出时只停监听器。素材已统一存储于项目目录 assets/ 下，无需清理。
 app.on('before-quit', () => {
   stopAssetWatch()
 })
@@ -321,7 +310,8 @@ app.on('before-quit', () => {
 /**
  * 流式零拷贝读取本地素材：
  *   sw-asset://asset/<relativePath>   （relativePath 形如 assets/images/sprite/x.png）
- * 依次在 [activeProjectRoot, sessionDir] 中查找，命中即以文件流返回，二进制永不整体进内存。
+ * 在 activeProjectRoot 中查找（仅项目目录，不再使用系统 AppData），
+ * 命中即以文件流返回，二进制永不整体进内存。
  * 安全：路径规范化后必须仍落在 <root>/assets 子树内（防目录穿越）+ 扩展名白名单。
  */
 function registerAssetProtocol(): void {
@@ -338,12 +328,11 @@ function registerAssetProtocol(): void {
         rel = url.pathname
       }
       rel = rel.replace(/^\/+/, '')
-      console.log('[sw-asset] request', request.url, '| rel=', rel, '| activeRoot=', activeProjectRoot, '| session=', sessionDir)
+      console.log('[sw-asset] request', request.url, '| rel=', rel, '| activeRoot=', activeProjectRoot)
       if (!rel) return new Response('bad request', { status: 400 })
 
       const roots: string[] = []
       if (activeProjectRoot) roots.push(activeProjectRoot)
-      roots.push(getSessionDir())
 
       for (const root of roots) {
         const assetsDir = path.resolve(root, 'assets')
@@ -562,6 +551,7 @@ ipcMain.handle('tts:synthesize', async (_event, payload: {
   pitch?: number
   format?: 'mp3' | 'wav' | 'ogg'
 }) => {
+  if (!activeProjectRoot) return { success: false, error: '请先保存项目，再使用 TTS 配音' }
   const cfg = readAIConfig()
   if (!cfg.apiKey) {
     return { success: false, error: '未配置 AI API 密钥（请先在 AI 设置中填写密钥）' }
@@ -605,7 +595,7 @@ ipcMain.handle('tts:synthesize', async (_event, payload: {
     const safeLine = (payload.lineTag || 'L0').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 16)
     const id = uuid()
     const fileName = `tts_${safeChar}_${safeLine}_${id.slice(0, 8)}.${fmt}`
-    const destDir = path.join(getSessionDir(), 'assets', 'audio')
+    const destDir = path.join(activeProjectRoot!, 'assets', 'audio')
     ensureDir(destDir)
     const dest = path.join(destDir, fileName)
     fs.writeFileSync(dest, buf)
@@ -629,18 +619,13 @@ ipcMain.handle('app:getPath', (_event, name: Parameters<typeof app.getPath>[0]) 
   return app.getPath(name)
 })
 
-ipcMain.handle('app:getSessionDir', () => {
-  return getSessionDir()
-})
-
-// --------------- 本地缓存清理：打包/测试前一键清空，避免旧素材与草稿被带进工程 ---------------
-// 删除 userData 下的 session-assets（导入素材磁盘文件）与 snapshots（版本快照）。
-// 渲染端另行调用 localStorage.clear() 清空草稿持久化；Local Storage 由 Chromium 持有句柄，
-// 运行时不可删，故交给渲染端清除后再 reload 完成整体重置。
+// --------------- 本地缓存清理 ---------------
+// 素材已统一存储在项目目录下，不再写入系统 AppData。
+// 此功能仅清理 userData/snapshots（版本快照），渲染端另行清空 localStorage。
 ipcMain.handle('app:clearLocalCache', () => {
   try {
     const userData = app.getPath('userData')
-    const targets = [path.join(userData, 'session-assets'), path.join(userData, 'snapshots')]
+    const targets = [path.join(userData, 'snapshots')]
     let removedDirs = 0
     for (const dir of targets) {
       if (fs.existsSync(dir)) {
@@ -728,12 +713,9 @@ ipcMain.handle('dialog:saveProject', async (_event, data: { projectJson: string;
     ensureDir(path.join(assetsDir, SUBDIR_BACKGROUND))
     ensureDir(path.join(assetsDir, SUBDIR_SPRITE))
     ensureDir(path.join(assetsDir, SUBDIR_AUDIO))
+    ensureDir(path.join(assetsDir, 'scripts'))
 
-    // 从会话临时目录整体复制素材树到项目 assets 目录
-    const sessionAssets = path.join(getSessionDir(), 'assets')
-    if (fs.existsSync(sessionAssets)) {
-      copyDir(sessionAssets, assetsDir)
-    }
+    // 素材已直接存储于项目目录下，无需从临时目录拷贝
 
     // 写入 .swproj
     const projPath = path.join(projectDir, `${projectName}.swproj`)
@@ -802,8 +784,7 @@ ipcMain.handle('dialog:pickAssetFiles', async (_event, options?: {
   if (result.canceled || result.filePaths.length === 0) return { success: false }
 
   try {
-    // 内部导入统一落到会话临时目录，保存时再整体复制进项目（保持既有稳定语义）
-    const sessionRoot = getSessionDir()
+    if (!activeProjectRoot) return { success: false, error: '请先保存项目，再导入素材' }
     const files: {
       id: string; fileName: string; relativePath: string; type: AssetKind
     }[] = []
@@ -813,7 +794,7 @@ ipcMain.handle('dialog:pickAssetFiles', async (_event, options?: {
       const baseName = path.basename(srcPath)
       const { subdir, type } = resolveSubdir(ext, options?.kind)
 
-      const destDir = path.join(sessionRoot, 'assets', subdir)
+      const destDir = path.join(activeProjectRoot!, 'assets', subdir)
       ensureDir(destDir)
 
       // 避免文件名冲突
@@ -846,8 +827,8 @@ ipcMain.handle('dialog:pickAssetFiles', async (_event, options?: {
 
 ipcMain.handle('fs:importFilesFromPaths', async (_event, srcPaths: string[], kind?: AssetKind) => {
   if (!Array.isArray(srcPaths) || srcPaths.length === 0) return { success: false, error: '未提供文件' }
+  if (!activeProjectRoot) return { success: false, error: '请先保存项目，再导入素材' }
   try {
-    const sessionRoot = getSessionDir()
     const files: { id: string; fileName: string; relativePath: string; type: AssetKind }[] = []
 
     for (const srcPath of srcPaths) {
@@ -856,7 +837,7 @@ ipcMain.handle('fs:importFilesFromPaths', async (_event, srcPaths: string[], kin
       const baseName = path.basename(srcPath)
       const { subdir, type } = resolveSubdir(ext, kind)
 
-      const destDir = path.join(sessionRoot, 'assets', subdir)
+      const destDir = path.join(activeProjectRoot!, 'assets', subdir)
       ensureDir(destDir)
 
       let fileDest = path.join(destDir, baseName)
@@ -922,8 +903,9 @@ ipcMain.handle('fs:exportRenpy', async (_event, bundle: RpyBundle) => {
   ensureDir(imgSpr)
   ensureDir(audDir)
 
-  // 源根：已保存项目用 projectRoot，否则回落会话目录
-  const srcRoot = activeProjectRoot ?? getSessionDir()
+  // 源根：仅使用已保存项目的 assets 目录
+  if (!activeProjectRoot) return { success: false, error: '请先保存项目' }
+  const srcRoot = activeProjectRoot
   const resolvedSrcRoot = path.resolve(srcRoot)
 
   // 单文件磁盘直拷（磁盘→磁盘，二进制不进内存），带防目录穿越校验
@@ -975,8 +957,9 @@ ipcMain.handle('fs:exportWeb', async (_event, bundle: { gameJson: string; assetR
   const root = result.filePaths[0]
 
   const tpl = getWebTemplateDir()
-  // 源根：已保存项目用 projectRoot，否则回落会话目录
-  const srcRoot = activeProjectRoot ?? getSessionDir()
+  // 源根：仅使用已保存项目的 assets 目录
+  if (!activeProjectRoot) return { success: false, error: '请先保存项目' }
+  const srcRoot = activeProjectRoot
   const resolvedSrcRoot = path.resolve(srcRoot)
 
   try {
@@ -1122,9 +1105,8 @@ ipcMain.handle('fs:evictAssetCache', async (_event, relativePath: string) => {
   try {
     const rel = (relativePath || '').replace(/\\/g, '/').replace(/^\/+/, '')
     if (!rel || rel.includes('..')) return { success: false, error: '非法路径' }
-    const roots: string[] = []
-    if (activeProjectRoot) roots.push(activeProjectRoot)
-    roots.push(getSessionDir())
+    if (!activeProjectRoot) return { success: false, error: '请先保存项目' }
+    const roots: string[] = [activeProjectRoot!]
     let removed = false
     for (const root of roots) {
       const fp = path.resolve(root, rel)
@@ -1140,17 +1122,18 @@ ipcMain.handle('fs:evictAssetCache', async (_event, relativePath: string) => {
   }
 })
 
-/** 按需重新下载：从云端地址取回素材写入会话目录（接入真实云后端后生效） */
+/** 按需重新下载：从云端地址取回素材写入项目 assets 目录 */
 ipcMain.handle('fs:downloadAsset', async (_event, remoteUrl: string, relativePath: string) => {
   try {
     if (!remoteUrl || !/^https?:\/\//i.test(remoteUrl)) {
       return { success: false, error: '未配置有效的云端地址（remoteUrl）' }
     }
+    if (!activeProjectRoot) return { success: false, error: '请先保存项目' }
     const rel = (relativePath || '').replace(/\\/g, '/').replace(/^\/+/, '')
     if (!rel || rel.includes('..')) return { success: false, error: '非法路径' }
-    const dir = path.join(getSessionDir(), path.dirname(rel))
+    const dir = path.join(activeProjectRoot!, path.dirname(rel))
     ensureDir(dir)
-    const dest = path.join(getSessionDir(), rel)
+    const dest = path.join(activeProjectRoot!, rel)
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), 120000)
     let resp: Response

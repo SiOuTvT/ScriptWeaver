@@ -11,8 +11,9 @@ import CharacterManager from './CharacterManager'
 import EffectsLab from './EffectsLab'
 import AIPanel from './AIPanel'
 import ExportSettings from './ExportSettings'
-import ThemeSettings from './ThemeSettings'
+import SettingsHub from './SettingsHub'
 import About from './About'
+import HelpCenter from './HelpCenter'
 import ChoiceEditor from './ChoiceEditor'
 import Dock from './Dock'
 import OverlayDrawer from './OverlayDrawer'
@@ -78,10 +79,13 @@ export default function AppLayout() {
   const assets = useAppStore((s) => s.assets)
   const projectRoot = useAppStore((s) => s.projectRoot)
   const activeNavItem = useAppStore((s) => s.activeNavItem)
+  const settings = useAppStore((s) => s.settings)
   const setDraftDeltas = useAppStore((s) => s.setDraftDeltas)
   const loadProjectData = useAppStore((s) => s.loadProjectData)
   const newProject = useAppStore((s) => s.newProject)
   const setProjectRoot = useAppStore((s) => s.setProjectRoot)
+  const debounceMsRef = useRef(settings.autoSaveIntervalMs)
+  debounceMsRef.current = settings.autoSaveIntervalMs
 
   // ---- 对话框状态 ----
   const [showNewConfirm, setShowNewConfirm] = useState(false)
@@ -101,11 +105,11 @@ export default function AppLayout() {
         '自动备份',
         true,
       )
-    }, 4 * 60 * 1000)
+    }, settings.snapshotIntervalMin * 60 * 1000)
     return () => {
       if (autoBackupTimer.current) clearTimeout(autoBackupTimer.current)
     }
-  }, [draftDeltas, characterConfigs, assets, projectRoot])
+  }, [draftDeltas, characterConfigs, assets, projectRoot, settings.snapshotIntervalMin])
 
 
   // ---- auto-save refs ----
@@ -119,7 +123,7 @@ export default function AppLayout() {
     timerRef.current = setTimeout(() => {
       const { deltas, characterConfigs: chars, assets: asts, projectRoot: root } = snapshotRef.current
       saveDraft(deltas, chars, asts, root, useAppStore.getState().canvasRatio)
-    }, DEBOUNCE_MS)
+    }, debounceMsRef.current)
   }, [])
 
   // 监听变化 → 自动存草稿
@@ -523,8 +527,10 @@ export default function AppLayout() {
         {activeNavItem === 'effects' && <EffectsLab />}
         {activeNavItem === 'export' && <ExportSettings />}
         {activeNavItem === 'ai' && <AIPanel />}
-        {activeNavItem === 'theme' && <ThemeSettings />}
+        {activeNavItem === 'settings' && <SettingsHub />}
+        {activeNavItem === 'theme' && <SettingsHub />}
         {activeNavItem === 'about' && <About />}
+        {activeNavItem === 'help' && <HelpCenter />}
       </div>
 
       {/* ===== 新建确认对话框 ===== */}

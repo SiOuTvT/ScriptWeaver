@@ -5,10 +5,7 @@ const api = {
   getVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
   getPath: (name: string): Promise<string> => ipcRenderer.invoke('app:getPath', name),
 
-  /** 获取会话临时目录 */
-  getSessionDir: (): Promise<string> => ipcRenderer.invoke('app:getSessionDir'),
-
-  /** 清除本地缓存：删除 session-assets 与 snapshots 目录（草稿 localStorage 由渲染端另行清空） */
+  /** 清除本地缓存：清理 snapshots 目录（素材已统一存储于项目目录下） */
   clearLocalCache: (): Promise<{ success: boolean; removedDirs?: number; error?: string }> =>
     ipcRenderer.invoke('app:clearLocalCache'),
 
