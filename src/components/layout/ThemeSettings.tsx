@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState, type CSSProperties } from 'react'
 import { Check, Pipette, RotateCcw, X, Sun, Moon, Monitor } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { useAppStore } from '@/stores/appStore'
+import { ClearCacheButton } from './ClearCacheButton'
 import {
   ACCENT_PRESETS,
   DEFAULT_ACCENT,
@@ -306,6 +307,17 @@ export default function ThemeSettings() {
                   预览区（左侧）仅反映草稿，保存后才会写入全站与本地存储。
                 </li>
               </ul>
+            </section>
+
+            {/* 本地缓存：打包/测试前一键清场，避免旧素材与草稿被带进工程 */}
+            <section className="panel p-4">
+              <div className="eyebrow mb-3">本地缓存 Local Cache</div>
+              <p className="t-micro leading-relaxed text-fg-subtle">
+                已导入的素材文件、版本快照与当前草稿均保存在本机用户目录，覆盖安装时不会自动清除。打包或测试前点此一键清空，软件将重置为纯净白板。
+              </p>
+              <div className="mt-3">
+                <ClearCacheButton block />
+              </div>
             </section>
           </div>
         </div>

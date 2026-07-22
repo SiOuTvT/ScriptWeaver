@@ -521,6 +521,27 @@ ipcMain.handle('app:getSessionDir', () => {
   return getSessionDir()
 })
 
+// --------------- 本地缓存清理：打包/测试前一键清空，避免旧素材与草稿被带进工程 ---------------
+// 删除 userData 下的 session-assets（导入素材磁盘文件）与 snapshots（版本快照）。
+// 渲染端另行调用 localStorage.clear() 清空草稿持久化；Local Storage 由 Chromium 持有句柄，
+// 运行时不可删，故交给渲染端清除后再 reload 完成整体重置。
+ipcMain.handle('app:clearLocalCache', () => {
+  try {
+    const userData = app.getPath('userData')
+    const targets = [path.join(userData, 'session-assets'), path.join(userData, 'snapshots')]
+    let removedDirs = 0
+    for (const dir of targets) {
+      if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true })
+        removedDirs++
+      }
+    }
+    return { success: true, removedDirs }
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message }
+  }
+})
+
 // --------------- 原生主题同步 ---------------
 ipcMain.on('app:setNativeTheme', (_event, theme: 'dark' | 'light') => {
   nativeTheme.themeSource = theme

@@ -12,6 +12,7 @@ import EffectsLab from './EffectsLab'
 import AIPanel from './AIPanel'
 import ExportSettings from './ExportSettings'
 import ThemeSettings from './ThemeSettings'
+import About from './About'
 import ChoiceEditor from './ChoiceEditor'
 import Dock from './Dock'
 import OverlayDrawer from './OverlayDrawer'
@@ -523,6 +524,7 @@ export default function AppLayout() {
         {activeNavItem === 'export' && <ExportSettings />}
         {activeNavItem === 'ai' && <AIPanel />}
         {activeNavItem === 'theme' && <ThemeSettings />}
+        {activeNavItem === 'about' && <About />}
       </div>
 
       {/* ===== 新建确认对话框 ===== */}

@@ -8,6 +8,10 @@ const api = {
   /** 获取会话临时目录 */
   getSessionDir: (): Promise<string> => ipcRenderer.invoke('app:getSessionDir'),
 
+  /** 清除本地缓存：删除 session-assets 与 snapshots 目录（草稿 localStorage 由渲染端另行清空） */
+  clearLocalCache: (): Promise<{ success: boolean; removedDirs?: number; error?: string }> =>
+    ipcRenderer.invoke('app:clearLocalCache'),
+
   /** 导出 Ren'Py 项目包：选目录 → 建 game/ 结构 → 磁盘直拷素材 → 写 .rpy */
   exportRenpy: (
     bundle: unknown,

@@ -61,7 +61,7 @@ interface HistorySnapshot {
 
 const MAX_HISTORY = 50
 
-export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'theme' | 'effects'
+export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'theme' | 'effects' | 'about'
 
 /** 主题模式 */
 export type ThemeMode = 'dark' | 'light'
