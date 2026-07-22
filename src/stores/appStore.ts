@@ -59,12 +59,57 @@ interface HistorySnapshot {
   selectedLineIndex: number
 }
 
-const MAX_HISTORY = 50
-
-export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'theme' | 'effects' | 'about'
+export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'theme' | 'settings' | 'effects' | 'about' | 'help'
 
 /** 主题模式 */
 export type ThemeMode = 'dark' | 'light'
+
+/** 全局应用设置（持久化 localStorage） */
+export interface AppSettings {
+  // 编辑器
+  autoSaveIntervalMs: number
+  snapshotIntervalMin: number
+  undoMaxDepth: number
+  timelineSnapPx: number
+  // 性能
+  hwAcceleration: boolean
+  framerateLimit: number      // 0=无限制, 30, 60
+  highDpiScale: number        // 1=100%, 1.25=125%, 1.5=150%, 2=200%
+  // AI
+  streamingEnabled: boolean
+  timeoutTotalMs: number
+  timeoutStallMs: number
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  autoSaveIntervalMs: 800,
+  snapshotIntervalMin: 4,
+  undoMaxDepth: 50,
+  timelineSnapPx: 5,
+  hwAcceleration: true,
+  framerateLimit: 60,
+  highDpiScale: 1,
+  streamingEnabled: true,
+  timeoutTotalMs: 180_000,
+  timeoutStallMs: 30_000,
+}
+
+function loadSettings(): AppSettings {
+  try {
+    const raw = localStorage.getItem('sw-settings')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return { ...DEFAULT_SETTINGS, ...parsed }
+    }
+  } catch { /* ignore corrupt data */ }
+  return { ...DEFAULT_SETTINGS }
+}
+
+function persistSettings(s: AppSettings): void {
+  try {
+    localStorage.setItem('sw-settings', JSON.stringify(s))
+  } catch { /* ignore */ }
+}
 
 interface AppState {
   // ---- 数据 ----
@@ -105,6 +150,10 @@ interface AppState {
   // ---- 场景画布比例（Ren'Py 式自选，默认 16:9，支持 4:3 / 1:1 等） ----
   canvasRatio: { w: number; h: number }
   setCanvasRatio: (r: { w: number; h: number }) => void
+
+  // ---- 全局应用设置 ----
+  settings: AppSettings
+  updateSettings: (patch: Partial<AppSettings>) => void
 
   // ===== 角色 CRUD =====
   addCharacter: (config: Omit<CharacterConfig, 'createdAt' | 'updatedAt'>) => void
@@ -220,6 +269,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ---- 场景画布比例（默认 16:9） ----
   canvasRatio: { w: 16, h: 9 },
+
+  // ---- 全局应用设置 ----
+  settings: loadSettings(),
 
   // ===== 角色 CRUD =====
   addCharacter: (config) => {
@@ -608,6 +660,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   // ---- 场景画布比例 ----
   setCanvasRatio: (r) => set({ canvasRatio: r }),
 
+  // ---- 全局应用设置 ----
+  updateSettings: (patch) => {
+    const prev = get().settings
+    const next = { ...prev, ...patch }
+    if (next.undoMaxDepth !== prev.undoMaxDepth) {
+      // 缩小深度时裁剪历史栈
+      // 缩小深度时裁剪历史栈：只保留最近 N 项
+      const hist = get()._history
+      if (hist.length > next.undoMaxDepth) {
+        set({ _history: hist.slice(-next.undoMaxDepth) })
+      }
+    }
+    set({ settings: next })
+    persistSettings(next)
+  },
+
   getResolvedState: (index) => {
     const states = get().resolvedStates
     return states[index] ?? null
@@ -640,7 +708,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       selectedLineIndex: s.selectedLineIndex,
     }
     set((st) => ({
-      _history: [...st._history.slice(-MAX_HISTORY + 1), snap],
+      _history: [...st._history.slice(-get().settings.undoMaxDepth + 1), snap],
       _future: [],
     }))
   },

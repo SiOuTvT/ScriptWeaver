@@ -55,9 +55,7 @@ interface ElectronAPI {
     error?: string
   }>
 
-  /** 获取会话临时目录路径 */
-  getSessionDir: () => Promise<string>
-  /** 清除本地缓存：删除 session-assets 与 snapshots 目录（草稿 localStorage 由渲染端另行清空） */
+  /** 清除本地缓存：清理 snapshots 目录（素材已统一存储于项目目录下，不再使用 session-assets） */
   clearLocalCache: () => Promise<{ success: boolean; removedDirs?: number; error?: string }>
 
   /** 导出 Ren'Py 项目包：主进程建 game/ 目录 + 磁盘直拷素材 */
