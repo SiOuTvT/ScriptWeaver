@@ -6,6 +6,7 @@ import {
   ListTree,
   LayoutGrid,
   GitBranch,
+  Network,
   Image as ImageIcon,
   Users,
   Hash,
@@ -15,11 +16,12 @@ import {
   ArrowRight,
   Filter,
   Crosshair,
+  Circle,
   type LucideIcon,
 } from 'lucide-react'
 
 import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
-import type { AssetItem } from '@/core/types'
+import type { AssetItem, CharacterConfig, ResolvedLineState } from '@/core/types'
 
 // ===================== 颜色辅助 =====================
 function hexToRgb(hex: string): [number, number, number] {
@@ -71,6 +73,115 @@ interface SceneBlock {
   lines: LineEss[]
 }
 
+// ===================== 分支树模型 =====================
+interface BranchNode {
+  id: string
+  label: string
+  lineIndex: number
+  kind: 'start' | 'label' | 'branch' | 'ending'
+  dialogue?: string
+  speakerName?: string | null
+  speakerColor?: string | null
+}
+
+interface BranchEdge {
+  from: string
+  to: string
+  kind: 'flow' | 'choice'
+  choiceText?: string
+}
+
+interface BranchTreeData {
+  nodes: BranchNode[]
+  edges: BranchEdge[]
+  nodeMap: Map<string, BranchNode>
+}
+
+function buildBranchTree(
+  resolvedStates: ResolvedLineState[],
+  charDisp: (id: string | null) => string | null,
+  characterConfigs: CharacterConfig[],
+): BranchTreeData {
+  const nodes: BranchNode[] = []
+  const edges: BranchEdge[] = []
+  const nodeIdSet = new Set<string>()
+
+  const addNode = (
+    id: string,
+    label: string,
+    lineIndex: number,
+    kind: BranchNode['kind'],
+    dialogue?: string,
+    speakerName?: string | null,
+    speakerColor?: string | null,
+  ) => {
+    if (nodeIdSet.has(id)) return
+    nodeIdSet.add(id)
+    nodes.push({ id, label, lineIndex, kind, dialogue, speakerName, speakerColor })
+  }
+
+  // Start node at line 0
+  addNode('_START_', '起点', 0, 'start', undefined, undefined, undefined)
+
+  const stateArr = resolvedStates
+
+  // Collect all labeled lines and choices
+  for (let i = 0; i < stateArr.length; i++) {
+    const st = stateArr[i]
+    if (st.label) {
+      const speakerColor = st.speaker ? resolveCharColor(st.speaker, characterConfigs) : null
+      addNode(
+        `_LABEL_${st.label}`,
+        st.label,
+        i,
+        'label',
+        st.dialogue?.slice(0, 60),
+        charDisp(st.speaker ?? null),
+        speakerColor,
+      )
+    }
+    if (st.line_type === 'choice' && st.choices && st.choices.length > 0) {
+      // Create branch node
+      addNode(`_CHOICE_${i}`, `选择 L${i + 1}`, i, 'branch', `${st.choices.length} 个选项`, undefined, undefined)
+      // Create ending nodes for each target_label
+      for (const ch of st.choices) {
+        if (ch.target_label) {
+          // Find the target line index
+          const targetIdx = stateArr.findIndex(
+            (s, j) => j > 0 && s.label === ch.target_label,
+          )
+          addNode(
+            `_END_${ch.target_label}`,
+            ch.target_label,
+            targetIdx >= 0 ? targetIdx : -1,
+            'ending',
+            ch.text?.slice(0, 60),
+            undefined,
+            undefined,
+          )
+          edges.push({
+            from: `_CHOICE_${i}`,
+            to: `_END_${ch.target_label}`,
+            kind: 'choice',
+            choiceText: ch.text?.slice(0, 40),
+          })
+        }
+      }
+    }
+  }
+
+  // Build sequential flow edges between all nodes in reading order
+  const sorted = [...nodes].sort((a, b) => a.lineIndex - b.lineIndex)
+  for (let i = 0; i < sorted.length - 1; i++) {
+    edges.push({ from: sorted[i].id, to: sorted[i + 1].id, kind: 'flow' })
+  }
+
+  const nodeMap = new Map<string, BranchNode>()
+  for (const n of nodes) nodeMap.set(n.id, n)
+
+  return { nodes, edges, nodeMap }
+}
+
 // ===================== 主组件 =====================
 export default function ScriptOverview() {
   const resolvedStates = useAppStore((s) => s.resolvedStates)
@@ -82,7 +193,7 @@ export default function ScriptOverview() {
   const setActiveNavItem = useAppStore((s) => s.setActiveNavItem)
 
   const [search, setSearch] = useState('')
-  const [viewMode, setViewMode] = useState<'outline' | 'grid'>('grid')
+  const [viewMode, setViewMode] = useState<'outline' | 'grid' | 'branch'>('grid')
   const [fSpeaker, setFSpeaker] = useState<string | null>(null)
   const [fHasChoice, setFHasChoice] = useState(false)
   const [fHasBackground, setFHasBackground] = useState(false)
@@ -174,6 +285,13 @@ export default function ScriptOverview() {
   )
 
   const fullScenes = useMemo(() => groupScenes(lines), [lines, groupScenes])
+
+  // 分支树数据（用于 branch 视图）
+  const branchTree = useMemo(
+    () => buildBranchTree(resolvedStates, charDisp, characterConfigs),
+    [resolvedStates, charDisp, characterConfigs],
+  )
+
   const speakers = useMemo(
     () => characterConfigs.filter((c) => lines.some((l) => l.speakerId === c.charId)),
     [characterConfigs, lines],
@@ -257,7 +375,7 @@ export default function ScriptOverview() {
           <span className="eyebrow">Script Overview</span>
           <span className="rounded bg-surface-1 px-1.5 py-0.5 text-[12px] text-fg-faint">只读预览</span>
         </div>
-        {/* 视图切换：大纲 / 卡片网格 */}
+        {/* 视图切换：大纲 / 卡片网格 / 分支树 */}
         <div className="flex items-center rounded-lg border border-edge/10 bg-surface-3 p-0.5 text-[12px] shadow-inset-top">
           <button
             onClick={() => setViewMode('outline')}
@@ -274,6 +392,14 @@ export default function ScriptOverview() {
             }`}
           >
             <LayoutGrid size={14} strokeWidth={1.75} />卡片
+          </button>
+          <button
+            onClick={() => setViewMode('branch')}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-all ${
+              viewMode === 'branch' ? 'bg-surface-2 font-medium text-fg shadow-1' : 'text-fg-subtle hover:text-fg'
+            }`}
+          >
+            <Network size={14} strokeWidth={1.75} />分支
           </button>
         </div>
       </div>
@@ -378,8 +504,10 @@ export default function ScriptOverview() {
           </span>
         </div>
 
-        {/* ---- 主体：大纲 / 卡片网格 ---- */}
-        {scenes.length === 0 ? (
+        {/* ---- 主体：大纲 / 卡片网格 / 分支树 ---- */}
+        {viewMode === 'branch' ? (
+          <BranchTreeView branchTree={branchTree} onJump={jumpTo} />
+        ) : scenes.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-24 text-[13px] text-fg-faint">
             <Search size={22} strokeWidth={1.5} className="text-fg-faint/60" />
             没有匹配的内容
@@ -403,6 +531,159 @@ export default function ScriptOverview() {
             ))}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ===================== 分支树视图 =====================
+
+function BranchTreeView({
+  branchTree,
+  onJump,
+}: {
+  branchTree: BranchTreeData
+  onJump: (index: number) => void
+}) {
+  const { nodes, edges, nodeMap } = branchTree
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null)
+
+  if (nodes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-24 text-[13px] text-fg-faint">
+        <Network size={22} strokeWidth={1.5} className="text-fg-faint/60" />
+        暂无分支结构，请先在剧本中添加选择支（choices）或标签（labels）
+      </div>
+    )
+  }
+
+  const connectedTo = useMemo(() => {
+    const m = new Map<string, string[]>()
+    for (const e of edges) {
+      const arr = m.get(e.from) || []
+      arr.push(e.to)
+      m.set(e.from, arr)
+    }
+    return m
+  }, [edges])
+
+  const kindBadge = (kind: BranchNode['kind']) => {
+    switch (kind) {
+      case 'start':
+        return { label: '起点', bg: 'rgb(var(--c-signal)/0.12)', fg: 'rgb(var(--c-signal))' }
+      case 'label':
+        return { label: '标签', bg: 'rgb(var(--c-accent)/0.12)', fg: 'rgb(var(--c-accent))' }
+      case 'branch':
+        return { label: '分支', bg: 'rgb(var(--c-warning,234,179,8)/0.12)', fg: 'rgb(var(--c-warning,234,179,8))' }
+      case 'ending':
+        return { label: '落点', bg: 'rgb(var(--c-danger,239,68,68)/0.12)', fg: 'rgb(var(--c-danger,239,68,68))' }
+    }
+  }
+
+  return (
+    <div className="overflow-x-auto pb-8">
+      <div className="flex items-start gap-0 py-4" style={{ minWidth: Math.max(nodes.length * 200, 600) }}>
+        {nodes.map((node, idx) => {
+          const badge = kindBadge(node.kind)
+          const isHovered = hoveredNode === node.id
+          const kids = connectedTo.get(node.id) || []
+          const choiceEdges = edges.filter((e) => e.from === node.id && e.kind === 'choice')
+
+          return (
+            <div key={node.id} className="flex items-start">
+              {/* 节点卡片 */}
+              <div className="flex flex-col items-center">
+                <button
+                  className={`group relative flex flex-col items-center gap-1 rounded-xl border px-4 py-2.5 text-center transition-all duration-200 ${
+                    isHovered ? 'border-edge/30 bg-surface-2 shadow-2 -translate-y-0.5' : 'border-edge/10 bg-surface shadow-1'
+                  }`}
+                  style={{ minWidth: 140, maxWidth: 180 }}
+                  onClick={() => node.lineIndex >= 0 && onJump(node.lineIndex)}
+                  onMouseEnter={() => setHoveredNode(node.id)}
+                  onMouseLeave={() => setHoveredNode(null)}
+                >
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[11px] font-medium leading-none"
+                    style={{ background: badge.bg, color: badge.fg }}
+                  >
+                    {badge.label}
+                  </span>
+                  <span className="text-[13px] font-medium leading-snug text-fg line-clamp-2">
+                    {node.label}
+                  </span>
+                  {node.dialogue && (
+                    <span className="line-clamp-1 text-[11px] text-fg-muted">
+                      {node.dialogue}
+                    </span>
+                  )}
+                  {node.speakerName && (
+                    <span
+                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px]"
+                      style={{ color: node.speakerColor ?? undefined }}
+                    >
+                      {node.speakerName}
+                    </span>
+                  )}
+                  <span className="t-mono text-[10px] text-fg-faint">
+                    {node.lineIndex >= 0 ? `L${node.lineIndex + 1}` : '未定位'}
+                  </span>
+                </button>
+
+                {/* Choice edges below the branch node */}
+                {choiceEdges.length > 0 && (
+                  <div className="mt-2 flex flex-col items-center gap-1">
+                    {choiceEdges.map((ce, ci) => {
+                      const targetNode = nodeMap.get(ce.to)
+                      return (
+                        <div key={`${ce.from}-${ce.to}-${ci}`} className="flex flex-col items-center">
+                          <div className="flex items-center gap-1 text-[11px]">
+                            <span className="rounded bg-[rgb(var(--c-warning,234,179,8)/0.12)] px-1.5 py-0.5 text-[rgb(var(--c-warning,234,179,8))]">
+                              {ce.choiceText || '选择'}
+                            </span>
+                            <span className="text-fg-faint">→</span>
+                            {targetNode && (
+                              <button
+                                className="rounded bg-[rgb(var(--c-danger,239,68,68)/0.1)] px-1.5 py-0.5 text-[11px] text-[rgb(var(--c-danger,239,68,68))] hover:underline"
+                                onClick={() => targetNode.lineIndex >= 0 && onJump(targetNode.lineIndex)}
+                              >
+                                {targetNode.label}
+                              </button>
+                            )}
+                          </div>
+                          {ci < choiceEdges.length - 1 && (
+                            <span className="my-1 text-[10px] text-fg-faint">或</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Flow arrow to next node */}
+              {idx < nodes.length - 1 && (
+                <div className="flex items-center px-2 pt-8">
+                  <ArrowRight size={16} strokeWidth={1.5} className="text-fg-faint" />
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* 图例 */}
+      <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-edge/5 pt-4 text-[12px] text-fg-subtle">
+        <span className="text-fg-faint">图例:</span>
+        {(['start', 'label', 'branch', 'ending'] as const).map((k) => {
+          const b = kindBadge(k)
+          return (
+            <span key={k} className="inline-flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-full" style={{ background: b.fg }} />
+              <span style={{ color: b.fg }}>{b.label}</span>
+            </span>
+          )
+        })}
+        <span className="ml-4 text-fg-faint">点击节点跳转到对应剧本行</span>
       </div>
     </div>
   )

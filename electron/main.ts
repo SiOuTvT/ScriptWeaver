@@ -509,6 +509,75 @@ ipcMain.on('ai:abort', () => {
   activeChat?.abort()
 })
 
+// --------------- TTS 一键合成（主进程代理，复用 AI 配置密钥） ---------------
+ipcMain.handle('tts:synthesize', async (_event, payload: {
+  text: string
+  voiceId: string
+  charId: string
+  lineTag: string
+  speed?: number
+  pitch?: number
+  format?: 'mp3' | 'wav' | 'ogg'
+}) => {
+  const cfg = readAIConfig()
+  if (!cfg.apiKey) {
+    return { success: false, error: '未配置 AI API 密钥（请先在 AI 设置中填写密钥）' }
+  }
+  try {
+    const ttsEndpoint = cfg.endpoint.replace(/\/chat\/completions\/?$/, '/audio/speech')
+    const fmt = payload.format || 'mp3'
+    const body: Record<string, unknown> = {
+      model: cfg.ttsModel || 'tts-1',
+      input: payload.text || ' ',
+      voice: payload.voiceId || 'alloy',
+      response_format: fmt,
+    }
+    if (payload.speed != null) body.speed = payload.speed
+
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 120000)
+
+    let resp: Response
+    try {
+      resp = await fetch(ttsEndpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${cfg.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '')
+      return { success: false, error: `TTS API 返回 ${resp.status}${errText ? ': ' + errText.slice(0, 200) : ''}` }
+    }
+
+    const buf = Buffer.from(await resp.arrayBuffer())
+    const safeChar = (payload.charId || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32)
+    const safeLine = (payload.lineTag || 'L0').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 16)
+    const id = uuid()
+    const fileName = `tts_${safeChar}_${safeLine}_${id.slice(0, 8)}.${fmt}`
+    const destDir = path.join(getSessionDir(), 'assets', 'audio')
+    ensureDir(destDir)
+    const dest = path.join(destDir, fileName)
+    fs.writeFileSync(dest, buf)
+
+    const relativePath = path.join('assets', 'audio', fileName).replace(/\\/g, '/')
+    return {
+      success: true,
+      asset: { id, fileName, relativePath },
+    }
+  } catch (err: unknown) {
+    const msg = (err as Error).message || String(err)
+    return { success: false, error: `TTS 合成失败: ${msg}` }
+  }
+})
+
 ipcMain.handle('app:getVersion', () => {
   return app.getVersion()
 })
