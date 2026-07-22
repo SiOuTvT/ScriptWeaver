@@ -145,4 +145,6 @@ vite.config.*.timestamp-*
 release/
 release_build/
 release_build2/
+release_build3/
+release_build4/
 rb3/
