@@ -1,5 +1,5 @@
 export { default as Button } from './Button'
-export type { ButtonProps } from './Button'
+export type { ButtonProps, Variant } from './Button'
 export { default as IconButton } from './IconButton'
 export type { IconButtonProps } from './IconButton'
 export { default as Card, CardHeader } from './Card'
