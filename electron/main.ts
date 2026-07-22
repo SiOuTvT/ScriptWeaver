@@ -6,6 +6,7 @@ import { Readable } from 'stream'
 // AI 编排逻辑（纯函数）由主进程持有：密钥不进渲染进程，渲染端只发 prompt 收文本
 import { streamChatCompletion, describeAIError, defaultAIConfig, type AIConfig, type ChatMessage } from '../src/utils/aiDirector'
 
+
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 // 托盘常驻模式下，仅当用户通过托盘「退出」或显式 quit 时才真正关闭，
@@ -71,8 +72,50 @@ function createWindow() {
     },
   })
 
-  if (process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
+  const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
+  const isDev = !!process.env.VITE_DEV_SERVER_URL || !app.isPackaged
+
+  // 动态 CSP：Dev 模式放行 Vite HMR (ws://localhost) 和 localhost 资源，生产模式严格
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const csp = isDev
+      ? [
+          "default-src 'self' http://localhost:* ws://localhost:*;",
+          "script-src 'self' 'unsafe-inline' http://localhost:*;",
+          "style-src 'self' 'unsafe-inline' http://localhost:*;",
+          "font-src 'self' data: http://localhost:*;",
+          "img-src 'self' data: sw-asset: blob: http://localhost:*;",
+          "media-src 'self' data: sw-asset: blob: http://localhost:*;",
+          "connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:*;",
+        ].join(' ')
+      : [
+          "default-src 'self';",
+          "script-src 'self' 'unsafe-inline';",
+          "style-src 'self' 'unsafe-inline';",
+          "font-src 'self' data:;",
+          "img-src 'self' data: sw-asset: blob:;",
+          "media-src 'self' data: sw-asset: blob:;",
+        ].join(' ')
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [csp],
+      },
+    })
+  })
+
+  if (isDev) {
+    // 开发模式：加载 Vite 开发服务器，失败时自动重试（兼容并行启动时序）
+    const tryLoad = (retries = 0) => {
+      mainWindow!.loadURL(devUrl).catch((err) => {
+        console.warn(`[dev] loadURL ${devUrl} failed (retry ${retries}): ${String(err)}`)
+        if (retries < 10) {
+          setTimeout(() => tryLoad(retries + 1), 1500)
+        } else {
+          mainWindow!.loadFile(path.join(__dirname, '../dist/index.html'))
+        }
+      })
+    }
+    tryLoad()
     mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))

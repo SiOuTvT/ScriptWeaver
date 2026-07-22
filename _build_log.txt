@@ -1,0 +1,8 @@
+  • electron-builder  version=24.13.3 os=10.0.26100
+  • loaded configuration  file=D:\ScriptWeaver\electron-builder.yml
+  • author is missed in the package.json  appPackageFile=D:\ScriptWeaver\package.json
+  • packaging       platform=win32 arch=x64 electron=31.7.7 appOutDir=release_build\win-unpacked
+  • default Electron icon is used  reason=application icon is not set
+  • building        target=zip arch=x64 file=release_build\ScriptWeaver-0.7.0-x64.zip
+  • building        target=nsis file=release_build\ScriptWeaver-0.7.0-x64.exe archs=x64 oneClick=false perMachine=true
+  • building block map  blockMapFile=release_build\ScriptWeaver-0.7.0-x64.exe.blockmap
