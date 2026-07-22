@@ -151,9 +151,17 @@ function resolveSpriteImage(
 ): { dataUrl?: string; color: string } {
   // 1. 直接匹配 asset id（拖放场景）
   const directAsset = assets.find((a) => a.id === spriteId)
-  const directSrc = resolveAssetSrc(directAsset)
-  if (directSrc) {
-    return { dataUrl: directSrc, color: '#888' }
+  if (directAsset) {
+    const directSrc = resolveAssetSrc(directAsset)
+    if (directSrc) {
+      return { dataUrl: directSrc, color: '#888' }
+    }
+    // asset 存在但 relativePath 为空 → 诊断 (Web 降级路径或序列化丢失)
+    if (import.meta.env.DEV) {
+      console.warn('[resolveSpriteImage] asset found but resolveAssetSrc returned undefined', { spriteId, directAsset })
+    }
+  } else if (import.meta.env.DEV) {
+    console.warn('[resolveSpriteImage] direct asset not found in assets array', { spriteId, assetCount: assets.length, assetIds: assets.slice(0, 10).map(a => a.id) })
   }
 
   // 2. 通过角色表情引用查找
@@ -161,9 +169,11 @@ function resolveSpriteImage(
     const expr = cc.expressions.find((e) => e.id === spriteId)
     if (expr) {
       const exprAsset = assets.find((a) => a.id === expr.assetId)
-      const exprSrc = resolveAssetSrc(exprAsset)
-      if (exprSrc) {
-        return { dataUrl: exprSrc, color: '#888' }
+      if (exprAsset) {
+        const exprSrc = resolveAssetSrc(exprAsset)
+        if (exprSrc) {
+          return { dataUrl: exprSrc, color: '#888' }
+        }
       }
     }
   }
@@ -452,12 +462,13 @@ export default function StagePreview() {
       const asset = getDragCache()
       if (!asset) return
 
+      const store = useAppStore.getState()
+
       // 空项目时自动创建首行再接受素材放置
-      let idx = selectedIndex
-      let curState: ResolvedLineState | null = state
+      let idx = store.selectedLineIndex
+      let curState: ResolvedLineState | null = store.resolvedStates[idx] ?? null
       if (!curState) {
-        useAppStore.getState().insertDeltaAt(0)
-        selectLine(0) // 关键：切换 selectedIndex 到 0，否则 state 始终为 null，StagePreview 永远空态
+        store.insertDeltaAt(0)
         idx = 0
         curState = useAppStore.getState().getResolvedState(0)
         if (!curState) return
@@ -472,7 +483,7 @@ export default function StagePreview() {
       if (!zone) return
 
       if (zone === 'bg' && asset.type === 'background') {
-        updateDeltaAt(idx, (prev: LineDelta) => ({
+        useAppStore.getState().updateDeltaAt(idx, (prev: LineDelta) => ({
           ...prev,
           background: { asset_id: asset.assetId },
         }))
@@ -485,10 +496,11 @@ export default function StagePreview() {
         }
 
         // 自动创建角色（如果不存在）
-        if (!getCharacter(charId)) {
+        const st2 = useAppStore.getState()
+        if (!st2.getCharacter(charId)) {
           const rawName = asset.assetId.replace(/^asset_sprite_|^sprite_|^local_/, '').replace(/_/g, ' ')
           const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1)
-          addCharacter({
+          st2.addCharacter({
             charId,
             displayName,
             expressions: [{ id: 'default', label: '默认', assetId: asset.assetId }],
@@ -499,7 +511,7 @@ export default function StagePreview() {
         // 每个落点生成「全局唯一实例 ID」作 map key，角色身份记在 char_id；
         // asset_id 绑定本次拖入的素材，使每个立绘各自渲染自己的图片、互不覆盖。
         const instanceId = genInstanceId(charId)
-        updateDeltaAt(idx, (prev: LineDelta) => ({
+        useAppStore.getState().updateDeltaAt(idx, (prev: LineDelta) => ({
           ...prev,
           characters: {
             ...prev.characters,
@@ -515,7 +527,7 @@ export default function StagePreview() {
         toast(`立绘 ${asset.name} 已放置到 ${slotLabel[slot] ?? slot} 位`, 'success')
       } else if (zone === 'audio' && asset.type === 'audio') {
         const cat = getAudioCategory(asset.assetId)
-        updateDeltaAt(idx, (prev: LineDelta) => {
+        useAppStore.getState().updateDeltaAt(idx, (prev: LineDelta) => {
           const audio = { ...prev.audio, se: [...prev.audio.se], voice: prev.audio.voice }
           if (cat === 'bgm')
             audio.bgm = { asset_id: asset.assetId, volume: 0.7, loop: true, fade_in_ms: 1000 }
@@ -530,7 +542,7 @@ export default function StagePreview() {
         toast(`音频 ${asset.name} 已应用`, 'success')
       }
     },
-    [selectedIndex, updateDeltaAt, resetDragState, state, getCharacter, addCharacter, selectLine],
+    [resetDragState],
   )
 
   // =================== 立绘自由拖动（磁吸预设站位 + 微调偏移） ===================
@@ -1339,7 +1351,7 @@ export default function StagePreview() {
         </div>
 
         {/* 空舞台引导：无背景图且无立绘时给出下一步提示，避免大片空白显丑 */}
-        {!bgDataUrl && Object.keys(state.characters).length === 0 && (
+        {!bgDataUrl && Object.keys(state?.characters ?? {}).length === 0 && (
           <div className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 text-center">
             <ImageIcon size={28} strokeWidth={1.5} className="text-fg-faint" />
             <p className="max-w-[260px] text-[13px] leading-relaxed text-fg-subtle">
@@ -1369,7 +1381,7 @@ export default function StagePreview() {
         )}
 
         {/* 角色层（可拖动：磁吸预设站位，拉离即自由微调） */}
-        {Object.entries(state.characters).map(
+        {Object.entries(state?.characters ?? {}).map(
           ([charId, char]: [string, ResolvedCharacterState]) => {
             const isTalking = speakingCharId === charId
             let spriteKey = char.asset_id ?? char.sprite_id
