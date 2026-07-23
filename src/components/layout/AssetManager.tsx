@@ -262,8 +262,16 @@ export default function AssetManager() {
           ? [{ name: '音频文件', extensions: ['mp3', 'ogg', 'wav', 'flac'] }]
           : [{ name: '图片文件', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }]
       const result = await api.pickAssetFiles({ filters, kind })
-      if (!result.success || !result.files) return
+      if (!result.success) {
+        toast(result.error || '导入失败，请重试', 'error')
+        return
+      }
+      if (!result.files || result.files.length === 0) {
+        toast('未选择任何文件', 'info')
+        return
+      }
       for (const f of result.files) addAsset(makeAsset(f))
+      toast(`已导入 ${result.files.length} 个素材`, 'success')
     } else {
       fileInputRef.current?.click()
     }
@@ -276,7 +284,12 @@ export default function AssetManager() {
       if (real.length && api?.importFilesFromPaths) {
         const kind: AssetType | undefined = cat === 'all' || cat === 'video' || cat === 'effect' ? undefined : cat
         const res = await api.importFilesFromPaths(real, kind)
-        if (res.success && res.files) for (const f of res.files) addAsset(makeAsset(f))
+        if (res.success && res.files) {
+          for (const f of res.files) addAsset(makeAsset(f))
+          toast(`已导入 ${res.files.length} 个素材`, 'success')
+        } else {
+          toast(res.error || '导入失败，请重试', 'error')
+        }
       } else {
         handleImport()
       }

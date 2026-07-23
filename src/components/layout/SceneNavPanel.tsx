@@ -5,6 +5,7 @@ import { setDragCache, DRAG_MIME, type DragAssetData } from '@/utils/assetHelper
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import { toggleAssetPreview, isAssetPlaying, subscribeAudio, getAudioVersion } from '@/utils/audioManager'
 import { Tabs, Input, Button } from '@/components/ui'
+import { toast } from '@/utils/toast'
 import { Image as ImageIcon, User, Music, Plus, Play, Pause, GripVertical, Search } from 'lucide-react'
 
 type TabId = AssetType
@@ -80,7 +81,14 @@ export default function SceneNavPanel({ embedded = false }: { embedded?: boolean
       }
 
       const result = await api.pickAssetFiles({ filters, kind: tab })
-      if (!result.success || !result.files) return
+      if (!result.success) {
+        toast(result.error || '导入失败，请重试', 'error')
+        return
+      }
+      if (!result.files || result.files.length === 0) {
+        toast('未选择任何文件', 'info')
+        return
+      }
 
       const now = new Date().toISOString()
       for (const f of result.files) {

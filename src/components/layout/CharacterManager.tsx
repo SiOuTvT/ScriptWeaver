@@ -3,6 +3,7 @@ import { useAppStore } from '@/stores/appStore'
 import { Button, IconButton, Input, ConfirmDialog } from '@/components/ui'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import { hashCharColor } from '@/utils/charColor'
+import { toast } from '@/utils/toast'
 import { getAudioCategory } from '@/utils/assetHelpers'
 import { toggleAssetPreview, isAssetPlaying, playAudioPreview } from '@/utils/audioManager'
 import { PRESET_SLOTS } from '@/core/positionSlots'
@@ -245,6 +246,8 @@ export default function CharacterManager() {
           if (char) {
             updateCharacter(selectedCharId, { expressions: [...char.expressions, ...newExprs] })
           }
+        } else {
+          toast(res.error || '导入失败，请重试', 'error')
         }
       } else if (fileInputRef.current) {
         fileInputRef.current.click()
