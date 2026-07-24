@@ -813,19 +813,32 @@ async function readChunk(
  * 健壮性：①总超时 ②流式静默断流检测 ③HTTP 状态分级报错
  * ④网络异常兜底（DNS/CORS/ECONNREFUSED）⑤非流式端点自动降级。
  */
+/** AI 流式请求的可选覆盖项（由调用方从全局设置传入，保持本模块为纯函数） */
+export interface AIStreamOpts {
+  /** 总超时（毫秒），默认 AI_REQUEST_TIMEOUT_MS */
+  timeoutMs?: number
+  /** 静默断流超时（毫秒），默认 AI_STALL_TIMEOUT_MS */
+  stallMs?: number
+  /** 是否使用 SSE 流式，默认 true */
+  streaming?: boolean
+}
+
 export async function streamChatCompletion(
   config: AIConfig,
   messages: ChatMessage[],
   onToken: (token: string) => void,
   signal?: AbortSignal,
-  timeoutMs: number = AI_REQUEST_TIMEOUT_MS,
+  opts: AIStreamOpts = {},
 ): Promise<string> {
+  const timeoutMs = opts.timeoutMs ?? AI_REQUEST_TIMEOUT_MS
+  const stallMs = opts.stallMs ?? AI_STALL_TIMEOUT_MS
+  const streaming = opts.streaming ?? true
   const body = {
     model: config.model,
     messages,
     temperature: config.temperature,
     max_tokens: config.maxTokens,
-    stream: true,
+    stream: streaming,
   }
 
   const ctrl = new AbortController()
@@ -879,7 +892,7 @@ export async function streamChatCompletion(
     let full = ''
 
     while (true) {
-      const { done, value } = await readChunk(reader, ctrl, AI_STALL_TIMEOUT_MS, markTimeout)
+      const { done, value } = await readChunk(reader, ctrl, stallMs, markTimeout)
       if (done) break
       if (value) buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')

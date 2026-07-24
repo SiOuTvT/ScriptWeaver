@@ -87,14 +87,17 @@ async function readChunk(reader, ctrl, stallMs, markTimeout) {
     });
   });
 }
-async function streamChatCompletion(config, messages, onToken, signal, timeoutMs = AI_REQUEST_TIMEOUT_MS) {
+async function streamChatCompletion(config, messages, onToken, signal, opts = {}) {
   var _a, _b, _c, _d, _e, _f;
+  const timeoutMs = opts.timeoutMs ?? AI_REQUEST_TIMEOUT_MS;
+  const stallMs = opts.stallMs ?? AI_STALL_TIMEOUT_MS;
+  const streaming = opts.streaming ?? true;
   const body = {
     model: config.model,
     messages,
     temperature: config.temperature,
     max_tokens: config.maxTokens,
-    stream: true
+    stream: streaming
   };
   const ctrl = new AbortController();
   let timedOut = false;
@@ -136,7 +139,7 @@ async function streamChatCompletion(config, messages, onToken, signal, timeoutMs
     let buffer = "";
     let full = "";
     while (true) {
-      const { done, value } = await readChunk(reader, ctrl, AI_STALL_TIMEOUT_MS, markTimeout);
+      const { done, value } = await readChunk(reader, ctrl, stallMs, markTimeout);
       if (done) break;
       if (value) buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");

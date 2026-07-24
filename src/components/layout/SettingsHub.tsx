@@ -1,36 +1,98 @@
 import { useState, useCallback, useEffect } from 'react'
-import { useAppStore } from '../../stores/appStore'
+import { useAppStore, DEFAULT_SETTINGS } from '../../stores/appStore'
+import { Button } from '@/components/ui'
+import { ClearCacheButton } from './ClearCacheButton'
 import { toast } from '../../utils/toast'
 import {
-  Settings, Key, Save, RotateCcw, Eye, EyeOff, Info
+  Settings, Palette, Key, Database, Save, RotateCcw, Eye, EyeOff, Info, ArrowRight,
 } from 'lucide-react'
 
+type SectionId = 'general' | 'appearance' | 'ai' | 'data'
+
 interface SettingSection {
-  id: string; label: string; icon: typeof Settings
+  id: SectionId
+  label: string
+  icon: typeof Settings
 }
 
 const SECTIONS: SettingSection[] = [
   { id: 'general', label: '通用', icon: Settings },
+  { id: 'appearance', label: '外观', icon: Palette },
   { id: 'ai', label: 'AI 配置', icon: Key },
+  { id: 'data', label: '数据与缓存', icon: Database },
 ]
 
-export default function SettingsHub() {
+/** 轻量开关（项目无现成 Switch 原子，自建并与主题色体系一致） */
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+        checked ? 'bg-primary' : 'bg-surface-2 border border-edge/20'
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+          checked ? 'translate-x-[18px]' : 'translate-x-0.5'
+        }`}
+      />
+    </button>
+  )
+}
 
-  // AI Config
+/** 滑块行：标签 + 说明 + 当前值 + range */
+function SliderRow({
+  label, desc, value, min, max, step, display, onChange,
+}: {
+  label: string
+  desc?: string
+  value: number
+  min: number
+  max: number
+  step: number
+  display?: (v: number) => string
+  onChange: (v: number) => void
+}) {
+  return (
+    <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <div className="text-[13px] font-medium text-fg">{label}</div>
+          {desc && <div className="text-[12px] text-fg-muted mt-0.5">{desc}</div>}
+        </div>
+        <span className="text-[12px] text-fg-muted tabular-nums">
+          {display ? display(value) : value}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full accent-primary"
+      />
+    </div>
+  )
+}
+
+export default function SettingsHub() {
+  const settings = useAppStore((s) => s.settings)
+  const updateSettings = useAppStore((s) => s.updateSettings)
+  const setActiveNavItem = useAppStore((s) => s.setActiveNavItem)
+
+  const [activeSection, setActiveSection] = useState<SectionId>('general')
+
+  // AI Config（密钥存于主进程安全区，经 IPC 读写）
   const [apiKey, setApiKey] = useState('')
   const [apiEndpoint, setApiEndpoint] = useState('https://api.openai.com/v1')
   const [model, setModel] = useState('gpt-4')
   const [showKey, setShowKey] = useState(false)
 
-  // Project
-  const [autoSave, setAutoSave] = useState(true)
-  const [autoSaveInterval, setAutoSaveInterval] = useState(5)
-
-  // Active section
-  const [activeSection, setActiveSection] = useState('general')
-  const activeCfg = SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0]
-
-  // Load existing config on mount
   useEffect(() => {
     ;(async () => {
       try {
@@ -43,7 +105,6 @@ export default function SettingsHub() {
   }, [])
 
   const handleSave = useCallback(() => {
-    // Save AI config
     if (apiKey) {
       ;(window as any).electronAPI?.aiSetConfig?.({
         apiKey,
@@ -55,10 +116,11 @@ export default function SettingsHub() {
   }, [apiKey, apiEndpoint, model])
 
   const handleReset = () => {
-    setAutoSave(true)
-    setAutoSaveInterval(5)
+    updateSettings({ ...DEFAULT_SETTINGS })
     toast?.('已恢复默认设置', 'info')
   }
+
+  const activeCfg = SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0]
 
   return (
     <div className="flex h-full flex-1 min-w-0 select-none">
@@ -116,48 +178,72 @@ export default function SettingsHub() {
             <p className="mt-1 text-[12px] text-fg-muted">调整 ScriptWeaver 的基本配置与偏好</p>
           </div>
 
-          {/* ── General ─────────────────────────────────── */}
+          {/* ── 通用 ─────────────────────────────────── */}
           {activeSection === 'general' && (
             <div className="space-y-6">
               <section>
-                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">项目</h3>
+                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">编辑器</h3>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  <label className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/10 bg-surface">
-                    <div>
-                      <div className="text-[13px] font-medium text-fg">自动保存</div>
-                      <div className="text-[12px] text-fg-muted mt-0.5">定时自动保存当前项目</div>
-                    </div>
-                    <button
-                      onClick={() => setAutoSave(!autoSave)}
-                      className={`relative w-9 h-5 rounded-full transition-colors ${autoSave ? 'bg-primary' : 'bg-surface-2 border border-edge/15'}`}
-                    >
-                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${autoSave ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-                    </button>
-                  </label>
-
-                  {autoSave && (
-                    <label className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/10 bg-surface">
-                      <div>
-                        <div className="text-[13px] font-medium text-fg">保存间隔</div>
-                        <div className="text-[12px] text-fg-muted mt-0.5">每 {autoSaveInterval} 分钟自动保存一次</div>
-                      </div>
-                      <select
-                        value={autoSaveInterval}
-                        onChange={(e) => setAutoSaveInterval(Number(e.target.value))}
-                        className="rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-1.5 text-[12px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
-                      >
-                        {[1, 3, 5, 10, 15, 30].map((v) => (
-                          <option key={v} value={v}>{v} 分钟</option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
+                  <SliderRow
+                    label="自动保存防抖间隔"
+                    desc="编辑暂停后多久无改动才自动写入"
+                    value={settings.autoSaveIntervalMs}
+                    min={200}
+                    max={3000}
+                    step={100}
+                    display={(v) => `${v} ms`}
+                    onChange={(v) => updateSettings({ autoSaveIntervalMs: v })}
+                  />
+                  <SliderRow
+                    label="版本快照间隔"
+                    desc="每隔多久自动生成一次版本快照"
+                    value={settings.snapshotIntervalMin}
+                    min={1}
+                    max={60}
+                    step={1}
+                    display={(v) => `每 ${v} 分钟`}
+                    onChange={(v) => updateSettings({ snapshotIntervalMin: v })}
+                  />
+                  <SliderRow
+                    label="撤销深度"
+                    desc="可撤销 / 重做的最大步数"
+                    value={settings.undoMaxDepth}
+                    min={10}
+                    max={200}
+                    step={10}
+                    display={(v) => `${v} 步`}
+                    onChange={(v) => updateSettings({ undoMaxDepth: v })}
+                  />
                 </div>
               </section>
             </div>
           )}
 
-          {/* ── AI Config ───────────────────────────────── */}
+          {/* ── 外观 ─────────────────────────────────── */}
+          {activeSection === 'appearance' && (
+            <div className="space-y-6">
+              <section>
+                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">外观</h3>
+                <div className="px-5 py-5 rounded-xl border border-edge/10 bg-surface flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-[14px] font-medium text-fg">外观主题</div>
+                    <div className="text-[12px] text-fg-muted mt-1">
+                      调整界面主色、明暗模式与主题预设，实时预览双语境效果。
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setActiveNavItem('theme')}
+                    className="shrink-0 inline-flex items-center gap-1.5"
+                  >
+                    打开外观主题 <ArrowRight size={14} />
+                  </Button>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* ── AI 配置 ───────────────────────────────── */}
           {activeSection === 'ai' && (
             <div className="space-y-6">
               <section>
@@ -220,10 +306,62 @@ export default function SettingsHub() {
                   </div>
                 </div>
               </section>
+
+              <section>
+                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">请求与超时</h3>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  <label className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                    <div>
+                      <div className="text-[13px] font-medium text-fg">流式输出</div>
+                      <div className="text-[12px] text-fg-muted mt-0.5">逐字流式生成；关闭则等待整段返回</div>
+                    </div>
+                    <Toggle
+                      checked={settings.streamingEnabled}
+                      onChange={(v) => updateSettings({ streamingEnabled: v })}
+                    />
+                  </label>
+                  <SliderRow
+                    label="总超时"
+                    desc="单次请求最长等待时间"
+                    value={settings.timeoutTotalMs}
+                    min={30_000}
+                    max={600_000}
+                    step={1_000}
+                    display={(v) => `${Math.round(v / 1000)} 秒`}
+                    onChange={(v) => updateSettings({ timeoutTotalMs: v })}
+                  />
+                  <SliderRow
+                    label="静默断流超时"
+                    desc="流式过程中多久无数据即判定断流"
+                    value={settings.timeoutStallMs}
+                    min={5_000}
+                    max={120_000}
+                    step={1_000}
+                    display={(v) => `${Math.round(v / 1000)} 秒`}
+                    onChange={(v) => updateSettings({ timeoutStallMs: v })}
+                  />
+                </div>
+              </section>
             </div>
           )}
 
-          {/* 外观已独立为「外观主题」页面（见左侧导航） */}
+          {/* ── 数据与缓存 ───────────────────────────── */}
+          {activeSection === 'data' && (
+            <div className="space-y-6">
+              <section>
+                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">本地缓存</h3>
+                <div className="px-5 py-5 rounded-xl border border-edge/10 bg-surface flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-[14px] font-medium text-fg">清除本地缓存</div>
+                    <div className="text-[12px] text-fg-muted mt-1">
+                      删除版本快照与本地草稿，重置为纯净白板（素材文件不受影响）。
+                    </div>
+                  </div>
+                  <ClearCacheButton />
+                </div>
+              </section>
+            </div>
+          )}
         </div>
       </div>
     </div>

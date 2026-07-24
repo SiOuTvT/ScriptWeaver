@@ -44,6 +44,7 @@ export default function AIPanel() {
   const selectLine = useAppStore((s) => s.selectLine)
   const setActiveNavItem = useAppStore((s) => s.setActiveNavItem)
   const variables = useAppStore((s) => s.variables)
+  const settings = useAppStore((s) => s.settings)
 
   const [mode, setMode] = useState<AIMode>('director')
   const [prompt, setPrompt] = useState('')
@@ -143,6 +144,11 @@ export default function AIPanel() {
           setResponse(fullText)
         },
         abortController.signal,
+        {
+          timeoutMs: settings.timeoutTotalMs,
+          stallMs: settings.timeoutStallMs,
+          streaming: settings.streamingEnabled,
+        },
       )
 
       if (mode === 'blueprint' && fullText) {
@@ -160,7 +166,7 @@ export default function AIPanel() {
       setLoading(false)
       abortRef.current = undefined
     }
-  }, [prompt, loading, mode, draftDeltas, characterConfigs, variables])
+  }, [prompt, loading, mode, draftDeltas, characterConfigs, variables, settings])
 
   const handleApplyBlueprint = useCallback((blueprint: DirectorBlueprint) => {
     // Insert blueprint as structured dialogue + choice blocks
