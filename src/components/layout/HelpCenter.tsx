@@ -2,8 +2,9 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import {
   BookOpen, ChevronRight, Search, ExternalLink,
   HelpCircle, FileText, Keyboard, Zap, Video, Sparkles,
-  Globe, Users, Download, ArrowRight, X, MessageCircle
+  Globe, Users, Download, ArrowRight, X, MessageCircle, Bug, Heart
 } from 'lucide-react'
+import { GITHUB_LINKS } from '../../data/links'
 
 interface HelpTopic {
   id: string
@@ -190,8 +191,11 @@ A: 导入素材后需保存项目 (.swproj) 再导出。
 A: 欢迎通过 GitHub Issue 或内置反馈渠道联系我们。` },
     ],
     links: [
-      { label: 'GitHub 仓库', url: 'https://github.com' },
-      { label: 'Ren\'Py 官方文档', url: 'https://renpy.org/doc/html/' },
+      { label: 'GitHub 仓库', url: GITHUB_LINKS.repo },
+      { label: '报告 Bug', url: GITHUB_LINKS.newBug },
+      { label: '功能建议', url: GITHUB_LINKS.newFeature },
+      { label: '反馈与建议', url: GITHUB_LINKS.issues },
+      { label: "Ren'Py 官方文档", url: 'https://renpy.org/doc/html/' },
     ],
   },
 ]
@@ -368,16 +372,45 @@ export default function HelpCenter() {
               </div>
             )}
 
-            {/* Feedback */}
+            {/* Feedback - 常驻 GitHub 入口 */}
             <div className="mt-8 rounded-xl border border-edge/10 bg-surface p-5">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
                   <MessageCircle size={18} className="text-primary" />
                 </div>
                 <div>
                   <div className="text-[13px] font-medium text-fg">还有问题？</div>
-                  <div className="text-[12px] text-fg-muted mt-0.5">欢迎通过 GitHub Issue 或内置反馈渠道联系我们</div>
+                  <div className="text-[12px] text-fg-muted mt-0.5">直接到 GitHub 反馈，我们会持续跟进</div>
                 </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <a
+                  href={GITHUB_LINKS.newBug}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-1.5 rounded-lg border border-edge/8 bg-surface-2/60 px-2 py-2.5 text-[12px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
+                >
+                  <Bug size={16} className="text-rose-500" />
+                  报告 Bug
+                </a>
+                <a
+                  href={GITHUB_LINKS.newFeature}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-1.5 rounded-lg border border-edge/8 bg-surface-2/60 px-2 py-2.5 text-[12px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
+                >
+                  <Heart size={16} className="text-amber-500" />
+                  功能建议
+                </a>
+                <a
+                  href={GITHUB_LINKS.issues}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-1.5 rounded-lg border border-edge/8 bg-surface-2/60 px-2 py-2.5 text-[12px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
+                >
+                  <MessageCircle size={16} className="text-emerald-500" />
+                  反馈与建议
+                </a>
               </div>
             </div>
           </div>

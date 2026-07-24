@@ -1,5 +1,5 @@
 import { useAppStore, NavItemId } from '@/stores/appStore'
-import { BookOpen, FileText, Images, Users, Download, Sparkles, Wand2, Info, HelpCircle, Settings, ChevronLeft, ChevronRight, Stethoscope, FileDown, Globe } from 'lucide-react'
+import { BookOpen, FileText, Images, Users, Download, Sparkles, Wand2, Info, HelpCircle, Settings, ChevronLeft, ChevronRight, Stethoscope, FileDown, Globe, Palette } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 interface NavItem {
@@ -21,8 +21,9 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'exporter', label: '多格式导出', code: '09', icon: <FileDown size={18} strokeWidth={1.75} /> },
   { id: 'ai', label: 'AI 功能', code: '10', icon: <Sparkles size={18} strokeWidth={1.75} /> },
   { id: 'settings', label: '设置中心', code: '11', icon: <Settings size={18} strokeWidth={1.75} /> },
-  { id: 'about', label: '关于', code: '12', icon: <Info size={18} strokeWidth={1.75} /> },
-  { id: 'help', label: '帮助中心', code: '13', icon: <HelpCircle size={18} strokeWidth={1.75} /> },
+  { id: 'theme', label: '外观主题', code: '12', icon: <Palette size={18} strokeWidth={1.75} /> },
+  { id: 'about', label: '关于', code: '13', icon: <Info size={18} strokeWidth={1.75} /> },
+  { id: 'help', label: '帮助中心', code: '14', icon: <HelpCircle size={18} strokeWidth={1.75} /> },
 ]
 
 export default function LeftSidebar() {

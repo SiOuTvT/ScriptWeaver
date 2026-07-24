@@ -2,8 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useAppStore } from '../../stores/appStore'
 import { toast } from '../../utils/toast'
 import {
-  Settings, Key, Palette, Save, RotateCcw, Eye, EyeOff,
-  Monitor, Moon, Sun, Info
+  Settings, Key, Save, RotateCcw, Eye, EyeOff, Info
 } from 'lucide-react'
 
 interface SettingSection {
@@ -13,14 +12,9 @@ interface SettingSection {
 const SECTIONS: SettingSection[] = [
   { id: 'general', label: '通用', icon: Settings },
   { id: 'ai', label: 'AI 配置', icon: Key },
-  { id: 'appearance', label: '外观', icon: Palette },
 ]
 
 export default function SettingsHub() {
-
-  // Theme
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
-  const [fontSize, setFontSize] = useState<14 | 16>(14)
 
   // AI Config
   const [apiKey, setApiKey] = useState('')
@@ -61,8 +55,6 @@ export default function SettingsHub() {
   }, [apiKey, apiEndpoint, model])
 
   const handleReset = () => {
-    setTheme('system')
-    setFontSize(14)
     setAutoSave(true)
     setAutoSaveInterval(5)
     toast?.('已恢复默认设置', 'info')
@@ -231,69 +223,7 @@ export default function SettingsHub() {
             </div>
           )}
 
-          {/* ── Appearance ──────────────────────────────── */}
-          {activeSection === 'appearance' && (
-            <div className="space-y-6">
-              {/* Theme */}
-              <section>
-                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">主题</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  {([
-                    { id: 'light' as const, label: '浅色', icon: Sun },
-                    { id: 'dark' as const, label: '深色', icon: Moon },
-                    { id: 'system' as const, label: '跟随系统', icon: Monitor },
-                  ]).map((opt) => {
-                    const Icon = opt.icon
-                    const active = theme === opt.id
-                    return (
-                      <button
-                        key={opt.id}
-                        onClick={() => setTheme(opt.id)}
-                        className={`flex flex-col items-center gap-3 rounded-xl border px-6 py-6 transition-colors ${
-                          active
-                            ? 'border-primary/30 bg-primary/5 ring-1 ring-primary/10'
-                            : 'border-edge/10 bg-surface hover:border-primary/15 hover:bg-surface-hover/40'
-                        }`}
-                      >
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${active ? 'bg-primary/15' : 'bg-surface-2/60'}`}>
-                          <Icon size={20} className={active ? 'text-primary' : 'text-fg-muted'} />
-                        </div>
-                        <span className={`text-[14px] font-medium ${active ? 'text-fg' : 'text-fg-muted'}`}>{opt.label}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </section>
-
-              {/* Font Size */}
-              <section>
-                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">字号</h3>
-                <div className="px-4 py-4 rounded-lg border border-edge/10 bg-surface">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[13px] font-medium text-fg">界面字号</div>
-                      <div className="text-[12px] text-fg-muted mt-0.5">
-                        当前: {fontSize}px {fontSize === 14 ? '(默认)' : '(大字)'}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {([14, 16] as const).map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => setFontSize(s)}
-                          className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors ${
-                            fontSize === s
-                              ? 'border-primary/20 bg-primary/5 text-primary'
-                              : 'border-edge/10 bg-surface-2/60 text-fg-muted hover:text-fg'
-                          }`}
-                        >{s}px</button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
+          {/* 外观已独立为「外观主题」页面（见左侧导航） */}
         </div>
       </div>
     </div>

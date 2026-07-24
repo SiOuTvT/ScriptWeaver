@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import {
   Atom, Cpu, Bug, Heart, ExternalLink,
   RefreshCw, CheckCircle2, AlertTriangle,
-  Sparkles, Globe, BookOpen
+  Sparkles, Globe, BookOpen, MessageCircle
 } from 'lucide-react'
+import { GITHUB_LINKS } from '../../data/links'
 
 const GithubIcon = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -165,10 +166,13 @@ export default function About() {
               <div className="rounded-lg border border-edge/10 bg-surface p-5">
                 <div className="grid grid-cols-1 gap-2.5">
                   {[
-                    { icon: GithubIcon, label: 'GitHub 仓库', href: '#' },
-                    { icon: Bug, label: '报告 Bug', href: '#' },
-                    { icon: Heart, label: '功能建议', href: '#' },
-                  ].map((link) => (
+                    { icon: GithubIcon, label: 'GitHub 仓库', href: GITHUB_LINKS.repo },
+                    { icon: Bug, label: '报告 Bug', href: GITHUB_LINKS.newBug },
+                    { icon: Heart, label: '功能建议', href: GITHUB_LINKS.newFeature },
+                    { icon: MessageCircle, label: '反馈与建议', href: GITHUB_LINKS.issues },
+                  ].map((link) => {
+                    const Icon = link.icon
+                    return (
                     <a
                       key={link.label}
                       href={link.href}
@@ -177,12 +181,13 @@ export default function About() {
                       className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/8 bg-surface-2/60 text-[14px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
                     >
                       <span className="flex items-center gap-3">
-                        <link.icon size={17} />
+                        <Icon size={17} />
                         {link.label}
                       </span>
                       <ExternalLink size={14} className="text-fg-faint" />
                     </a>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             </section>
@@ -191,24 +196,21 @@ export default function About() {
               <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">开源协议</h2>
               <div className="rounded-lg border border-edge/10 bg-surface p-5">
                 <p className="text-[14px] text-fg-muted leading-relaxed">
-                  基于 MIT License 开源<br />
-                  Copyright 2026 ScriptWeaver Team
+                  基于 AGPL-3.0 协议开源<br />
+                  GNU Affero General Public License v3.0
                 </p>
-                <p className="mt-3 text-[12px] text-fg-faint">
-                  自由使用、修改与分发，保留版权声明即可
+                <p className="mt-3 text-[12px] text-fg-faint leading-relaxed">
+                  强 copyleft：修改后分发或作为网络服务提供，均须以同协议开源并附带源码
                 </p>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">特别致谢</h2>
-              <div className="rounded-lg border border-edge/10 bg-surface p-5">
-                <p className="text-[14px] text-fg-muted leading-relaxed">
-                  Ren'Py 引擎团队 · Visual Novel Maker 社区 · 所有 beta 测试者
-                </p>
-                <p className="mt-4 text-[13px] text-fg-faint italic">
-                  Made with care for visual novel creators
-                </p>
+                <a
+                  href={`${GITHUB_LINKS.repo}/blob/main/LICENSE`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-primary hover:text-primary/80 transition-colors"
+                >
+                  <ExternalLink size={12} />
+                  查看完整 LICENSE
+                </a>
               </div>
             </section>
           </div>

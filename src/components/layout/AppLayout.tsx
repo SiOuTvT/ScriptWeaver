@@ -558,7 +558,7 @@ export default function AppLayout() {
         {activeNavItem === 'export' && <ExportSettings />}
         {activeNavItem === 'ai' && <AIPanel />}
         {activeNavItem === 'settings' && <SettingsHub />}
-        {activeNavItem === 'theme' && <SettingsHub />}
+        {activeNavItem === 'theme' && <ThemeSettings />}
         {activeNavItem === 'about' && <About />}
         {activeNavItem === 'help' && <HelpCenter />}
         {activeNavItem === 'diagnostics' && <DiagnosticsPanel />}
