@@ -1,789 +1,454 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { useAppStore } from '@/stores/appStore'
-import { Button } from '@/components/ui'
-import { Settings, Sparkles, Loader2, GitBranch, Network } from 'lucide-react'
-import type { LineDelta } from '@/core/types'
-import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useAppStore } from '../../stores/appStore'
+import { streamChatCompletion, loadConfig, buildSystemPrompt, buildBlueprintSystemPrompt, buildBlueprintUserPrompt, parseDirective, describeAIError } from '../../utils/aiDirector'
+import type { DirectorBlueprint, AIMode as AIAIMode, ChatMessage } from '../../utils/aiDirector'
+import { toast } from '../../utils/toast'
 import {
-  AIConfig,
-  AIMode,
-  loadConfig,
-  saveConfig,
-  defaultAIConfig,
-  applyPreset,
-  buildSystemPrompt,
-  buildUserPrompt,
-  buildAudioHints,
-  buildTagIndex,
-  parseDirective,
-  resolveDirectiveToDelta,
-  resolveBlueprint,
-  composeDeltas,
-  findBlockRange,
-  replaceBlock,
-  streamChatCompletion,
-  describeAIError,
-  type DirectorBlueprint,
-  type ResolutionReport,
-} from '@/utils/aiDirector'
+  Sparkles, Send, Loader2, AlertTriangle, Brain, ChevronDown, Copy,
+  MessageSquare, Zap, GitBranch, Wand2, FileText, RefreshCw, Info,
+  ArrowRight, X, Bot, User, Lightbulb, BookOpen
+} from 'lucide-react'
 
-const STORAGE_MODE_KEY = 'scriptweaver_ai_mode'
+type AIMode = 'director' | 'mentor' | 'blueprint'
 
-function maxLineNum(deltas: LineDelta[]): number {
-  let max = 0
-  for (const d of deltas) {
-    const m = d.line_id.match(/^L(\d+)$/)
-    if (m) max = Math.max(max, parseInt(m[1], 10))
-  }
-  return max
+const MODE_CONFIG: Record<AIMode, { label: string; desc: string; icon: typeof Sparkles; placeholder: string; color: string }> = {
+  director: {
+    label: '舞台监督',
+    desc: 'AI 导演辅助编排场景、角色调度与演出节奏',
+    icon: Wand2,
+    placeholder: '描述你想要的场景编排... 例如：让角色 A 从左侧入场，停顿后开始对话',
+    color: 'indigo',
+  },
+  mentor: {
+    label: '文学导师',
+    desc: '分析剧本结构、角色弧光与台词打磨建议',
+    icon: BookOpen,
+    placeholder: '粘贴或描述需要分析的剧本片段... 例如：这段告白戏的情感铺垫是否足够？',
+    color: 'emerald',
+  },
+  blueprint: {
+    label: '剧情蓝图',
+    desc: '一键生成网状分歧剧情树，含分支点与结局规划',
+    icon: GitBranch,
+    placeholder: '输入核心故事梗概与分支意图... 例如：校园恋爱 3 个结局 + 至少 5 个分支点',
+    color: 'violet',
+  },
 }
 
-interface PendingBlueprint {
-  blueprint: DirectorBlueprint
-  plan: LineDelta[]
-  report: ResolutionReport
-  labelLines: { index: number; label: string }[]
-}
-
-const NODE_KIND_LABEL: Record<string, string> = {
-  start: '起点',
-  branch: '分支',
-  ending: '结局',
-}
-const NODE_DOT: Record<string, string> = {
-  start: 'bg-signal',
-  branch: 'bg-fg-subtle',
-  ending: 'bg-success',
-}
+const MODE_ORDER: AIMode[] = ['director', 'mentor', 'blueprint']
 
 export default function AIPanel() {
   const draftDeltas = useAppStore((s) => s.draftDeltas)
   const characterConfigs = useAppStore((s) => s.characterConfigs)
-  const assets = useAppStore((s) => s.assets)
-  const variables = useAppStore((s) => s.variables)
-  const selectedLineIndex = useAppStore((s) => s.selectedLineIndex)
   const setDraftDeltas = useAppStore((s) => s.setDraftDeltas)
   const selectLine = useAppStore((s) => s.selectLine)
+  const setActiveNavItem = useAppStore((s) => s.setActiveNavItem)
+  const variables = useAppStore((s) => s.variables)
 
-  const [config, setConfig] = useState<AIConfig>(loadConfig)
-  // 是否已有（脱敏后）密钥：桌面端来自主进程 ai:getConfig，dev 来自 localStorage
-  const [hasKey, setHasKey] = useState<boolean>(() => {
-    try {
-      return !!loadConfig().apiKey.trim()
-    } catch {
-      return false
-    }
-  })
-  const [mode, setMode] = useState<AIMode>(() => {
-    try {
-      return (localStorage.getItem(STORAGE_MODE_KEY) as AIMode) || 'director'
-    } catch {
-      return 'director'
-    }
-  })
+  const [mode, setMode] = useState<AIMode>('director')
   const [prompt, setPrompt] = useState('')
-  // 蓝图模式专属：分支数 / 结局数提示
-  const [branchHint, setBranchHint] = useState('')
-  const [endingHint, setEndingHint] = useState('')
   const [loading, setLoading] = useState(false)
+  const [response, setResponse] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showConfig, setShowConfig] = useState<boolean>(() => {
-    try {
-      return !loadConfig().apiKey.trim()
-    } catch {
-      return true
-    }
-  })
-  const [streamText, setStreamText] = useState('') // 打字机缓冲（仅本地，不写 store）
-  const [applyResult, setApplyResult] = useState<{ ok: boolean; message: string } | null>(null)
-  const [pending, setPending] = useState<PendingBlueprint | null>(null)
-  const abortRef = useRef<AbortController | null>(null)
-  const committedRef = useRef(false) // 幂等守卫：一次 AI 排戏只提交一次
+  const [blueprint, setBlueprint] = useState<DirectorBlueprint | null>(null)
+  const [contextExpanded, setContextExpanded] = useState(false)
+  const responseRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const abortRef = useRef<AbortController | undefined>(undefined)
 
-  // 启动即从主进程安全区拉取脱敏配置（密钥不进渲染进程）
+  const modeCfg = MODE_CONFIG[mode]
+
+  // Context stats
+  const contextInfo = useMemo(() => ({
+    lines: draftDeltas.length,
+    chars: characterConfigs.length,
+    dialogueLines: draftDeltas.filter((d) => d.dialogue).length,
+    choices: draftDeltas.filter((d) => d.line_type === 'choice').length,
+  }), [draftDeltas, characterConfigs])
+
+  // Auto-scroll response
   useEffect(() => {
-    const api = window.electronAPI
-    if (api?.aiGetConfig) {
-      api
-        .aiGetConfig()
-        .then((cfg) => {
-          setConfig({ ...defaultAIConfig(), ...cfg })
-          setHasKey(!!cfg.hasApiKey)
-          setShowConfig(!cfg.hasApiKey)
-        })
-        .catch(() => {
-          /* 回落到下方 dev 默认 */
-        })
-    }
-  }, [])
+    responseRef.current?.scrollTo({ top: responseRef.current.scrollHeight, behavior: 'smooth' })
+  }, [response, loading])
 
+  // Auto-resize textarea
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_MODE_KEY, mode)
-    } catch {
-      /* noop */
-    }
-  }, [mode])
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px'
+  }, [prompt])
 
-  // 切换模式或重新生成时清理蓝图预览态
-  useEffect(() => {
-    setPending(null)
-  }, [mode])
-
-  // 收尾：解析 → 标签绑定 → 单事务提交 或 挂起蓝图预览（两套收发路径共用）
-  const finish = useCallback(
-    (full: string) => {
-      // 导师模式：仅预览，不触碰时间轴
-      if (mode === 'mentor') {
-        setApplyResult({ ok: true, message: '（导师模式）已在上方预览改写结果，未修改时间轴。' })
-        setPrompt('')
-        return
-      }
-
-      // 剧情蓝图模式：解析 → 标签绑定 → 挂起预览，等待用户选择应用方式
-      if (mode === 'blueprint') {
-        const blueprint = parseDirective(full)
-        if (!blueprint.lines.length) {
-          setApplyResult({ ok: false, message: 'AI 未返回任何剧本行。' })
-          return
-        }
-        const index = buildTagIndex(assets)
-        const baseMax = maxLineNum(useAppStore.getState().draftDeltas)
-        const { plan, report, labelLines } = resolveBlueprint(blueprint, {
-          index,
-          assets,
-          characterConfigs,
-          slots: DEFAULT_POSITION_SLOTS,
-          baseLineId: baseMax,
-        })
-        setPending({ blueprint, plan, report, labelLines })
-        setApplyResult(null)
-        return
-      }
-
-      // 舞台监督模式：解析 → 标签绑定 → 单事务提交
-      const directive = parseDirective(full)
-      if (!directive.lines.length) {
-        setApplyResult({ ok: false, message: 'AI 未返回任何剧本行。' })
-        return
-      }
-
-      const index = buildTagIndex(assets)
-      const baseMax = maxLineNum(draftDeltas)
-      const plan: LineDelta[] = []
-      const allReport = { resolved: [] as string[], unresolved: [] as string[] }
-
-      directive.lines.forEach((line, i) => {
-        const { delta, report } = resolveDirectiveToDelta(line, {
-          index,
-          assets,
-          characterConfigs,
-          slots: DEFAULT_POSITION_SLOTS,
-          lineId: `L${baseMax + i + 1}`,
-          span: [0, 0],
-        })
-        plan.push(delta)
-        allReport.resolved.push(...report.resolved)
-        allReport.unresolved.push(...report.unresolved)
-      })
-
-      // ★ 单事务提交：一次 setDraftDeltas = 整段 AI 排戏仅一条撤销记录
-      if (!committedRef.current) {
-        const finalDeltas = composeDeltas(draftDeltas, plan, selectedLineIndex, 'insert')
-        setDraftDeltas(finalDeltas)
-        committedRef.current = true
-        const firstNew = Math.min(finalDeltas.length, selectedLineIndex + 1)
-        selectLine(firstNew)
-      }
-
-      const resolvedMsg = allReport.resolved.length
-        ? `已绑定：${allReport.resolved.join('、')}`
-        : '未自动绑定任何素材'
-      const unresolvedMsg = allReport.unresolved.length
-        ? `；待复核：${allReport.unresolved.join('、')}`
-        : ''
-      setApplyResult({
-        ok: allReport.unresolved.length === 0,
-        message: `已应用 ${plan.length} 行（插入到第 ${selectedLineIndex + 1} 行后）。${resolvedMsg}${unresolvedMsg}`,
-      })
-      setPrompt('')
-    },
-    [mode, assets, characterConfigs, draftDeltas, selectedLineIndex, setDraftDeltas, selectLine],
-  )
-
-  // 蓝图应用：整体替换 / 当前行后插入 / 替换选中剧情块
-  const applyBlueprint = useCallback(
-    (how: 'replace' | 'insert' | 'block') => {
-      if (!pending) return
-      const { plan } = pending
-      const cur = useAppStore.getState().draftDeltas
-      const sel = useAppStore.getState().selectedLineIndex
-      let finalDeltas: LineDelta[]
-      let focus = 0
-      if (how === 'replace') {
-        finalDeltas = composeDeltas(cur, plan, 0, 'replace')
-        focus = 0
-      } else if (how === 'insert') {
-        finalDeltas = composeDeltas(cur, plan, sel, 'insert')
-        focus = Math.min(finalDeltas.length - 1, sel + 1)
-      } else {
-        const { start, end } = findBlockRange(cur, sel)
-        finalDeltas = replaceBlock(cur, plan, start, end)
-        focus = start
-      }
-      setDraftDeltas(finalDeltas)
-      selectLine(focus)
-      const label = how === 'replace' ? '整体替换' : how === 'insert' ? '插入到当前行后' : '替换选中剧情块'
-      setApplyResult({ ok: true, message: `已${label}：${plan.length} 行已写入时间轴（可一步撤销）。` })
-      setPending(null)
-    },
-    [pending, setDraftDeltas, selectLine],
-  )
-
-  const generate = useCallback(async () => {
-    if (!prompt.trim()) return
-    const secure = !!window.electronAPI?.aiChat
-    const keyReady = secure ? hasKey : config.apiKey.trim().length > 0
-    if (!keyReady) return
-
+  const handleSend = useCallback(async () => {
+    if (!prompt.trim() || loading) return
     setLoading(true)
     setError(null)
-    setApplyResult(null)
-    setStreamText('')
-    setPending(null)
-    committedRef.current = false
+    setResponse(null)
+    setBlueprint(null)
 
-    const varCtx = variables.map((v) => ({ name: v.name, type: v.type }))
-    const messages = [
-      {
-        role: 'system' as const,
-        content: buildSystemPrompt(mode, {
-          characters: characterConfigs.map((c) => ({ charId: c.charId, displayName: c.displayName })),
-          backgrounds: assets.filter((a) => a.type === 'background').map((a) => a.name),
-          audioHints: buildAudioHints(assets),
-          variables: varCtx,
-        }),
-      },
-      {
-        role: 'user' as const,
-        content:
-          mode === 'blueprint'
-            ? buildUserPrompt(prompt, mode, {
-                branches: branchHint ? parseInt(branchHint, 10) || undefined : undefined,
-                endings: endingHint ? parseInt(endingHint, 10) || undefined : undefined,
-              })
-            : buildUserPrompt(prompt, mode),
-      },
-    ]
+    const abortController = new AbortController()
+    abortRef.current = abortController
 
-    // 桌面端：密钥在主进程，渲染端只发 prompt 收 chunk
-    if (secure) {
-      const api = window.electronAPI!
-      let full = ''
-      const onChunk = (d: { delta: string }) => {
-        full += d.delta
-        setStreamText(full)
-      }
-      const onDone = (d: { full: string }) => {
-        api.removeAiListeners()
-        setLoading(false)
-        try {
-          finish(d.full)
-        } catch (err: any) {
-          setError(err?.message ?? '解析 AI 返回的剧本数据失败，请重试或调整指令。')
-        }
-      }
-      const onErr = (msg: string) => {
-        api.removeAiListeners()
-        setLoading(false)
-        setError(msg)
-      }
-      const onAbort = () => {
-        api.removeAiListeners()
-        setLoading(false)
-      }
-      // 注册前先清掉可能残留的旧监听，杜绝重复触发
-      api.removeAiListeners()
-      api.onAiChunk(onChunk)
-      api.onAiDone(onDone)
-      api.onAiError(onErr)
-      api.onAiAborted(onAbort)
-      api.aiChat({ messages })
-      return
-    }
-
-    // dev 纯 web 降级：渲染端直接请求（密钥来自 localStorage）
-    const controller = new AbortController()
-    abortRef.current = controller
     try {
-      const full = await streamChatCompletion(
+      const config = loadConfig()
+      if (!config.apiKey) {
+        setError('请先在设置中配置 AI API Key')
+        setLoading(false)
+        return
+      }
+
+      // Build context
+      const characters = Object.entries(characterConfigs).map(([charId, cfg]) => ({
+        charId,
+        displayName: cfg.displayName || charId,
+      }))
+      const bgSet = new Set<string>()
+      draftDeltas.forEach((d) => { if (d.background?.asset_id) bgSet.add(d.background.asset_id) })
+      const backgrounds = Array.from(bgSet)
+      const audioHints = draftDeltas
+        .filter((d) => d.audio)
+        .map((d) => {
+          const parts: string[] = []
+          if (d.audio?.bgm && typeof d.audio.bgm === 'string') parts.push(d.audio.bgm)
+          if (d.audio?.ambient && typeof d.audio.ambient === 'string') parts.push(d.audio.ambient)
+          if (d.audio?.voice && typeof d.audio.voice === 'string') parts.push(d.audio.voice)
+          return parts.join(',')
+        })
+        .filter(Boolean)
+        .join(', ')
+      const variableRefs = (variables || []).map((v) => ({
+        name: v.name,
+        type: v.type,
+      }))
+
+      let messages: ChatMessage[]
+      if (mode === 'blueprint') {
+        messages = [
+          { role: 'system', content: buildBlueprintSystemPrompt({ characters, backgrounds, audioHints, variables: variableRefs }) },
+          { role: 'user', content: buildBlueprintUserPrompt(prompt.trim()) },
+        ]
+      } else {
+        messages = [
+          { role: 'system', content: buildSystemPrompt(mode as AIAIMode, { characters, backgrounds, audioHints }) },
+          { role: 'user', content: prompt.trim() },
+        ]
+      }
+
+      let fullText = ''
+      await streamChatCompletion(
         config,
         messages,
-        (tok) => setStreamText((prev) => prev + tok),
-        controller.signal,
+        (token: string) => {
+          fullText += token
+          setResponse(fullText)
+        },
+        abortController.signal,
       )
-      finish(full)
+
+      if (mode === 'blueprint' && fullText) {
+        try {
+          const bp = parseDirective(fullText)
+          setBlueprint(bp)
+        } catch {
+          // Blueprint parse failed but text response is shown
+        }
+      }
     } catch (err: any) {
       if (err?.name === 'AbortError') return
       setError(describeAIError(err))
     } finally {
       setLoading(false)
-      abortRef.current = null
+      abortRef.current = undefined
     }
-  }, [prompt, branchHint, endingHint, config, hasKey, mode, draftDeltas, assets, characterConfigs, variables, selectedLineIndex, setDraftDeltas, selectLine, finish])
+  }, [prompt, loading, mode, draftDeltas, characterConfigs, variables])
 
-  const cancel = useCallback(() => {
-    const api = window.electronAPI
-    if (api?.aiAbort) {
-      api.aiAbort()
-    } else {
-      abortRef.current?.abort()
-      setLoading(false)
-    }
-  }, [])
-
-  const saveConfigCb = useCallback(async () => {
-    const api = window.electronAPI
-    if (api?.aiSetConfig) {
-      // 密钥落入主进程安全区；渲染端提交后立即丢弃明文
-      await api.aiSetConfig(config)
-      setHasKey(true)
-      setConfig((c) => ({ ...c, apiKey: '' }))
-    } else {
-      saveConfig(config)
-      setHasKey(!!config.apiKey.trim())
-    }
-    setShowConfig(false)
-  }, [config])
-
-  const isBlueprint = mode === 'blueprint'
+  const handleApplyBlueprint = useCallback((blueprint: DirectorBlueprint) => {
+    // Insert blueprint as structured dialogue + choice blocks
+    const newDeltas = blueprint.lines.map((line) => {
+      const charDeltas: Record<string, import('../../core/types').CharacterDelta> = {}
+      if (line.characters) {
+        for (const [charId, dc] of Object.entries(line.characters)) {
+          charDeltas[charId] = {
+            sprite_id: dc.sprite_id,
+            position_slot: dc.position_slot,
+            action: dc.action,
+            pos_x: dc.pos_x,
+            pos_y: dc.pos_y,
+          }
+        }
+      }
+      return {
+        line_id: `bp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        dialogue: line.dialogue || '',
+        speaker: line.speaker,
+        label: line.label,
+        line_type: line.line_type || 'dialogue',
+        background: line.background ? { asset_id: line.background.tag } : null,
+        characters: charDeltas,
+        audio: { bgm: null, ambient: null, se: [], voice: null },
+        choices: line.choices?.map((c, ci) => ({
+          uid: `bp_choice_${Date.now()}_${ci}`,
+          text: c.text,
+          target_label: c.target_label || '',
+          condition: c.condition,
+          ops: c.ops ? c.ops.map((o) => ({ op: o.op, varName: o.varName, value: o.value })) : undefined,
+        })),
+        variableOps: line.variableOps,
+      }
+    })
+    const updated = [...draftDeltas, ...newDeltas]
+    setDraftDeltas(updated)
+    if (updated.length > 0) selectLine(updated.length - 1)
+    setActiveNavItem('chapters')
+    toast('已应用剧情蓝图到剧本', 'success')
+  }, [draftDeltas, setDraftDeltas, selectLine, setActiveNavItem])
 
   return (
-    <div className="flex flex-1 flex-col bg-canvas">
+    <div className="flex h-full flex-col select-none">
       {/* Header */}
-      <div className="shrink-0 border-b border-edge/10 px-4 py-3">
+      <div className="shrink-0 border-b border-edge/10 px-8 py-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="signal-dot" />
-            <span className="eyebrow">AI 编剧抽屉 Copilot</span>
+          <div>
+            <h1 className="text-[15px] font-semibold text-fg">AI 编剧 Copilot</h1>
+            <p className="mt-0.5 text-[12px] text-fg-muted">AI 辅助编排、分析与蓝图生成</p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<Settings size={14} strokeWidth={1.75} />}
-            onClick={() => setShowConfig(!showConfig)}
-          >
-            设置
-          </Button>
-        </div>
-        {/* 三模式切换 */}
-        <div className="mt-3 inline-flex rounded-lg border border-edge/15 bg-surface-3 p-0.5">
-          <button
-            type="button"
-            onClick={() => setMode('director')}
-            className={`rounded-md px-3 py-1 text-xs transition-colors ${
-              mode === 'director' ? 'bg-signal text-white' : 'text-fg-muted hover:text-fg'
-            }`}
-          >
-            舞台监督
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('mentor')}
-            className={`rounded-md px-3 py-1 text-xs transition-colors ${
-              mode === 'mentor' ? 'bg-signal text-white' : 'text-fg-muted hover:text-fg'
-            }`}
-          >
-            文学导师
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('blueprint')}
-            className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs transition-colors ${
-              isBlueprint ? 'bg-signal text-white' : 'text-fg-muted hover:text-fg'
-            }`}
-          >
-            <Network size={13} strokeWidth={1.75} />
-            剧情蓝图
-          </button>
+
+          {/* Mode Tabs */}
+          <div className="flex items-center gap-1 bg-surface-2/60 rounded-lg p-1 border border-edge/10">
+            {MODE_ORDER.map((m) => {
+              const cfg = MODE_CONFIG[m]
+              const Icon = cfg.icon
+              const active = mode === m
+              return (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                    active
+                      ? 'bg-surface text-fg shadow-sm border border-edge/10'
+                      : 'text-fg-muted hover:text-fg'
+                  }`}
+                >
+                  <Icon size={13} className={active ? 'text-primary' : ''} />
+                  {cfg.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-4">
-        {/* 连接设置 */}
-        {showConfig && (
-          <section className="panel p-4">
-            <div className="eyebrow mb-3">连接设置 Connection</div>
-            <div className="space-y-3">
-              <label className="block">
-                <span className="t-label">厂商预设</span>
-                <select
-                  value={config.provider}
-                  onChange={(e) =>
-                    setConfig(applyPreset(config, e.target.value as AIConfig['provider']))
-                  }
-                  className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
-                >
-                  <option value="openai">OpenAI</option>
-                  <option value="deepseek">DeepSeek</option>
-                  <option value="openrouter">OpenRouter (Claude 等)</option>
-                  <option value="custom">自定义</option>
-                </select>
-              </label>
-              <label className="block">
-                <span className="t-label">API 端点</span>
-                <input
-                  type="text"
-                  value={config.endpoint}
-                  onChange={(e) => setConfig({ ...config, endpoint: e.target.value })}
-                  className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
-                />
-              </label>
-              <label className="block">
-                <span className="t-label">API Key</span>
-                <input
-                  type="password"
-                  value={config.apiKey}
-                  onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-                  placeholder={hasKey && !config.apiKey ? '已保存在本地安全区，留空即保留' : 'sk-...'}
-                  className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
-                />
-                {hasKey && !config.apiKey && (
-                  <p className="mt-1 text-[11px] text-fg-faint">
-                    密钥由主进程安全区托管，渲染进程不可见。
-                  </p>
+      {/* Mode Description Bar */}
+      <div className={`shrink-0 mx-8 mt-4 rounded-lg border px-4 py-2.5 bg-gradient-to-r ${
+        modeCfg.color === 'indigo' ? 'from-indigo-500/5 to-indigo-500/2 border-indigo-500/15'
+        : modeCfg.color === 'emerald' ? 'from-emerald-500/5 to-emerald-500/2 border-emerald-500/15'
+        : 'from-violet-500/5 to-violet-500/2 border-violet-500/15'
+      }`}>
+        <div className="flex items-center gap-2.5">
+          {React.createElement(modeCfg.icon, { size: 15, className: `text-${modeCfg.color}-500` })}
+          <span className="text-[13px] text-fg font-medium">{modeCfg.label}</span>
+          <span className="text-[12px] text-fg-muted">{modeCfg.desc}</span>
+        </div>
+      </div>
+
+      {/* Config + Context Quick Bar */}
+      <div className="shrink-0 px-8 py-4 flex items-center gap-4">
+        <button
+          onClick={() => setContextExpanded(!contextExpanded)}
+          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] transition-colors ${
+            contextExpanded
+              ? 'border-primary/20 bg-primary/5 text-primary'
+              : 'border-edge/10 bg-surface text-fg-muted hover:text-fg hover:border-primary/15'
+          }`}
+        >
+          <FileText size={13} />
+          上下文
+          <span className="text-fg-faint">{contextInfo.lines} 行 · {contextInfo.chars} 角色</span>
+          <ChevronDown size={12} className={contextExpanded ? 'rotate-180' : ''} />
+        </button>
+
+        {/* Quick stats pills */}
+        <div className="flex items-center gap-2 ml-auto">
+          <span className="text-[11px] text-fg-faint bg-surface-2/60 px-2 py-0.5 rounded border border-edge/8">
+            {contextInfo.dialogueLines} 对白
+          </span>
+          <span className="text-[11px] text-fg-faint bg-surface-2/60 px-2 py-0.5 rounded border border-edge/8">
+            {contextInfo.choices} 选择支
+          </span>
+        </div>
+      </div>
+
+      {/* Expanded Context */}
+      {contextExpanded && (
+        <div className="shrink-0 mx-8 mb-4 rounded-lg border border-edge/10 bg-surface-2/30 p-4 max-h-40 overflow-y-auto">
+          <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-2">当前剧本上下文</div>
+          <div className="text-[12px] text-fg-muted leading-relaxed space-y-0.5 font-mono">
+            {draftDeltas.slice(-15).map((d, i) => (
+              <div key={i} className="truncate">
+                {d.label && <span className="text-amber-500">[{d.label}] </span>}
+                {d.speaker && <span className="text-blue-400">{d.speaker}: </span>}
+                <span>{(d.dialogue || '').slice(0, 80)}</span>
+              </div>
+            ))}
+            {draftDeltas.length === 0 && <span className="italic">暂无剧本内容</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col min-h-0 px-8 pb-4">
+
+        {/* Response */}
+        {(response || error || loading) && (
+          <div ref={responseRef} className="flex-1 overflow-y-auto mb-4 rounded-xl border border-edge/10 bg-surface p-5">
+            {error && (
+              <div className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/5 p-4">
+                <AlertTriangle size={16} className="text-red-400 mt-0.5 shrink-0" />
+                <div>
+                  <div className="text-[13px] font-medium text-red-400 mb-1">请求失败</div>
+                  <div className="text-[12px] text-fg-muted leading-relaxed">{error}</div>
+                </div>
+              </div>
+            )}
+
+            {loading && !response && (
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                  <Sparkles size={16} className="absolute inset-0 m-auto text-primary/40" />
+                </div>
+                <span className="text-[13px] text-fg-muted">
+                  {mode === 'blueprint' ? '生成剧情蓝图中...' : 'AI 思考中...'}
+                </span>
+              </div>
+            )}
+
+            {response && (
+              <div>
+                {/* AI Response */}
+                <div className="flex items-start gap-3 mb-5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                    <Bot size={16} className="text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-2">
+                      {mode === 'blueprint' ? '剧情蓝图' : 'AI 回复'}
+                    </div>
+                    <div className="prose-content text-[13px] text-fg leading-relaxed space-y-2 whitespace-pre-wrap">
+                      {response}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Blueprint */}
+                {blueprint && (
+                  <div className="rounded-lg border border-primary/15 bg-primary/3 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <GitBranch size={15} className="text-primary" />
+                        <span className="text-[13px] font-medium text-fg">剧情蓝图 ({(blueprint.nodes ?? []).length} 节点 · {(blueprint.edges ?? []).length} 分支)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleApplyBlueprint(blueprint)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 hover:bg-primary/15 px-3 py-1.5 text-[12px] text-primary transition-colors"
+                        >
+                          <ArrowRight size={12} />
+                          应用到剧本
+                        </button>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(JSON.stringify(blueprint, null, 2))}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface px-3 py-1.5 text-[12px] text-fg-muted hover:text-fg transition-colors"
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
+                    </div>
+                    {/* Blueprint nodes preview */}
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                      {(blueprint.nodes ?? []).map((node) => (
+                        <div key={node.id} className={`rounded-lg border px-3 py-2 text-[12px] leading-snug ${
+                          node.kind === 'start' ? 'border-emerald-500/20 bg-emerald-500/5'
+                          : node.kind === 'ending' ? 'border-red-500/20 bg-red-500/5'
+                          : 'border-edge/10 bg-surface-2/40'
+                        }`}>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              node.kind === 'start' ? 'bg-emerald-500'
+                              : node.kind === 'ending' ? 'bg-red-500'
+                              : 'bg-amber-500'
+                            }`} />
+                            <span className="font-medium text-fg">{node.title}</span>
+                            <span className="text-fg-faint text-[10px]">
+                              {node.kind === 'start' ? '起点' : node.kind === 'ending' ? '结局' : '分支'}
+                            </span>
+                          </div>
+                          {node.summary && <p className="text-fg-muted">{node.summary}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </label>
-              <label className="block">
-                <span className="t-label">模型</span>
-                <input
-                  type="text"
-                  value={config.model}
-                  onChange={(e) => setConfig({ ...config, model: e.target.value })}
-                  className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
-                />
-              </label>
-              <label className="block">
-                <span className="t-label">温度 (Temperature)：{config.temperature.toFixed(1)}</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  value={config.temperature}
-                  onChange={(e) => setConfig({ ...config, temperature: parseFloat(e.target.value) })}
-                  className="mt-1 w-full accent-signal"
-                />
-              </label>
-              <label className="block">
-                <span className="t-label">最大 Token</span>
-                <input
-                  type="number"
-                  min={256}
-                  max={8192}
-                  step={256}
-                  value={config.maxTokens}
-                  onChange={(e) => setConfig({ ...config, maxTokens: parseInt(e.target.value || '2000', 10) })}
-                  className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60"
-                />
-              </label>
-              <Button variant="primary" block onClick={saveConfigCb}>
-                保存设置
-              </Button>
-            </div>
-          </section>
-        )}
-
-        {/* 当前上下文 */}
-        <section className="panel p-4">
-          <div className="eyebrow mb-3">当前上下文 Context</div>
-          <div className="flex gap-5 t-label">
-            <span>
-              <span className="font-mono text-fg-muted">{draftDeltas.length}</span> 行
-            </span>
-            <span>
-              <span className="font-mono text-fg-muted">{characterConfigs.length}</span> 个角色
-            </span>
-            <span>
-              <span className="font-mono text-fg-muted">{variables.length}</span> 个变量
-            </span>
-            <span>
-              <span className="font-mono text-fg-muted">
-                {assets.filter((a) => a.type === 'background').length}
-              </span>{' '}
-              个背景
-            </span>
-            <span>
-              <span className="font-mono text-fg-muted">
-                {assets.filter((a) => a.type === 'audio').length}
-              </span>{' '}
-              个音频
-            </span>
-          </div>
-        </section>
-
-        {/* 蓝图预览：剧情树 + 行级预览 + 应用方式 */}
-        {isBlueprint && pending && (
-          <BlueprintPreview pending={pending} onApply={applyBlueprint} selectedLineIndex={selectedLineIndex} />
-        )}
-
-        {/* 流式打字机预览 */}
-        {streamText && (
-          <section className="panel p-4">
-            <div className="eyebrow mb-2">
-              {loading ? 'AI 生成中…' : isBlueprint ? '蓝图草稿（JSON）' : mode === 'mentor' ? '改写预览' : '导演指令预览'}
-            </div>
-            <pre className="whitespace-pre-wrap t-micro t-mono leading-relaxed text-fg-muted">
-              {streamText}
-              {loading && <span className="animate-pulse">▍</span>}
-            </pre>
-          </section>
-        )}
-
-        {/* 错误 */}
-        {error && (
-          <div className="panel border-danger/40 p-3">
-            <p className="t-caption text-danger">{error}</p>
-          </div>
-        )}
-
-        {/* 应用结果 */}
-        {applyResult && (
-          <div className={`panel p-3 ${applyResult.ok ? 'border-success/40' : 'border-danger/40'}`}>
-            <p className="t-caption">{applyResult.message}</p>
-          </div>
-        )}
-
-        {/* 创作指令 */}
-        <section className="panel p-4">
-          <div className="eyebrow mb-3">
-            {isBlueprint ? '核心梗概 Premise' : mode === 'mentor' ? '润色指令 Prompt' : '创作指令 Prompt'}
-          </div>
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder={
-              isBlueprint
-                ? '例如：男主在废墟遇到失忆机甲少女，面临救与不救的选择…'
-                : mode === 'mentor'
-                  ? '粘贴需要润色/扩写的台词或大纲…'
-                  : '例如：Alice 和 Bob 在学校走廊相遇，争吵关于周末去图书馆还是去游乐园的事情…'
-            }
-            rows={isBlueprint ? 5 : 4}
-            disabled={loading}
-            className="w-full resize-none rounded-lg border border-edge/15 bg-surface-3 px-3 py-2 text-xs text-fg placeholder-fg-subtle outline-none focus:border-signal/60 disabled:opacity-50"
-          />
-          {isBlueprint && (
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <label className="block">
-                <span className="t-label">分支数（可选）</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={8}
-                  value={branchHint}
-                  onChange={(e) => setBranchHint(e.target.value)}
-                  placeholder="如 2"
-                  disabled={loading}
-                  className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60 disabled:opacity-50"
-                />
-              </label>
-              <label className="block">
-                <span className="t-label">结局数（可选）</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={8}
-                  value={endingHint}
-                  onChange={(e) => setEndingHint(e.target.value)}
-                  placeholder="如 3"
-                  disabled={loading}
-                  className="mt-1 w-full rounded border border-edge/15 bg-surface-3 px-2 py-1.5 text-xs text-fg outline-none focus:border-signal/60 disabled:opacity-50"
-                />
-              </label>
-            </div>
-          )}
-          <div className="mt-3 flex gap-2">
-            <Button
-              variant="primary"
-              onClick={generate}
-              disabled={loading || !prompt.trim() || (window.electronAPI ? !hasKey : !config.apiKey.trim())}
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={14} strokeWidth={1.75} className="animate-spin" />
-                  生成中...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={14} strokeWidth={1.75} />
-                  {isBlueprint ? '生成剧情蓝图' : mode === 'mentor' ? '润色' : '生成剧本'}
-                </>
-              )}
-            </Button>
-            {loading && (
-              <Button variant="outline" onClick={cancel}>
-                取消
-              </Button>
+              </div>
             )}
           </div>
-        </section>
+        )}
 
-        {/* 使用提示 */}
-        <section className="panel p-4">
-          <div className="eyebrow mb-3">使用提示 Tips</div>
-          <p className="t-micro leading-relaxed">
-            <span className="text-signal">舞台监督</span>：AI 返回结构化元数据，自动把情感/环境/音效标签绑定到真实素材，
-            并在有对白时自动挂载语音打点，整段作为单条记录写入时间轴（可一步撤销）。<br />
-            <span className="text-signal">文学导师</span>：仅预览润色结果，不修改时间轴。<br />
-            <span className="text-signal">剧情蓝图</span>：输入核心梗概，AI 规划含起点/分支/结局的网状分歧树，
-            自动挂载角色与表情、插入选择支与变量逻辑；生成后可整体替换、插入到当前行之后，或替换选中剧情块。
-            支持 OpenAI 兼容端点（OpenAI / DeepSeek / OpenRouter / 本地模型等）。
+        {/* Input Area */}
+        <div className="shrink-0">
+          <div className="rounded-xl border border-edge/10 bg-surface shadow-sm focus-within:ring-1 focus-within:ring-primary/20 focus-within:border-primary/20 transition-all">
+            <textarea
+              ref={inputRef}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
+              }}
+              placeholder={modeCfg.placeholder}
+              rows={3}
+              className="w-full resize-none bg-transparent px-4 py-3 text-[13px] text-fg placeholder-fg-faint focus:outline-none leading-relaxed"
+            />
+            <div className="flex items-center justify-between px-4 py-2 border-t border-edge/8">
+              <div className="flex items-center gap-1.5">
+                {mode === 'blueprint' && (
+                  <TemplateInfo text="输入梗概后按 Enter 发送，AI 将自动生成分支树" />
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-fg-faint">{prompt.length} 字</span>
+                <button
+                  onClick={handleSend}
+                  disabled={!prompt.trim() || loading}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[12px] font-medium transition-colors ${
+                    !prompt.trim() || loading
+                      ? 'bg-surface-2 text-fg-faint cursor-not-allowed'
+                      : 'bg-primary text-white hover:bg-primary/90 shadow-sm'
+                  }`}
+                >
+                  {loading ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Send size={13} />
+                  )}
+                  发送
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] text-fg-faint text-center">
+            按 Enter 发送 · Shift+Enter 换行
           </p>
-        </section>
+        </div>
       </div>
     </div>
   )
 }
 
-// ===================== 蓝图预览子组件 =====================
-
-function BlueprintPreview({
-  pending,
-  onApply,
-  selectedLineIndex,
-}: {
-  pending: PendingBlueprint
-  onApply: (how: 'replace' | 'insert' | 'block') => void
-  selectedLineIndex: number
-}) {
-  const { blueprint, plan, report } = pending
-  const nodeMap = new Map((blueprint.nodes ?? []).map((n) => [n.id, n]))
-
+function TemplateInfo({ text }: { text: string }) {
   return (
-    <section className="panel space-y-4 p-4">
-      <div className="flex items-center justify-between">
-        <div className="eyebrow">
-          <GitBranch size={13} strokeWidth={1.75} className="mr-1 inline" />
-          剧情蓝图预览
-        </div>
-        <span className="t-micro text-fg-faint">
-          {blueprint.nodes?.length ?? 0} 节点 · {plan.length} 行
-        </span>
-      </div>
-
-      {blueprint.title && <p className="t-label font-medium text-fg">{blueprint.title}</p>}
-
-      {/* 剧情树：节点 + 边 */}
-      {(blueprint.nodes?.length ?? 0) > 0 && (
-        <div className="space-y-2">
-          <div className="t-micro text-fg-subtle">剧情树</div>
-          <div className="flex flex-wrap gap-2">
-            {(blueprint.nodes ?? []).map((n) => (
-              <span
-                key={n.id}
-                className="inline-flex items-center gap-1.5 rounded-full border border-edge/15 bg-surface-2 px-2.5 py-1 text-[12px]"
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${NODE_DOT[n.kind] ?? 'bg-fg-subtle'}`} />
-                <span className="text-fg">{n.title}</span>
-                <span className="text-fg-faint">{NODE_KIND_LABEL[n.kind] ?? ''}</span>
-              </span>
-            ))}
-          </div>
-          {(blueprint.edges?.length ?? 0) > 0 && (
-            <ul className="space-y-1 t-micro text-fg-muted">
-              {blueprint.edges!.map((e, i) => (
-                <li key={i} className="flex items-center gap-1.5">
-                  <span className="text-fg-subtle">{nodeMap.get(e.from)?.title ?? e.from}</span>
-                  <span className="text-fg-faint">— {e.via} →</span>
-                  <span className="text-fg-subtle">{nodeMap.get(e.to)?.title ?? e.to}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {/* 行级预览 */}
-      <div className="space-y-1.5">
-        <div className="t-micro text-fg-subtle">生成内容（{plan.length} 行）</div>
-        <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
-          {blueprint.lines.map((ln, i) => (
-            <div key={i} className="rounded-md border border-edge/10 bg-surface-2/60 px-2.5 py-1.5">
-              <div className="flex items-baseline gap-2">
-                <span className="font-mono text-[11px] text-fg-faint">{i + 1}</span>
-                <span className="text-[12px] font-medium text-fg">
-                  {ln.speaker ?? <span className="italic text-fg-faint">旁白</span>}
-                </span>
-                {ln.line_type === 'choice' && (
-                  <span className="rounded bg-signal/15 px-1.5 text-[10px] text-signal">选择支</span>
-                )}
-                {ln.label && <span className="rounded bg-surface-3 px-1.5 text-[10px] text-fg-subtle">#{ln.label}</span>}
-              </div>
-              <p className="t-micro leading-snug text-fg-muted">{ln.dialogue || '（无台词）'}</p>
-              {ln.characters && Object.keys(ln.characters).length > 0 && (
-                <p className="t-micro text-fg-faint">
-                  角色：{Object.entries(ln.characters)
-                    .map(([k, c]) => `${k}·${c.sprite_id ?? '—'}`)
-                    .join('、')}
-                </p>
-              )}
-              {ln.background?.tag && (
-                <p className="t-micro text-fg-faint">场景：{ln.background.tag}</p>
-              )}
-              {ln.line_type === 'choice' && (ln.choices?.length ?? 0) > 0 && (
-                <ul className="t-micro text-fg-faint">
-                  {ln.choices!.map((c, ci) => (
-                    <li key={ci}>
-                      · {c.text}
-                      {c.target_label ? ` → ${c.target_label}` : ''}
-                      {c.ops?.length ? ` （变量${c.ops.length}）` : ''}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {ln.variableOps?.length ? (
-                <p className="t-micro text-fg-faint">
-                  变量：{ln.variableOps.map((o) => `${o.varName} ${o.op} ${o.value ?? ''}`).join('，')}
-                </p>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 解析报告 */}
-      <div className="t-micro">
-        {report.resolved.length > 0 && (
-          <p className="text-success">已绑定素材：{report.resolved.join('、')}</p>
-        )}
-        {report.unresolved.length > 0 && (
-          <p className="text-fg-subtle">待复核（未匹配素材）：{report.unresolved.join('、')}</p>
-        )}
-        {report.resolved.length === 0 && report.unresolved.length === 0 && (
-          <p className="text-fg-faint">无素材绑定需求。</p>
-        )}
-      </div>
-
-      {/* 应用方式 */}
-      <div className="space-y-2 border-t border-edge/10 pt-3">
-        <div className="t-micro text-fg-subtle">
-          应用方式（当前选中第 {selectedLineIndex + 1} 行）
-        </div>
-        <div className="grid grid-cols-1 gap-2">
-          <Button variant="primary" size="sm" block onClick={() => onApply('replace')}>
-            整体替换当前剧本
-          </Button>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" size="sm" onClick={() => onApply('insert')}>
-              插入当前行后
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => onApply('block')}>
-              替换选中剧情块
-            </Button>
-          </div>
-        </div>
-      </div>
-    </section>
+    <span className="inline-flex items-center gap-1 text-[11px] text-fg-faint">
+      <Lightbulb size={11} />
+      {text}
+    </span>
   )
 }

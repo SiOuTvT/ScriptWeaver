@@ -1,456 +1,302 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { useAppStore } from '../../stores/appStore'
+import { toast } from '../../utils/toast'
 import {
-  Settings, Database, Cpu, Palette, Monitor, Save, Clock,
-  History, Gauge, FolderOpen, Server, Radio, Timer, Trash2, Check
+  Settings, Key, Palette, Save, RotateCcw, Eye, EyeOff,
+  Monitor, Moon, Sun, Info
 } from 'lucide-react'
-import { useAppStore, type AppSettings } from '@/stores/appStore'
-import { DEFAULT_ACCENT, ACCENT_PRESETS } from '@/utils/themeColor'
-import { clearDraft } from '@/utils/draftStorage'
-import { toast } from '@/utils/toast'
 
-// ─── 设置分类 ───────────────────────────────────────────
-interface SettingTab {
-  id: string
-  label: string
-  icon: typeof Settings
-  description: string
+interface SettingSection {
+  id: string; label: string; icon: typeof Settings
 }
 
-const TABS: SettingTab[] = [
-  { id: 'storage',    label: '存储与项目',  icon: Database,    description: '项目路径、缓存管理与数据持久化' },
-  { id: 'ai',         label: 'AI 与语音',   icon: Cpu,         description: '流式输出、请求超时与连接控制' },
-  { id: 'editor',     label: '编辑器',      icon: Monitor,    description: '自动保存、快照策略与撤销深度' },
-  { id: 'appearance', label: '主题与性能',   icon: Palette,    description: '外观主题、配色偏好与渲染优化' },
+const SECTIONS: SettingSection[] = [
+  { id: 'general', label: '通用', icon: Settings },
+  { id: 'ai', label: 'AI 配置', icon: Key },
+  { id: 'appearance', label: '外观', icon: Palette },
 ]
 
-// ─── 表单控件组件 ──────────────────────────────────────
-
-function SettingGroup({ label, icon: Icon, children }: { label: string; icon: typeof Settings; children: React.ReactNode }) {
-  return (
-    <div className="mb-6 pl-4 border-l border-primary/15">
-      <div className="flex items-center gap-2 mb-3">
-        <Icon size={14} className="text-fg-muted" />
-        <span className="text-xs font-medium text-fg-muted uppercase tracking-[0.08em]">{label}</span>
-      </div>
-      <div className="space-y-3">{children}</div>
-    </div>
-  )
-}
-
-function SettingRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-2.5 px-3 rounded-lg
-      hover:bg-surface-hover/40 transition-colors group">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-fg-default leading-snug">{label}</p>
-        {hint && <p className="text-xs text-fg-faint mt-0.5 leading-snug">{hint}</p>}
-      </div>
-      <div className="shrink-0 flex items-center gap-2">{children}</div>
-    </div>
-  )
-}
-
-function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full
-        transition-colors duration-200 focus:outline-none border-2 border-transparent"
-      style={{ backgroundColor: checked ? 'rgb(var(--c-primary) / 0.85)' : 'rgb(var(--c-edge) / 0.22)' }}
-    >
-      <span
-        className="pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow
-          transition-transform duration-200"
-        style={{ transform: checked ? 'translateX(16px)' : 'translateX(0)' }}
-      />
-    </button>
-  )
-}
-
-function SliderField({ value, min, max, step, unit, onChange }: {
-  value: number; min: number; max: number; step: number; unit: string; onChange: (v: number) => void
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="theme-hue w-24"
-      />
-      <span className="text-xs font-medium tabular-nums text-fg-muted w-16 text-right">
-        {value}{unit}
-      </span>
-    </div>
-  )
-}
-
-// ─── 主页面 ────────────────────────────────────────────
-
 export default function SettingsHub() {
-  const settings = useAppStore((s) => s.settings)
-  const updateSettings = useAppStore((s) => s.updateSettings)
-  const theme = useAppStore((s) => s.theme)
-  const setTheme = useAppStore((s) => s.setTheme)
-  const accentColor = useAppStore((s) => s.accentColor)
-  const setAccentColor = useAppStore((s) => s.setAccentColor)
-  const resetAccentColor = useAppStore((s) => s.resetAccentColor)
-  const newProject = useAppStore((s) => s.newProject)
+  const toast = useAppStore((s) => s.toast)
 
-  const [activeTab, setActiveTab] = useState('storage')
-  const [clearing, setClearing] = useState(false)
-  const [resetting, setResetting] = useState(false)
-  const [projectPath, setProjectPath] = useState('')
-  const [pickingPath, setPickingPath] = useState(false)
+  // Theme
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
+  const [fontSize, setFontSize] = useState<14 | 16>(14)
 
+  // AI Config
+  const [apiKey, setApiKey] = useState('')
+  const [apiEndpoint, setApiEndpoint] = useState('https://api.openai.com/v1')
+  const [model, setModel] = useState('gpt-4')
+  const [showKey, setShowKey] = useState(false)
+
+  // Project
+  const [autoSave, setAutoSave] = useState(true)
+  const [autoSaveInterval, setAutoSaveInterval] = useState(5)
+
+  // Active section
+  const [activeSection, setActiveSection] = useState('general')
+  const activeCfg = SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0]
+
+  // Load existing config on mount
   useEffect(() => {
-    const api = window.electronAPI
-    if (!api) return
     ;(async () => {
       try {
-        const documents = await api.getPath?.('documents')
-        setProjectPath(documents || '')
+        const config = await (window as any).electronAPI?.aiGetConfig?.()
+        if (config?.apiKey) setApiKey(config.apiKey)
+        if (config?.baseURL) setApiEndpoint(config.baseURL)
+        if (config?.model) setModel(config.model)
       } catch { /* ignore */ }
     })()
   }, [])
 
-  const handleClearCache = useCallback(async () => {
-    setClearing(true)
-    try {
-      const api = window.electronAPI
-      const result = await api?.clearLocalCache?.()
-      if (result?.success) {
-        toast('缓存已清除', 'success')
-      } else {
-        toast(result?.error || '清除失败', 'error')
-      }
-    } catch {
-      toast('清除缓存失败，请重试', 'error')
-    } finally {
-      setClearing(false)
+  const handleSave = useCallback(() => {
+    // Save AI config
+    if (apiKey) {
+      ;(window as any).electronAPI?.aiSetConfig?.({
+        apiKey,
+        baseURL: apiEndpoint,
+        model,
+      }).catch(() => {})
     }
-  }, [])
+    toast?.('设置已保存', 'success')
+  }, [apiKey, apiEndpoint, model])
 
-  const handleResetProject = useCallback(() => {
-    setResetting(true)
-    try {
-      clearDraft()
-      newProject()
-      window.electronAPI?.setActiveProjectRoot?.(null)
-      toast('所有项目数据已清除，页面已重置', 'info')
-    } catch {
-      toast('清除失败，请重试', 'error')
-    } finally {
-      setResetting(false)
-    }
-  }, [newProject])
-
-  const handlePickPath = useCallback(async () => {
-    setPickingPath(true)
-    try {
-      const api = window.electronAPI
-      const result = await api?.getPath?.('documents')
-      if (result) setProjectPath(result)
-    } catch { /* ignore */ }
-    setPickingPath(false)
-  }, [])
-
-  const patch = useCallback((partial: Partial<AppSettings>) => {
-    updateSettings(partial)
-  }, [updateSettings])
-
-  const currentTab = TABS.find((t) => t.id === activeTab)!
+  const handleReset = () => {
+    setTheme('system')
+    setFontSize(14)
+    setAutoSave(true)
+    setAutoSaveInterval(5)
+    toast?.('已恢复默认设置', 'info')
+  }
 
   return (
     <div className="flex h-full select-none">
-      {/* 左侧标签导航 */}
-      <div className="w-56 shrink-0 border-r border-edge/8 flex flex-col bg-surface-tinted/50">
-        <div className="px-4 pt-4 pb-3">
-          <h2 className="text-sm font-semibold text-fg-default">设置</h2>
-          <p className="text-xs text-fg-faint mt-0.5">配置 ScriptWeaver 运行参数</p>
+      {/* Left Nav */}
+      <div className="w-[180px] shrink-0 border-r border-edge/10 flex flex-col">
+        <div className="px-4 py-5 border-b border-edge/10">
+          <div className="flex items-center gap-2">
+            <Settings size={15} className="text-fg-muted" />
+            <span className="text-[14px] font-semibold text-fg">设置</span>
+          </div>
         </div>
-        <nav className="flex-1 px-2 space-y-0.5">
-          {TABS.map((tab) => {
-            const Icon = tab.icon
-            const active = activeTab === tab.id
+        <div className="flex-1 py-3 px-2 space-y-1">
+          {SECTIONS.map((section) => {
+            const Icon = section.icon
+            const active = activeSection === section.id
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left transition-colors
-                  ${active
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-fg-muted hover:bg-surface-hover/60 border border-transparent'
-                  }`}
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+                  active
+                    ? 'bg-primary/10 text-primary border border-primary/15'
+                    : 'text-fg-muted hover:text-fg hover:bg-surface-2/60 border border-transparent'
+                }`}
               >
-                <Icon size={15} className={active ? 'text-primary' : 'text-fg-faint'} />
-                <span className="text-sm font-medium">{tab.label}</span>
+                <Icon size={15} />
+                {section.label}
               </button>
             )
           })}
-        </nav>
-        <div className="px-4 py-3 border-t border-edge/6">
-          <p className="text-xs text-fg-faint">更改将立即生效并自动保存</p>
+        </div>
+        <div className="px-3 py-3 border-t border-edge/10 space-y-2">
+          <button
+            onClick={handleSave}
+            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary text-white px-3 py-2 text-[12px] font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Save size={13} />
+            保存设置
+          </button>
+          <button
+            onClick={handleReset}
+            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-edge/10 bg-surface text-fg-muted hover:text-fg px-3 py-2 text-[12px] font-medium transition-colors"
+          >
+            <RotateCcw size={13} />
+            恢复默认
+          </button>
         </div>
       </div>
 
-      {/* 右侧设置内容 */}
-      <div className="flex-1 overflow-y-auto px-6 py-5">
-        {/* 顶部标题 */}
-        <div className="flex items-center gap-3 mb-5 pb-4 border-b border-edge/6">
-          <currentTab.icon size={18} className="text-primary" />
-          <div>
-            <h3 className="text-base font-semibold text-fg-default">{currentTab.label}</h3>
-            <p className="text-xs text-fg-faint mt-0.5">{currentTab.description}</p>
+      {/* Right Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-8 py-6 max-w-[720px]">
+          <div className="mb-6">
+            <h2 className="text-[14px] font-semibold text-fg">{activeCfg.label} 设置</h2>
+            <p className="mt-1 text-[12px] text-fg-muted">调整 ScriptWeaver 的基本配置与偏好</p>
           </div>
-        </div>
 
-        {/* ─── 存储与项目 ────────────────────────── */}
-        {activeTab === 'storage' && (
-          <div className="max-w-lg">
-            <SettingGroup label="项目存储" icon={FolderOpen}>
-              <SettingRow label="项目默认路径" hint="新建项目与另存为时的默认文件夹">
-                <button
-                  onClick={handlePickPath}
-                  disabled={pickingPath}
-                  className="text-xs text-fg-subtle hover:text-primary transition-colors px-2 py-1 rounded
-                    hover:bg-surface-hover/60 disabled:opacity-50"
-                >
-                  选择文件夹...
-                </button>
-              </SettingRow>
-              {projectPath && (
-                <div className="px-3 pb-2">
-                  <p className="text-xs font-mono text-fg-faint bg-surface-3-tinted/40 rounded px-2 py-1 truncate">
-                    {projectPath}
-                  </p>
-                </div>
-              )}
-            </SettingGroup>
-
-            <SettingGroup label="缓存管理" icon={Database}>
-              <SettingRow label="清除本地缓存" hint="清理快照缓存与临时文件，释放磁盘空间。项目数据不受影响">
-                <button
-                  onClick={handleClearCache}
-                  disabled={clearing}
-                  className="text-xs px-3 py-1.5 rounded-md border border-danger/30 text-danger
-                    hover:bg-danger/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {clearing ? '清除中...' : '立即清除'}
-                </button>
-              </SettingRow>
-              <div className="px-3 pb-2">
-                <p className="text-xs text-fg-faint">
-                  本地缓存包含版本快照与 AI 对话历史。清除后下一次保存时将从项目数据重建。
-                </p>
-              </div>
-            </SettingGroup>
-
-            <SettingGroup label="项目数据" icon={Trash2}>
-              <SettingRow label="重置所有项目数据" hint="清空剧本、角色、素材与项目根目录，恢复为空白页。新建项目也会触发同样逻辑">
-                <button
-                  onClick={handleResetProject}
-                  disabled={resetting}
-                  className="text-xs px-3 py-1.5 rounded-md border border-danger/50 text-danger
-                    bg-danger/5 hover:bg-danger/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {resetting ? '重置中...' : '重置全部数据'}
-                </button>
-              </SettingRow>
-              <div className="px-3 pb-2">
-                <p className="text-xs text-fg-faint">
-                  此操作将清空当前所有项目数据（剧本行、角色配置、素材引用及画布状态），并解除项目根目录绑定。
-                  操作不可撤销，如需保留当前内容请先保存。
-                </p>
-              </div>
-            </SettingGroup>
-          </div>
-        )}
-
-        {/* ─── AI 与语音 ──────────────────────────── */}
-        {activeTab === 'ai' && (
-          <div className="max-w-lg">
-            <SettingGroup label="连接控制" icon={Server}>
-              <SettingRow label="流式输出" hint="实时逐字输出 AI 对话内容，关闭则等待完整回复后一次性显示">
-                <Switch
-                  checked={settings.streamingEnabled}
-                  onChange={(v) => patch({ streamingEnabled: v })}
-                />
-              </SettingRow>
-              <SettingRow label="请求总超时" hint="单次 AI 请求从发起到完成的全局最大等待时间">
-                <SliderField
-                  value={Math.round(settings.timeoutTotalMs / 1000)}
-                  min={30} max={300} step={30} unit="s"
-                  onChange={(v) => patch({ timeoutTotalMs: v * 1000 })}
-                />
-              </SettingRow>
-              <SettingRow label="静默断流检测" hint="连接无数据超过此时间即判定断流并报错">
-                <SliderField
-                  value={Math.round(settings.timeoutStallMs / 1000)}
-                  min={10} max={120} step={10} unit="s"
-                  onChange={(v) => patch({ timeoutStallMs: v * 1000 })}
-                />
-              </SettingRow>
-            </SettingGroup>
-
-            <SettingGroup label="密钥与接口" icon={Timer}>
-              <div className="px-3">
-                <p className="text-xs text-fg-faint leading-relaxed">
-                  AI 接口端点与密钥由主进程安全区托管，无法在此处直接修改。
-                  如需更换模型或密钥，请在左侧 AI 编剧抽屉中配置。
-                </p>
-              </div>
-            </SettingGroup>
-          </div>
-        )}
-
-        {/* ─── 编辑器 ──────────────────────────────── */}
-        {activeTab === 'editor' && (
-          <div className="max-w-lg">
-            <SettingGroup label="自动保存" icon={Save}>
-              <SettingRow label="自动保存间隔" hint="编辑停止后自动保存的等待时间，单位为秒">
-                <SliderField
-                  value={Math.round(settings.autoSaveIntervalMs / 100) / 10}
-                  min={0.1} max={10} step={0.1} unit="s"
-                  onChange={(v) => patch({ autoSaveIntervalMs: Math.round(v * 1000) })}
-                />
-              </SettingRow>
-            </SettingGroup>
-
-            <SettingGroup label="版本快照" icon={Clock}>
-              <SettingRow label="快照间隔" hint="自动创建项目历史快照的时间间隔">
-                <SliderField
-                  value={settings.snapshotIntervalMin}
-                  min={1} max={60} step={1} unit="min"
-                  onChange={(v) => patch({ snapshotIntervalMin: v })}
-                />
-              </SettingRow>
-            </SettingGroup>
-
-            <SettingGroup label="历史记录" icon={History}>
-              <SettingRow label="撤销深度" hint="最多可撤销的历史操作步数，超过上限自动清理旧记录">
-                <SliderField
-                  value={settings.undoMaxDepth}
-                  min={10} max={200} step={10} unit="步"
-                  onChange={(v) => patch({ undoMaxDepth: v })}
-                />
-              </SettingRow>
-            </SettingGroup>
-
-            <SettingGroup label="时间轴" icon={Monitor}>
-              <SettingRow label="场景行吸附距离" hint="拖拽时间轴场景行时自动对齐的像素偏差阈值">
-                <SliderField
-                  value={settings.timelineSnapPx}
-                  min={1} max={20} step={1} unit="px"
-                  onChange={(v) => patch({ timelineSnapPx: v })}
-                />
-              </SettingRow>
-            </SettingGroup>
-          </div>
-        )}
-
-        {/* ─── 主题与性能 ──────────────────────────── */}
-        {activeTab === 'appearance' && (
-          <div className="max-w-lg">
-            <SettingGroup label="外观主题" icon={Palette}>
-              <SettingRow label="主题模式" hint="浅色模式适合白天使用，深色模式适合暗光环境">
-                <div className="flex rounded-md border border-edge/12 overflow-hidden">
-                  {(['light', 'dark'] as const).map((mode) => (
+          {/* ── General ─────────────────────────────────── */}
+          {activeSection === 'general' && (
+            <div className="space-y-6">
+              {/* Project section */}
+              <section>
+                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">项目</h3>
+                <div className="space-y-4">
+                  <label className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                    <div>
+                      <div className="text-[13px] font-medium text-fg">自动保存</div>
+                      <div className="text-[12px] text-fg-muted mt-0.5">定时自动保存当前项目</div>
+                    </div>
                     <button
-                      key={mode}
-                      onClick={() => setTheme(mode)}
-                      className={`px-3 py-1 text-xs font-medium transition-colors
-                        ${theme === mode
-                          ? 'bg-primary/15 text-primary'
-                          : 'text-fg-muted hover:bg-surface-hover/60'
-                        }`}
+                      onClick={() => setAutoSave(!autoSave)}
+                      className={`relative w-9 h-5 rounded-full transition-colors ${autoSave ? 'bg-primary' : 'bg-surface-2 border border-edge/15'}`}
                     >
-                      {mode === 'light' ? '浅色' : '深色'}
+                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${autoSave ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
                     </button>
-                  ))}
+                  </label>
+
+                  {autoSave && (
+                    <label className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                      <div>
+                        <div className="text-[13px] font-medium text-fg">保存间隔</div>
+                        <div className="text-[12px] text-fg-muted mt-0.5">每 {autoSaveInterval} 分钟自动保存一次</div>
+                      </div>
+                      <select
+                        value={autoSaveInterval}
+                        onChange={(e) => setAutoSaveInterval(Number(e.target.value))}
+                        className="rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-1.5 text-[12px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      >
+                        {[1, 3, 5, 10, 15, 30].map((v) => (
+                          <option key={v} value={v}>{v} 分钟</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                 </div>
-              </SettingRow>
-              <SettingRow label="强调色" hint="界面按钮、链接与选中态的色调">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={accentColor}
-                    onChange={(e) => setAccentColor(e.target.value)}
-                    className="w-8 h-8 rounded-md cursor-pointer border border-edge/12 bg-transparent p-0.5"
-                  />
-                  <button
-                    onClick={resetAccentColor}
-                    className="text-xs text-fg-faint hover:text-fg-muted transition-colors"
-                  >
-                    重置
-                  </button>
+              </section>
+            </div>
+          )}
+
+          {/* ── AI Config ───────────────────────────────── */}
+          {activeSection === 'ai' && (
+            <div className="space-y-6">
+              <section>
+                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">API 配置</h3>
+                <div className="space-y-4">
+                  {/* API Key */}
+                  <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[13px] font-medium text-fg">API Key</label>
+                      <button
+                        onClick={() => setShowKey(!showKey)}
+                        className="text-fg-muted hover:text-fg transition-colors"
+                      >
+                        {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showKey ? 'text' : 'password'}
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder="sk-..."
+                        className="w-full rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2 text-[13px] text-fg font-mono placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-fg-faint">
+                      <Info size={11} className="inline mr-1" />
+                      密钥加密存储在本地，仅用于向 OpenAI 兼容 API 发送请求
+                    </p>
+                  </div>
+
+                  {/* Endpoint */}
+                  <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                    <label className="text-[13px] font-medium text-fg block mb-2">API 端点</label>
+                    <input
+                      type="text"
+                      value={apiEndpoint}
+                      onChange={(e) => setApiEndpoint(e.target.value)}
+                      placeholder="https://api.openai.com/v1"
+                      className="w-full rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2 text-[13px] text-fg font-mono placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    />
+                    <p className="mt-1.5 text-[11px] text-fg-faint">支持 OpenAI 兼容 API，如 Azure OpenAI CLI 本地模型等</p>
+                  </div>
+
+                  {/* Model */}
+                  <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                    <label className="text-[13px] font-medium text-fg block mb-2">模型</label>
+                    <select
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className="w-full rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2 text-[13px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    >
+                      <option value="gpt-4">GPT-4</option>
+                      <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                      <option value="claude-3-opus">Claude 3 Opus</option>
+                      <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                      <option value="deepseek-chat">DeepSeek Chat</option>
+                    </select>
+                  </div>
                 </div>
-              </SettingRow>
-              {/* 预设色板网格 */}
-              <div className="px-4 pb-3">
-                <div className="flex flex-wrap gap-2">
-                  {ACCENT_PRESETS.map((p) => {
-                    const isActive = accentColor.toLowerCase() === p.hex.toLowerCase()
+              </section>
+            </div>
+          )}
+
+          {/* ── Appearance ──────────────────────────────── */}
+          {activeSection === 'appearance' && (
+            <div className="space-y-6">
+              {/* Theme */}
+              <section>
+                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">主题</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {([
+                    { id: 'light' as const, label: '浅色', icon: Sun },
+                    { id: 'dark' as const, label: '深色', icon: Moon },
+                    { id: 'system' as const, label: '跟随系统', icon: Monitor },
+                  ]).map((opt) => {
+                    const Icon = opt.icon
+                    const active = theme === opt.id
                     return (
                       <button
-                        key={p.hex}
-                        onClick={() => setAccentColor(p.hex)}
-                        title={p.name}
-                        className="group relative w-8 h-8 rounded-lg border-2 transition-all duration-150
-                          hover:scale-110 hover:shadow-md active:scale-95"
-                        style={{
-                          backgroundColor: p.hex,
-                          borderColor: isActive ? p.hex : 'transparent',
-                          boxShadow: isActive ? `0 0 0 2px rgb(var(--c-canvas)), 0 0 0 4px ${p.hex}40` : undefined,
-                        }}
+                        key={opt.id}
+                        onClick={() => setTheme(opt.id)}
+                        className={`flex flex-col items-center gap-2 rounded-xl border px-4 py-4 transition-colors ${
+                          active
+                            ? 'border-primary/30 bg-primary/5 ring-1 ring-primary/10'
+                            : 'border-edge/10 bg-surface hover:border-primary/15 hover:bg-surface-hover/40'
+                        }`}
                       >
-                        {isActive && (
-                          <Check
-                            size={14}
-                            strokeWidth={3}
-                            className="absolute inset-0 m-auto text-white drop-shadow-sm"
-                          />
-                        )}
+                        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-primary/15' : 'bg-surface-2/60'}`}>
+                          <Icon size={18} className={active ? 'text-primary' : 'text-fg-muted'} />
+                        </div>
+                        <span className={`text-[13px] font-medium ${active ? 'text-fg' : 'text-fg-muted'}`}>{opt.label}</span>
                       </button>
                     )
                   })}
                 </div>
-                <p className="mt-2 text-xs text-fg-faint">
-                  点击色块快速切换强调色，全站背景与面板将自动着色跟随
-                </p>
-              </div>
-            </SettingGroup>
+              </section>
 
-            <SettingGroup label="性能与渲染" icon={Gauge}>
-              <SettingRow label="GPU 硬件加速" hint="启用硬件加速渲染，可显著提升界面流畅度">
-                <Switch
-                  checked={settings.hwAcceleration}
-                  onChange={(v) => patch({ hwAcceleration: v })}
-                />
-              </SettingRow>
-              <SettingRow label="帧率上限" hint="限制渲染帧率以降低 GPU 功耗和发热">
-                <SliderField
-                  value={settings.framerateLimit}
-                  min={30} max={144} step={1} unit="fps"
-                  onChange={(v) => patch({ framerateLimit: v })}
-                />
-              </SettingRow>
-              <SettingRow label="DPI 缩放" hint="调整界面元素大小，适配高分辨率显示器">
-                <SliderField
-                  value={Math.round(settings.highDpiScale * 100)}
-                  min={75} max={200} step={25} unit="%"
-                  onChange={(v) => patch({ highDpiScale: v / 100 })}
-                />
-              </SettingRow>
-            </SettingGroup>
-          </div>
-        )}
+              {/* Font Size */}
+              <section>
+                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">字号</h3>
+                <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[13px] font-medium text-fg">界面字号</div>
+                      <div className="text-[12px] text-fg-muted mt-0.5">
+                        当前: {fontSize}px {fontSize === 14 ? '(默认)' : '(大字)'}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {([14, 16] as const).map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setFontSize(s)}
+                          className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors ${
+                            fontSize === s
+                              ? 'border-primary/20 bg-primary/5 text-primary'
+                              : 'border-edge/10 bg-surface-2/60 text-fg-muted hover:text-fg'
+                          }`}
+                        >{s}px</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

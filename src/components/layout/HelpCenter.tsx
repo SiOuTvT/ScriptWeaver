@@ -1,608 +1,524 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import {
-  BookOpen, Search, ChevronRight, ChevronDown, FileText,
-  ExternalLink, Info, AlertTriangle, Lightbulb, X
+  BookOpen, ChevronRight, Search, ExternalLink,
+  HelpCircle, FileText, Keyboard, Zap, Video, Sparkles,
+  Globe, Users, Download, ArrowRight, X, MessageCircle
 } from 'lucide-react'
-import { toast } from '@/utils/toast'
 
-// ─── 静态预加载所有帮助文档 ─────────────────────────
-
-import helpIndex from '../../help/index.md?raw'
-import helpGettingStarted from '../../help/getting-started.md?raw'
-import helpAssetManager from '../../help/asset-manager.md?raw'
-import helpScriptOverview from '../../help/script-overview.md?raw'
-import helpStagePreview from '../../help/stage-preview.md?raw'
-import helpCharacterManager from '../../help/character-manager.md?raw'
-import helpAiCopilot from '../../help/ai-copilot.md?raw'
-import helpTimeline from '../../help/timeline.md?raw'
-import helpTtsSynthesis from '../../help/tts-synthesis.md?raw'
-import helpEffectsLab from '../../help/effects-lab.md?raw'
-import helpExport from '../../help/export.md?raw'
-import helpFaq from '../../help/faq.md?raw'
-import helpShortcuts from '../../help/shortcuts.md?raw'
-
-function resolveDocContent(file: string): string {
-  const map: Record<string, string> = {
-    'index.md':                helpIndex,
-    'getting-started.md':      helpGettingStarted,
-    'asset-manager.md':        helpAssetManager,
-    'script-overview.md':      helpScriptOverview,
-    'stage-preview.md':        helpStagePreview,
-    'character-manager.md':    helpCharacterManager,
-    'ai-copilot.md':           helpAiCopilot,
-    'timeline.md':             helpTimeline,
-    'tts-synthesis.md':        helpTtsSynthesis,
-    'effects-lab.md':          helpEffectsLab,
-    'export.md':               helpExport,
-    'faq.md':                  helpFaq,
-    'shortcuts.md':            helpShortcuts,
-  }
-  return map[file] || ''
-}
-
-// ─── 文档目录树 ──────────────────────────────────────
-
-interface DocNode {
+interface HelpTopic {
   id: string
   label: string
-  file?: string
-  children?: DocNode[]
-  icon?: string
+  icon: typeof BookOpen
+  category: string
+  sections: { id: string; title: string; content: string }[]
+  links?: { label: string; url: string }[]
 }
 
-const DOC_TREE: DocNode[] = [
+const TOPICS: HelpTopic[] = [
   {
-    id: 'getting-started', label: '入门指南', children: [
-      { id: 'index', label: '欢迎使用 ScriptWeaver', file: 'index.md' },
-      { id: 'getting-started', label: '快速开始', file: 'getting-started.md' },
+    id: 'getting-started', label: '快速上手', icon: Zap, category: '入门指南',
+    sections: [
+      { id: 'overview', title: 'ScriptWeaver 概览', content: `**ScriptWeaver** 是一款专为 Ren'Py 视觉小说的集成创作工具。它提供可视化剧本编辑、AI 辅助写作、素材管理、导出等功能。
+
+核心模块：
+- **场景导航 (左侧 #02)**：浏览和管理剧本场景
+- **舞台预览 (中央)**：实时预览角色立绘与背景
+- **时间轴 (底部)**：按行编辑剧本对白、选择支、标签
+- **素材库 (#01)**：管理背景图片、立绘、音频等
+- **角色管理 (#03)**：配置角色属性、表情、对话框样式` },
+      { id: 'first-script', title: '创建第一个剧本', content: `1. 点击左侧 **场景导航**，在第一章下添加新场景
+2. 在时间轴中输入第一行对白
+3. 点击顶部播放按钮预览效果
+4. 使用快捷键组合提升效率：
+
+| 快捷键 | 功能 |
+|--------|------|
+| Ctrl+K | 命令面板 |
+| Ctrl+S | 保存项目 |
+| Ctrl+Z | 撤销 |
+| Ctrl+Shift+Z | 重做 |
+| Tab | 缩进 |
+| Enter | 添加新行 |` },
     ],
+    links: [],
   },
   {
-    id: 'core-features', label: '核心功能', children: [
-      { id: 'stage-preview', label: '舞台预览', file: 'stage-preview.md' },
-      { id: 'timeline', label: '时间轴编辑', file: 'timeline.md' },
-      { id: 'script-overview', label: '剧本总览', file: 'script-overview.md' },
+    id: 'editor-basics', label: '编辑器基础', icon: FileText, category: '入门指南',
+    sections: [
+      { id: 'timeline', title: '时间轴编辑', content: `**时间轴**是 ScriptWeaver 的核心编辑区，以行列表形式展示剧本。
+
+每行支持：
+- **标签 (label)**：跳转锚点，如 \`chapter1_start\`
+- **对话行**：角色名 + 对话框内容
+- **选择支行**：带 target_label 跳转的分支选项
+- **背景/立绘变更**：scene / show 命令
+
+单击行可编辑属性，双击可快速定位到场景导航。` },
+      { id: 'docks', title: '可停靠面板 (Dock)', content: `ScriptWeaver 采用 IDE 式**可停靠布局**：
+
+- **舞台 (中央)**：永久占据最大空间，不可折叠
+- **时间轴 (底部)**：默认 320px 高，可折叠到 38px
+- **左侧 Dock**：素材库、场景导航、AI 面板等
+- **右侧 Dock**：角色管理、变量监视器等
+
+每个 Dock 面板可独立折叠成 44px 细轨，点击图标展开。` },
     ],
+    links: [],
   },
   {
-    id: 'asset-mgmt', label: '资源管理', children: [
-      { id: 'asset-manager', label: '素材管理', file: 'asset-manager.md' },
-      { id: 'character-manager', label: '角色管理', file: 'character-manager.md' },
+    id: 'ai-copilot', label: 'AI 编剧 Copilot', icon: Sparkles, category: 'AI 功能',
+    sections: [
+      { id: 'ai-modes', title: '三种 AI 模式', content: `**舞台监督模式**：AI 导演辅助编排场景。输入场景意图，AI 返回角色调度、节奏建议、演出指导。
+
+**文学导师模式**：分析剧本结构、角色弧光与台词质量。粘贴剧本片段，获取结构诊断与改进建议。
+
+**剧情蓝图模式**：输入故事梗概，AI 自动生成网状分歧剧情树，包含：
+- 起点节点 → 分支节点 → 结局节点
+- 自动挂载角色与表情
+- 选择支自动插入带 jump 标签
+- 变量操作 (如 heroine_trust += 1)` },
+      { id: 'ai-config', title: 'AI 配置', content: `在**设置 (#11) > AI 配置**中填入 OpenAI 兼容 API Key。
+
+支持的模型：
+- GPT-4 / GPT-4 Turbo / GPT-3.5 Turbo
+- Claude 3 Opus / Sonnet
+- DeepSeek Chat
+
+API Key 加密存储在本地 userData，不会上传到任何服务器。` },
     ],
+    links: [],
   },
   {
-    id: 'ai-creative', label: 'AI 创作', children: [
-      { id: 'ai-copilot', label: 'AI 编剧 Copilot', file: 'ai-copilot.md' },
-      { id: 'tts-synthesis', label: 'TTS 语音合成', file: 'tts-synthesis.md' },
+    id: 'assets', label: '素材管理', icon: Download, category: '素材与资源',
+    sections: [
+      { id: 'import-assets', title: '导入素材', content: `导入素材有两种方式：
+
+1. **拖拽导入**：从文件管理器拖拽图片/音频到素材库
+2. **文件选择器**：点击导入按钮选择文件 (电子版内更推荐拖拽)
+
+支持的格式：
+- 图片：PNG / JPG / WebP
+- 音频：WAV / MP3 / OGG
+
+导入后素材落入本地存储区，通过 sw-asset:// 协议流式直读，不占用内存。` },
+      { id: 'organize', title: '组织素材', content: `素材库支持：
+- **分类筛选**：背景/立绘/音频/视频
+- **搜索**：按文件名查找
+- **排序**：最近导入/名称/类型
+- **视图切换**：紧凑卡片/标准/大图模式
+- **重命名与删除**：右键素材卡片操作
+
+音频素材自带波形预览播放器，可直接试听。` },
     ],
+    links: [],
   },
   {
-    id: 'advanced', label: '进阶功能', children: [
-      { id: 'effects-lab', label: '特效工坊', file: 'effects-lab.md' },
-      { id: 'export', label: '导出发布', file: 'export.md' },
+    id: 'renpy-hub', label: "Ren'Py 生态", icon: Globe, category: "Ren'Py 知识库",
+    sections: [
+      { id: 'audit', title: '特效全量审计', content: `**Ren'Py 生态大厅 (#06)** 提供 19 大类 Ren'Py 特效的全量审计清单：
+
+已全覆盖 (16 类)：基础转场、裁剪、位移、缩放、透明度、位置变换、颜色、裁剪角、3D 仿射、缓动函数、ATL 语句、内置定位、3D 舞台、粒子、矩阵滤镜
+
+补充覆盖 (3 类)：QTE 限时选择、NVL 小说模式、后处理滤镜 —— 已在插件 DB 与语法学院中完整补全，每个特效均有代码范例。` },
+      { id: 'plugins', title: '社区插件 Hub', content: `12 个高质量 Ren'Py 社区插件，6 大分类：
+
+- **角色表演**：Live2D 集成、Kinetic 动态文字、立绘自动口型
+- **UI 界面**：手机短信模拟、CG 鉴赏厅、音乐鉴赏厅
+- **小游戏**：小游戏模板、QTE 限时选择、好感度日程
+- **系统引擎**：日历时间、成就系统、道具背包
+- **视觉滤镜**：天气粒子、后处理滤镜 (CRT/VHS)
+- **NVL 模式**：NVL 扩展风格包
+
+每个插件附带接口预览、代码范例与安装说明，可一键插入剧本。` },
     ],
+    links: [],
   },
   {
-    id: 'reference', label: '参考', children: [
-      { id: 'shortcuts', label: '快捷键速查', file: 'shortcuts.md' },
-      { id: 'faq', label: '常见问题', file: 'faq.md' },
+    id: 'export', label: '导出与发布', icon: ExternalLink, category: '导出与发布',
+    sections: [
+      { id: 'renpy-export', title: "导出为 Ren'Py 工程", content: `将 ScriptWeaver 项目导出为标准 Ren'Py 工程：
+
+1. 点击 **导出到 Ren'Py** 按钮
+2. 选择目标目录
+3. 自动生成 script.rpy、images/、audio/ 等标准目录结构
+
+导出规则：
+- 所有过场动作会被转为标准 ATL 变换
+- 选择支自动生成 menu 块
+- 不支持的特性会标注为注释而非生成错误代码` },
+      { id: 'multi-export', title: '多格式导出', content: `**多格式导出 (#09)** 支持四种导出格式：
+
+- **Markdown (.md)**：带格式文档，适合分享
+- **纯文本 (.txt)**：纯台词文本
+- **HTML 打印 (.html)**：网页排版，适合打印
+- **CV 台词表 (.csv)**：按角色分组的台词统计
+
+可指定角色过滤，导出的预览展示前 80 行，完整内容通过下载获取。` },
+    ],
+    links: [],
+  },
+  {
+    id: 'shortcuts', label: '快捷键', icon: Keyboard, category: '参考',
+    sections: [
+      { id: 'all-shortcuts', title: '全部快捷键', content: `| 快捷键 | 功能 |
+|--------|------|
+| Ctrl+K | 命令面板 |
+| Ctrl+S | 保存项目 |
+| Ctrl+Z | 撤销 |
+| Ctrl+Shift+Z | 重做 |
+| Ctrl+E | 导出到 Ren'Py |
+| Tab | 缩进当前行 |
+| Enter | 添加新行 |
+| Delete / Backspace | 删除选中元素 |
+| Esc | 关闭弹窗 / 取消选择 |` },
+    ],
+    links: [],
+  },
+  {
+    id: 'faq', label: '常见问题', icon: HelpCircle, category: '支持',
+    sections: [
+      { id: 'faq-items', title: 'FAQ', content: `**Q: 素材导入后不显示？**
+A: 确认在 Electron 应用内使用（非浏览器），素材通过 sw-asset:// 私有协议加载。
+
+**Q: AI 功能无响应？**
+A: 检查设置中的 API Key 是否正确，端点 URL 是否可达。
+
+**Q: 导出到 Ren'Py 后素材缺失？**
+A: 导入素材后需保存项目 (.swproj) 再导出。
+
+**Q: 如何反馈 Bug 或建议？**
+A: 欢迎通过 GitHub Issue 或内置反馈渠道联系我们。` },
+    ],
+    links: [
+      { label: 'GitHub 仓库', url: 'https://github.com' },
+      { label: 'Ren\'Py 官方文档', url: 'https://renpy.org/doc/html/' },
     ],
   },
 ]
 
-function flattenDocs(nodes: DocNode[]): DocNode[] {
-  return nodes.flatMap((n) => (n.children ? [n, ...flattenDocs(n.children)] : [n]))
-}
-
-function findDocById(nodes: DocNode[], id: string): DocNode | undefined {
-  for (const n of nodes) {
-    if (n.id === id) return n
-    if (n.children) {
-      const found = findDocById(n.children, id)
-      if (found) return found
-    }
-  }
-  return undefined
-}
-
-// ─── 提示框 / Alert 组件 ────────────────────────────
-
-const alertStyles = {
-  info:    { bg: 'bg-info/8',      border: 'border-info/30',   icon: Info,           iconColor: 'text-info' },
-  warning: { bg: 'bg-warning/8',   border: 'border-warning/30',icon: AlertTriangle,  iconColor: 'text-warning' },
-  tip:     { bg: 'bg-success/8',   border: 'border-success/30',icon: Lightbulb,      iconColor: 'text-success' },
-  danger:  { bg: 'bg-danger/8',    border: 'border-danger/30', icon: AlertTriangle,  iconColor: 'text-danger' },
-}
-
-function AlertBox({ type, children }: { type: 'info' | 'warning' | 'tip' | 'danger'; children: React.ReactNode }) {
-  const style = alertStyles[type]
-  const Icon = style.icon
-  return (
-    <div className={`my-3 flex items-start gap-2.5 px-3 py-2.5 rounded-lg border ${style.bg} ${style.border}`}>
-      <Icon size={15} className={`${style.iconColor} shrink-0 mt-px`} />
-      <div className="text-sm text-fg-muted leading-relaxed">{children}</div>
-    </div>
-  )
-}
-
-// ─── 代码块组件（带语言标签） ──────────────────────
-
-function CodeBlock({ language, children }: { language?: string; children: string }) {
-  const [copied, setCopied] = useState(false)
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(children)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-  return (
-    <div className="my-3 rounded-lg border border-edge/8 overflow-hidden bg-surface-1-tinted">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-edge/6 bg-surface-tinted/50">
-        <span className="text-xs font-medium text-fg-faint uppercase tracking-wide">
-          {language || 'text'}
-        </span>
-        <button
-          onClick={handleCopy}
-          className="text-xs text-fg-subtle hover:text-fg-muted transition-colors px-2 py-0.5 rounded hover:bg-surface-hover/60"
-        >
-          {copied ? '已复制' : '复制'}
-        </button>
-      </div>
-      <pre className="p-3 overflow-x-auto">
-        <code className="text-sm leading-relaxed font-mono text-fg-default">{children}</code>
-      </pre>
-    </div>
-  )
-}
-
-// ─── 主页面 ────────────────────────────────────────────
-
 export default function HelpCenter() {
-  const [activeDoc, setActiveDoc] = useState('index')
-  const [content, setContent] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [selectedTopic, setSelectedTopic] = useState<string>('getting-started')
   const [searchQuery, setSearchQuery] = useState('')
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    new Set(DOC_TREE.map((g) => g.id))
-  )
-  const [headings, setHeadings] = useState<{ id: string; text: string; level: number }[]>([])
-  const [activeHeading, setActiveHeading] = useState('')
-  const [showEditor, setShowEditor] = useState(false)
-  const [editingDoc, setEditingDoc] = useState('')
-  const [editorContent, setEditorContent] = useState('')
-  const [editDrafts, setEditDrafts] = useState<Record<string, string>>({})
 
-  const contentRef = useRef<HTMLDivElement>(null)
-  const headingRefs = useRef<Map<string, HTMLElement>>(new Map())
+  const topic = TOPICS.find((t) => t.id === selectedTopic) ?? TOPICS[0]
 
-  // ─── 文档加载 ─────────────────────────────────
-  const loadDoc = useCallback(async (docId: string) => {
-    const doc = findDocById(DOC_TREE, docId)
-    if (!doc?.file) return
-
-    // 检查是否有本地编辑草稿
-    if (editDrafts[docId]) {
-      setContent(editDrafts[docId])
-      setActiveDoc(docId)
-      return
-    }
-
-    setLoading(true)
-    setError('')
-    setActiveDoc(docId)
-    try {
-      const text = resolveDocContent(doc.file)
-      if (!text) throw new Error('empty')
-      setContent(text)
-    } catch {
-      setError('文档加载失败，请稍后重试')
-      setContent('')
-    } finally {
-      setLoading(false)
-    }
-  }, [editDrafts])
-
-  useEffect(() => {
-    loadDoc(activeDoc)
-  }, [activeDoc, loadDoc])
-
-  // ─── 提取标题 ──────────────────────────────────
-  useEffect(() => {
-    if (!content || !contentRef.current) return
-    // 等一小段时间让 DOM 渲染完成
-    const timer = setTimeout(() => {
-      const els = contentRef.current?.querySelectorAll('h1[id], h2[id]')
-      if (!els) return
-      const h: { id: string; text: string; level: number }[] = []
-      const map = new Map<string, HTMLElement>()
-      els.forEach((el) => {
-        const htmlEl = el as HTMLElement
-        h.push({ id: htmlEl.id, text: htmlEl.textContent || '', level: Number(htmlEl.tagName[1]) })
-        map.set(htmlEl.id, htmlEl)
-      })
-      setHeadings(h)
-      headingRefs.current = map
-    }, 150)
-    return () => clearTimeout(timer)
-  }, [content])
-
-  // ─── IntersectionObserver 滚动追踪 ──────────────
-  useEffect(() => {
-    if (headings.length === 0) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-        if (visible.length > 0) {
-          setActiveHeading(visible[0].target.id)
-        }
-      },
-      { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
-    )
-    const currentMap = headingRefs.current
-    currentMap.forEach((el) => observer.observe(el))
-    return () => observer.disconnect()
-  }, [headings])
-
-  // ─── 目录点击平滑滚动 ──────────────────────────
-  const scrollToHeading = useCallback((id: string) => {
-    const el = headingRefs.current.get(id)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      setActiveHeading(id)
-    }
+  // Group topics by category
+  const grouped = useMemo(() => {
+    const map = new Map<string, HelpTopic[]>()
+    TOPICS.forEach((t) => {
+      const existing = map.get(t.category) ?? []
+      existing.push(t)
+      map.set(t.category, existing)
+    })
+    return Array.from(map.entries())
   }, [])
 
-  // ─── 搜索过滤 ──────────────────────────────────
-  const filteredGroups = !searchQuery.trim() ? DOC_TREE : DOC_TREE
-    .map((group) => ({
-      ...group,
-      children: group.children?.filter((child) =>
-        child.label.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    }))
-    .filter((group) => group.children && group.children.length > 0)
-
-  // 展开/折叠分组
-  const toggleGroup = (id: string) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
+  // Search results
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return null
+    const q = searchQuery.toLowerCase()
+    const results: { topicId: string; sectionId: string; title: string }[] = []
+    TOPICS.forEach((t) => {
+      t.sections.forEach((s) => {
+        if (s.title.toLowerCase().includes(q) || s.content.toLowerCase().includes(q)) {
+          results.push({ topicId: t.id, sectionId: s.id, title: s.title })
+        }
+      })
     })
-  }
+    return results.slice(0, 10)
+  }, [searchQuery])
 
-  // ─── 编辑器 ────────────────────────────────────
-  const openEditor = () => {
-    const doc = findDocById(DOC_TREE, activeDoc)
-    setEditingDoc(doc?.file || activeDoc)
-    setEditorContent(editDrafts[activeDoc] || content)
-    setShowEditor(true)
+  const handleSearchSelect = (topicId: string, sectionId: string) => {
+    setSelectedTopic(topicId)
+    setSearchQuery('')
+    setTimeout(() => {
+      document.getElementById(`section-${sectionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
   }
-
-  const saveEditor = () => {
-    const draft = editorContent.trim()
-    if (draft) {
-      setEditDrafts((prev) => ({ ...prev, [activeDoc]: draft }))
-      setContent(draft)
-      toast('草稿已保存', 'success')
-    } else {
-      const newDrafts = { ...editDrafts }
-      delete newDrafts[activeDoc]
-      setEditDrafts(newDrafts)
-      loadDoc(activeDoc)
-    }
-    setShowEditor(false)
-  }
-
-  const activeLabel = findDocById(DOC_TREE, activeDoc)?.label || '帮助中心'
 
   return (
     <div className="flex h-full select-none">
-      {/* ── 左侧：树形导航 ──────────────────────── */}
-      <div className="w-56 shrink-0 border-r border-edge/8 flex flex-col bg-surface-tinted/50">
-        {/* 搜索 */}
-        <div className="px-3 pt-3 pb-2">
+      {/* Left Nav: 200px */}
+      <div className="w-[200px] shrink-0 border-r border-edge/10 flex flex-col">
+        <div className="px-4 py-5 border-b border-edge/10">
+          <div className="flex items-center gap-2">
+            <BookOpen size={15} className="text-primary" />
+            <span className="text-[14px] font-semibold text-fg">帮助中心</span>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto py-3 px-2">
+          {grouped.map(([category, topics]) => (
+            <div key={category} className="mb-4 last:mb-0">
+              <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.08em] px-2 mb-1.5">
+                {category}
+              </div>
+              {topics.map((t) => {
+                const Icon = t.icon
+                const active = selectedTopic === t.id
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTopic(t.id)}
+                    className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-left transition-colors ${
+                      active
+                        ? 'bg-primary/10 text-primary border border-primary/15 font-medium'
+                        : 'text-fg-muted hover:text-fg hover:bg-surface-2/60 border border-transparent'
+                    }`}
+                  >
+                    <Icon size={15} className={active ? 'text-primary' : ''} />
+                    {t.label}
+                    {active && <span className="ml-auto w-1 h-4 rounded-full bg-primary/60" />}
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Middle Content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        {/* Search + Header */}
+        <div className="shrink-0 border-b border-edge/10 px-8 py-4">
           <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-faint" />
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-faint" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索文档..."
-              className="w-full pl-7 pr-2 py-1.5 text-xs rounded-md border border-edge/10
-                bg-surface-2-tinted/60 text-fg-default placeholder:text-fg-faint
-                focus:outline-none focus:border-primary/30 transition-colors"
+              placeholder="搜索帮助内容..."
+              className="w-full rounded-lg border border-edge/10 bg-surface pl-10 pr-4 py-2 text-[13px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
             />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-faint hover:text-fg">
+                <X size={14} />
+              </button>
+            )}
           </div>
+
+          {/* Search Results Dropdown */}
+          {searchResults && (
+            <div className="mt-2 rounded-lg border border-edge/10 bg-surface shadow-lg overflow-hidden">
+              {searchResults.length === 0 ? (
+                <div className="px-4 py-3 text-[13px] text-fg-muted text-center">未找到匹配内容</div>
+              ) : (
+                searchResults.map((r) => (
+                  <button
+                    key={`${r.topicId}-${r.sectionId}`}
+                    onClick={() => handleSearchSelect(r.topicId, r.sectionId)}
+                    className="w-full text-left px-4 py-2.5 text-[13px] text-fg hover:bg-surface-hover/40 border-b border-edge/8 last:border-b-0 flex items-center gap-2 transition-colors"
+                  >
+                    <Search size={12} className="text-fg-faint shrink-0" />
+                    <span className="truncate">{r.title}</span>
+                    <ChevronRight size={12} className="text-fg-faint ml-auto shrink-0" />
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
-        {/* 树形导航 */}
-        <nav className="flex-1 overflow-y-auto px-2 pb-3">
-          {filteredGroups.map((group) => {
-            const expanded = expandedGroups.has(group.id)
-            return (
-              <div key={group.id} className="mb-1">
-                <button
-                  onClick={() => toggleGroup(group.id)}
-                  className="w-full flex items-center justify-between px-2 py-1.5 rounded-md
-                    text-xs font-medium text-fg-muted hover:bg-surface-hover/60 transition-colors"
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-[680px] px-8 py-6">
+            {/* Topic Title */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2.5 mb-1">
+                {React.createElement(topic.icon, { size: 18, className: 'text-primary' })}
+                <h1 className="text-[16px] font-semibold text-fg">{topic.label}</h1>
+              </div>
+              <span className="text-[12px] text-fg-faint">{topic.category}</span>
+            </div>
+
+            {/* Sections */}
+            <div className="space-y-6">
+              {topic.sections.map((section) => (
+                <div
+                  key={section.id}
+                  id={`section-${section.id}`}
+                  className="rounded-xl border border-edge/10 bg-surface p-5"
                 >
-                  <span>{group.label}</span>
-                  {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                </button>
-                {expanded && group.children && (
-                  <div className="ml-1">
-                    {group.children.map((child) => {
-                      const isActive = activeDoc === child.id
-                      return (
-                        <button
-                          key={child.id}
-                          onClick={() => setActiveDoc(child.id)}
-                          className={`w-full flex items-center gap-2 pl-4 pr-2 py-1.5 rounded-md text-left
-                            text-sm transition-all duration-150
-                            ${isActive
-                              ? 'bg-primary/10 text-primary border border-primary/20 font-medium'
-                              : 'text-fg-muted hover:bg-surface-hover/60 hover:border-primary/10 border border-transparent'
-                            }`}
-                        >
-                          <FileText size={13} className={isActive ? 'text-primary' : 'text-fg-faint'} />
-                          <span className="truncate">{child.label}</span>
-                        </button>
-                      )
-                    })}
+                  <h2 className="text-[14px] font-medium text-fg mb-3 pb-3 border-b border-edge/8">{section.title}</h2>
+                  <div className="prose-help">
+                    {renderMarkdown(section.content)}
                   </div>
-                )}
-              </div>
-            )
-          })}
-          {filteredGroups.length === 0 && (
-            <p className="text-xs text-fg-faint text-center py-4">未找到相关文档</p>
-          )}
-        </nav>
+                </div>
+              ))}
+            </div>
 
-        <div className="px-3 py-2 border-t border-edge/6">
-          <button
-            onClick={openEditor}
-            className="w-full text-xs text-fg-subtle hover:text-primary transition-colors
-              py-1.5 px-2 rounded hover:bg-surface-hover/60 text-left"
-          >
-            编辑当前页...
-          </button>
-        </div>
-      </div>
-
-      {/* ── 中间：Markdown 正文 ──────────────────── */}
-      <div
-        ref={contentRef}
-        className="flex-1 overflow-y-auto px-8 py-6"
-      >
-        {loading && (
-          <div className="flex items-center justify-center h-32">
-            <p className="text-sm text-fg-faint">加载中...</p>
-          </div>
-        )}
-        {error && (
-          <div className="flex items-center justify-center h-32">
-            <p className="text-sm text-danger">{error}</p>
-          </div>
-        )}
-        {!loading && !error && (
-          <div className="prose-content max-w-3xl">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({ children, ...props }) => {
-                  const id = String(children).replace(/\s+/g, '-').toLowerCase()
-                  return <h1 id={id} {...props}>{children}</h1>
-                },
-                h2: ({ children, ...props }) => {
-                  const id = String(children).replace(/\s+/g, '-').toLowerCase()
-                  return <h2 id={id} {...props}>{children}</h2>
-                },
-                code: ({ className, children, ...props }: any) => {
-                  const match = /language-(\w+)/.exec(className || '')
-                  const isInline = !match && !String(children).includes('\n')
-                  if (isInline) {
-                    return <code className={className} {...props}>{children}</code>
-                  }
-                  return (
-                    <CodeBlock language={match ? match[1] : undefined}>
-                      {String(children).replace(/\n$/, '')}
-                    </CodeBlock>
-                  )
-                },
-                blockquote: ({ children, ...props }: any) => {
-                  // 检测是否为 Alert 提示框
-                  const rawText = String((children as any)?.props?.children || '')
-                  if (rawText.startsWith('[!INFO]') || rawText.startsWith('[!info]'))
-                    return <AlertBox type="info">{rawText.replace(/^\[!INFO\]\s*/i, '')}</AlertBox>
-                  if (rawText.startsWith('[!WARNING]') || rawText.startsWith('[!warning]'))
-                    return <AlertBox type="warning">{rawText.replace(/^\[!WARNING\]\s*/i, '')}</AlertBox>
-                  if (rawText.startsWith('[!TIP]') || rawText.startsWith('[!tip]'))
-                    return <AlertBox type="tip">{rawText.replace(/^\[!TIP\]\s*/i, '')}</AlertBox>
-                  if (rawText.startsWith('[!DANGER]') || rawText.startsWith('[!danger]'))
-                    return <AlertBox type="danger">{rawText.replace(/^\[!DANGER\]\s*/i, '')}</AlertBox>
-                  return <blockquote {...props}>{children}</blockquote>
-                },
-                table: ({ children, ...props }) => (
-                  <div className="overflow-x-auto my-3 rounded-lg border border-edge/8">
-                    <table {...props}>{children}</table>
-                  </div>
-                ),
-                th: ({ children, ...props }) => (
-                  <th className="px-3 py-2 text-xs font-medium text-fg-muted bg-surface-tinted/60 border-b border-edge/8 text-left" {...props}>
-                    {children}
-                  </th>
-                ),
-                td: ({ children, ...props }) => (
-                  <td className="px-3 py-2 text-sm text-fg-default border-b border-edge/4" {...props}>
-                    {children}
-                  </td>
-                ),
-                a: ({ href, children, ...props }) => {
-                  const isExternal = href?.startsWith('http')
-                  return (
+            {/* Links */}
+            {topic.links && topic.links.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-edge/10">
+                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-3">相关链接</h3>
+                <div className="flex flex-wrap gap-2">
+                  {topic.links.map((link) => (
                     <a
-                      href={href}
-                      target={isExternal ? '_blank' : undefined}
-                      rel={isExternal ? 'noopener noreferrer' : undefined}
-                      className="inline-flex items-center gap-0.5 text-primary hover:underline"
-                      {...props}
+                      key={link.label}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2 text-[13px] text-fg-muted hover:text-fg hover:border-primary/15 transition-colors"
                     >
-                      {children}
-                      {isExternal && <ExternalLink size={11} />}
+                      <ExternalLink size={12} />
+                      {link.label}
                     </a>
-                  )
-                },
-              }}
-            >
-              {content}
-            </ReactMarkdown>
-          </div>
-        )}
-      </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-      {/* ── 右侧：本页目录（On This Page） + 滚动追踪 ── */}
-      <div className="w-48 shrink-0 border-l border-edge/8 overflow-y-auto bg-surface-tinted/50">
-        <div className="px-3 pt-4 pb-2">
-          <h3 className="text-xs font-medium text-fg-muted uppercase tracking-[0.08em]">本页内容</h3>
-        </div>
-        <nav className="px-2 pb-4">
-          {headings.length === 0 && content && (
-            <p className="text-xs text-fg-faint px-2 py-4 text-center">无标题</p>
-          )}
-          {headings.map((h, i) => {
-            const isActive = activeHeading === h.id
-            return (
-              <button
-                key={`${h.id}-${i}`}
-                onClick={() => scrollToHeading(h.id)}
-                className={`w-full text-left py-1 px-2 rounded-md transition-colors text-xs
-                  ${h.level === 2 ? 'pl-4' : ''}
-                  ${isActive
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'text-fg-subtle hover:text-fg-muted hover:bg-surface-hover/40'
-                  }`}
-              >
-                <span className="block truncate">{h.text}</span>
-              </button>
-            )
-          })}
-        </nav>
-      </div>
-
-      {/* ── Markdown 编辑器浮层 ──────────────────── */}
-      {showEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-canvas-tinted/80 backdrop-blur-sm">
-          <div className="w-[80vw] max-w-4xl h-[80vh] panel flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-edge/8">
-              <div className="flex items-center gap-2">
-                <BookOpen size={14} className="text-fg-muted" />
-                <span className="text-sm font-medium text-fg-default">
-                  编辑 - {activeLabel}
-                </span>
-              </div>
-              <button
-                onClick={() => setShowEditor(false)}
-                className="p-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            {/* 分屏编辑+预览 */}
-            <div className="flex-1 flex overflow-hidden">
-              <div className="flex-1 flex flex-col border-r border-edge/8">
-                <div className="px-3 py-1.5 border-b border-edge/6 bg-surface-tinted/40">
-                  <span className="text-xs text-fg-faint">Markdown 源码</span>
+            {/* Feedback */}
+            <div className="mt-8 rounded-xl border border-edge/10 bg-surface p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+                  <MessageCircle size={18} className="text-primary" />
                 </div>
-                <textarea
-                  value={editorContent}
-                  onChange={(e) => setEditorContent(e.target.value)}
-                  className="flex-1 p-4 text-sm font-mono resize-none bg-transparent text-fg-default
-                    outline-none placeholder:text-fg-faint"
-                  placeholder="输入 Markdown 内容..."
-                />
-              </div>
-              <div className="flex-1 flex flex-col">
-                <div className="px-3 py-1.5 border-b border-edge/6 bg-surface-tinted/40">
-                  <span className="text-xs text-fg-faint">实时预览</span>
+                <div>
+                  <div className="text-[13px] font-medium text-fg">还有问题？</div>
+                  <div className="text-[12px] text-fg-muted mt-0.5">欢迎通过 GitHub Issue 或内置反馈渠道联系我们</div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 prose-content text-sm">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {editorContent}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            </div>
-            {/* 底部操作条 */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-edge/8 bg-surface-tinted/50">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => insertMarkdown('**', '**', '加粗文字')}
-                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted font-bold"
-                  title="加粗"
-                >B</button>
-                <button
-                  onClick={() => insertMarkdown('*', '*', '斜体文字')}
-                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted italic"
-                  title="斜体"
-                >I</button>
-                <span className="w-px bg-edge/10 mx-1" />
-                <button
-                  onClick={() => insertMarkdown('\n> ', '', '引用文字')}
-                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted"
-                  title="引用"
-                >"</button>
-                <button
-                  onClick={() => insertMarkdown('`', '`', '代码')}
-                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted font-mono"
-                  title="行内代码"
-                >{`<>`}</button>
-                <button
-                  onClick={() => insertMarkdown('\n```\n', '\n```\n', '代码块')}
-                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted"
-                  title="代码块"
-                >{`{ }`}</button>
-                <span className="w-px bg-edge/10 mx-1" />
-                <button
-                  onClick={() => insertMarkdown('\n| 列A | 列B |\n| --- | --- |\n| ', ' |\n', '值A')}
-                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted"
-                  title="表格"
-                >表</button>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowEditor(false)}
-                  className="text-xs px-3 py-1.5 rounded-md text-fg-subtle hover:bg-surface-hover/60"
-                >取消</button>
-                <button
-                  onClick={saveEditor}
-                  className="text-xs px-3 py-1.5 rounded-md bg-primary/15 text-primary hover:bg-primary/25
-                    font-medium transition-colors"
-                >保存草稿</button>
               </div>
             </div>
           </div>
         </div>
-      )}
 
-      {/* 编辑器插入标记辅助 */}
+        {/* Right TOC */}
+        <div className="hidden xl:block w-[180px] shrink-0 border-l border-edge/10 overflow-y-auto">
+          <div className="px-3 py-5">
+            <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-3 px-1">页面目录</div>
+            {topic.sections.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  document.getElementById(`section-${s.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }}
+                className="w-full text-left px-3 py-1.5 text-[12px] text-fg-muted hover:text-fg hover:bg-surface-2/60 rounded-md transition-colors truncate"
+              >
+                {s.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   )
+}
 
-  function insertMarkdown(prefix: string, suffix: string, placeholder: string) {
-    const ta = document.querySelector('textarea') as HTMLTextAreaElement
-    if (!ta) return
-    const start = ta.selectionStart
-    const end = ta.selectionEnd
-    const before = editorContent.slice(0, start)
-    const selected = editorContent.slice(start, end) || placeholder
-    const after = editorContent.slice(end)
-    setEditorContent(before + prefix + selected + suffix + after)
+// ── Simple Markdown Renderer ──────────────────────────────────────
+function renderMarkdown(md: string): React.ReactNode {
+  const lines = md.split('\n')
+  const elements: React.ReactNode[] = []
+  let i = 0
+  let key = 0
+
+  while (i < lines.length) {
+    const line = lines[i]
+
+    // Empty line
+    if (line.trim() === '') { i++; continue }
+
+    // Heading
+    if (line.startsWith('### ')) {
+      elements.push(<h3 key={key++} className="text-[13px] font-medium text-fg mt-4 mb-2">{line.slice(4)}</h3>)
+      i++; continue
+    }
+    if (line.startsWith('## ')) {
+      elements.push(<h2 key={key++} className="text-[14px] font-medium text-fg mt-4 mb-2">{line.slice(3)}</h2>)
+      i++; continue
+    }
+    if (line.startsWith('# ')) {
+      elements.push(<h1 key={key++} className="text-[15px] font-semibold text-fg mt-4 mb-2">{line.slice(2)}</h1>)
+      i++; continue
+    }
+
+    // Table
+    if (line.startsWith('|')) {
+      const tableLines: string[] = []
+      while (i < lines.length && lines[i].startsWith('|')) {
+        tableLines.push(lines[i]); i++
+      }
+      const headerCells = tableLines[0]?.split('|').filter(Boolean).map((c) => c.trim()) ?? []
+      const rows = tableLines.slice(2).map((r) => r.split('|').filter(Boolean).map((c) => c.trim()))
+      elements.push(
+        <div key={key++} className="overflow-x-auto my-3 rounded-lg border border-edge/10">
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="bg-surface-2/60">
+                {headerCells.map((c, ci) => (
+                  <th key={ci} className="px-3 py-2 text-left font-medium text-fg-muted border-b border-edge/10">{c}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, ri) => (
+                <tr key={ri} className="border-b border-edge/8 last:border-b-0">
+                  {row.map((c, ci) => (
+                    <td key={ci} className="px-3 py-2 text-fg">{c}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+      continue
+    }
+
+    // Code block
+    if (line.startsWith('```')) {
+      const codeLines: string[] = []
+      i++
+      while (i < lines.length && !lines[i].startsWith('```')) {
+        codeLines.push(lines[i]); i++
+      }
+      i++ // skip closing ```
+      elements.push(
+        <pre key={key++} className="bg-surface-2/80 rounded-lg border border-edge/10 p-3 my-3 overflow-x-auto text-[12px] font-mono text-fg-muted whitespace-pre-wrap">
+          {codeLines.join('\n')}
+        </pre>
+      )
+      continue
+    }
+
+    // Bullet list
+    if (line.match(/^[\*\-\d]\.?\s/)) {
+      const items: string[] = []
+      while (i < lines.length && lines[i].match(/^[\*\-\d]\.?\s/)) {
+        items.push(lines[i].replace(/^[\*\-\d]\.?\s/, '')); i++
+      }
+      elements.push(
+        <ul key={key++} className="list-disc list-inside my-2 space-y-1 text-[13px] text-fg leading-relaxed">
+          {items.map((item, ii) => <li key={ii}>{renderInlineMarkdown(item)}</li>)}
+        </ul>
+      )
+      continue
+    }
+
+    // Paragraph
+    elements.push(
+      <p key={key++} className="text-[13px] text-fg leading-relaxed my-2">{renderInlineMarkdown(line)}</p>
+    )
+    i++
   }
+
+  return elements.length > 0 ? elements : <p className="text-[13px] text-fg-muted italic">暂无内容</p>
+}
+
+function renderInlineMarkdown(text: string): React.ReactNode {
+  // Bold: **text**
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>
+    }
+    // Inline code: `text`
+    const codeParts = part.split(/(`[^`]+`)/g)
+    return codeParts.map((cp, j) => {
+      if (cp.startsWith('`') && cp.endsWith('`')) {
+        return <code key={j} className="font-mono text-[12px] bg-surface-2/80 px-1 rounded">{cp.slice(1, -1)}</code>
+      }
+      return cp
+    })
+  })
 }

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import {
   Atom, Cpu, Bug, Heart, ExternalLink,
-  RefreshCw, CheckCircle2, AlertTriangle
+  RefreshCw, CheckCircle2, AlertTriangle,
+  Sparkles, Globe, BookOpen
 } from 'lucide-react'
 
 const GithubIcon = ({ size = 16 }: { size?: number }) => (
@@ -11,13 +12,19 @@ const GithubIcon = ({ size = 16 }: { size?: number }) => (
 )
 
 const TECH_STACK = [
-  { icon: Cpu, label: 'Electron',     color: '#9FEAF9' },
-  { icon: Atom, label: 'React 18',    color: '#61DAFB' },
-  { label: 'TypeScript',  color: '#3178C6' },
-  { label: 'Vite',        color: '#BD34FE' },
-  { label: 'Tailwind',    color: '#38BDF8' },
-  { label: 'Zustand',     color: '#F5A623' },
-  { label: 'Ren\'Py 7.x', color: '#E95678' },
+  { icon: Cpu, label: 'Electron', color: '#9FEAF9' },
+  { icon: Atom, label: 'React 18', color: '#61DAFB' },
+  { label: 'TypeScript', color: '#3178C6' },
+  { label: 'Vite', color: '#BD34FE' },
+  { label: 'Tailwind', color: '#38BDF8' },
+  { label: 'Zustand', color: '#F5A623' },
+  { label: "Ren'Py 7.x", color: '#E95678' },
+]
+
+const FEATURES = [
+  { icon: Sparkles, label: 'AI 编剧 Copilot', desc: '舞台监督·文学导师·剧情蓝图三模式' },
+  { icon: Globe, label: "Ren'Py 生态大厅", desc: '特效审计·社区插件·语法学院' },
+  { icon: BookOpen, label: '全流程编辑器', desc: '场景导航·时间轴·素材管理·角色配置' },
 ]
 
 export default function About() {
@@ -53,117 +60,150 @@ export default function About() {
   }
 
   return (
-    <div className="flex flex-col items-center h-full overflow-y-auto px-8 py-10 select-none">
-      {/* Logo & Brand */}
-      <div className="flex flex-col items-center mb-8">
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-rose-500 flex items-center justify-center shadow-lg mb-5 ring-1 ring-white/10">
-          <span className="text-white text-3xl font-semibold tracking-tight">SW</span>
-        </div>
-        <h1 className="text-lg font-semibold text-fg-default mb-1">ScriptWeaver</h1>
-        <p className="text-sm text-fg-subtle mb-3">视觉小说引擎 · 一站式创作工具</p>
-
-        {/* Version & Update */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-surface-3-tinted/60 text-fg-muted">
-            v{version}
-          </span>
-          <button
-            onClick={handleCheckUpdate}
-            disabled={updateStatus === 'checking'}
-            className="inline-flex items-center gap-1.5 text-xs text-fg-subtle hover:text-primary
-              transition-colors px-2.5 py-1 rounded-md hover:bg-surface-hover/60
-              disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {updateStatus === 'checking' ? (
-              <RefreshCw size={13} className="animate-spin" />
-            ) : updateStatus === 'up-to-date' ? (
-              <CheckCircle2 size={13} className="text-success" />
-            ) : updateStatus === 'available' ? (
-              <AlertTriangle size={13} className="text-signal" />
-            ) : null}
-            <span>
-              {updateStatus === 'checking' ? '检查中...'
-               : updateStatus === 'up-to-date' ? '已是最新'
-               : updateStatus === 'available' ? '发现新版本'
-               : '检查更新'}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div className="w-full max-w-[420px] border-t border-edge/8 mb-8" />
-
-      {/* Tech Stack */}
-      <div className="w-full max-w-[420px] mb-8">
-        <h2 className="text-xs font-medium text-fg-faint uppercase tracking-[0.12em] mb-4 text-center">
-          技术栈
-        </h2>
-        <div className="flex flex-wrap justify-center gap-2">
-          {TECH_STACK.map((tech) => {
-            const Icon = tech.icon
-            return (
-              <span
-                key={tech.label}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                  text-xs font-medium border border-edge/8
-                  bg-surface-tinted/60 text-fg-muted
-                  transition-all duration-150 hover:bg-surface-hover/60 hover:border-primary/20 hover:shadow-sm hover:-translate-y-px"
-              >
-                {Icon && <Icon size={13} style={{ color: tech.color }} />}
-                <span style={{ color: tech.color }}>{tech.label}</span>
-              </span>
-            )
-          })}
+    <div className="flex h-full flex-col overflow-y-auto select-none">
+      {/* Hero Section: full-width gradient banner */}
+      <div className="relative shrink-0 overflow-hidden border-b border-edge/10">
+        {/* subtle gradient backdrop */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
+        <div className="relative px-8 py-10">
+          <div className="flex items-center gap-6">
+            {/* Logo */}
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-rose-500 flex items-center justify-center shadow-lg shrink-0 ring-1 ring-white/10">
+              <span className="text-white text-2xl font-semibold">SW</span>
+            </div>
+            {/* Brand */}
+            <div>
+              <h1 className="text-[18px] font-semibold text-fg">ScriptWeaver</h1>
+              <p className="mt-1 text-[13px] text-fg-muted">视觉小说引擎 · 一站式创作工具</p>
+              <div className="mt-3 flex items-center gap-3">
+                <span className="text-[12px] font-medium px-2.5 py-1 rounded-full bg-surface-2/80 text-fg-muted border border-edge/10">
+                  v{version}
+                </span>
+                <button
+                  onClick={handleCheckUpdate}
+                  disabled={updateStatus === 'checking'}
+                  className="inline-flex items-center gap-1.5 text-[12px] text-fg-muted hover:text-fg transition-colors disabled:opacity-50"
+                >
+                  {updateStatus === 'checking' ? (
+                    <RefreshCw size={13} className="animate-spin" />
+                  ) : updateStatus === 'up-to-date' ? (
+                    <CheckCircle2 size={13} className="text-emerald-500" />
+                  ) : updateStatus === 'available' ? (
+                    <AlertTriangle size={13} className="text-amber-500" />
+                  ) : null}
+                  <span>
+                    {updateStatus === 'checking' ? '检查中...'
+                     : updateStatus === 'up-to-date' ? '已是最新'
+                     : updateStatus === 'available' ? '发现新版本'
+                     : '检查更新'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* License */}
-      <div className="w-full max-w-[420px] mb-8 text-center">
-        <h2 className="text-xs font-medium text-fg-faint uppercase tracking-[0.12em] mb-3">
-          开源协议
-        </h2>
-        <p className="text-sm text-fg-subtle leading-relaxed">
-          基于 <span className="text-fg-muted font-medium">MIT License</span> 开源
-          · Copyright &copy; 2026 ScriptWeaver Team
-          <br />
-          自由使用、修改与分发，保留版权声明即可
-        </p>
-      </div>
+      {/* Content Grid: 3 columns on wide screens */}
+      <div className="flex-1 px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-      {/* Community */}
-      <div className="w-full max-w-[420px] mb-10">
-        <h2 className="text-xs font-medium text-fg-faint uppercase tracking-[0.12em] mb-3 text-center">
-          社区与反馈
-        </h2>
-        <div className="flex items-center justify-center gap-1">
-          {[
-            { icon: GithubIcon, label: 'GitHub', href: 'https://github.com' },
-            { icon: Bug, label: '报告 Bug', href: 'https://github.com' },
-            { icon: Heart, label: '功能建议', href: 'https://github.com' },
-          ].map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md
-                text-xs text-fg-subtle hover:text-fg-muted
-                hover:bg-surface-hover/60 transition-colors"
-            >
-              <link.icon size={13} />
-              <span>{link.label}</span>
-              <ExternalLink size={10} className="text-fg-faint" />
-            </a>
-          ))}
+          {/* Column 1: 核心功能 */}
+          <section>
+            <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">核心功能</h2>
+            <div className="space-y-3">
+              {FEATURES.map((f) => {
+                const Icon = f.icon
+                return (
+                  <div
+                    key={f.label}
+                    className="rounded-lg border border-edge/10 bg-surface p-4 hover:border-primary/20 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
+                        <Icon size={15} className="text-primary" />
+                      </span>
+                      <span className="text-[14px] font-medium text-fg">{f.label}</span>
+                    </div>
+                    <p className="text-[13px] text-fg-muted leading-relaxed">{f.desc}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+
+          {/* Column 2: 技术栈 */}
+          <section>
+            <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">技术栈</h2>
+            <div className="rounded-lg border border-edge/10 bg-surface p-4">
+              <div className="grid grid-cols-2 gap-2">
+                {TECH_STACK.map((tech) => {
+                  const Icon = tech.icon
+                  return (
+                    <span
+                      key={tech.label}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-edge/8 bg-surface-2/60 text-[13px] text-fg-muted transition-colors hover:border-primary/15 hover:bg-surface-hover/40"
+                    >
+                      {Icon ? <Icon size={14} style={{ color: tech.color }} /> : (
+                        <span className="w-3.5 h-3.5 rounded-sm shrink-0" style={{ backgroundColor: tech.color }} />
+                      )}
+                      <span style={{ color: tech.color }}>{tech.label}</span>
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* License */}
+            <div className="mt-5 rounded-lg border border-edge/10 bg-surface p-4">
+              <h3 className="text-[13px] font-medium text-fg mb-2">开源协议</h3>
+              <p className="text-[13px] text-fg-muted leading-relaxed">
+                基于 MIT License 开源<br />
+                Copyright 2026 ScriptWeaver Team<br />
+                <span className="text-[12px] text-fg-faint">自由使用、修改与分发，保留版权声明即可</span>
+              </p>
+            </div>
+          </section>
+
+          {/* Column 3: 社区与反馈 */}
+          <section>
+            <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">社区与反馈</h2>
+            <div className="rounded-lg border border-edge/10 bg-surface p-4">
+              <div className="space-y-2">
+                {[
+                  { icon: GithubIcon, label: 'GitHub 仓库', href: '#' },
+                  { icon: Bug, label: '报告 Bug', href: '#' },
+                  { icon: Heart, label: '功能建议', href: '#' },
+                ].map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-edge/8 bg-surface-2/60 text-[13px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <link.icon size={15} />
+                      {link.label}
+                    </span>
+                    <ExternalLink size={13} className="text-fg-faint" />
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* 致谢 */}
+            <div className="mt-5 rounded-lg border border-edge/10 bg-surface p-4">
+              <h3 className="text-[13px] font-medium text-fg mb-2">特别致谢</h3>
+              <p className="text-[13px] text-fg-muted leading-relaxed">
+                Ren'Py 引擎团队 · Visual Novel Maker 社区 · 所有 beta 测试者
+              </p>
+              <p className="mt-4 text-[12px] text-fg-faint italic">
+                Made with care for visual novel creators
+              </p>
+            </div>
+          </section>
         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-auto pt-6 text-center">
-        <p className="text-xs text-fg-faint">
-          Made with care for visual novel creators
-        </p>
       </div>
     </div>
   )
