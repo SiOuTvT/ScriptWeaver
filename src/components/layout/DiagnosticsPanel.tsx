@@ -9,9 +9,9 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { runDiagnostics, type DiagnosticItem, type DiagnosticsReport, type DiagSeverity } from '@/utils/diagnostics'
-import { Bug, AlertTriangle, Info, ExternalLink, RefreshCw, CheckCircle, ShieldCheck } from 'lucide-react'
+import { Bug, AlertTriangle, Info, ExternalLink, RefreshCw, CheckCircle, ShieldCheck, type LucideIcon } from 'lucide-react'
 
-const SEVERITY_CONFIG: Record<DiagSeverity, { label: string; color: string; bg: string; icon: React.FC<{ size?: number }> }> = {
+const SEVERITY_CONFIG: Record<DiagSeverity, { label: string; color: string; bg: string; icon: LucideIcon }> = {
   error: { label: '错误', color: 'text-red-500', bg: 'bg-red-500/10', icon: Bug },
   warning: { label: '警告', color: 'text-amber-500', bg: 'bg-amber-500/10', icon: AlertTriangle },
   info: { label: '提示', color: 'text-blue-400', bg: 'bg-blue-400/10', icon: Info },

@@ -82,7 +82,7 @@ export default function RenPyEcosystemHub() {
 
   // Stash for insert into script
   const draftDeltas = useAppStore((s) => s.draftDeltas)
-  const setDraft = useAppStore((s) => s.setDraft)
+  const setDraftDeltas = useAppStore((s) => s.setDraftDeltas)
   const selectLine = useAppStore((s) => s.selectLine)
   const setActiveNavItem = useAppStore((s) => s.setActiveNavItem)
 
@@ -125,14 +125,14 @@ export default function RenPyEcosystemHub() {
       dialogue: code,
       background: { asset_id: '' },
       characters: {},
-      audio: { bgm: '', ambient: '', se: [], voice: '' },
+      audio: { bgm: null, ambient: null, se: [], voice: null },
     }
     const updated = [...draftDeltas, newDelta]
-    setDraft(updated)
+    setDraftDeltas(updated)
     selectLine(updated.length - 1)
     setActiveNavItem('chapters')
     toast(`已插入：${lesson.title}`, 'success')
-  }, [draftDeltas, setDraft, selectLine, setActiveNavItem])
+  }, [draftDeltas, setDraftDeltas, selectLine, setActiveNavItem])
 
   const handleInsertPluginSnippet = useCallback((plugin: PluginEntry) => {
     if (!plugin.snippet) return
@@ -143,14 +143,14 @@ export default function RenPyEcosystemHub() {
       dialogue: plugin.snippet,
       background: { asset_id: '' },
       characters: {},
-      audio: { bgm: '', ambient: '', se: [], voice: '' },
+      audio: { bgm: null, ambient: null, se: [], voice: null },
     }
     const updated = [...draftDeltas, newDelta]
-    setDraft(updated)
+    setDraftDeltas(updated)
     selectLine(updated.length - 1)
     setActiveNavItem('chapters')
     toast(`已插入：${plugin.name} 代码片段`, 'success')
-  }, [draftDeltas, setDraft, selectLine, setActiveNavItem])
+  }, [draftDeltas, setDraftDeltas, selectLine, setActiveNavItem])
 
   // ---- 跳转 EffectsLab ----
   const handleGoEffectsLab = useCallback(() => {

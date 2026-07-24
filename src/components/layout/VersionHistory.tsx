@@ -107,6 +107,10 @@ export default function VersionHistory({ open, onClose }: Props) {
   const assets = useAppStore((s) => s.assets)
   const [list, setList] = useState<VersionSnapshotMeta[]>([])
   const [loading, setLoading] = useState(false)
+  const [diffLoading, setDiffLoading] = useState(false)
+  const [diffMode, setDiffMode] = useState<string | null>(null)
+  const [diffResult, setDiffResult] = useState<ReturnType<typeof diffDeltas> | null>(null)
+  const [expandedDiffs, setExpandedDiffs] = useState<Set<number>>(new Set())
   const [label, setLabel] = useState('')
   const labelRef = useRef<HTMLInputElement>(null)
 

@@ -265,7 +265,7 @@ transform entrance:
     parallel:
         ease 0.6 xalign 0.5             # 滑入
     ease 0.4 zoom 1.1                   # 弹性放大
-    ease 0.3 zoom 1.0                   # 回弹`
+    ease 0.3 zoom 1.0                   # 回弹
 
 label atl_demo:
     show eileen happy at slide_in_from_right

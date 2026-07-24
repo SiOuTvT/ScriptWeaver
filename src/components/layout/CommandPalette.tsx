@@ -10,7 +10,7 @@ import { useAppStore, type NavItemId } from '@/stores/appStore'
 import {
   Search, Zap, FileText, Download, Bug, Camera, Sparkles,
   BookOpen, Images, Users, Wand2, Settings, HelpCircle, Info,
-  Save, Undo2, Redo2, Sun, Play, type LucideIcon
+  Save, Undo2, Redo2, Sun, Play, Globe, type LucideIcon
 } from 'lucide-react'
 
 interface Command {
@@ -91,14 +91,14 @@ export default function CommandPalette() {
       {
         id: 'export-rpy', label: '导出 Ren\'Py 工程',
         icon: Download,
-        action: () => { store.getState().setActiveNavItem('export'); setOpen(false) },
+        action: () => { useAppStore.getState().setActiveNavItem('export'); setOpen(false) },
         category: 'export',
       },
       {
         id: 'export-multi', label: '多格式导出',
         keywords: ['markdown', 'txt', 'pdf', 'csv', 'cv', '台词表'],
         icon: FileText,
-        action: () => { store.getState().setActiveNavItem('exporter'); setOpen(false) },
+        action: () => { useAppStore.getState().setActiveNavItem('exporter'); setOpen(false) },
         category: 'export',
       },
 
@@ -108,7 +108,7 @@ export default function CommandPalette() {
         keywords: ['体检', '检查', '诊断', '错误', 'diagnostics'],
         description: '扫描悬空 Jump、缺失引用、残缺选择支等',
         icon: Bug,
-        action: () => { store.getState().setActiveNavItem('diagnostics'); setOpen(false) },
+        action: () => { useAppStore.getState().setActiveNavItem('diagnostics'); setOpen(false) },
         category: 'tool',
       },
       {
@@ -116,14 +116,14 @@ export default function CommandPalette() {
         keywords: ['snapshot', '版本', '备份', 'save point'],
         description: '保存当前剧本的版本快照',
         icon: Camera,
-        action: () => { store.getState().setActiveNavItem('about'); setOpen(false) },
+        action: () => { useAppStore.getState().setActiveNavItem('about'); setOpen(false) },
         category: 'tool',
       },
       {
         id: 'ai-generate', label: 'AI 生成剧情',
         keywords: ['ai', '生成', 'copilot', '剧情'],
         icon: Sparkles,
-        action: () => { store.getState().setActiveNavItem('ai'); setOpen(false) },
+        action: () => { useAppStore.getState().setActiveNavItem('ai'); setOpen(false) },
         category: 'tool',
       },
       {

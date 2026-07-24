@@ -1,5 +1,5 @@
 import { useAppStore, NavItemId } from '@/stores/appStore'
-import { BookOpen, FileText, Images, Users, Download, Sparkles, Wand2, Info, HelpCircle, Settings, ChevronLeft, ChevronRight, Stethoscope, FileDown } from 'lucide-react'
+import { BookOpen, FileText, Images, Users, Download, Sparkles, Wand2, Info, HelpCircle, Settings, ChevronLeft, ChevronRight, Stethoscope, FileDown, Globe } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 interface NavItem {

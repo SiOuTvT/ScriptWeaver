@@ -231,7 +231,10 @@ export function runDiagnostics(
   }
 
   // 5. 未使用的素材（导入了但未被引用）
-  const unusedAssets = allAssetIds.difference(referencedAssets)
+  const unusedAssets: Set<string> = new Set()
+  for (const aid of allAssetIds) {
+    if (!referencedAssets.has(aid)) unusedAssets.add(aid)
+  }
   for (const aid of unusedAssets) {
     const a = assets.find((x) => x.id === aid)
     if (a) {
