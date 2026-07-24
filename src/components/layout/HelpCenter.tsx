@@ -7,13 +7,39 @@ import {
 } from 'lucide-react'
 import { toast } from '@/utils/toast'
 
-// ─── 静态预加载所有帮助文档（Vite 不支持动态 ?raw import 模板字符串）───
+// ─── 静态预加载所有帮助文档 ─────────────────────────
 
-const helpDocs = import.meta.glob('../../help/*.md', { query: '?raw', import: 'default', eager: true })
+import helpIndex from '../../help/index.md?raw'
+import helpGettingStarted from '../../help/getting-started.md?raw'
+import helpAssetManager from '../../help/asset-manager.md?raw'
+import helpScriptOverview from '../../help/script-overview.md?raw'
+import helpStagePreview from '../../help/stage-preview.md?raw'
+import helpCharacterManager from '../../help/character-manager.md?raw'
+import helpAiCopilot from '../../help/ai-copilot.md?raw'
+import helpTimeline from '../../help/timeline.md?raw'
+import helpTtsSynthesis from '../../help/tts-synthesis.md?raw'
+import helpEffectsLab from '../../help/effects-lab.md?raw'
+import helpExport from '../../help/export.md?raw'
+import helpFaq from '../../help/faq.md?raw'
+import helpShortcuts from '../../help/shortcuts.md?raw'
 
 function resolveDocContent(file: string): string {
-  const key = `../../help/${file}`
-  return (helpDocs as Record<string, string>)[key] || ''
+  const map: Record<string, string> = {
+    'index.md':                helpIndex,
+    'getting-started.md':      helpGettingStarted,
+    'asset-manager.md':        helpAssetManager,
+    'script-overview.md':      helpScriptOverview,
+    'stage-preview.md':        helpStagePreview,
+    'character-manager.md':    helpCharacterManager,
+    'ai-copilot.md':           helpAiCopilot,
+    'timeline.md':             helpTimeline,
+    'tts-synthesis.md':        helpTtsSynthesis,
+    'effects-lab.md':          helpEffectsLab,
+    'export.md':               helpExport,
+    'faq.md':                  helpFaq,
+    'shortcuts.md':            helpShortcuts,
+  }
+  return map[file] || ''
 }
 
 // ─── 文档目录树 ──────────────────────────────────────
