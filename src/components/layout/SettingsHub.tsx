@@ -170,7 +170,7 @@ export default function SettingsHub() {
   return (
     <div className="flex h-full select-none">
       {/* 左侧标签导航 */}
-      <div className="w-56 shrink-0 border-r border-edge/8 flex flex-col bg-surface/50">
+      <div className="w-56 shrink-0 border-r border-edge/8 flex flex-col bg-surface-tinted/50">
         <div className="px-4 pt-4 pb-3">
           <h2 className="text-sm font-semibold text-fg-default">设置</h2>
           <p className="text-xs text-fg-faint mt-0.5">配置 ScriptWeaver 运行参数</p>
@@ -227,7 +227,7 @@ export default function SettingsHub() {
               </SettingRow>
               {projectPath && (
                 <div className="px-3 pb-2">
-                  <p className="text-xs font-mono text-fg-faint bg-surface-3/40 rounded px-2 py-1 truncate">
+                  <p className="text-xs font-mono text-fg-faint bg-surface-3-tinted/40 rounded px-2 py-1 truncate">
                     {projectPath}
                   </p>
                 </div>

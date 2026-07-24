@@ -18,7 +18,7 @@ export interface RGB {
 /** 应用商店里视为「默认」的基色（= 浅色模式默认 primary 84 70 220） */
 export const DEFAULT_ACCENT = '#5446DC'
 
-/** 需要被覆盖的 CSS 变量名 */
+/** 需要被覆盖的 CSS 变量名（主色系） */
 const VARS = [
   '--c-primary',
   '--c-primary-hover',
@@ -26,6 +26,41 @@ const VARS = [
   '--c-primary-soft',
   '--c-on-primary',
 ] as const
+
+/** 需要被覆盖的 CSS 变量名（背景着色系） */
+const TINT_VARS = [
+  '--c-canvas-tinted',
+  '--c-surface-tinted',
+  '--c-surface-1-tinted',
+  '--c-surface-2-tinted',
+  '--c-surface-3-tinted',
+] as const
+
+/* ───── 各主题下用于着色的基准面 RGB（与 index.css 的默认值严格对齐）───── */
+
+interface TintBases {
+  canvas: RGB
+  surface: RGB
+  surface1: RGB
+  surface2: RGB
+  surface3: RGB
+}
+
+const LIGHT_BASES: TintBases = {
+  canvas:   { r: 230, g: 229, b: 225 },
+  surface:  { r: 255, g: 255, b: 255 },
+  surface1: { r: 244, g: 243, b: 240 },
+  surface2: { r: 255, g: 255, b: 255 },
+  surface3: { r: 236, g: 235, b: 231 },
+}
+
+const DARK_BASES: TintBases = {
+  canvas:   { r: 8,   g: 9,   b: 12  },
+  surface:  { r: 19,  g: 21,  b: 27  },
+  surface1: { r: 26,  g: 29,  b: 36  },
+  surface2: { r: 33,  g: 37,  b: 46  },
+  surface3: { r: 42,  g: 47,  b: 57  },
+}
 
 /** 精调预设色板（Open Color 系，每色取其色相中最耐看的一档，特性鲜明不刺眼） */
 export const ACCENT_PRESETS: { name: string; hex: string }[] = [
@@ -166,17 +201,48 @@ export function computeAccentVars(hex: string, theme: ThemeMode): Record<string,
 }
 
 /**
- * 应用主题色到 <html> 内联样式。
+ * 计算背景着色变量（Accent-Driven Dynamic Tinting）。
+ *
+ * 将当前主题色以 2%~5% 混入各层级基准面颜色，产生一整套温润且有归属感的
+ * "主题色联动微调" 着色面，替代原先固定的中性灰。
+ *
+ * - canvas (2%):   根背景——极微量着色，仅微微偏离中性灰
+ * - surface (3%):  面板主面
+ * - surface-1 (4%):二层面板——着色最明显，用作侧栏/卡片等次级容器
+ * - surface-2 (3%):卡片面
+ * - surface-3 (2%):输入框/内嵌面——保持近中性以利可读性
+ *
+ * @param hex   主题色 HEX
+ * @param theme 当前模式 'dark' | 'light'
+ */
+export function computeSurfaceTints(hex: string, theme: ThemeMode): Record<string, string> | null {
+  const accent = parseHex(hex)
+  if (!accent) return null
+
+  const bases: TintBases = theme === 'dark' ? DARK_BASES : LIGHT_BASES
+
+  return {
+    '--c-canvas-tinted':      rgbTriple(mix(bases.canvas,   accent, 0.02)),
+    '--c-surface-tinted':     rgbTriple(mix(bases.surface,  accent, 0.03)),
+    '--c-surface-1-tinted':   rgbTriple(mix(bases.surface1, accent, 0.04)),
+    '--c-surface-2-tinted':   rgbTriple(mix(bases.surface2, accent, 0.03)),
+    '--c-surface-3-tinted':   rgbTriple(mix(bases.surface3, accent, 0.02)),
+  }
+}
+
+/**
+ * 应用主题色 + 背景着色表到 <html> 内联样式。
  * 信号色（小数线 / 选中卡片 / 焦点环 / 信号点）恒等于主色，确保整站一致跟随。
- * 仅在基色非法时才清除覆盖、回落到 index.css 默认值。
+ * 仅在基色非法时才清除覆盖、回落到 index.css 默认值（包括着色面回退到中性默认值）。
  */
 export function applyAccent(hex: string, theme: ThemeMode): void {
   if (typeof document === 'undefined') return
   const root = document.documentElement
   const vars = computeAccentVars(hex, theme)
-  if (!vars) {
-    VARS.forEach((v) => root.style.removeProperty(v))
+  const tints = computeSurfaceTints(hex, theme)
+  if (!vars || !tints) {
+    ;[...VARS, ...TINT_VARS].forEach((v) => root.style.removeProperty(v))
     return
   }
-  Object.entries(vars).forEach(([k, val]) => root.style.setProperty(k, val))
+  Object.entries({ ...vars, ...tints }).forEach(([k, val]) => root.style.setProperty(k, val))
 }

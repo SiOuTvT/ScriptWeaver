@@ -137,8 +137,8 @@ function CodeBlock({ language, children }: { language?: string; children: string
     setTimeout(() => setCopied(false), 2000)
   }
   return (
-    <div className="my-3 rounded-lg border border-edge/8 overflow-hidden bg-surface-1">
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-edge/6 bg-surface/50">
+    <div className="my-3 rounded-lg border border-edge/8 overflow-hidden bg-surface-1-tinted">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-edge/6 bg-surface-tinted/50">
         <span className="text-xs font-medium text-fg-faint uppercase tracking-wide">
           {language || 'text'}
         </span>
@@ -304,7 +304,7 @@ export default function HelpCenter() {
   return (
     <div className="flex h-full select-none">
       {/* ── 左侧：树形导航 ──────────────────────── */}
-      <div className="w-56 shrink-0 border-r border-edge/8 flex flex-col bg-surface/50">
+      <div className="w-56 shrink-0 border-r border-edge/8 flex flex-col bg-surface-tinted/50">
         {/* 搜索 */}
         <div className="px-3 pt-3 pb-2">
           <div className="relative">
@@ -315,7 +315,7 @@ export default function HelpCenter() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索文档..."
               className="w-full pl-7 pr-2 py-1.5 text-xs rounded-md border border-edge/10
-                bg-surface-2/60 text-fg-default placeholder:text-fg-faint
+                bg-surface-2-tinted/60 text-fg-default placeholder:text-fg-faint
                 focus:outline-none focus:border-primary/30 transition-colors"
             />
           </div>
@@ -435,7 +435,7 @@ export default function HelpCenter() {
                   </div>
                 ),
                 th: ({ children, ...props }) => (
-                  <th className="px-3 py-2 text-xs font-medium text-fg-muted bg-surface/60 border-b border-edge/8 text-left" {...props}>
+                  <th className="px-3 py-2 text-xs font-medium text-fg-muted bg-surface-tinted/60 border-b border-edge/8 text-left" {...props}>
                     {children}
                   </th>
                 ),
@@ -468,7 +468,7 @@ export default function HelpCenter() {
       </div>
 
       {/* ── 右侧：本页目录（On This Page） + 滚动追踪 ── */}
-      <div className="w-48 shrink-0 border-l border-edge/8 overflow-y-auto bg-surface/50">
+      <div className="w-48 shrink-0 border-l border-edge/8 overflow-y-auto bg-surface-tinted/50">
         <div className="px-3 pt-4 pb-2">
           <h3 className="text-xs font-medium text-fg-muted uppercase tracking-[0.08em]">本页内容</h3>
         </div>
@@ -498,7 +498,7 @@ export default function HelpCenter() {
 
       {/* ── Markdown 编辑器浮层 ──────────────────── */}
       {showEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-canvas-tinted/80 backdrop-blur-sm">
           <div className="w-[80vw] max-w-4xl h-[80vh] panel flex flex-col shadow-2xl">
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-edge/8">
               <div className="flex items-center gap-2">
@@ -517,7 +517,7 @@ export default function HelpCenter() {
             {/* 分屏编辑+预览 */}
             <div className="flex-1 flex overflow-hidden">
               <div className="flex-1 flex flex-col border-r border-edge/8">
-                <div className="px-3 py-1.5 border-b border-edge/6 bg-surface/40">
+                <div className="px-3 py-1.5 border-b border-edge/6 bg-surface-tinted/40">
                   <span className="text-xs text-fg-faint">Markdown 源码</span>
                 </div>
                 <textarea
@@ -529,7 +529,7 @@ export default function HelpCenter() {
                 />
               </div>
               <div className="flex-1 flex flex-col">
-                <div className="px-3 py-1.5 border-b border-edge/6 bg-surface/40">
+                <div className="px-3 py-1.5 border-b border-edge/6 bg-surface-tinted/40">
                   <span className="text-xs text-fg-faint">实时预览</span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 prose-content text-sm">
@@ -540,7 +540,7 @@ export default function HelpCenter() {
               </div>
             </div>
             {/* 底部操作条 */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-edge/8 bg-surface/50">
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-edge/8 bg-surface-tinted/50">
               <div className="flex gap-2">
                 <button
                   onClick={() => insertMarkdown('**', '**', '加粗文字')}

@@ -25,7 +25,10 @@ export default {
         'on-primary': 'rgb(var(--c-on-primary) / <alpha-value>)',
 
         // 背景层级（墨/纸 明度差制造纵深）
-        canvas: 'rgb(var(--c-canvas) / <alpha-value>)',
+        canvas: {
+          DEFAULT: 'rgb(var(--c-canvas) / <alpha-value>)',
+          tinted: 'rgb(var(--c-canvas-tinted) / <alpha-value>)',
+        },
         surface: {
           DEFAULT: 'rgb(var(--c-surface) / <alpha-value>)',
           '1': 'rgb(var(--c-surface-1) / <alpha-value>)',
@@ -33,6 +36,10 @@ export default {
           '3': 'rgb(var(--c-surface-3) / <alpha-value>)',
           hover: 'rgb(var(--c-surface-hover) / <alpha-value>)',
           active: 'rgb(var(--c-surface-active) / <alpha-value>)',
+          tinted: 'rgb(var(--c-surface-tinted) / <alpha-value>)',
+          '1-tinted': 'rgb(var(--c-surface-1-tinted) / <alpha-value>)',
+          '2-tinted': 'rgb(var(--c-surface-2-tinted) / <alpha-value>)',
+          '3-tinted': 'rgb(var(--c-surface-3-tinted) / <alpha-value>)',
         },
 
         // 边框（低透明，靠 alpha 控制强弱）

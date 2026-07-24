@@ -379,12 +379,12 @@ export default function AppLayout() {
   )
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-canvas text-fg">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-canvas-tinted text-fg">
       {/* 全局极轻颗粒质感叠层（≤3%，不糊字） */}
       <div className="grain-overlay" aria-hidden />
 
       {/* ===== 顶部工具栏（所有页面通用） ===== */}
-      <header className="relative z-10 flex h-12 shrink-0 items-center justify-between border-b border-edge/10 bg-surface/70 px-4 backdrop-blur-md">
+      <header className="relative z-10 flex h-12 shrink-0 items-center justify-between border-b border-edge/10 bg-surface-tinted/70 px-4 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <span className="signal-dot signal-dot--pulse" aria-hidden />
           <span className="text-sm font-semibold tracking-tight text-fg">
@@ -496,10 +496,10 @@ export default function AppLayout() {
 
               {/* 底部 Dock：时间轴 / 节点图谱（核心二，可折叠把空间让给舞台） */}
               <div
-                className="flex shrink-0 flex-col border-t border-edge/10 bg-surface"
+                className="flex shrink-0 flex-col border-t border-edge/10 bg-surface-tinted"
                 style={{ height: bottomCollapsed ? 38 : 320, transition: 'height 200ms ease' }}
               >
-                <div className="flex h-9 shrink-0 items-center gap-1 border-b border-edge/10 bg-surface/60 px-3">
+                <div className="flex h-9 shrink-0 items-center gap-1 border-b border-edge/10 bg-surface-tinted/60 px-3">
                   <button
                     onClick={() => setBottomView('timeline')}
                     className={`rounded-md px-2.5 py-1 text-[13px] font-medium transition-colors ${
@@ -536,7 +536,7 @@ export default function AppLayout() {
             </div>
 
             {/* 右侧细轨：浮层抽屉开关（默认仅 44px，不占主空间；点击滑出对应检视面板） */}
-            <nav className="flex w-11 shrink-0 flex-col items-center gap-3 border-l border-edge/10 bg-surface/70 py-3 backdrop-blur-sm">
+            <nav className="flex w-11 shrink-0 flex-col items-center gap-3 border-l border-edge/10 bg-surface-tinted/70 py-3 backdrop-blur-sm">
               <RailToggle active={panels.script} onClick={() => togglePanel('script')} icon={FileText} title="剧本流" />
               <RailToggle active={panels.vars} onClick={() => togglePanel('vars')} icon={Activity} title="变量监视" />
               {showChoiceEditor && (

@@ -20,6 +20,13 @@
   --c-surface-hover: 222 220 215; /* hover */
   --c-surface-active: 210 207 201;/* 选中 */
 
+  /* Accent-Driven Tinting 着色面默认值（浅色 = 中性无着色，由 JS 运行时覆盖） */
+  --c-canvas-tinted:   230 229 225;
+  --c-surface-tinted:  255 255 255;
+  --c-surface-1-tinted:244 243 240;
+  --c-surface-2-tinted:255 255 255;
+  --c-surface-3-tinted:236 235 231;
+
   --c-stage: 214 212 207;         /* 舞台演出区底：比 canvas(230) 略深、仍属浅灰，浅色下不黑不刺眼 */
 
   --c-edge: 23 22 20;             /* 边框色相 */
@@ -72,6 +79,13 @@
   --c-surface-3: 42 47 57;        /* 输入框底 */
   --c-surface-hover: 48 54 65;    /* hover */
   --c-surface-active: 60 67 80;   /* 选中 */
+
+  /* Accent-Driven Tinting 着色面默认值（深色 = 中性无着色，由 JS 运行时覆盖） */
+  --c-canvas-tinted:   8 9 12;
+  --c-surface-tinted:  19 21 27;
+  --c-surface-1-tinted:26 29 36;
+  --c-surface-2-tinted:33 37 46;
+  --c-surface-3-tinted:42 47 57;
 
   --c-edge: 255 255 255;          /* 边框色相 */
   --c-edge-strong: 255 255 255;

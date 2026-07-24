@@ -33,19 +33,13 @@ export default function About() {
         if (v) setVersion(v)
       } catch { /* ignore */ }
     })()
-    ;(async () => {
-      try {
-        const v = await api.getAppVersion?.()
-        if (v) setVersion(v)
-      } catch { /* ignore */ }
-    })()
   }, [])
 
   const handleCheckUpdate = async () => {
     setUpdateStatus('checking')
     try {
       const api = window.electronAPI
-      const result = await api?.checkForUpdates?.()
+      const result = await (api as any)?.checkForUpdates?.()
       if (result?.updateAvailable) {
         setUpdateStatus('available')
       } else {
@@ -70,7 +64,7 @@ export default function About() {
 
         {/* Version & Update */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-surface-3/60 text-fg-muted">
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-surface-3-tinted/60 text-fg-muted">
             v{version}
           </span>
           <button
@@ -113,7 +107,7 @@ export default function About() {
                 key={tech.label}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
                   text-xs font-medium border border-edge/8
-                  bg-surface/60 text-fg-muted
+                  bg-surface-tinted/60 text-fg-muted
                   transition-colors hover:bg-surface-hover/60"
               >
                 {Icon && <Icon size={13} style={{ color: tech.color }} />}
