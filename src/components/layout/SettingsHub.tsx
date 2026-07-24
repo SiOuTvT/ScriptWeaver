@@ -17,7 +17,6 @@ const SECTIONS: SettingSection[] = [
 ]
 
 export default function SettingsHub() {
-  const toast = useAppStore((s) => s.toast)
 
   // Theme
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
@@ -119,7 +118,7 @@ export default function SettingsHub() {
 
       {/* Right Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-8 py-6 max-w-[720px]">
+        <div className="px-6 py-6 w-full">
           <div className="mb-6">
             <h2 className="text-[14px] font-semibold text-fg">{activeCfg.label} 设置</h2>
             <p className="mt-1 text-[12px] text-fg-muted">调整 ScriptWeaver 的基本配置与偏好</p>
@@ -128,10 +127,9 @@ export default function SettingsHub() {
           {/* ── General ─────────────────────────────────── */}
           {activeSection === 'general' && (
             <div className="space-y-6">
-              {/* Project section */}
               <section>
                 <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">项目</h3>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   <label className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/10 bg-surface">
                     <div>
                       <div className="text-[13px] font-medium text-fg">自动保存</div>
@@ -172,7 +170,7 @@ export default function SettingsHub() {
             <div className="space-y-6">
               <section>
                 <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">API 配置</h3>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* API Key */}
                   <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
                     <div className="flex items-center justify-between mb-2">
@@ -195,7 +193,7 @@ export default function SettingsHub() {
                     </div>
                     <p className="mt-1.5 text-[11px] text-fg-faint">
                       <Info size={11} className="inline mr-1" />
-                      密钥加密存储在本地，仅用于向 OpenAI 兼容 API 发送请求
+                      密钥加密存储在本地
                     </p>
                   </div>
 
@@ -209,7 +207,7 @@ export default function SettingsHub() {
                       placeholder="https://api.openai.com/v1"
                       className="w-full rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2 text-[13px] text-fg font-mono placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
                     />
-                    <p className="mt-1.5 text-[11px] text-fg-faint">支持 OpenAI 兼容 API，如 Azure OpenAI CLI 本地模型等</p>
+                    <p className="mt-1.5 text-[11px] text-fg-faint">支持 OpenAI 兼容 API</p>
                   </div>
 
                   {/* Model */}
@@ -239,7 +237,7 @@ export default function SettingsHub() {
               {/* Theme */}
               <section>
                 <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">主题</h3>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-4">
                   {([
                     { id: 'light' as const, label: '浅色', icon: Sun },
                     { id: 'dark' as const, label: '深色', icon: Moon },
@@ -251,16 +249,16 @@ export default function SettingsHub() {
                       <button
                         key={opt.id}
                         onClick={() => setTheme(opt.id)}
-                        className={`flex flex-col items-center gap-2 rounded-xl border px-4 py-4 transition-colors ${
+                        className={`flex flex-col items-center gap-3 rounded-xl border px-6 py-6 transition-colors ${
                           active
                             ? 'border-primary/30 bg-primary/5 ring-1 ring-primary/10'
                             : 'border-edge/10 bg-surface hover:border-primary/15 hover:bg-surface-hover/40'
                         }`}
                       >
-                        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-primary/15' : 'bg-surface-2/60'}`}>
-                          <Icon size={18} className={active ? 'text-primary' : 'text-fg-muted'} />
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${active ? 'bg-primary/15' : 'bg-surface-2/60'}`}>
+                          <Icon size={20} className={active ? 'text-primary' : 'text-fg-muted'} />
                         </div>
-                        <span className={`text-[13px] font-medium ${active ? 'text-fg' : 'text-fg-muted'}`}>{opt.label}</span>
+                        <span className={`text-[14px] font-medium ${active ? 'text-fg' : 'text-fg-muted'}`}>{opt.label}</span>
                       </button>
                     )
                   })}
@@ -270,7 +268,7 @@ export default function SettingsHub() {
               {/* Font Size */}
               <section>
                 <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">字号</h3>
-                <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                <div className="px-4 py-4 rounded-lg border border-edge/10 bg-surface">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-[13px] font-medium text-fg">界面字号</div>
@@ -283,7 +281,7 @@ export default function SettingsHub() {
                         <button
                           key={s}
                           onClick={() => setFontSize(s)}
-                          className={`px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors ${
+                          className={`px-4 py-2 rounded-lg text-[13px] font-medium border transition-colors ${
                             fontSize === s
                               ? 'border-primary/20 bg-primary/5 text-primary'
                               : 'border-edge/10 bg-surface-2/60 text-fg-muted hover:text-fg'

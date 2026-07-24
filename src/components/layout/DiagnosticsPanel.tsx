@@ -48,7 +48,7 @@ export default function DiagnosticsPanel() {
   return (
     <div className="flex h-full flex-col select-none">
       {/* Header */}
-      <div className="shrink-0 border-b border-edge/10 px-8 py-5">
+      <div className="shrink-0 border-b border-edge/10 px-6 py-5">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[15px] font-semibold text-fg">工程体检</h1>
@@ -62,7 +62,7 @@ export default function DiagnosticsPanel() {
       </div>
 
       {/* Dashboard Stats */}
-      <div className="shrink-0 px-8 py-4">
+      <div className="shrink-0 px-6 py-4">
         <div className="grid grid-cols-4 gap-3">
           {[
             { value: report.totalIssues, label: '总计', icon: ShieldCheck, color: 'text-fg-muted' },
@@ -95,8 +95,8 @@ export default function DiagnosticsPanel() {
       </div>
 
       {/* Filter Bar */}
-      <div className="shrink-0 px-8 pb-4 flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+      <div className="shrink-0 px-6 pb-4 flex items-center gap-3">
+        <div className="relative flex-1">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
           <input
             type="text"
@@ -133,7 +133,7 @@ export default function DiagnosticsPanel() {
       </div>
 
       {/* Issues Grid */}
-      <div className="flex-1 overflow-y-auto px-8 pb-6">
+      <div className="flex-1 overflow-y-auto px-6 pb-6">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-fg-muted">
             <CheckCircle size={32} className="mb-2 text-emerald-400/60" />

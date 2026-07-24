@@ -65,7 +65,7 @@ export default function About() {
       <div className="relative shrink-0 overflow-hidden border-b border-edge/10">
         {/* subtle gradient backdrop */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
-        <div className="relative px-8 py-10">
+        <div className="relative px-6 py-10">
           <div className="flex items-center gap-6">
             {/* Logo */}
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-rose-500 flex items-center justify-center shadow-lg shrink-0 ring-1 ring-white/10">
@@ -104,105 +104,114 @@ export default function About() {
         </div>
       </div>
 
-      {/* Content Grid: 3 columns on wide screens */}
-      <div className="flex-1 px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Content Grid */}
+      <div className="flex-1 px-6 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* Column 1: 核心功能 */}
-          <section>
-            <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">核心功能</h2>
-            <div className="space-y-3">
-              {FEATURES.map((f) => {
-                const Icon = f.icon
-                return (
-                  <div
-                    key={f.label}
-                    className="rounded-lg border border-edge/10 bg-surface p-4 hover:border-primary/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-2.5 mb-1.5">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
-                        <Icon size={15} className="text-primary" />
-                      </span>
-                      <span className="text-[14px] font-medium text-fg">{f.label}</span>
-                    </div>
-                    <p className="text-[13px] text-fg-muted leading-relaxed">{f.desc}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-
-          {/* Column 2: 技术栈 */}
-          <section>
-            <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">技术栈</h2>
-            <div className="rounded-lg border border-edge/10 bg-surface p-4">
-              <div className="grid grid-cols-2 gap-2">
-                {TECH_STACK.map((tech) => {
-                  const Icon = tech.icon
+          {/* Column 1: 核心功能 + 技术栈 */}
+          <div className="space-y-6">
+            {/* 核心功能 */}
+            <section>
+              <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">核心功能</h2>
+              <div className="grid grid-cols-1 gap-3">
+                {FEATURES.map((f) => {
+                  const Icon = f.icon
                   return (
-                    <span
-                      key={tech.label}
-                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-edge/8 bg-surface-2/60 text-[13px] text-fg-muted transition-colors hover:border-primary/15 hover:bg-surface-hover/40"
+                    <div
+                      key={f.label}
+                      className="rounded-lg border border-edge/10 bg-surface p-5 hover:border-primary/20 transition-colors"
                     >
-                      {Icon ? <Icon size={14} style={{ color: tech.color }} /> : (
-                        <span className="w-3.5 h-3.5 rounded-sm shrink-0" style={{ backgroundColor: tech.color }} />
-                      )}
-                      <span style={{ color: tech.color }}>{tech.label}</span>
-                    </span>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+                          <Icon size={16} className="text-primary" />
+                        </span>
+                        <span className="text-[14px] font-medium text-fg">{f.label}</span>
+                      </div>
+                      <p className="text-[13px] text-fg-muted leading-relaxed">{f.desc}</p>
+                    </div>
                   )
                 })}
               </div>
-            </div>
+            </section>
 
-            {/* License */}
-            <div className="mt-5 rounded-lg border border-edge/10 bg-surface p-4">
-              <h3 className="text-[13px] font-medium text-fg mb-2">开源协议</h3>
-              <p className="text-[13px] text-fg-muted leading-relaxed">
-                基于 MIT License 开源<br />
-                Copyright 2026 ScriptWeaver Team<br />
-                <span className="text-[12px] text-fg-faint">自由使用、修改与分发，保留版权声明即可</span>
-              </p>
-            </div>
-          </section>
-
-          {/* Column 3: 社区与反馈 */}
-          <section>
-            <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">社区与反馈</h2>
-            <div className="rounded-lg border border-edge/10 bg-surface p-4">
-              <div className="space-y-2">
-                {[
-                  { icon: GithubIcon, label: 'GitHub 仓库', href: '#' },
-                  { icon: Bug, label: '报告 Bug', href: '#' },
-                  { icon: Heart, label: '功能建议', href: '#' },
-                ].map((link) => (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-edge/8 bg-surface-2/60 text-[13px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <link.icon size={15} />
-                      {link.label}
-                    </span>
-                    <ExternalLink size={13} className="text-fg-faint" />
-                  </a>
-                ))}
+            {/* 技术栈 */}
+            <section>
+              <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">技术栈</h2>
+              <div className="rounded-lg border border-edge/10 bg-surface p-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {TECH_STACK.map((tech) => {
+                    const Icon = tech.icon
+                    return (
+                      <span
+                        key={tech.label}
+                        className="flex items-center gap-2.5 px-3 py-3 rounded-lg border border-edge/8 bg-surface-2/60 text-[13px] text-fg-muted transition-colors hover:border-primary/15 hover:bg-surface-hover/40"
+                      >
+                        {Icon ? <Icon size={16} style={{ color: tech.color }} /> : (
+                          <span className="w-4 h-4 rounded-sm shrink-0" style={{ backgroundColor: tech.color }} />
+                        )}
+                        <span style={{ color: tech.color }}>{tech.label}</span>
+                      </span>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
+            </section>
+          </div>
 
-            {/* 致谢 */}
-            <div className="mt-5 rounded-lg border border-edge/10 bg-surface p-4">
-              <h3 className="text-[13px] font-medium text-fg mb-2">特别致谢</h3>
-              <p className="text-[13px] text-fg-muted leading-relaxed">
-                Ren'Py 引擎团队 · Visual Novel Maker 社区 · 所有 beta 测试者
-              </p>
-              <p className="mt-4 text-[12px] text-fg-faint italic">
-                Made with care for visual novel creators
-              </p>
-            </div>
-          </section>
+          {/* Column 2: 社区反馈 + 开源协议 + 致谢 */}
+          <div className="space-y-6">
+            <section>
+              <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">社区与反馈</h2>
+              <div className="rounded-lg border border-edge/10 bg-surface p-5">
+                <div className="grid grid-cols-1 gap-2.5">
+                  {[
+                    { icon: GithubIcon, label: 'GitHub 仓库', href: '#' },
+                    { icon: Bug, label: '报告 Bug', href: '#' },
+                    { icon: Heart, label: '功能建议', href: '#' },
+                  ].map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/8 bg-surface-2/60 text-[14px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
+                    >
+                      <span className="flex items-center gap-3">
+                        <link.icon size={17} />
+                        {link.label}
+                      </span>
+                      <ExternalLink size={14} className="text-fg-faint" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">开源协议</h2>
+              <div className="rounded-lg border border-edge/10 bg-surface p-5">
+                <p className="text-[14px] text-fg-muted leading-relaxed">
+                  基于 MIT License 开源<br />
+                  Copyright 2026 ScriptWeaver Team
+                </p>
+                <p className="mt-3 text-[12px] text-fg-faint">
+                  自由使用、修改与分发，保留版权声明即可
+                </p>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">特别致谢</h2>
+              <div className="rounded-lg border border-edge/10 bg-surface p-5">
+                <p className="text-[14px] text-fg-muted leading-relaxed">
+                  Ren'Py 引擎团队 · Visual Novel Maker 社区 · 所有 beta 测试者
+                </p>
+                <p className="mt-4 text-[13px] text-fg-faint italic">
+                  Made with care for visual novel creators
+                </p>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </div>

@@ -280,7 +280,7 @@ export default function HelpCenter() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Search + Header */}
-        <div className="shrink-0 border-b border-edge/10 px-8 py-4">
+        <div className="shrink-0 border-b border-edge/10 px-6 py-4">
           <div className="relative">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-faint" />
             <input
@@ -321,7 +321,7 @@ export default function HelpCenter() {
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-[680px] px-8 py-6">
+          <div className="px-6 py-6 w-full">
             {/* Topic Title */}
             <div className="mb-6">
               <div className="flex items-center gap-2.5 mb-1">
@@ -332,7 +332,7 @@ export default function HelpCenter() {
             </div>
 
             {/* Sections */}
-            <div className="space-y-6">
+            <div className={`grid grid-cols-1 gap-5 ${activeTopic.sections.length > 1 ? 'xl:grid-cols-2' : ''}`}>
               {topic.sections.map((section) => (
                 <div
                   key={section.id}

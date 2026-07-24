@@ -206,7 +206,7 @@ export default function AIPanel() {
   return (
     <div className="flex h-full flex-col select-none">
       {/* Header */}
-      <div className="shrink-0 border-b border-edge/10 px-8 py-5">
+      <div className="shrink-0 border-b border-edge/10 px-6 py-5">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[15px] font-semibold text-fg">AI 编剧 Copilot</h1>
@@ -239,20 +239,20 @@ export default function AIPanel() {
       </div>
 
       {/* Mode Description Bar */}
-      <div className={`shrink-0 mx-8 mt-4 rounded-lg border px-4 py-2.5 bg-gradient-to-r ${
+      <div className={`shrink-0 mx-6 mt-4 rounded-lg border px-4 py-2.5 bg-gradient-to-r ${
         modeCfg.color === 'indigo' ? 'from-indigo-500/5 to-indigo-500/2 border-indigo-500/15'
         : modeCfg.color === 'emerald' ? 'from-emerald-500/5 to-emerald-500/2 border-emerald-500/15'
         : 'from-violet-500/5 to-violet-500/2 border-violet-500/15'
       }`}>
         <div className="flex items-center gap-2.5">
-          {React.createElement(modeCfg.icon, { size: 15, className: `text-${modeCfg.color}-500` })}
+          {React.createElement(modeCfg.icon, { size: 15, className: modeCfg.color === 'indigo' ? 'text-indigo-500' : modeCfg.color === 'emerald' ? 'text-emerald-500' : 'text-violet-500' })}
           <span className="text-[13px] text-fg font-medium">{modeCfg.label}</span>
           <span className="text-[12px] text-fg-muted">{modeCfg.desc}</span>
         </div>
       </div>
 
       {/* Config + Context Quick Bar */}
-      <div className="shrink-0 px-8 py-4 flex items-center gap-4">
+      <div className="shrink-0 px-6 py-4 flex items-center gap-4">
         <button
           onClick={() => setContextExpanded(!contextExpanded)}
           className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] transition-colors ${
@@ -280,7 +280,7 @@ export default function AIPanel() {
 
       {/* Expanded Context */}
       {contextExpanded && (
-        <div className="shrink-0 mx-8 mb-4 rounded-lg border border-edge/10 bg-surface-2/30 p-4 max-h-40 overflow-y-auto">
+        <div className="shrink-0 mx-6 mb-4 rounded-lg border border-edge/10 bg-surface-2/30 p-4 max-h-40 overflow-y-auto">
           <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-2">当前剧本上下文</div>
           <div className="text-[12px] text-fg-muted leading-relaxed space-y-0.5 font-mono">
             {draftDeltas.slice(-15).map((d, i) => (
@@ -296,11 +296,10 @@ export default function AIPanel() {
       )}
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col min-h-0 px-8 pb-4">
+      <div className="flex-1 flex flex-col min-h-0 px-6 pb-4">
 
         {/* Response */}
-        {(response || error || loading) && (
-          <div ref={responseRef} className="flex-1 overflow-y-auto mb-4 rounded-xl border border-edge/10 bg-surface p-5">
+        <div ref={responseRef} className="flex-1 overflow-y-auto mb-4 rounded-xl border border-edge/10 bg-surface p-5">
             {error && (
               <div className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/5 p-4">
                 <AlertTriangle size={16} className="text-red-400 mt-0.5 shrink-0" />

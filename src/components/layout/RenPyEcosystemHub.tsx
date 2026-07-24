@@ -123,7 +123,7 @@ export default function RenPyEcosystemHub() {
   return (
     <div className="flex h-full flex-col select-none">
       {/* Header */}
-      <div className="shrink-0 border-b border-edge/10 px-8 py-5">
+      <div className="shrink-0 border-b border-edge/10 px-6 py-5">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[15px] font-semibold text-fg">Ren'Py 生态大厅</h1>
@@ -163,7 +163,7 @@ export default function RenPyEcosystemHub() {
       </div>
 
       {/* Search Bar */}
-      <div className="shrink-0 px-8 py-4">
+      <div className="shrink-0 px-6 py-4">
         <div className="relative">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-faint" />
           <input
@@ -212,7 +212,7 @@ export default function RenPyEcosystemHub() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-8 pb-8">
+      <div className="flex-1 overflow-y-auto px-6 pb-8">
         
         {/* ── Audit Panel ──────────────────────────────────────── */}
         {activeTab === 'audit' && (
@@ -381,7 +381,7 @@ export default function RenPyEcosystemHub() {
                   </button>
                   {isExpanded && (
                     <div className="px-4 pb-4 space-y-3 border-t border-edge/8 pt-3">
-                      <div className="prose-content text-[13px] text-fg leading-relaxed space-y-2" dangerouslySetInnerHTML={{ __html: lesson.renderedContent ?? lesson.content }} />
+                      <div className="prose-content text-[13px] text-fg leading-relaxed space-y-2" dangerouslySetInnerHTML={{ __html: lesson.content }} />
                       {lesson.codeExample && (
                         <div>
                           <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-1.5">可运行范例</div>

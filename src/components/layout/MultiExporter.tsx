@@ -72,7 +72,7 @@ export default function MultiExporter() {
   return (
     <div className="flex h-full flex-col select-none">
       {/* Header */}
-      <div className="shrink-0 border-b border-edge/10 px-8 py-5">
+      <div className="shrink-0 border-b border-edge/10 px-6 py-5">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-[15px] font-semibold text-fg">多格式导出</h1>
@@ -88,7 +88,7 @@ export default function MultiExporter() {
 
       {/* Main: 2-column layout on wide screens */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-[340px_1fr]">
+        <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_2fr]">
           
           {/* Left Panel: Format + Options */}
           <div className="border-r border-edge/10 overflow-y-auto">
