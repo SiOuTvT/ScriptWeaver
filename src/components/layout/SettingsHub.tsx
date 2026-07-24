@@ -69,7 +69,7 @@ export default function SettingsHub() {
   }
 
   return (
-    <div className="flex h-full select-none">
+    <div className="flex h-full flex-1 min-w-0 select-none">
       {/* Left Nav */}
       <div className="w-[180px] shrink-0 border-r border-edge/10 flex flex-col">
         <div className="px-4 py-5 border-b border-edge/10">

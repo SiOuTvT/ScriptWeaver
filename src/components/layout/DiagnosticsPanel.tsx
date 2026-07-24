@@ -46,7 +46,7 @@ export default function DiagnosticsPanel() {
   }, [selectLine, setActiveNavItem])
 
   return (
-    <div className="flex h-full flex-col select-none">
+    <div className="flex h-full flex-1 min-w-0 flex-col select-none">
       {/* Header */}
       <div className="shrink-0 border-b border-edge/10 px-6 py-5">
         <div className="flex items-center justify-between">

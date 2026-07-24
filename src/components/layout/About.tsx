@@ -60,7 +60,7 @@ export default function About() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto select-none">
+    <div className="flex h-full flex-1 min-w-0 flex-col overflow-y-auto select-none">
       {/* Hero Section: full-width gradient banner */}
       <div className="relative shrink-0 overflow-hidden border-b border-edge/10">
         {/* subtle gradient backdrop */}

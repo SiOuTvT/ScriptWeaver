@@ -204,7 +204,7 @@ export default function AIPanel() {
   }, [draftDeltas, setDraftDeltas, selectLine, setActiveNavItem])
 
   return (
-    <div className="flex h-full flex-col select-none">
+    <div className="flex h-full flex-1 min-w-0 flex-col select-none">
       {/* Header */}
       <div className="shrink-0 border-b border-edge/10 px-6 py-5">
         <div className="flex items-center justify-between">
@@ -390,8 +390,34 @@ export default function AIPanel() {
                 )}
               </div>
             )}
+
+            {!response && !error && !loading && (
+              <div className="h-full flex flex-col items-center justify-center text-center px-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 mb-4">
+                  <Bot size={24} className="text-primary" />
+                </div>
+                <h2 className="text-[16px] font-semibold text-fg">AI 编剧助手已就绪</h2>
+                <p className="mt-1.5 text-[13px] text-fg-muted max-w-sm leading-relaxed">
+                  {modeCfg.desc}。在下方输入框描述需求，按 Enter 发送即可开始。
+                </p>
+                {mode === 'blueprint' && (
+                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-1.5 text-[12px] text-violet-500">
+                    <GitBranch size={13} /> 输入核心梗概，AI 自动生成分支结局树
+                  </div>
+                )}
+                {mode === 'mentor' && (
+                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-[12px] text-emerald-500">
+                    <BookOpen size={13} /> 粘贴剧本片段，获取结构、角色与台词建议
+                  </div>
+                )}
+                {mode === 'director' && (
+                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-3 py-1.5 text-[12px] text-indigo-500">
+                    <Wand2 size={13} /> 描述场景构想，AI 协助编排角色与演出节奏
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
 
         {/* Input Area */}
         <div className="shrink-0">

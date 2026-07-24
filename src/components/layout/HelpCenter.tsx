@@ -237,7 +237,7 @@ export default function HelpCenter() {
   }
 
   return (
-    <div className="flex h-full select-none">
+    <div className="flex h-full flex-1 min-w-0 select-none">
       {/* Left Nav: 200px */}
       <div className="w-[200px] shrink-0 border-r border-edge/10 flex flex-col">
         <div className="px-4 py-5 border-b border-edge/10">
@@ -332,7 +332,7 @@ export default function HelpCenter() {
             </div>
 
             {/* Sections */}
-            <div className={`grid grid-cols-1 gap-5 ${activeTopic.sections.length > 1 ? 'xl:grid-cols-2' : ''}`}>
+            <div className={`grid grid-cols-1 gap-5 ${topic.sections.length > 1 ? 'xl:grid-cols-2' : ''}`}>
               {topic.sections.map((section) => (
                 <div
                   key={section.id}
