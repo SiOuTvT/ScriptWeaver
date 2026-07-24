@@ -1,5 +1,5 @@
 import { useAppStore, NavItemId } from '@/stores/appStore'
-import { BookOpen, FileText, Images, Users, Download, Sparkles, Palette, Wand2, Info, HelpCircle, Settings, ChevronLeft, ChevronRight } from 'lucide-react'
+import { BookOpen, FileText, Images, Users, Download, Sparkles, Wand2, Info, HelpCircle, Settings, ChevronLeft, ChevronRight, Stethoscope, FileDown } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 interface NavItem {
@@ -15,11 +15,14 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'assets', label: '素材管理', code: '03', icon: <Images size={18} strokeWidth={1.75} /> },
   { id: 'characters', label: '角色管理', code: '04', icon: <Users size={18} strokeWidth={1.75} /> },
   { id: 'effects', label: '特效大本营', code: '05', icon: <Wand2 size={18} strokeWidth={1.75} /> },
-  { id: 'export', label: '导出设置', code: '06', icon: <Download size={18} strokeWidth={1.75} /> },
-  { id: 'ai', label: 'AI 功能', code: '07', icon: <Sparkles size={18} strokeWidth={1.75} /> },
-  { id: 'settings', label: '设置中心', code: '08', icon: <Settings size={18} strokeWidth={1.75} /> },
-  { id: 'about', label: '关于', code: '09', icon: <Info size={18} strokeWidth={1.75} /> },
-  { id: 'help', label: '帮助中心', code: '10', icon: <HelpCircle size={18} strokeWidth={1.75} /> },
+  { id: 'renpy-hub', label: 'Ren\'Py 生态', code: '06', icon: <Globe size={18} strokeWidth={1.75} /> },
+  { id: 'diagnostics', label: '工程体检', code: '07', icon: <Stethoscope size={18} strokeWidth={1.75} /> },
+  { id: 'export', label: '导出设置', code: '08', icon: <Download size={18} strokeWidth={1.75} /> },
+  { id: 'exporter', label: '多格式导出', code: '09', icon: <FileDown size={18} strokeWidth={1.75} /> },
+  { id: 'ai', label: 'AI 功能', code: '10', icon: <Sparkles size={18} strokeWidth={1.75} /> },
+  { id: 'settings', label: '设置中心', code: '11', icon: <Settings size={18} strokeWidth={1.75} /> },
+  { id: 'about', label: '关于', code: '12', icon: <Info size={18} strokeWidth={1.75} /> },
+  { id: 'help', label: '帮助中心', code: '13', icon: <HelpCircle size={18} strokeWidth={1.75} /> },
 ]
 
 export default function LeftSidebar() {

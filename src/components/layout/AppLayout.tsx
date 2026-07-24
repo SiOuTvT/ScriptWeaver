@@ -31,6 +31,10 @@ import { Button, IconButton, ConfirmDialog } from '@/components/ui'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem, GlobalVariable } from '@/core/types'
 import { createSnapshot } from '@/utils/cloudSync'
 import VersionHistory from './VersionHistory'
+import CommandPalette from './CommandPalette'
+import DiagnosticsPanel from './DiagnosticsPanel'
+import MultiExporter from './MultiExporter'
+import RenPyEcosystemHub from './RenPyEcosystemHub'
 import CollabPanel from './CollabPanel'
 
 
@@ -557,6 +561,9 @@ export default function AppLayout() {
         {activeNavItem === 'theme' && <SettingsHub />}
         {activeNavItem === 'about' && <About />}
         {activeNavItem === 'help' && <HelpCenter />}
+        {activeNavItem === 'diagnostics' && <DiagnosticsPanel />}
+        {activeNavItem === 'exporter' && <MultiExporter />}
+        {activeNavItem === 'renpy-hub' && <RenPyEcosystemHub />}
       </div>
 
       {/* ===== 新建确认对话框 ===== */}
@@ -605,6 +612,9 @@ export default function AppLayout() {
 
       {/* ===== 协作空间（邀请码 / 多端协同脚手架） ===== */}
       {showCollab && <CollabPanel open={showCollab} onClose={() => setShowCollab(false)} />}
+
+      {/* ===== 全局命令面板（Ctrl+K） ===== */}
+      <CommandPalette />
     </div>
   )
 }

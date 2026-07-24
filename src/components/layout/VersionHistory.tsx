@@ -7,12 +7,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import type { VersionSnapshotMeta } from '@/core/types'
+import type { VersionSnapshotMeta, LineDelta } from '@/core/types'
 import { listSnapshots, createSnapshot, readSnapshot, removeSnapshot } from '@/utils/cloudSync'
-import { restoreProjectFromJson, serializeProject } from '@/utils/projectFile'
+import { restoreProjectFromJson, serializeProject, deserializeProject } from '@/utils/projectFile'
+import { diffDeltas, type LineDiff, type DiffType } from '@/utils/diffEngine'
 import { toast } from '@/utils/toast'
 import { Button } from '@/components/ui'
-import { GitBranch, RotateCcw, Trash2, Plus, Cloud, X } from 'lucide-react'
+import { GitBranch, RotateCcw, Trash2, Plus, Cloud, X, GitCompare, ChevronDown, ChevronRight } from 'lucide-react'
 
 interface Props {
   open: boolean
@@ -29,6 +30,75 @@ function fmtSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+}
+
+const DIFF_COLORS: Record<DiffType, string> = {
+  added: 'border-emerald-500/20 bg-emerald-500/5',
+  removed: 'border-red-500/20 bg-red-500/5',
+  modified: 'border-amber-500/20 bg-amber-500/5',
+  unchanged: '',
+}
+
+const DIFF_LABELS: Record<DiffType, string> = {
+  added: '+ 新增',
+  removed: '- 删除',
+  modified: '~ 修改',
+  unchanged: '',
+}
+
+function DiffRow({ diff, isExpanded, onToggle }: { diff: LineDiff; isExpanded: boolean; onToggle: () => void }) {
+  const cls = DIFF_COLORS[diff.type]
+  const label = DIFF_LABELS[diff.type]
+  const line = diff.newLine || diff.oldLine
+  const hasDetail = diff.changes && diff.changes.length > 0
+
+  return (
+    <div className={`px-3 py-2 ${cls}`}>
+      <button onClick={onToggle} className="flex w-full items-center gap-2 text-left">
+        <span className="text-[11px] font-medium text-fg-faint tabular-nums w-8 shrink-0">
+          {label}
+        </span>
+        <span className="text-[11px] text-fg-faint tabular-nums w-8 shrink-0">
+          行 {diff.index + 1}
+        </span>
+        <span className="flex-1 truncate text-[13px] text-fg">
+          {line?.dialogue || line?.speaker || line?.label || line?.prompt || '(空行)'}
+        </span>
+        {hasDetail && (
+          <span className="shrink-0 text-fg-faint">
+            {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          </span>
+        )}
+      </button>
+      {isExpanded && (
+        <div className="mt-1.5 ml-16 space-y-1">
+          {diff.type === 'modified' && diff.oldLine && diff.newLine && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded border border-red-500/15 bg-red-500/3 px-2 py-1.5">
+                <div className="text-[10px] text-red-400/70 mb-0.5">旧 (快照)</div>
+                <div className="text-[12px] text-fg leading-relaxed break-words">
+                  {diff.oldLine.dialogue || diff.oldLine.speaker || diff.oldLine.label || diff.oldLine.prompt || '(空)'}
+                </div>
+              </div>
+              <div className="rounded border border-emerald-500/15 bg-emerald-500/3 px-2 py-1.5">
+                <div className="text-[10px] text-emerald-400/70 mb-0.5">新 (当前)</div>
+                <div className="text-[12px] text-fg leading-relaxed break-words">
+                  {diff.newLine.dialogue || diff.newLine.speaker || diff.newLine.label || diff.newLine.prompt || '(空)'}
+                </div>
+              </div>
+            </div>
+          )}
+          {diff.changes && diff.changes.length > 0 && (
+            <div className="space-y-0.5">
+              {diff.changes.map((c, ci) => (
+                <div key={ci} className="text-[12px] text-fg-muted ml-1">· {c}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function VersionHistory({ open, onClose }: Props) {
@@ -88,6 +158,40 @@ export default function VersionHistory({ open, onClose }: Props) {
     },
     [onClose],
   )
+
+  const handleCompare = useCallback(async (s: VersionSnapshotMeta) => {
+    setDiffLoading(true)
+    setDiffMode(s.id)
+    setDiffResult(null)
+    try {
+      const json = await readSnapshot(s.id)
+      if (!json) {
+        toast('读取快照失败', 'error')
+        setDiffMode(null)
+        return
+      }
+      const saved = deserializeProject(json)
+      if (!saved) {
+        toast('快照内容已损坏，无法比对', 'error')
+        setDiffMode(null)
+        return
+      }
+      const current = useAppStore.getState().draftDeltas
+      const result = diffDeltas(saved.deltas, current)
+      setDiffResult(result)
+    } finally {
+      setDiffLoading(false)
+    }
+  }, [])
+
+  const toggleDiffExpand = useCallback((idx: number) => {
+    setExpandedDiffs((prev) => {
+      const next = new Set(prev)
+      if (next.has(idx)) next.delete(idx)
+      else next.add(idx)
+      return next
+    })
+  }, [])
 
   const handleDelete = useCallback(
     async (s: VersionSnapshotMeta) => {
@@ -177,6 +281,14 @@ export default function VersionHistory({ open, onClose }: Props) {
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     <button
+                      onClick={() => void handleCompare(s)}
+                      title="与当前版本对比"
+                      className="flex h-7 items-center gap-1 rounded-md px-2 text-[12px] text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
+                    >
+                      <GitCompare size={13} strokeWidth={1.75} />
+                      {diffMode === s.id && diffLoading ? '加载中…' : '对比'}
+                    </button>
+                    <button
                       onClick={() => void handleRestore(s)}
                       title="回滚到此版本"
                       className="flex h-7 items-center gap-1 rounded-md px-2 text-[12px] text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
@@ -196,6 +308,44 @@ export default function VersionHistory({ open, onClose }: Props) {
             </ul>
           )}
         </div>
+
+        {/* Diff 对比结果 */}
+        {diffMode && diffResult && (
+          <div className="border-t border-edge/10 max-h-[35vh] overflow-y-auto">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-edge/8 bg-surface-1/95 backdrop-blur-sm px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <GitCompare size={14} strokeWidth={1.75} className="text-fg-muted" />
+                <span className="text-[13px] font-medium text-fg">变更对比</span>
+                <span className="text-[12px] text-fg-faint">{diffResult.summary}</span>
+              </div>
+              <button
+                onClick={() => { setDiffMode(null); setDiffResult(null); setExpandedDiffs(new Set()) }}
+                className="flex h-6 w-6 items-center justify-center rounded text-fg-faint hover:text-fg"
+              >
+                <X size={14} strokeWidth={1.75} />
+              </button>
+            </div>
+
+            {diffResult.lineDiffs.filter((d) => d.type !== 'unchanged').length === 0 ? (
+              <div className="px-4 py-8 text-center text-[13px] text-fg-faint">
+                当前内容与快照完全一致，无差异
+              </div>
+            ) : (
+              <div className="divide-y divide-edge/5">
+                {diffResult.lineDiffs
+                  .filter((d) => d.type !== 'unchanged')
+                  .map((d) => (
+                    <DiffRow
+                      key={d.index}
+                      diff={d}
+                      isExpanded={expandedDiffs.has(d.index)}
+                      onToggle={() => toggleDiffExpand(d.index)}
+                    />
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="border-t border-edge/10 px-4 py-2 text-[11px] text-fg-faint">
           提示：当前为本地版本库（桌面端无后端）。接入自建云同步服务后，快照可跨设备恢复 —— 详见「协作」中的邀请码。

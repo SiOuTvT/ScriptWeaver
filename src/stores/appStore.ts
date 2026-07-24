@@ -59,7 +59,7 @@ interface HistorySnapshot {
   selectedLineIndex: number
 }
 
-export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'theme' | 'settings' | 'effects' | 'about' | 'help'
+export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'theme' | 'settings' | 'effects' | 'about' | 'help' | 'diagnostics' | 'exporter' | 'renpy-hub'
 
 /** 主题模式 */
 export type ThemeMode = 'dark' | 'light'
