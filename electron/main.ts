@@ -696,6 +696,18 @@ ipcMain.handle('fs:scanProjectAssets', (_event, projectRoot: string) => {
 
 // --------------- 保存项目 ---------------
 
+/** 静默写入项目文件到指定目录（不弹对话框，用于自动保存） */
+function writeProjectToDir(projectDir: string, projectJson: string, projectName?: string): void {
+  const assetsDir = path.join(projectDir, 'assets')
+  ensureDir(path.join(assetsDir, SUBDIR_BACKGROUND))
+  ensureDir(path.join(assetsDir, SUBDIR_SPRITE))
+  ensureDir(path.join(assetsDir, SUBDIR_AUDIO))
+  ensureDir(path.join(assetsDir, 'scripts'))
+
+  const projPath = path.join(projectDir, `${projectName || 'untitled'}.swproj`)
+  fs.writeFileSync(projPath, projectJson, 'utf-8')
+}
+
 ipcMain.handle('dialog:saveProject', async (_event, data: { projectJson: string; projectName?: string }) => {
   if (!mainWindow) return { success: false, error: 'No active window' }
 
@@ -706,26 +718,29 @@ ipcMain.handle('dialog:saveProject', async (_event, data: { projectJson: string;
 
   if (result.canceled || result.filePaths.length === 0) return { success: false }
   const projectDir = result.filePaths[0]
-  const projectName = data.projectName || 'untitled'
-  const assetsDir = path.join(projectDir, 'assets')
 
   try {
-    ensureDir(path.join(assetsDir, SUBDIR_BACKGROUND))
-    ensureDir(path.join(assetsDir, SUBDIR_SPRITE))
-    ensureDir(path.join(assetsDir, SUBDIR_AUDIO))
-    ensureDir(path.join(assetsDir, 'scripts'))
-
-    // 素材已直接存储于项目目录下，无需从临时目录拷贝
-
-    // 写入 .swproj
-    const projPath = path.join(projectDir, `${projectName}.swproj`)
-    fs.writeFileSync(projPath, data.projectJson, 'utf-8')
+    writeProjectToDir(projectDir, data.projectJson, data.projectName)
 
     // 保存后激活该项目根目录（协议查找 + 监听）
     activeProjectRoot = projectDir
     startAssetWatch(projectDir)
 
     return { success: true, projectDir }
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message }
+  }
+})
+
+/** 静默保存：直接写入已知项目目录，不弹对话框（自动保存用） */
+ipcMain.handle('dialog:saveProjectToPath', async (_event, data: {
+  projectDir: string
+  projectJson: string
+  projectName?: string
+}) => {
+  try {
+    writeProjectToDir(data.projectDir, data.projectJson, data.projectName)
+    return { success: true }
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message }
   }

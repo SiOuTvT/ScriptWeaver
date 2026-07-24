@@ -710,6 +710,15 @@ electron.ipcMain.handle("fs:scanProjectAssets", (_event, projectRoot) => {
     return { success: false, error: err.message };
   }
 });
+function writeProjectToDir(projectDir, projectJson, projectName) {
+  const assetsDir = path.join(projectDir, "assets");
+  ensureDir(path.join(assetsDir, SUBDIR_BACKGROUND));
+  ensureDir(path.join(assetsDir, SUBDIR_SPRITE));
+  ensureDir(path.join(assetsDir, SUBDIR_AUDIO));
+  ensureDir(path.join(assetsDir, "scripts"));
+  const projPath = path.join(projectDir, `${projectName || "untitled"}.swproj`);
+  fs.writeFileSync(projPath, projectJson, "utf-8");
+}
 electron.ipcMain.handle("dialog:saveProject", async (_event, data) => {
   if (!mainWindow) return { success: false, error: "No active window" };
   const result = await electron.dialog.showOpenDialog(mainWindow, {
@@ -718,18 +727,19 @@ electron.ipcMain.handle("dialog:saveProject", async (_event, data) => {
   });
   if (result.canceled || result.filePaths.length === 0) return { success: false };
   const projectDir = result.filePaths[0];
-  const projectName = data.projectName || "untitled";
-  const assetsDir = path.join(projectDir, "assets");
   try {
-    ensureDir(path.join(assetsDir, SUBDIR_BACKGROUND));
-    ensureDir(path.join(assetsDir, SUBDIR_SPRITE));
-    ensureDir(path.join(assetsDir, SUBDIR_AUDIO));
-    ensureDir(path.join(assetsDir, "scripts"));
-    const projPath = path.join(projectDir, `${projectName}.swproj`);
-    fs.writeFileSync(projPath, data.projectJson, "utf-8");
+    writeProjectToDir(projectDir, data.projectJson, data.projectName);
     activeProjectRoot = projectDir;
     startAssetWatch(projectDir);
     return { success: true, projectDir };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("dialog:saveProjectToPath", async (_event, data) => {
+  try {
+    writeProjectToDir(data.projectDir, data.projectJson, data.projectName);
+    return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
   }

@@ -52,6 +52,8 @@ const api = {
   downloadAsset: (remoteUrl, relativePath) => electron.ipcRenderer.invoke("fs:downloadAsset", remoteUrl, relativePath),
   /** 保存项目：选目录 → 复制素材 → 写 .swproj */
   saveProject: (data) => electron.ipcRenderer.invoke("dialog:saveProject", data),
+  /** 静默保存：直接写入已知项目目录，不弹对话框（自动保存用） */
+  saveProjectToPath: (data) => electron.ipcRenderer.invoke("dialog:saveProjectToPath", data),
   /** 打开项目：选 .swproj → 返回 JSON 内容 + 项目根目录 */
   openProject: () => electron.ipcRenderer.invoke("dialog:openProject"),
   /** 导入素材：打开文件选择器，二进制复制到会话目录（不再返回 Base64） */

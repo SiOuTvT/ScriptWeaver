@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Settings, Database, Cpu, Palette, Monitor, Save, Clock,
-  History, Gauge, FolderOpen, Server, Radio, Timer
+  History, Gauge, FolderOpen, Server, Radio, Timer, Trash2
 } from 'lucide-react'
 import { useAppStore, type AppSettings } from '@/stores/appStore'
 import { DEFAULT_ACCENT } from '@/utils/themeColor'
+import { clearDraft } from '@/utils/draftStorage'
 import { toast } from '@/utils/toast'
 
 // ─── 设置分类 ───────────────────────────────────────────
@@ -100,9 +101,11 @@ export default function SettingsHub() {
   const accentColor = useAppStore((s) => s.accentColor)
   const setAccentColor = useAppStore((s) => s.setAccentColor)
   const resetAccentColor = useAppStore((s) => s.resetAccentColor)
+  const newProject = useAppStore((s) => s.newProject)
 
   const [activeTab, setActiveTab] = useState('storage')
   const [clearing, setClearing] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [projectPath, setProjectPath] = useState('')
   const [pickingPath, setPickingPath] = useState(false)
 
@@ -133,6 +136,20 @@ export default function SettingsHub() {
       setClearing(false)
     }
   }, [])
+
+  const handleResetProject = useCallback(() => {
+    setResetting(true)
+    try {
+      clearDraft()
+      newProject()
+      window.electronAPI?.setActiveProjectRoot?.(null)
+      toast('所有项目数据已清除，页面已重置', 'info')
+    } catch {
+      toast('清除失败，请重试', 'error')
+    } finally {
+      setResetting(false)
+    }
+  }, [newProject])
 
   const handlePickPath = useCallback(async () => {
     setPickingPath(true)
@@ -231,6 +248,25 @@ export default function SettingsHub() {
               <div className="px-3 pb-2">
                 <p className="text-xs text-fg-faint">
                   本地缓存包含版本快照与 AI 对话历史。清除后下一次保存时将从项目数据重建。
+                </p>
+              </div>
+            </SettingGroup>
+
+            <SettingGroup label="项目数据" icon={Trash2}>
+              <SettingRow label="重置所有项目数据" hint="清空剧本、角色、素材与项目根目录，恢复为空白页。新建项目也会触发同样逻辑">
+                <button
+                  onClick={handleResetProject}
+                  disabled={resetting}
+                  className="text-xs px-3 py-1.5 rounded-md border border-danger/50 text-danger
+                    bg-danger/5 hover:bg-danger/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resetting ? '重置中...' : '重置全部数据'}
+                </button>
+              </SettingRow>
+              <div className="px-3 pb-2">
+                <p className="text-xs text-fg-faint">
+                  此操作将清空当前所有项目数据（剧本行、角色配置、素材引用及画布状态），并解除项目根目录绑定。
+                  操作不可撤销，如需保留当前内容请先保存。
                 </p>
               </div>
             </SettingGroup>

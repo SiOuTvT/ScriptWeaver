@@ -115,6 +115,14 @@ const api = {
   }): Promise<{ success: boolean; projectDir?: string; error?: string }> =>
     ipcRenderer.invoke('dialog:saveProject', data),
 
+  /** 静默保存：直接写入已知项目目录，不弹对话框（自动保存用） */
+  saveProjectToPath: (data: {
+    projectDir: string
+    projectJson: string
+    projectName?: string
+  }): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('dialog:saveProjectToPath', data),
+
   /** 打开项目：选 .swproj → 返回 JSON 内容 + 项目根目录 */
   openProject: (): Promise<{
     success: boolean

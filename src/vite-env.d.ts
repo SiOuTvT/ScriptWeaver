@@ -10,6 +10,13 @@ interface ElectronAPI {
     projectName?: string
   }) => Promise<{ success: boolean; projectDir?: string; error?: string }>
 
+  /** 静默保存：直接写入已知项目目录，不弹对话框（自动保存用） */
+  saveProjectToPath: (data: {
+    projectDir: string
+    projectJson: string
+    projectName?: string
+  }) => Promise<{ success: boolean; error?: string }>
+
   /** 打开项目：选 .swproj → 读取 JSON + 设置 projectRoot */
   openProject: () => Promise<{
     success: boolean

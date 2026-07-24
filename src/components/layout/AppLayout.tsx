@@ -70,6 +70,7 @@ async function activateProjectRoot(root: string | null): Promise<void> {
 }
 
 const DEBOUNCE_MS = 800
+let hasShownFirstSaveHint = false // 首次保存引导仅提示一次
 
 export default function AppLayout() {
   const draftDeltas = useAppStore((s) => s.draftDeltas)
@@ -117,12 +118,27 @@ export default function AppLayout() {
   const snapshotRef = useRef({ deltas: draftDeltas, characterConfigs, assets, projectRoot })
   snapshotRef.current = { deltas: draftDeltas, characterConfigs, assets, projectRoot }
 
-  /** 防抖写入 localStorage */
+  /** 防抖写入 localStorage + 若已有项目根目录则静默写入磁盘 */
   const debouncedSaveDraft = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
       const { deltas, characterConfigs: chars, assets: asts, projectRoot: root } = snapshotRef.current
       saveDraft(deltas, chars, asts, root, useAppStore.getState().canvasRatio)
+      // 已有项目根目录 → 静默写磁盘（不弹对话框，真正的自动保存）
+      if (root) {
+        const api = window.electronAPI
+        if (api) {
+          api.saveProjectToPath({
+            projectDir: root,
+            projectJson: serializeProject(deltas, chars, asts),
+            projectName: 'untitled',
+          }).catch(() => { /* 静默失败不打扰用户 */ })
+        }
+      } else if (!hasShownFirstSaveHint) {
+        // 首次使用无项目目录 → 显示一次引导提示
+        hasShownFirstSaveHint = true
+        setTimeout(() => toast('点击「保存」选择存储位置后，编辑内容将自动保存', 'info'), 2000)
+      }
     }, debounceMsRef.current)
   }, [])
 
@@ -213,20 +229,30 @@ export default function AppLayout() {
 
   const handleNewClick = () => {
     if (draftDeltas.length === 0 && characterConfigs.length === 0 && assets.length === 0) {
-      newProject()
-      clearDraft()
+      forceClearAll()
       return
     }
     setShowNewConfirm(true)
   }
 
   const handleNewConfirm = () => {
-    newProject()
-    clearDraft()
-    // 新项目无根目录：停止监听、清空协议查找根
-    window.electronAPI?.setActiveProjectRoot?.(null)
+    forceClearAll()
     setShowNewConfirm(false)
   }
+
+  /** 原子清空所有项目数据——先掐断定时器，再清 store+localStorage+项目根目录 */
+  const forceClearAll = useCallback(() => {
+    // 1) 先取消任何待执行的防抖保存，防止旧数据写回
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = null
+    // 2) 立即写入空草稿到 localStorage（不等防抖）
+    clearDraft()
+    // 3) 清空 store
+    newProject()
+    // 4) 新项目无根目录：停止监听、清空协议根
+    window.electronAPI?.setActiveProjectRoot?.(null)
+    toast('项目数据已清除，可从草稿框开始新创作', 'info')
+  }, [newProject])
 
   const handleSave = async () => {
     const api = window.electronAPI
