@@ -1,0 +1,2 @@
+[36mvite v5.4.21 [32mbuilding for development...[36m[39m
+[32m✓[39m 0 modules transformed.

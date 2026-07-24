@@ -1,661 +1,582 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
-  BookOpen, Search, Edit3, Eye, Save, X, Bold, Italic,
-  Heading1, Heading2, Heading3, List, ListOrdered, Link, Code,
-  MessageSquareQuote, Table2, Image, FileText, ChevronRight, Undo2,
-  Hash, Minus, Type
+  BookOpen, Search, ChevronRight, ChevronDown, FileText,
+  ExternalLink, Info, AlertTriangle, Lightbulb, X
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { toast } from '@/utils/toast'
 
-// ─── 文档索引 ───────────────────────────────────────────────────
-interface DocEntry {
+// ─── 静态预加载所有帮助文档（Vite 不支持动态 ?raw import 模板字符串）───
+
+const helpDocs = import.meta.glob('../../help/*.md', { query: '?raw', import: 'default', eager: true })
+
+function resolveDocContent(file: string): string {
+  const key = `../../help/${file}`
+  return (helpDocs as Record<string, string>)[key] || ''
+}
+
+// ─── 文档目录树 ──────────────────────────────────────
+
+interface DocNode {
   id: string
-  title: string
-  icon: string
-}
-
-const DOCS: DocEntry[] = [
-  { id: 'index', title: 'ScriptWeaver 帮助中心', icon: 'BookOpen' },
-  { id: 'getting-started', title: '快速入门', icon: 'FileText' },
-  { id: 'stage-preview', title: '舞台预览', icon: 'Eye' },
-  { id: 'timeline', title: '时间轴与节点图谱', icon: 'Hash' },
-  { id: 'script-overview', title: '剧本总览', icon: 'FileText' },
-  { id: 'asset-manager', title: '素材管理', icon: 'Image' },
-  { id: 'character-manager', title: '角色管理', icon: 'Type' },
-  { id: 'ai-copilot', title: 'AI 编剧 Copilot', icon: 'BookOpen' },
-  { id: 'tts-synthesis', title: 'TTS 语音合成', icon: 'BookOpen' },
-  { id: 'effects-lab', title: '特效大本营', icon: 'BookOpen' },
-  { id: 'export', title: '导出设置', icon: 'FileText' },
-  { id: 'shortcuts', title: '快捷键速查', icon: 'Hash' },
-  { id: 'faq', title: '常见问题 FAQ', icon: 'MessageSquareQuote' },
-]
-
-const iconMap: Record<string, LucideIcon> = {
-  BookOpen, FileText, Eye, Hash, Image, Type, MessageSquareQuote,
-}
-
-function DocIcon({ name }: { name: string }) {
-  const Icon = iconMap[name] || FileText
-  return <Icon size={15} strokeWidth={1.75} />
-}
-
-// ─── 加载打包文档 ──────────────────────────────────────────────────
-const bundledDocs = import.meta.glob('../../help/*.md', { query: '?raw', import: 'default' })
-
-function getDocKey(docId: string): string {
-  return `../../help/${docId}.md`
-}
-
-async function loadBundledContent(docId: string): Promise<string | undefined> {
-  const loader = bundledDocs[getDocKey(docId)]
-  if (!loader) return undefined
-  const raw = await loader()
-  return raw as string
-}
-
-// ─── localStorage 辅助 ────────────────────────────────────────────
-const STORAGE_PREFIX = 'sw-help-edit-'
-
-function getSavedContent(docId: string): string | null {
-  try {
-    return localStorage.getItem(STORAGE_PREFIX + docId)
-  } catch {
-    return null
-  }
-}
-
-function saveContent(docId: string, content: string): void {
-  try {
-    localStorage.setItem(STORAGE_PREFIX + docId, content)
-  } catch {
-    // localStorage 满或不可用
-  }
-}
-
-function deleteSavedContent(docId: string): void {
-  try {
-    localStorage.removeItem(STORAGE_PREFIX + docId)
-  } catch {
-    // ignore
-  }
-}
-
-// ─── TOC 提取 ─────────────────────────────────────────────────────
-interface TocItem {
-  level: number
-  text: string
-  id: string
-}
-
-function extractToc(markdown: string): TocItem[] {
-  const headingRe = /^(#{1,6})\s+(.+)$/gm
-  const items: TocItem[] = []
-  let match: RegExpExecArray | null
-  while ((match = headingRe.exec(markdown)) !== null) {
-    const level = match[1].length
-    const text = match[2].trim()
-    const id = text
-      .toLowerCase()
-      .replace(/<[^>]+>/g, '')
-      .replace(/[^\w\u4e00-\u9fff\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-    items.push({ level, text, id })
-  }
-  return items
-}
-
-// ─── WYSIWYG 编辑器工具栏操作 ─────────────────────────────────────
-type ToolAction = {
   label: string
-  icon: LucideIcon
-  insert: (selection: { start: number; end: number; text: string }) => {
-    text: string
-    cursorOffset: number
-  }
+  file?: string
+  children?: DocNode[]
+  icon?: string
 }
 
-const TOOLS: ToolAction[] = [
+const DOC_TREE: DocNode[] = [
   {
-    label: '加粗',
-    icon: Bold,
-    insert: ({ start, end, text }) => {
-      const sel = text.slice(start, end) || '粗体文本'
-      return { text: text.slice(0, start) + `**${sel}**` + text.slice(end), cursorOffset: start + 2 + sel.length + 2 }
-    },
+    id: 'getting-started', label: '入门指南', children: [
+      { id: 'index', label: '欢迎使用 ScriptWeaver', file: 'index.md' },
+      { id: 'getting-started', label: '快速开始', file: 'getting-started.md' },
+    ],
   },
   {
-    label: '斜体',
-    icon: Italic,
-    insert: ({ start, end, text }) => {
-      const sel = text.slice(start, end) || '斜体文本'
-      return { text: text.slice(0, start) + `*${sel}*` + text.slice(end), cursorOffset: start + 1 + sel.length + 1 }
-    },
+    id: 'core-features', label: '核心功能', children: [
+      { id: 'stage-preview', label: '舞台预览', file: 'stage-preview.md' },
+      { id: 'timeline', label: '时间轴编辑', file: 'timeline.md' },
+      { id: 'script-overview', label: '剧本总览', file: 'script-overview.md' },
+    ],
   },
   {
-    label: '标题 1',
-    icon: Heading1,
-    insert: ({ start, text }) => {
-      const lineStart = text.lastIndexOf('\n', start - 1) + 1
-      const prefix = '# '
-      return { text: text.slice(0, lineStart) + prefix + text.slice(lineStart), cursorOffset: lineStart + prefix.length }
-    },
+    id: 'asset-mgmt', label: '资源管理', children: [
+      { id: 'asset-manager', label: '素材管理', file: 'asset-manager.md' },
+      { id: 'character-manager', label: '角色管理', file: 'character-manager.md' },
+    ],
   },
   {
-    label: '标题 2',
-    icon: Heading2,
-    insert: ({ start, text }) => {
-      const lineStart = text.lastIndexOf('\n', start - 1) + 1
-      const prefix = '## '
-      return { text: text.slice(0, lineStart) + prefix + text.slice(lineStart), cursorOffset: lineStart + prefix.length }
-    },
+    id: 'ai-creative', label: 'AI 创作', children: [
+      { id: 'ai-copilot', label: 'AI 编剧 Copilot', file: 'ai-copilot.md' },
+      { id: 'tts-synthesis', label: 'TTS 语音合成', file: 'tts-synthesis.md' },
+    ],
   },
   {
-    label: '标题 3',
-    icon: Heading3,
-    insert: ({ start, text }) => {
-      const lineStart = text.lastIndexOf('\n', start - 1) + 1
-      const prefix = '### '
-      return { text: text.slice(0, lineStart) + prefix + text.slice(lineStart), cursorOffset: lineStart + prefix.length }
-    },
+    id: 'advanced', label: '进阶功能', children: [
+      { id: 'effects-lab', label: '特效工坊', file: 'effects-lab.md' },
+      { id: 'export', label: '导出发布', file: 'export.md' },
+    ],
   },
   {
-    label: '无序列表',
-    icon: List,
-    insert: ({ start, text }) => {
-      const lineStart = text.lastIndexOf('\n', start - 1) + 1
-      const prefix = '- '
-      return { text: text.slice(0, lineStart) + prefix + text.slice(lineStart), cursorOffset: lineStart + prefix.length }
-    },
-  },
-  {
-    label: '有序列表',
-    icon: ListOrdered,
-    insert: ({ start, text }) => {
-      const lineStart = text.lastIndexOf('\n', start - 1) + 1
-      const prefix = '1. '
-      return { text: text.slice(0, lineStart) + prefix + text.slice(lineStart), cursorOffset: lineStart + prefix.length }
-    },
-  },
-  {
-    label: '链接',
-    icon: Link,
-    insert: ({ start, end, text }) => {
-      const sel = text.slice(start, end) || '链接文字'
-      return { text: text.slice(0, start) + `[${sel}](url)` + text.slice(end), cursorOffset: start + sel.length + 3 }
-    },
-  },
-  {
-    label: '行内代码',
-    icon: Code,
-    insert: ({ start, end, text }) => {
-      const sel = text.slice(start, end) || 'code'
-      return { text: text.slice(0, start) + `\`${sel}\`` + text.slice(end), cursorOffset: start + 1 + sel.length + 1 }
-    },
-  },
-  {
-    label: '引用',
-    icon: MessageSquareQuote,
-    insert: ({ start, text }) => {
-      const lineStart = text.lastIndexOf('\n', start - 1) + 1
-      const prefix = '> '
-      return { text: text.slice(0, lineStart) + prefix + text.slice(lineStart), cursorOffset: lineStart + prefix.length }
-    },
-  },
-  {
-    label: '分割线',
-    icon: Minus,
-    insert: ({ start, text }) => {
-      const lineStart = text.lastIndexOf('\n', start - 1) + 1
-      const hr = '---\n'
-      return { text: text.slice(0, lineStart) + hr + text.slice(lineStart), cursorOffset: lineStart + hr.length }
-    },
-  },
-  {
-    label: '表格',
-    icon: Table2,
-    insert: ({ start, text }) => {
-      const table = '\n| 列1 | 列2 | 列3 |\n|-----|-----|-----|\n| 内容 | 内容 | 内容 |\n'
-      const lineStart = text.lastIndexOf('\n', start - 1) + 1
-      return { text: text.slice(0, lineStart) + table + text.slice(lineStart), cursorOffset: lineStart + table.length }
-    },
-  },
-  {
-    label: '图片',
-    icon: Image,
-    insert: ({ start, end, text }) => {
-      const sel = text.slice(start, end) || '图片描述'
-      return { text: text.slice(0, start) + `![${sel}](url)` + text.slice(end), cursorOffset: start + sel.length + 3 }
-    },
+    id: 'reference', label: '参考', children: [
+      { id: 'shortcuts', label: '快捷键速查', file: 'shortcuts.md' },
+      { id: 'faq', label: '常见问题', file: 'faq.md' },
+    ],
   },
 ]
 
-// ─── 编辑器组件 ────────────────────────────────────────────────────
-function MarkdownEditor({
-  content,
-  onChange,
-  onCancel,
-}: {
-  content: string
-  onChange: (newContent: string) => void
-  onCancel: () => void
-}) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const [text, setText] = useState(content)
+function flattenDocs(nodes: DocNode[]): DocNode[] {
+  return nodes.flatMap((n) => (n.children ? [n, ...flattenDocs(n.children)] : [n]))
+}
 
-  const handleTool = useCallback((tool: ToolAction) => {
-    const ta = textareaRef.current
-    if (!ta) return
-    const { selectionStart: start, selectionEnd: end, value } = ta
-    const result = tool.insert({ start, end, text: value })
-    setText(result.text)
-    requestAnimationFrame(() => {
-      ta.focus()
-      ta.setSelectionRange(result.cursorOffset, result.cursorOffset)
-    })
-  }, [])
-
-  // 拖入图片：转 base64 data URL 插入
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files?.[0]
-    if (!file || !file.type.startsWith('image/')) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const base64 = reader.result as string
-      const ta = textareaRef.current
-      if (!ta) return
-      const { selectionStart: start, value } = ta
-      const mdImg = `![${file.name}](${base64})\n`
-      const newText = value.slice(0, start) + mdImg + value.slice(start)
-      setText(newText)
-      requestAnimationFrame(() => {
-        ta.focus()
-        ta.setSelectionRange(start + mdImg.length, start + mdImg.length)
-      })
+function findDocById(nodes: DocNode[], id: string): DocNode | undefined {
+  for (const n of nodes) {
+    if (n.id === id) return n
+    if (n.children) {
+      const found = findDocById(n.children, id)
+      if (found) return found
     }
-    reader.readAsDataURL(file)
-  }, [])
+  }
+  return undefined
+}
 
+// ─── 提示框 / Alert 组件 ────────────────────────────
+
+const alertStyles = {
+  info:    { bg: 'bg-info/8',      border: 'border-info/30',   icon: Info,           iconColor: 'text-info' },
+  warning: { bg: 'bg-warning/8',   border: 'border-warning/30',icon: AlertTriangle,  iconColor: 'text-warning' },
+  tip:     { bg: 'bg-success/8',   border: 'border-success/30',icon: Lightbulb,      iconColor: 'text-success' },
+  danger:  { bg: 'bg-danger/8',    border: 'border-danger/30', icon: AlertTriangle,  iconColor: 'text-danger' },
+}
+
+function AlertBox({ type, children }: { type: 'info' | 'warning' | 'tip' | 'danger'; children: React.ReactNode }) {
+  const style = alertStyles[type]
+  const Icon = style.icon
   return (
-    <div className="flex h-full flex-col">
-      {/* 工具栏 */}
-      <div className="flex shrink-0 items-center gap-1 border-b border-edge/10 bg-surface/60 px-3 py-2">
-        {TOOLS.map((tool) => (
-          <button
-            key={tool.label}
-            title={tool.label}
-            onClick={() => handleTool(tool)}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
-          >
-            <tool.icon size={15} strokeWidth={1.75} />
-          </button>
-        ))}
-        <span className="mx-1 h-4 w-px bg-edge/20" />
-        <button
-          onClick={onCancel}
-          title="取消编辑"
-          className="flex h-7 items-center gap-1 rounded-md px-2 text-[12px] text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
-        >
-          <X size={14} strokeWidth={1.75} />
-          取消
-        </button>
-      </div>
-
-      {/* 分屏编辑区 */}
-      <div className="flex min-h-0 flex-1">
-        {/* 编辑 */}
-        <div className="flex w-1/2 flex-col border-r border-edge/10">
-          <div className="flex items-center gap-1 border-b border-edge/10 bg-surface/40 px-3 py-1.5">
-            <Edit3 size={13} strokeWidth={1.75} className="text-fg-subtle" />
-            <span className="text-[12px] text-fg-subtle">编辑</span>
-            <span className="ml-auto font-mono text-[12px] text-fg-faint">
-              {text.length} 字
-            </span>
-          </div>
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-            className="min-h-0 flex-1 resize-none bg-transparent px-4 py-3 font-mono text-[13px] leading-relaxed text-fg placeholder-fg-faint outline-none"
-            placeholder="在此编写 Markdown 文档..."
-            spellCheck={false}
-          />
-        </div>
-
-        {/* 预览 */}
-        <div className="flex w-1/2 flex-col">
-          <div className="flex items-center gap-1 border-b border-edge/10 bg-surface/40 px-3 py-1.5">
-            <Eye size={13} strokeWidth={1.75} className="text-fg-subtle" />
-            <span className="text-[12px] text-fg-subtle">预览</span>
-          </div>
-          <div className="min-h-0 flex-1 overflow-auto px-4 py-3">
-            <div className="prose-content">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 底部操作栏 */}
-      <div className="flex shrink-0 items-center gap-2 border-t border-edge/10 bg-surface/60 px-3 py-2">
-        <button
-          onClick={onCancel}
-          className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
-        >
-          <X size={14} strokeWidth={1.75} />
-          放弃修改
-        </button>
-        <button
-          onClick={() => onChange(text)}
-          className="ml-auto flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-primary/90"
-        >
-          <Save size={14} strokeWidth={1.75} />
-          保存文档
-        </button>
-      </div>
+    <div className={`my-3 flex items-start gap-2.5 px-3 py-2.5 rounded-lg border ${style.bg} ${style.border}`}>
+      <Icon size={15} className={`${style.iconColor} shrink-0 mt-px`} />
+      <div className="text-sm text-fg-muted leading-relaxed">{children}</div>
     </div>
   )
 }
 
-// ─── 主体组件 ──────────────────────────────────────────────────────
+// ─── 代码块组件（带语言标签） ──────────────────────
+
+function CodeBlock({ language, children }: { language?: string; children: string }) {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(children)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <div className="my-3 rounded-lg border border-edge/8 overflow-hidden bg-surface-1">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-edge/6 bg-surface/50">
+        <span className="text-xs font-medium text-fg-faint uppercase tracking-wide">
+          {language || 'text'}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="text-xs text-fg-subtle hover:text-fg-muted transition-colors px-2 py-0.5 rounded hover:bg-surface-hover/60"
+        >
+          {copied ? '已复制' : '复制'}
+        </button>
+      </div>
+      <pre className="p-3 overflow-x-auto">
+        <code className="text-sm leading-relaxed font-mono text-fg-default">{children}</code>
+      </pre>
+    </div>
+  )
+}
+
+// ─── 主页面 ────────────────────────────────────────────
+
 export default function HelpCenter() {
-  const [docId, setDocId] = useState('index')
+  const [activeDoc, setActiveDoc] = useState('index')
+  const [content, setContent] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [bundledContent, setBundledContent] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [isEditing, setIsEditing] = useState(false)
-  const [hasEdit, setHasEdit] = useState(false)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    new Set(DOC_TREE.map((g) => g.id))
+  )
+  const [headings, setHeadings] = useState<{ id: string; text: string; level: number }[]>([])
+  const [activeHeading, setActiveHeading] = useState('')
+  const [showEditor, setShowEditor] = useState(false)
+  const [editingDoc, setEditingDoc] = useState('')
+  const [editorContent, setEditorContent] = useState('')
+  const [editDrafts, setEditDrafts] = useState<Record<string, string>>({})
 
-  // 加载文档内容
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setBundledContent('')
+  const contentRef = useRef<HTMLDivElement>(null)
+  const headingRefs = useRef<Map<string, HTMLElement>>(new Map())
 
-    // 先检查 localStorage 覆盖
-    const saved = getSavedContent(docId)
-    if (saved) {
-      if (!cancelled) {
-        setBundledContent(saved)
-        setHasEdit(true)
-        setLoading(false)
-      }
+  // ─── 文档加载 ─────────────────────────────────
+  const loadDoc = useCallback(async (docId: string) => {
+    const doc = findDocById(DOC_TREE, docId)
+    if (!doc?.file) return
+
+    // 检查是否有本地编辑草稿
+    if (editDrafts[docId]) {
+      setContent(editDrafts[docId])
+      setActiveDoc(docId)
       return
     }
 
-    setHasEdit(false)
-    loadBundledContent(docId).then((raw) => {
-      if (!cancelled) {
-        setBundledContent(raw ?? `# 文档未找到\n\n无法加载 "${docId}" 文档。`)
-        setLoading(false)
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        setBundledContent(`# 加载失败\n\n文档 "${docId}" 加载出错。`)
-        setLoading(false)
-      }
-    })
+    setLoading(true)
+    setError('')
+    setActiveDoc(docId)
+    try {
+      const text = resolveDocContent(doc.file)
+      if (!text) throw new Error('empty')
+      setContent(text)
+    } catch {
+      setError('文档加载失败，请稍后重试')
+      setContent('')
+    } finally {
+      setLoading(false)
+    }
+  }, [editDrafts])
 
-    return () => { cancelled = true }
-  }, [docId])
-
-  // 修改后关闭编辑模式
   useEffect(() => {
-    setIsEditing(false)
-  }, [docId])
+    loadDoc(activeDoc)
+  }, [activeDoc, loadDoc])
 
-  // TOC
-  const toc = useMemo(() => extractToc(bundledContent), [bundledContent])
+  // ─── 提取标题 ──────────────────────────────────
+  useEffect(() => {
+    if (!content || !contentRef.current) return
+    // 等一小段时间让 DOM 渲染完成
+    const timer = setTimeout(() => {
+      const els = contentRef.current?.querySelectorAll('h1[id], h2[id]')
+      if (!els) return
+      const h: { id: string; text: string; level: number }[] = []
+      const map = new Map<string, HTMLElement>()
+      els.forEach((el) => {
+        const htmlEl = el as HTMLElement
+        h.push({ id: htmlEl.id, text: htmlEl.textContent || '', level: Number(htmlEl.tagName[1]) })
+        map.set(htmlEl.id, htmlEl)
+      })
+      setHeadings(h)
+      headingRefs.current = map
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [content])
 
-  // 搜索过滤
-  const filteredDocs = useMemo(() => {
-    if (!searchQuery.trim()) return DOCS
-    const q = searchQuery.toLowerCase()
-    return DOCS.filter(
-      (d) =>
-        d.title.toLowerCase().includes(q) ||
-        d.id.toLowerCase().includes(q),
+  // ─── IntersectionObserver 滚动追踪 ──────────────
+  useEffect(() => {
+    if (headings.length === 0) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible.length > 0) {
+          setActiveHeading(visible[0].target.id)
+        }
+      },
+      { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
     )
-  }, [searchQuery])
+    const currentMap = headingRefs.current
+    currentMap.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [headings])
 
-  const currentDoc = DOCS.find((d) => d.id === docId)
-  const docTitle = currentDoc?.title ?? '帮助文档'
+  // ─── 目录点击平滑滚动 ──────────────────────────
+  const scrollToHeading = useCallback((id: string) => {
+    const el = headingRefs.current.get(id)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setActiveHeading(id)
+    }
+  }, [])
 
-  // 编辑器保存
-  const handleEditorSave = useCallback(
-    (newContent: string) => {
-      saveContent(docId, newContent)
-      setBundledContent(newContent)
-      setHasEdit(true)
-      setIsEditing(false)
-    },
-    [docId],
-  )
+  // ─── 搜索过滤 ──────────────────────────────────
+  const filteredGroups = !searchQuery.trim() ? DOC_TREE : DOC_TREE
+    .map((group) => ({
+      ...group,
+      children: group.children?.filter((child) =>
+        child.label.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    }))
+    .filter((group) => group.children && group.children.length > 0)
 
-  // 放弃编辑并还原默认
-  const handleResetDoc = useCallback(() => {
-    deleteSavedContent(docId)
-    setHasEdit(false)
-    setIsEditing(false)
-    loadBundledContent(docId).then((raw) => {
-      setBundledContent(raw ?? `# 文档未找到\n\n无法加载 "${docId}" 文档。`)
-    }).catch(() => {
-      setBundledContent(`# 加载失败\n\n文档 "${docId}" 加载出错。`)
+  // 展开/折叠分组
+  const toggleGroup = (id: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
     })
-  }, [docId])
+  }
+
+  // ─── 编辑器 ────────────────────────────────────
+  const openEditor = () => {
+    const doc = findDocById(DOC_TREE, activeDoc)
+    setEditingDoc(doc?.file || activeDoc)
+    setEditorContent(editDrafts[activeDoc] || content)
+    setShowEditor(true)
+  }
+
+  const saveEditor = () => {
+    const draft = editorContent.trim()
+    if (draft) {
+      setEditDrafts((prev) => ({ ...prev, [activeDoc]: draft }))
+      setContent(draft)
+      toast('草稿已保存', 'success')
+    } else {
+      const newDrafts = { ...editDrafts }
+      delete newDrafts[activeDoc]
+      setEditDrafts(newDrafts)
+      loadDoc(activeDoc)
+    }
+    setShowEditor(false)
+  }
+
+  const activeLabel = findDocById(DOC_TREE, activeDoc)?.label || '帮助中心'
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-canvas">
-      {/* 顶部导航栏 */}
-      <header className="flex shrink-0 items-center gap-3 border-b border-edge/10 bg-surface/70 px-4 py-2.5 backdrop-blur-md">
-        <BookOpen size={16} strokeWidth={1.75} className="text-primary/70" />
-        <span className="text-[14px] font-semibold text-fg">帮助中心</span>
-        <span className="text-[12px] text-fg-faint">文档教程与功能参考</span>
-
-        <span className="flex-1" />
-
+    <div className="flex h-full select-none">
+      {/* ── 左侧：树形导航 ──────────────────────── */}
+      <div className="w-56 shrink-0 border-r border-edge/8 flex flex-col bg-surface/50">
         {/* 搜索 */}
-        <div className="relative flex items-center">
-          <Search size={14} strokeWidth={1.75} className="absolute left-2.5 text-fg-faint" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索文档..."
-            className="w-48 rounded-md border border-edge/15 bg-surface/60 py-1.5 pl-8 pr-3 text-[13px] text-fg placeholder-fg-faint outline-none transition-colors focus:border-primary/40 focus:bg-surface"
-          />
+        <div className="px-3 pt-3 pb-2">
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-faint" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="搜索文档..."
+              className="w-full pl-7 pr-2 py-1.5 text-xs rounded-md border border-edge/10
+                bg-surface-2/60 text-fg-default placeholder:text-fg-faint
+                focus:outline-none focus:border-primary/30 transition-colors"
+            />
+          </div>
         </div>
 
-        {/* 编辑/还原按钮 */}
-        <div className="flex items-center gap-1">
-          {hasEdit && !isEditing && (
-            <button
-              onClick={handleResetDoc}
-              title="还原为默认文档"
-              className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[12px] text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
-            >
-              <Undo2 size={13} strokeWidth={1.75} />
-              还原默认
-            </button>
+        {/* 树形导航 */}
+        <nav className="flex-1 overflow-y-auto px-2 pb-3">
+          {filteredGroups.map((group) => {
+            const expanded = expandedGroups.has(group.id)
+            return (
+              <div key={group.id} className="mb-1">
+                <button
+                  onClick={() => toggleGroup(group.id)}
+                  className="w-full flex items-center justify-between px-2 py-1.5 rounded-md
+                    text-xs font-medium text-fg-muted hover:bg-surface-hover/60 transition-colors"
+                >
+                  <span>{group.label}</span>
+                  {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                </button>
+                {expanded && group.children && (
+                  <div className="ml-1">
+                    {group.children.map((child) => {
+                      const isActive = activeDoc === child.id
+                      return (
+                        <button
+                          key={child.id}
+                          onClick={() => setActiveDoc(child.id)}
+                          className={`w-full flex items-center gap-2 pl-4 pr-2 py-1.5 rounded-md text-left
+                            text-sm transition-colors
+                            ${isActive
+                              ? 'bg-primary/10 text-primary border border-primary/20 font-medium'
+                              : 'text-fg-muted hover:bg-surface-hover/60 border border-transparent'
+                            }`}
+                        >
+                          <FileText size={13} className={isActive ? 'text-primary' : 'text-fg-faint'} />
+                          <span className="truncate">{child.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          {filteredGroups.length === 0 && (
+            <p className="text-xs text-fg-faint text-center py-4">未找到相关文档</p>
           )}
+        </nav>
+
+        <div className="px-3 py-2 border-t border-edge/6">
           <button
-            onClick={() => setIsEditing((v) => !v)}
-            className={`flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors ${
-              isEditing
-                ? 'bg-primary/15 text-primary'
-                : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
-            }`}
+            onClick={openEditor}
+            className="w-full text-xs text-fg-subtle hover:text-primary transition-colors
+              py-1.5 px-2 rounded hover:bg-surface-hover/60 text-left"
           >
-            <Edit3 size={13} strokeWidth={1.75} />
-            {isEditing ? '退出编辑' : '编辑文档'}
+            编辑当前页...
           </button>
         </div>
-      </header>
+      </div>
 
-      {/* 编辑器模式 */}
-      {isEditing ? (
-        <div className="min-h-0 flex-1">
-          <MarkdownEditor
-            content={bundledContent}
-            onChange={handleEditorSave}
-            onCancel={() => setIsEditing(false)}
-          />
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          {/* ── 左侧文档导航 ── */}
-          <aside className="flex w-52 shrink-0 flex-col border-r border-edge/10 bg-surface/30">
-            <div className="overflow-auto px-2 py-2">
-              {searchQuery && filteredDocs.length === 0 ? (
-                <p className="px-2.5 py-4 text-center text-[13px] text-fg-faint">
-                  未找到匹配的文档
-                </p>
-              ) : (
-                <nav className="flex flex-col gap-0.5">
-                  {filteredDocs.map((doc) => {
-                    const active = doc.id === docId
-                    const hasLocal = !!getSavedContent(doc.id)
-                    return (
-                      <button
-                        key={doc.id}
-                        onClick={() => setDocId(doc.id)}
-                        className={`group flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-all ${
-                          active
-                            ? 'signal-bar bg-primary/[0.08] text-fg font-medium'
-                            : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
-                        }`}
-                      >
-                        <span className={`shrink-0 ${active ? 'text-primary' : 'text-fg-faint'}`}>
-                          <DocIcon name={doc.icon} />
-                        </span>
-                        <span className="truncate">{doc.title}</span>
-                        {hasLocal && !active && (
-                          <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" />
-                        )}
-                      </button>
-                    )
-                  })}
-                </nav>
-              )}
-            </div>
-
-            {/* 底部统计 */}
-            <div className="mt-auto border-t border-edge/10 px-3 py-2 text-[12px] text-fg-faint">
-              {DOCS.length} 篇文档
-              {searchQuery && filteredDocs.length !== DOCS.length && (
-                <span> · {filteredDocs.length} 篇匹配</span>
-              )}
-            </div>
-          </aside>
-
-          {/* ── 中央文档正文 ── */}
-          <main className="flex min-w-0 flex-1 justify-center overflow-auto bg-surface">
-            <div className="w-full max-w-3xl px-8 py-8">
-              {loading ? (
-                <div className="flex items-center justify-center py-24">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-                </div>
-              ) : (
-                <>
-                  <div className="mb-8">
-                    <h1 className="text-[18px] font-semibold leading-snug text-fg">
-                      {docTitle}
-                    </h1>
-                    {hasEdit && (
-                      <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[12px] text-primary/80">
-                        <Edit3 size={11} strokeWidth={1.75} />
-                        已自定义
-                      </span>
-                    )}
+      {/* ── 中间：Markdown 正文 ──────────────────── */}
+      <div
+        ref={contentRef}
+        className="flex-1 overflow-y-auto px-8 py-6"
+      >
+        {loading && (
+          <div className="flex items-center justify-center h-32">
+            <p className="text-sm text-fg-faint">加载中...</p>
+          </div>
+        )}
+        {error && (
+          <div className="flex items-center justify-center h-32">
+            <p className="text-sm text-danger">{error}</p>
+          </div>
+        )}
+        {!loading && !error && (
+          <div className="prose-content max-w-3xl">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({ children, ...props }) => {
+                  const id = String(children).replace(/\s+/g, '-').toLowerCase()
+                  return <h1 id={id} {...props}>{children}</h1>
+                },
+                h2: ({ children, ...props }) => {
+                  const id = String(children).replace(/\s+/g, '-').toLowerCase()
+                  return <h2 id={id} {...props}>{children}</h2>
+                },
+                code: ({ className, children, ...props }: any) => {
+                  const match = /language-(\w+)/.exec(className || '')
+                  const isInline = !match && !String(children).includes('\n')
+                  if (isInline) {
+                    return <code className={className} {...props}>{children}</code>
+                  }
+                  return (
+                    <CodeBlock language={match ? match[1] : undefined}>
+                      {String(children).replace(/\n$/, '')}
+                    </CodeBlock>
+                  )
+                },
+                blockquote: ({ children, ...props }: any) => {
+                  // 检测是否为 Alert 提示框
+                  const rawText = String((children as any)?.props?.children || '')
+                  if (rawText.startsWith('[!INFO]') || rawText.startsWith('[!info]'))
+                    return <AlertBox type="info">{rawText.replace(/^\[!INFO\]\s*/i, '')}</AlertBox>
+                  if (rawText.startsWith('[!WARNING]') || rawText.startsWith('[!warning]'))
+                    return <AlertBox type="warning">{rawText.replace(/^\[!WARNING\]\s*/i, '')}</AlertBox>
+                  if (rawText.startsWith('[!TIP]') || rawText.startsWith('[!tip]'))
+                    return <AlertBox type="tip">{rawText.replace(/^\[!TIP\]\s*/i, '')}</AlertBox>
+                  if (rawText.startsWith('[!DANGER]') || rawText.startsWith('[!danger]'))
+                    return <AlertBox type="danger">{rawText.replace(/^\[!DANGER\]\s*/i, '')}</AlertBox>
+                  return <blockquote {...props}>{children}</blockquote>
+                },
+                table: ({ children, ...props }) => (
+                  <div className="overflow-x-auto my-3 rounded-lg border border-edge/8">
+                    <table {...props}>{children}</table>
                   </div>
-                  <article className="prose-content">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {bundledContent}
-                    </ReactMarkdown>
-                  </article>
-
-                  {/* 文档底部导航 */}
-                  <div className="mt-12 border-t border-edge/10 pt-6">
-                    <div className="flex items-center justify-between">
-                      {(() => {
-                        const idx = DOCS.findIndex((d) => d.id === docId)
-                        const prev = idx > 0 ? DOCS[idx - 1] : null
-                        const next = idx < DOCS.length - 1 ? DOCS[idx + 1] : null
-                        return (
-                          <>
-                            {prev ? (
-                              <button
-                                onClick={() => setDocId(prev.id)}
-                                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
-                              >
-                                <ChevronRight size={14} strokeWidth={1.75} className="rotate-180" />
-                                {prev.title}
-                              </button>
-                            ) : (
-                              <span />
-                            )}
-                            {next && (
-                              <button
-                                onClick={() => setDocId(next.id)}
-                                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg"
-                              >
-                                {next.title}
-                                <ChevronRight size={14} strokeWidth={1.75} />
-                              </button>
-                            )}
-                          </>
-                        )
-                      })()}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </main>
-
-          {/* ── 右侧 TOC ── */}
-          <aside className="flex w-44 shrink-0 flex-col border-l border-edge/10 bg-surface/20">
-            <div className="border-b border-edge/10 px-3 py-2.5">
-              <span className="text-[12px] font-medium text-fg-muted">本页目录</span>
-            </div>
-            <nav className="overflow-auto px-2 py-2">
-              {toc.length === 0 ? (
-                <p className="px-2 py-2 text-[12px] text-fg-faint">暂无标题</p>
-              ) : (
-                <div className="flex flex-col gap-0.5">
-                  {toc.map((item, i) => (
+                ),
+                th: ({ children, ...props }) => (
+                  <th className="px-3 py-2 text-xs font-medium text-fg-muted bg-surface/60 border-b border-edge/8 text-left" {...props}>
+                    {children}
+                  </th>
+                ),
+                td: ({ children, ...props }) => (
+                  <td className="px-3 py-2 text-sm text-fg-default border-b border-edge/4" {...props}>
+                    {children}
+                  </td>
+                ),
+                a: ({ href, children, ...props }) => {
+                  const isExternal = href?.startsWith('http')
+                  return (
                     <a
-                      key={i}
-                      href={`#${item.id}`}
-                      className={`block truncate rounded-md px-2 py-1.5 text-[12px] leading-snug transition-colors hover:bg-surface-hover hover:text-fg ${
-                        item.level === 1
-                          ? 'font-medium text-fg-subtle'
-                          : item.level === 2
-                            ? 'text-fg-subtle'
-                            : 'pl-5 text-fg-faint'
-                      }`}
-                      style={{ paddingLeft: item.level === 1 ? 8 : item.level === 2 ? 16 : 24 }}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const el = document.getElementById(item.id)
-                        el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                      }}
+                      href={href}
+                      target={isExternal ? '_blank' : undefined}
+                      rel={isExternal ? 'noopener noreferrer' : undefined}
+                      className="inline-flex items-center gap-0.5 text-primary hover:underline"
+                      {...props}
                     >
-                      {item.text}
+                      {children}
+                      {isExternal && <ExternalLink size={11} />}
                     </a>
-                  ))}
+                  )
+                },
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
+        )}
+      </div>
+
+      {/* ── 右侧：本页目录（On This Page） + 滚动追踪 ── */}
+      <div className="w-48 shrink-0 border-l border-edge/8 overflow-y-auto bg-surface/50">
+        <div className="px-3 pt-4 pb-2">
+          <h3 className="text-xs font-medium text-fg-muted uppercase tracking-[0.08em]">本页内容</h3>
+        </div>
+        <nav className="px-2 pb-4">
+          {headings.length === 0 && content && (
+            <p className="text-xs text-fg-faint px-2 py-4 text-center">无标题</p>
+          )}
+          {headings.map((h, i) => {
+            const isActive = activeHeading === h.id
+            return (
+              <button
+                key={`${h.id}-${i}`}
+                onClick={() => scrollToHeading(h.id)}
+                className={`w-full text-left py-1 px-2 rounded-md transition-colors text-xs
+                  ${h.level === 2 ? 'pl-4' : ''}
+                  ${isActive
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-fg-subtle hover:text-fg-muted hover:bg-surface-hover/40'
+                  }`}
+              >
+                <span className="block truncate">{h.text}</span>
+              </button>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* ── Markdown 编辑器浮层 ──────────────────── */}
+      {showEditor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 backdrop-blur-sm">
+          <div className="w-[80vw] max-w-4xl h-[80vh] panel flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-edge/8">
+              <div className="flex items-center gap-2">
+                <BookOpen size={14} className="text-fg-muted" />
+                <span className="text-sm font-medium text-fg-default">
+                  编辑 - {activeLabel}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowEditor(false)}
+                className="p-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            {/* 分屏编辑+预览 */}
+            <div className="flex-1 flex overflow-hidden">
+              <div className="flex-1 flex flex-col border-r border-edge/8">
+                <div className="px-3 py-1.5 border-b border-edge/6 bg-surface/40">
+                  <span className="text-xs text-fg-faint">Markdown 源码</span>
                 </div>
-              )}
-            </nav>
-          </aside>
+                <textarea
+                  value={editorContent}
+                  onChange={(e) => setEditorContent(e.target.value)}
+                  className="flex-1 p-4 text-sm font-mono resize-none bg-transparent text-fg-default
+                    outline-none placeholder:text-fg-faint"
+                  placeholder="输入 Markdown 内容..."
+                />
+              </div>
+              <div className="flex-1 flex flex-col">
+                <div className="px-3 py-1.5 border-b border-edge/6 bg-surface/40">
+                  <span className="text-xs text-fg-faint">实时预览</span>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 prose-content text-sm">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {editorContent}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            </div>
+            {/* 底部操作条 */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-edge/8 bg-surface/50">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => insertMarkdown('**', '**', '加粗文字')}
+                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted font-bold"
+                  title="加粗"
+                >B</button>
+                <button
+                  onClick={() => insertMarkdown('*', '*', '斜体文字')}
+                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted italic"
+                  title="斜体"
+                >I</button>
+                <span className="w-px bg-edge/10 mx-1" />
+                <button
+                  onClick={() => insertMarkdown('\n> ', '', '引用文字')}
+                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted"
+                  title="引用"
+                >"</button>
+                <button
+                  onClick={() => insertMarkdown('`', '`', '代码')}
+                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted font-mono"
+                  title="行内代码"
+                >{`<>`}</button>
+                <button
+                  onClick={() => insertMarkdown('\n```\n', '\n```\n', '代码块')}
+                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted"
+                  title="代码块"
+                >{`{ }`}</button>
+                <span className="w-px bg-edge/10 mx-1" />
+                <button
+                  onClick={() => insertMarkdown('\n| 列A | 列B |\n| --- | --- |\n| ', ' |\n', '值A')}
+                  className="text-xs px-2 py-1 rounded hover:bg-surface-hover/60 text-fg-subtle hover:text-fg-muted"
+                  title="表格"
+                >表</button>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowEditor(false)}
+                  className="text-xs px-3 py-1.5 rounded-md text-fg-subtle hover:bg-surface-hover/60"
+                >取消</button>
+                <button
+                  onClick={saveEditor}
+                  className="text-xs px-3 py-1.5 rounded-md bg-primary/15 text-primary hover:bg-primary/25
+                    font-medium transition-colors"
+                >保存草稿</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* 编辑器插入标记辅助 */}
     </div>
   )
+
+  function insertMarkdown(prefix: string, suffix: string, placeholder: string) {
+    const ta = document.querySelector('textarea') as HTMLTextAreaElement
+    if (!ta) return
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    const before = editorContent.slice(0, start)
+    const selected = editorContent.slice(start, end) || placeholder
+    const after = editorContent.slice(end)
+    setEditorContent(before + prefix + selected + suffix + after)
+  }
 }
