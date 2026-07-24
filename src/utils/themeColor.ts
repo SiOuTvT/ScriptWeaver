@@ -203,14 +203,15 @@ export function computeAccentVars(hex: string, theme: ThemeMode): Record<string,
 /**
  * 计算背景着色变量（Accent-Driven Dynamic Tinting）。
  *
- * 将当前主题色以 2%~5% 混入各层级基准面颜色，产生一整套温润且有归属感的
+ * 将当前主题色以 10%~18% 混入各层级基准面颜色，产生一整套温润且有归属感的
  * "主题色联动微调" 着色面，替代原先固定的中性灰。
  *
- * - canvas (2%):   根背景——极微量着色，仅微微偏离中性灰
- * - surface (3%):  面板主面
- * - surface-1 (4%):二层面板——着色最明显，用作侧栏/卡片等次级容器
- * - surface-2 (3%):卡片面
- * - surface-3 (2%):输入框/内嵌面——保持近中性以利可读性
+ * 着色比重经实测校准：<8% 肉眼不可见；>20% 开始偏离中立底色影响可读性。
+ * - canvas (10%):   根背景——轻量着色，赋予整站情绪基调
+ * - surface (14%):  面板主面——着色的核心感知层
+ * - surface-1 (18%):二层面板——着色最明显，侧栏/次级容器有明确色调倾向
+ * - surface-2 (14%):卡片面
+ * - surface-3 (10%):输入框/内嵌面——保持近中性以利可读性
  *
  * @param hex   主题色 HEX
  * @param theme 当前模式 'dark' | 'light'
@@ -222,11 +223,11 @@ export function computeSurfaceTints(hex: string, theme: ThemeMode): Record<strin
   const bases: TintBases = theme === 'dark' ? DARK_BASES : LIGHT_BASES
 
   return {
-    '--c-canvas-tinted':      rgbTriple(mix(bases.canvas,   accent, 0.02)),
-    '--c-surface-tinted':     rgbTriple(mix(bases.surface,  accent, 0.03)),
-    '--c-surface-1-tinted':   rgbTriple(mix(bases.surface1, accent, 0.04)),
-    '--c-surface-2-tinted':   rgbTriple(mix(bases.surface2, accent, 0.03)),
-    '--c-surface-3-tinted':   rgbTriple(mix(bases.surface3, accent, 0.02)),
+    '--c-canvas-tinted':      rgbTriple(mix(bases.canvas,   accent, 0.10)),
+    '--c-surface-tinted':     rgbTriple(mix(bases.surface,  accent, 0.14)),
+    '--c-surface-1-tinted':   rgbTriple(mix(bases.surface1, accent, 0.18)),
+    '--c-surface-2-tinted':   rgbTriple(mix(bases.surface2, accent, 0.14)),
+    '--c-surface-3-tinted':   rgbTriple(mix(bases.surface3, accent, 0.10)),
   }
 }
 

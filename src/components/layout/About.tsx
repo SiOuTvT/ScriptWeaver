@@ -108,7 +108,7 @@ export default function About() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
                   text-xs font-medium border border-edge/8
                   bg-surface-tinted/60 text-fg-muted
-                  transition-colors hover:bg-surface-hover/60"
+                  transition-all duration-150 hover:bg-surface-hover/60 hover:border-primary/20 hover:shadow-sm hover:-translate-y-px"
               >
                 {Icon && <Icon size={13} style={{ color: tech.color }} />}
                 <span style={{ color: tech.color }}>{tech.label}</span>

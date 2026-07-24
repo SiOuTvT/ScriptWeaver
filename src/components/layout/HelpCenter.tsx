@@ -344,10 +344,10 @@ export default function HelpCenter() {
                           key={child.id}
                           onClick={() => setActiveDoc(child.id)}
                           className={`w-full flex items-center gap-2 pl-4 pr-2 py-1.5 rounded-md text-left
-                            text-sm transition-colors
+                            text-sm transition-all duration-150
                             ${isActive
                               ? 'bg-primary/10 text-primary border border-primary/20 font-medium'
-                              : 'text-fg-muted hover:bg-surface-hover/60 border border-transparent'
+                              : 'text-fg-muted hover:bg-surface-hover/60 hover:border-primary/10 border border-transparent'
                             }`}
                         >
                           <FileText size={13} className={isActive ? 'text-primary' : 'text-fg-faint'} />

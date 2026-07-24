@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Settings, Database, Cpu, Palette, Monitor, Save, Clock,
-  History, Gauge, FolderOpen, Server, Radio, Timer, Trash2
+  History, Gauge, FolderOpen, Server, Radio, Timer, Trash2, Check
 } from 'lucide-react'
 import { useAppStore, type AppSettings } from '@/stores/appStore'
-import { DEFAULT_ACCENT } from '@/utils/themeColor'
+import { DEFAULT_ACCENT, ACCENT_PRESETS } from '@/utils/themeColor'
 import { clearDraft } from '@/utils/draftStorage'
 import { toast } from '@/utils/toast'
 
@@ -27,7 +27,7 @@ const TABS: SettingTab[] = [
 
 function SettingGroup({ label, icon: Icon, children }: { label: string; icon: typeof Settings; children: React.ReactNode }) {
   return (
-    <div className="mb-6">
+    <div className="mb-6 pl-4 border-l border-primary/15">
       <div className="flex items-center gap-2 mb-3">
         <Icon size={14} className="text-fg-muted" />
         <span className="text-xs font-medium text-fg-muted uppercase tracking-[0.08em]">{label}</span>
@@ -392,6 +392,39 @@ export default function SettingsHub() {
                   </button>
                 </div>
               </SettingRow>
+              {/* 预设色板网格 */}
+              <div className="px-4 pb-3">
+                <div className="flex flex-wrap gap-2">
+                  {ACCENT_PRESETS.map((p) => {
+                    const isActive = accentColor.toLowerCase() === p.hex.toLowerCase()
+                    return (
+                      <button
+                        key={p.hex}
+                        onClick={() => setAccentColor(p.hex)}
+                        title={p.name}
+                        className="group relative w-8 h-8 rounded-lg border-2 transition-all duration-150
+                          hover:scale-110 hover:shadow-md active:scale-95"
+                        style={{
+                          backgroundColor: p.hex,
+                          borderColor: isActive ? p.hex : 'transparent',
+                          boxShadow: isActive ? `0 0 0 2px rgb(var(--c-canvas)), 0 0 0 4px ${p.hex}40` : undefined,
+                        }}
+                      >
+                        {isActive && (
+                          <Check
+                            size={14}
+                            strokeWidth={3}
+                            className="absolute inset-0 m-auto text-white drop-shadow-sm"
+                          />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-fg-faint">
+                  点击色块快速切换强调色，全站背景与面板将自动着色跟随
+                </p>
+              </div>
             </SettingGroup>
 
             <SettingGroup label="性能与渲染" icon={Gauge}>
