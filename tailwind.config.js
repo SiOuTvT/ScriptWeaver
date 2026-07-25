@@ -6,28 +6,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 保留原 brand 调色板，过渡期不破坏尚未重构的组件
-        brand: {
-          50: '#f0f4ff',
-          100: '#dbe4ff',
-          200: '#bac8ff',
-          300: '#91a7ff',
-          400: '#748ffc',
-          500: '#5c7cfa',
-          600: '#4c6ef5',
-          700: '#4263eb',
-          800: '#3b5bdb',
-          900: '#364fc7',
-          950: '#2b3fa0',
-        },
-
         // ===== 语义化设计 token（双主题共用，值由 CSS 变量驱动） =====
         'on-primary': 'rgb(var(--c-on-primary) / <alpha-value>)',
 
         // 背景层级（墨/纸 明度差制造纵深）
         canvas: {
           DEFAULT: 'rgb(var(--c-canvas) / <alpha-value>)',
-          tinted: 'rgb(var(--c-canvas-tinted) / <alpha-value>)',
         },
         surface: {
           DEFAULT: 'rgb(var(--c-surface) / <alpha-value>)',
@@ -36,10 +20,6 @@ export default {
           '3': 'rgb(var(--c-surface-3) / <alpha-value>)',
           hover: 'rgb(var(--c-surface-hover) / <alpha-value>)',
           active: 'rgb(var(--c-surface-active) / <alpha-value>)',
-          tinted: 'rgb(var(--c-surface-tinted) / <alpha-value>)',
-          '1-tinted': 'rgb(var(--c-surface-1-tinted) / <alpha-value>)',
-          '2-tinted': 'rgb(var(--c-surface-2-tinted) / <alpha-value>)',
-          '3-tinted': 'rgb(var(--c-surface-3-tinted) / <alpha-value>)',
         },
 
         // 边框（低透明，靠 alpha 控制强弱）

@@ -1,12 +1,9 @@
 /**
  * 主题色工具 —— 「墨仪」调色台
  *
- * 用户在设置里选一个基色（HEX），据此推导出 primary / hover / active / soft
- * 以及自适应的 on-primary 文字色，并写入 <html> 的内联 CSS 变量，实时覆盖
- * index.css 中 :root / [data-theme] 里定义的默认值。
- *
- * - 浅色模式：直接用基色
- * - 深色模式：把基色提亮一档（深底上更亮更精神，沿用默认深色 primary 的调性）
+ * 预设主题拥有完整、手工设计的颜色体系（主色 / hover / active），
+ * 不再自动混合白/黑生成大量深浅变体。信号色保持琥珀独立身份。
+ * 自定义颜色（色相滑块）仅做最小 HSL 亮度推导，保留原始饱和度。
  */
 
 export interface RGB {
@@ -15,64 +12,65 @@ export interface RGB {
   b: number
 }
 
-/** 应用商店里视为「默认」的基色（= 浅色模式默认 primary 84 70 220） */
+/** 应用商店里视为「默认」的基色（紫毫） */
 export const DEFAULT_ACCENT = '#5446DC'
 
-/** 需要被覆盖的 CSS 变量名（主色系） */
-const VARS = [
-  '--c-primary',
-  '--c-primary-hover',
-  '--c-primary-active',
-  '--c-primary-soft',
-  '--c-on-primary',
-] as const
-
-/** 需要被覆盖的 CSS 变量名（背景着色系） */
-const TINT_VARS = [
-  '--c-canvas-tinted',
-  '--c-surface-tinted',
-  '--c-surface-1-tinted',
-  '--c-surface-2-tinted',
-  '--c-surface-3-tinted',
-] as const
-
-/* ───── 各主题下用于着色的基准面 RGB（与 index.css 的默认值严格对齐）───── */
-
-interface TintBases {
-  canvas: RGB
-  surface: RGB
-  surface1: RGB
-  surface2: RGB
-  surface3: RGB
+/** 预设色板的完整定义 */
+export interface AccentPreset {
+  name: string
+  hex: string
+  light: { primary: string; hover: string; active: string }
+  dark:  { primary: string; hover: string; active: string }
 }
 
-const LIGHT_BASES: TintBases = {
-  canvas:   { r: 230, g: 229, b: 225 },
-  surface:  { r: 255, g: 255, b: 255 },
-  surface1: { r: 244, g: 243, b: 240 },
-  surface2: { r: 255, g: 255, b: 255 },
-  surface3: { r: 236, g: 235, b: 231 },
-}
-
-const DARK_BASES: TintBases = {
-  canvas:   { r: 8,   g: 9,   b: 12  },
-  surface:  { r: 19,  g: 21,  b: 27  },
-  surface1: { r: 26,  g: 29,  b: 36  },
-  surface2: { r: 33,  g: 37,  b: 46  },
-  surface3: { r: 42,  g: 47,  b: 57  },
-}
-
-/** 精调预设色板（Open Color 系，每色取其色相中最耐看的一档，特性鲜明不刺眼） */
-export const ACCENT_PRESETS: { name: string; hex: string }[] = [
-  { name: '樱粉', hex: '#F06595' }, // 可爱粉
-  { name: '紫毫', hex: '#5446DC' }, // 品牌紫（默认）
-  { name: '靛蓝', hex: '#3B5BDB' }, // 沉静靛
-  { name: '天蓝', hex: '#1C7ED6' }, // 清爽蓝
-  { name: '青碧', hex: '#0CA678' }, // 通透绿
-  { name: '琥珀', hex: '#F08C00' }, // 暖琥珀
-  { name: '绯红', hex: '#E03131' }, // 正绯红
-  { name: '玫红', hex: '#D6336C' }, // 浓郁玫
+/** 手工设计预设色板：每套主题拥有独立完整的颜色体系 */
+export const ACCENT_PRESETS: AccentPreset[] = [
+  {
+    name: '紫毫', hex: '#5446DC',
+    light: { primary: '#5446DC', hover: '#6B5EE8', active: '#4638C4' },
+    dark:  { primary: '#7C6EFF', hover: '#988FFF', active: '#6558E8' },
+  },
+  {
+    name: '樱粉', hex: '#F06595',
+    light: { primary: '#F06595', hover: '#F47DA8', active: '#D94D7E' },
+    dark:  { primary: '#F47DA8', hover: '#F89BBC', active: '#E05588' },
+  },
+  {
+    name: '靛蓝', hex: '#3B5BDB',
+    light: { primary: '#3B5BDB', hover: '#5574E8', active: '#2E4AC4' },
+    dark:  { primary: '#6B8AFF', hover: '#8DA5FF', active: '#5574E8' },
+  },
+  {
+    name: '天蓝', hex: '#1C7ED6',
+    light: { primary: '#1C7ED6', hover: '#3B95E8', active: '#1668B8' },
+    dark:  { primary: '#4DABF7', hover: '#74C0FC', active: '#339AF0' },
+  },
+  {
+    name: '青碧', hex: '#0CA678',
+    light: { primary: '#0CA678', hover: '#20B88C', active: '#099268' },
+    dark:  { primary: '#38D9A9', hover: '#63E6BE', active: '#20B88C' },
+  },
+  {
+    name: '琥珀', hex: '#F08C00',
+    light: { primary: '#F08C00', hover: '#FCA028', active: '#D97A00' },
+    dark:  { primary: '#FCA028', hover: '#FDBD5E', active: '#E88C10' },
+  },
+  {
+    name: '绯红', hex: '#E03131',
+    light: { primary: '#E03131', hover: '#E85555', active: '#C92A2A' },
+    dark:  { primary: '#F06565', hover: '#F48C8C', active: '#E04848' },
+  },
+  {
+    name: '玫红', hex: '#D6336C',
+    light: { primary: '#D6336C', hover: '#E05585', active: '#BF2A5E' },
+    dark:  { primary: '#F06595', hover: '#F47DA8', active: '#E05588' },
+  },
 ]
+
+/** 按浅色主色 hex 快速查找预设 */
+const PRESETS_BY_HEX = new Map(ACCENT_PRESETS.map((p) => [p.hex.toUpperCase(), p]))
+
+/* ───── 基础工具 ───── */
 
 const clamp = (n: number, min = 0, max = 255) => Math.min(max, Math.max(min, n))
 
@@ -81,10 +79,7 @@ export function parseHex(input: string): RGB | null {
   if (!input) return null
   let h = input.trim().replace(/^#/, '')
   if (h.length === 3) {
-    h = h
-      .split('')
-      .map((c) => c + c)
-      .join('')
+    h = h.split('').map((c) => c + c).join('')
   }
   if (!/^[0-9a-fA-F]{6}$/.test(h)) return null
   return {
@@ -105,18 +100,6 @@ export function rgbTriple({ r, g, b }: RGB): string {
   return `${Math.round(r)} ${Math.round(g)} ${Math.round(b)}`
 }
 
-/** 朝目标色混合 t(0~1) */
-function mix(c: RGB, target: RGB, t: number): RGB {
-  return {
-    r: c.r + (target.r - c.r) * t,
-    g: c.g + (target.g - c.g) * t,
-    b: c.b + (target.b - c.b) * t,
-  }
-}
-
-export const lighten = (c: RGB, t: number) => mix(c, { r: 255, g: 255, b: 255 }, t)
-export const darken = (c: RGB, t: number) => mix(c, { r: 0, g: 0, b: 0 }, t)
-
 /** 相对亮度（sRGB 感知近似），用于决定 on-primary 用白字还是黑字 */
 export function luminance({ r, g, b }: RGB): number {
   const f = (v: number) => {
@@ -126,14 +109,11 @@ export function luminance({ r, g, b }: RGB): number {
   return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
 }
 
-/* ---------- HSL 互转（供色相滑块使用） ---------- */
+/* ────────── HSL 互转（供色相滑块使用）────────── */
 
 export function rgbToHsl({ r, g, b }: RGB): { h: number; s: number; l: number } {
-  const rn = r / 255
-  const gn = g / 255
-  const bn = b / 255
-  const max = Math.max(rn, gn, bn)
-  const min = Math.min(rn, gn, bn)
+  const rn = r / 255, gn = g / 255, bn = b / 255
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn)
   const d = max - min
   let h = 0
   if (d !== 0) {
@@ -149,14 +129,11 @@ export function rgbToHsl({ r, g, b }: RGB): { h: number; s: number; l: number } 
 }
 
 export function hslToRgb({ h, s, l }: { h: number; s: number; l: number }): RGB {
-  const sn = s / 100
-  const ln = l / 100
+  const sn = s / 100, ln = l / 100
   const c = (1 - Math.abs(2 * ln - 1)) * sn
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
   const m = ln - c / 2
-  let r = 0
-  let g = 0
-  let b = 0
+  let r = 0, g = 0, b = 0
   if (h < 60) [r, g, b] = [c, x, 0]
   else if (h < 120) [r, g, b] = [x, c, 0]
   else if (h < 180) [r, g, b] = [0, c, x]
@@ -171,79 +148,104 @@ export function withHue(hex: string, hue: number): string {
   const rgb = parseHex(hex)
   if (!rgb) return hex
   const { s, l } = rgbToHsl(rgb)
-  // 灰色（饱和度过低）拖色相无意义，给一个合理默认饱和度
   const sat = s < 8 ? 65 : s
   return toHex(hslToRgb({ h: hue, s: sat, l: Math.min(60, Math.max(30, l)) }))
 }
 
-type ThemeMode = 'dark' | 'light'
+/* ────────── 主题变量计算 ────────── */
 
-/** 计算某主题下的一整套 primary 变量值 */
-export function computeAccentVars(hex: string, theme: ThemeMode): Record<string, string> | null {
-  const base = parseHex(hex)
-  if (!base) return null
+export type ThemeMode = 'dark' | 'light'
 
-  const primary = theme === 'dark' ? lighten(base, 0.16) : base
-  const hover = lighten(primary, 0.12)
-  const active = darken(primary, 0.1)
-  const onPrimary = luminance(primary) > 0.6 ? { r: 23, g: 22, b: 20 } : { r: 255, g: 255, b: 255 }
-
+/** 保护色相与饱和度的最小亮度推演（仅用于非预设的自定义颜色） */
+function deriveHoverActive(
+  primaryHex: string,
+  theme: ThemeMode,
+): { hover: string; active: string } {
+  const rgb = parseHex(primaryHex)
+  if (!rgb) return { hover: primaryHex, active: primaryHex }
+  const { h, s, l } = rgbToHsl(rgb)
+  const hoverL = theme === 'dark' ? Math.min(l + 8, 92) : Math.min(l + 8, 90)
+  const activeL = Math.max(l - 8, 8)
   return {
-    '--c-primary': rgbTriple(primary),
-    '--c-primary-hover': rgbTriple(hover),
-    '--c-primary-active': rgbTriple(active),
-    '--c-primary-soft': rgbTriple(primary),
-    '--c-on-primary': rgbTriple(onPrimary),
-    // 信号色（小数线 / 选中卡片 / 焦点环）随主色同步，确保整站协调
-    '--c-signal': rgbTriple(primary),
-    '--c-signal-soft': rgbTriple(primary),
+    hover: toHex(hslToRgb({ h, s, l: hoverL })),
+    active: toHex(hslToRgb({ h, s, l: activeL })),
   }
 }
 
+/** 需要被覆盖的 CSS 变量名 */
+const VARS = [
+  '--c-primary',
+  '--c-primary-hover',
+  '--c-primary-active',
+  '--c-primary-soft',
+  '--c-on-primary',
+] as const
+
+/** hex → "R G B" triple（带 fallback） */
+const hexToTriple = (hex: string): string => {
+  const c = parseHex(hex)
+  return c ? rgbTriple(c) : '84 70 220'
+}
+
 /**
- * 计算背景着色变量（Accent-Driven Dynamic Tinting）。
+ * 计算某主题下的一整套 primary CSS 变量值。
  *
- * 将当前主题色以 10%~18% 混入各层级基准面颜色，产生一整套温润且有归属感的
- * "主题色联动微调" 着色面，替代原先固定的中性灰。
- *
- * 着色比重经实测校准：<8% 肉眼不可见；>20% 开始偏离中立底色影响可读性。
- * - canvas (10%):   根背景——轻量着色，赋予整站情绪基调
- * - surface (14%):  面板主面——着色的核心感知层
- * - surface-1 (18%):二层面板——着色最明显，侧栏/次级容器有明确色调倾向
- * - surface-2 (14%):卡片面
- * - surface-3 (10%):输入框/内嵌面——保持近中性以利可读性
- *
- * @param hex   主题色 HEX
- * @param theme 当前模式 'dark' | 'light'
+ * - 预设色：使用手工设计的完整色板（保持原始色彩气质）
+ * - 自定义色：仅作最小 HSL 亮度推导（保留饱和度和色相）
+ * - 信号色不再被覆写，保持琥珀独立身份
+ * - 背景面不再着色，保持干净的中性底
  */
-export function computeSurfaceTints(hex: string, theme: ThemeMode): Record<string, string> | null {
-  const accent = parseHex(hex)
-  if (!accent) return null
+export function computeAccentVars(hex: string, theme: ThemeMode): Record<string, string> | null {
+  const normHex = hex.trim().toUpperCase()
+  const preset = PRESETS_BY_HEX.get(normHex)
 
-  const bases: TintBases = theme === 'dark' ? DARK_BASES : LIGHT_BASES
+  let primaryHex: string
+  let hoverHex: string
+  let activeHex: string
+
+  if (preset) {
+    const p = theme === 'dark' ? preset.dark : preset.light
+    primaryHex = p.primary
+    hoverHex = p.hover
+    activeHex = p.active
+  } else {
+    // 自定义颜色 → 仅在暗色模式下提亮主色，hover/active 做最小 HSL 推演
+    const rgb = parseHex(hex)
+    if (!rgb) return null
+    if (theme === 'dark') {
+      const { h, s, l } = rgbToHsl(rgb)
+      primaryHex = toHex(hslToRgb({ h, s, l: Math.min(l + 12, 88) }))
+    } else {
+      primaryHex = normHex
+    }
+    const d = deriveHoverActive(primaryHex, theme)
+    hoverHex = d.hover
+    activeHex = d.active
+  }
+
+  const primaryRgb = parseHex(primaryHex)!
+  const onPrimaryTriple = luminance(primaryRgb) > 0.6 ? '23 22 20' : '255 255 255'
 
   return {
-    '--c-canvas-tinted':      rgbTriple(mix(bases.canvas,   accent, 0.10)),
-    '--c-surface-tinted':     rgbTriple(mix(bases.surface,  accent, 0.14)),
-    '--c-surface-1-tinted':   rgbTriple(mix(bases.surface1, accent, 0.18)),
-    '--c-surface-2-tinted':   rgbTriple(mix(bases.surface2, accent, 0.14)),
-    '--c-surface-3-tinted':   rgbTriple(mix(bases.surface3, accent, 0.10)),
+    '--c-primary': hexToTriple(primaryHex),
+    '--c-primary-hover': hexToTriple(hoverHex),
+    '--c-primary-active': hexToTriple(activeHex),
+    '--c-primary-soft': hexToTriple(primaryHex),
+    '--c-on-primary': onPrimaryTriple,
   }
 }
 
 /**
- * 应用主题色 + 背景着色表到 <html> 内联样式。
- * 信号色（小数线 / 选中卡片 / 焦点环 / 信号点）恒等于主色，确保整站一致跟随。
- * 仅在基色非法时才清除覆盖、回落到 index.css 默认值（包括着色面回退到中性默认值）。
+ * 应用主题色到 <html> 内联样式。
+ * 仅覆写 primary 相关变量；信号色和背景面保持默认，不再联动。
  */
 export function applyAccent(hex: string, theme: ThemeMode): void {
   if (typeof document === 'undefined') return
   const root = document.documentElement
   const vars = computeAccentVars(hex, theme)
-  const tints = computeSurfaceTints(hex, theme)
-  if (!vars || !tints) {
-    ;[...VARS, ...TINT_VARS].forEach((v) => root.style.removeProperty(v))
+  if (!vars) {
+    VARS.forEach((v) => root.style.removeProperty(v))
     return
   }
-  Object.entries({ ...vars, ...tints }).forEach(([k, val]) => root.style.setProperty(k, val))
+  Object.entries(vars).forEach(([k, val]) => root.style.setProperty(k, val))
 }
