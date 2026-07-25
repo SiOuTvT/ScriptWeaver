@@ -44,7 +44,7 @@ export default {
           soft: 'rgb(var(--c-primary-soft) / 0.14)',
         },
 
-        // 签名信号色「琥珀 Signal」—— 仅作指示/描边，不做大块填充
+        // 信号指示色「Signal」—— 跟随 primary 联动，用于激活态 / 选中 / 焦点光环
         signal: {
           DEFAULT: 'rgb(var(--c-signal) / <alpha-value>)',
           soft: 'rgb(var(--c-signal-soft) / 0.14)',
@@ -114,8 +114,8 @@ export default {
           '100%': { backgroundPosition: '-200% 0' },
         },
         pulseSignal: {
-          '0%, 100%': { boxShadow: '0 0 0 3px rgb(var(--c-signal) / 0.16)', opacity: '1' },
-          '50%': { boxShadow: '0 0 0 5px rgb(var(--c-signal) / 0.06)', opacity: '0.7' },
+          '0%, 100%': { boxShadow: '0 0 0 3px rgb(var(--c-primary) / 0.16)', opacity: '1' },
+          '50%': { boxShadow: '0 0 0 5px rgb(var(--c-primary) / 0.06)', opacity: '0.7' },
         },
       },
     },

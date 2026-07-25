@@ -291,7 +291,7 @@ export default function AIPanel() {
           <div className="text-[12px] text-fg-muted leading-relaxed space-y-0.5 font-mono">
             {draftDeltas.slice(-15).map((d, i) => (
               <div key={i} className="truncate">
-                {d.label && <span className="text-amber-500">[{d.label}] </span>}
+                {d.label && <span className="text-primary">[{d.label}] </span>}
                 {d.speaker && <span className="text-blue-400">{d.speaker}: </span>}
                 <span>{(d.dialogue || '').slice(0, 80)}</span>
               </div>
@@ -381,7 +381,7 @@ export default function AIPanel() {
                             <span className={`w-1.5 h-1.5 rounded-full ${
                               node.kind === 'start' ? 'bg-emerald-500'
                               : node.kind === 'ending' ? 'bg-red-500'
-                              : 'bg-amber-500'
+                              : 'bg-primary'
                             }`} />
                             <span className="font-medium text-fg">{node.title}</span>
                             <span className="text-fg-faint text-[10px]">

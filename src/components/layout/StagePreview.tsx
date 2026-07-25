@@ -1527,7 +1527,7 @@ export default function StagePreview() {
             )
             const total = bgN + chN
             return total > 0 ? (
-              <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[12px] text-amber-300" title="本行已挂载的特效数量">
+              <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[12px] text-primary" title="本行已挂载的特效数量">
                 ✦ 特效 {total}
               </span>
             ) : null

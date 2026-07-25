@@ -80,7 +80,7 @@ export default function MultiExporter() {
           </div>
           <div className="flex items-center gap-3 text-[12px] text-fg-muted">
             <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{stats.totalLines} 行</span>
-            <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{stats.totalChars} 字</span>
+            <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-primary" />{stats.totalChars} 字</span>
             <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />{stats.dialogueLines} 对白</span>
           </div>
         </div>

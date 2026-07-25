@@ -39,9 +39,9 @@
   --c-primary-soft: 84 70 220;
   --c-on-primary: 255 255 255;
 
-  /* 签名信号色「琥珀 Signal」—— 浅底沉为烧橙，仅作指示/描边，不做大块填充 */
-  --c-signal: 199 124 8;
-  --c-signal-soft: 199 124 8;
+  /* 信号指示色（跟随 primary，保持 UI 主题色统一） */
+  --c-signal: 84 70 220;
+  --c-signal-soft: 84 70 220;
 
   --c-accent: 14 159 143;         /* 青 */
   --c-accent-soft: 14 159 143;
@@ -93,9 +93,9 @@
   --c-primary-soft: 124 110 255;
   --c-on-primary: 255 255 255;
 
-  /* 签名信号色「琥珀 Signal」—— 深底提亮发光，仅作指示/描边 */
-  --c-signal: 245 176 65;
-  --c-signal-soft: 245 176 65;
+  /* 信号指示色（跟随 primary，保持 UI 主题色统一） */
+  --c-signal: 124 110 255;
+  --c-signal-soft: 124 110 255;
 
   --c-accent: 45 212 191;         /* 青（深底提亮） */
   --c-accent-soft: 45 212 191;
@@ -135,7 +135,7 @@
 
   :focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgb(var(--c-canvas)), 0 0 0 4px rgb(var(--c-signal) / 0.55);
+    box-shadow: 0 0 0 2px rgb(var(--c-canvas)), 0 0 0 4px rgb(var(--c-primary) / 0.55);
   }
 
   body {
@@ -188,14 +188,14 @@
     font-weight: 500;
   }
 
-  /* 信号指示点：唯一暖色灵魂，用于激活/在线/焦点 */
+  /* 信号指示点：跟随主题色，用于激活/在线/焦点 */
   .signal-dot {
     display: inline-block;
     width: 6px;
     height: 6px;
     border-radius: 9999px;
-    background: rgb(var(--c-signal));
-    box-shadow: 0 0 0 3px rgb(var(--c-signal) / 0.16);
+    background: rgb(var(--c-primary));
+    box-shadow: 0 0 0 3px rgb(var(--c-primary) / 0.16);
   }
   .signal-dot--pulse {
     animation: pulse-signal 2s ease-in-out infinite;
@@ -226,7 +226,7 @@
     background-position: 0 0, 0 5px, 5px -5px, -5px 0;
   }
 
-  /* 激活项左侧信号光条（2px 琥珀，替代大块高亮，克制高级） */
+  /* 激活项左侧信号光条（2px，跟随主题色，替代大块高亮，克制高级） */
   .signal-bar::before {
     content: '';
     position: absolute;
@@ -235,8 +235,8 @@
     bottom: 10%;
     width: 2px;
     border-radius: 9999px;
-    background: rgb(var(--c-signal));
-    box-shadow: 0 0 8px rgb(var(--c-signal) / 0.6);
+    background: rgb(var(--c-primary));
+    box-shadow: 0 0 8px rgb(var(--c-primary) / 0.6);
   }
 
   /* 工作台三栏之间的极细刻度分隔线（精密仪器标尺语言） */
@@ -257,7 +257,7 @@
     transform: translateX(-50%);
     background: rgb(var(--c-edge-strong) / 0.18);
   }
-  /* 琥珀刻度：每 10px 一道极细信号点，呼应灵魂色 */
+  /* 主题色刻度：每 10px 一道极细信号点 */
   .col-divider::after {
     content: '';
     position: absolute;
@@ -268,8 +268,8 @@
     transform: translateX(-50%);
     background-image: repeating-linear-gradient(
       to bottom,
-      rgb(var(--c-signal) / 0.38) 0,
-      rgb(var(--c-signal) / 0.38) 1px,
+      rgb(var(--c-primary) / 0.38) 0,
+      rgb(var(--c-primary) / 0.38) 1px,
       transparent 1px,
       transparent 10px
     );
@@ -335,8 +335,8 @@
 }
 
 @keyframes pulse-signal {
-  0%, 100% { box-shadow: 0 0 0 3px rgb(var(--c-signal) / 0.16); opacity: 1; }
-  50% { box-shadow: 0 0 0 5px rgb(var(--c-signal) / 0.06); opacity: 0.7; }
+  0%, 100% { box-shadow: 0 0 0 3px rgb(var(--c-primary) / 0.16); opacity: 1; }
+  50% { box-shadow: 0 0 0 5px rgb(var(--c-primary) / 0.06); opacity: 0.7; }
 }
 
 /* 配音播放时的嘴型（说话）动画：立绘轻微纵向起伏，模拟开口闭合 */

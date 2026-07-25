@@ -179,6 +179,8 @@ const VARS = [
   '--c-primary-active',
   '--c-primary-soft',
   '--c-on-primary',
+  '--c-signal',
+  '--c-signal-soft',
 ] as const
 
 /** hex → "R G B" triple（带 fallback） */
@@ -192,7 +194,7 @@ const hexToTriple = (hex: string): string => {
  *
  * - 预设色：使用手工设计的完整色板（保持原始色彩气质）
  * - 自定义色：仅作最小 HSL 亮度推导（保留饱和度和色相）
- * - 信号色不再被覆写，保持琥珀独立身份
+ * - 信号色跟随 primary 联动，保持 UI 指示元素主题色统一
  * - 背景面不再着色，保持干净的中性底
  */
 export function computeAccentVars(hex: string, theme: ThemeMode): Record<string, string> | null {
@@ -225,13 +227,16 @@ export function computeAccentVars(hex: string, theme: ThemeMode): Record<string,
 
   const primaryRgb = parseHex(primaryHex)!
   const onPrimaryTriple = luminance(primaryRgb) > 0.6 ? '23 22 20' : '255 255 255'
+  const primaryTriple = hexToTriple(primaryHex)
 
   return {
-    '--c-primary': hexToTriple(primaryHex),
+    '--c-primary': primaryTriple,
     '--c-primary-hover': hexToTriple(hoverHex),
     '--c-primary-active': hexToTriple(activeHex),
-    '--c-primary-soft': hexToTriple(primaryHex),
+    '--c-primary-soft': primaryTriple,
     '--c-on-primary': onPrimaryTriple,
+    '--c-signal': primaryTriple,
+    '--c-signal-soft': primaryTriple,
   }
 }
 
