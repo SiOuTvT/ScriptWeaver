@@ -453,7 +453,7 @@ export default function AIPanel() {
                   className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[12px] font-medium transition-colors ${
                     !prompt.trim() || loading
                       ? 'bg-surface-2 text-fg-faint cursor-not-allowed'
-                      : 'bg-primary text-white hover:bg-primary/90 shadow-sm'
+                      : 'bg-primary text-white hover:bg-primary-hover shadow-sm'
                   }`}
                 >
                   {loading ? (
