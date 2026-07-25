@@ -10,18 +10,23 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  // ---- 创作核心（高频） ----
   { id: 'chapters', label: '场景导航', code: '01', icon: <BookOpen size={18} strokeWidth={1.75} /> },
-  { id: 'script-overview', label: '剧本总览', code: '02', icon: <FileText size={18} strokeWidth={1.75} /> },
-  { id: 'assets', label: '素材管理', code: '03', icon: <Images size={18} strokeWidth={1.75} /> },
+  { id: 'ai', label: 'AI 功能', code: '02', icon: <Sparkles size={18} strokeWidth={1.75} /> },
+  { id: 'script-overview', label: '剧本总览', code: '03', icon: <FileText size={18} strokeWidth={1.75} /> },
+  // ---- 内容管理 ----
   { id: 'characters', label: '角色管理', code: '04', icon: <Users size={18} strokeWidth={1.75} /> },
-  { id: 'effects', label: '特效大本营', code: '05', icon: <Wand2 size={18} strokeWidth={1.75} /> },
-  { id: 'renpy-hub', label: 'Ren\'Py 生态', code: '06', icon: <Globe size={18} strokeWidth={1.75} /> },
-  { id: 'diagnostics', label: '工程体检', code: '07', icon: <Stethoscope size={18} strokeWidth={1.75} /> },
-  { id: 'export', label: '导出设置', code: '08', icon: <Download size={18} strokeWidth={1.75} /> },
-  { id: 'exporter', label: '多格式导出', code: '09', icon: <FileDown size={18} strokeWidth={1.75} /> },
-  { id: 'ai', label: 'AI 功能', code: '10', icon: <Sparkles size={18} strokeWidth={1.75} /> },
-  { id: 'settings', label: '设置中心', code: '11', icon: <Settings size={18} strokeWidth={1.75} /> },
-  { id: 'theme', label: '外观主题', code: '12', icon: <Palette size={18} strokeWidth={1.75} /> },
+  { id: 'assets', label: '素材管理', code: '05', icon: <Images size={18} strokeWidth={1.75} /> },
+  { id: 'effects', label: '特效大本营', code: '06', icon: <Wand2 size={18} strokeWidth={1.75} /> },
+  // ---- 导出交付 ----
+  { id: 'export', label: '导出设置', code: '07', icon: <Download size={18} strokeWidth={1.75} /> },
+  { id: 'exporter', label: '多格式导出', code: '08', icon: <FileDown size={18} strokeWidth={1.75} /> },
+  { id: 'renpy-hub', label: 'Ren\'Py 生态', code: '09', icon: <Globe size={18} strokeWidth={1.75} /> },
+  // ---- 工程工具 ----
+  { id: 'diagnostics', label: '工程体检', code: '10', icon: <Stethoscope size={18} strokeWidth={1.75} /> },
+  // ---- 个性化 & 信息 ----
+  { id: 'theme', label: '外观主题', code: '11', icon: <Palette size={18} strokeWidth={1.75} /> },
+  { id: 'settings', label: '设置中心', code: '12', icon: <Settings size={18} strokeWidth={1.75} /> },
   { id: 'about', label: '关于', code: '13', icon: <Info size={18} strokeWidth={1.75} /> },
   { id: 'help', label: '帮助中心', code: '14', icon: <HelpCircle size={18} strokeWidth={1.75} /> },
 ]
