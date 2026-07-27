@@ -1,5 +1,5 @@
-import { Fragment, useCallback, useState, type ReactNode } from 'react'
-import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react'
+import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2, Play, Package, ShieldCheck, RefreshCw } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import { Button } from '@/components/ui'
 import {
@@ -9,6 +9,7 @@ import {
   formatValidationErrors,
   exportDefinitionsRpy,
   exportProjectPackage,
+  buildBundle,
 } from '@/utils/rpyExporter'
 import { buildWebProject } from '@/utils/webExporter'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
@@ -227,6 +228,93 @@ export default function ExportSettings() {
     }
   }, [draftDeltas, characterConfigs, assets, variables, canvasRatio, projectTitle])
 
+  // --------------- Ren'Py 引擎对接 ---------------
+  const [sdkDetecting, setSdkDetecting] = useState(true)
+  const [sdkDetected, setSdkDetected] = useState(false)
+  const [sdkVersion, setSdkVersion] = useState<string | null>(null)
+  const [sdkPath, setSdkPath] = useState<string | undefined>(undefined)
+  const [sdkHint, setSdkHint] = useState<string | undefined>(undefined)
+  const [manualSdk, setManualSdk] = useState('')
+  const [engineBusy, setEngineBusy] = useState(false)
+  const [engineResult, setEngineResult] = useState('')
+
+  const detectSdk = useCallback(async () => {
+    setSdkDetecting(true)
+    try {
+      const r = await window.electronAPI?.renpyDetectSdk()
+      if (r?.detected) {
+        setSdkDetected(true)
+        setSdkVersion(r.version ?? null)
+        setSdkPath(r.sdkPath)
+        setSdkHint(undefined)
+      } else {
+        setSdkDetected(false)
+        setSdkPath(undefined)
+        setSdkHint(r?.hint)
+      }
+    } catch {
+      setSdkDetected(false)
+      setSdkHint('探测 SDK 时发生错误')
+    } finally {
+      setSdkDetecting(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    detectSdk()
+  }, [detectSdk])
+
+  const runEngineAction = useCallback(
+    async (action: 'run' | 'build' | 'lint') => {
+      if (engineBusy) return
+      setEngineBusy(true)
+      setEngineResult('正在准备工程…')
+      try {
+        const bundle = buildBundle(
+          draftDeltas,
+          resolvedStates,
+          characterConfigs,
+          assets,
+          DEFAULT_POSITION_SLOTS,
+          scriptLabel,
+          variables,
+        )
+        const stage = await window.electronAPI?.renpyStageProject({ bundle, title: projectTitle })
+        if (!stage?.success) {
+          setEngineResult('暂存工程失败：' + (stage?.error ?? '未知错误'))
+          return
+        }
+        setEngineResult(
+          `工程已暂存（拷贝素材 ${stage.copied ?? 0} 个${stage.missingCount ? `，缺失 ${stage.missingCount} 个` : ''}）。\n正在调用 Ren'Py SDK…`,
+        )
+        const res = await window.electronAPI?.renpyRunEngine({
+          action,
+          projectDir: stage.projectDir as string,
+          sdkPath: manualSdk.trim() || undefined,
+        })
+        if (!res?.success) {
+          setEngineResult((prev) => prev + '\n\n执行失败：' + (res?.error ?? '未知错误'))
+          return
+        }
+        if (action === 'lint') {
+          const verdict = res.exitCode === 0 ? '\n\n✔ Lint 通过，无语法错误' : `\n\n✘ Lint 退出码 ${res.exitCode}`
+          setEngineResult((prev) => prev + '\n\n' + (res.output || '(无输出)') + verdict)
+        } else if (action === 'run') {
+          setEngineResult((prev) => prev + `\n\n已启动 Ren'Py 预览（进程 ${res.pid}）。\n工程目录：${res.projectDir}`)
+        } else {
+          setEngineResult(
+            (prev) => prev + `\n\n构建已在后台启动。\n产物目录：${res.distDir}\n构建日志：${res.logFile}`,
+          )
+        }
+      } catch (e) {
+        setEngineResult('异常：' + (e as Error).message)
+      } finally {
+        setEngineBusy(false)
+      }
+    },
+    [engineBusy, draftDeltas, resolvedStates, projectTitle, manualSdk],
+  )
+
   const totalLines = draftDeltas.length
   const speakerCount = new Set(draftDeltas.map((d) => d.speaker).filter(Boolean)).size
   const charInScene = characterConfigs.length
@@ -425,6 +513,101 @@ export default function ExportSettings() {
                 ))}
               </div>
               <p className="mt-3 t-micro">点按上方导出操作即点亮对应阶段；校验失败会在此处标红。</p>
+            </section>
+
+            {/* Ren'Py 引擎对接 */}
+            <section className="panel p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="eyebrow">Ren'Py 引擎对接 Engine</div>
+                <button
+                  type="button"
+                  onClick={detectSdk}
+                  disabled={sdkDetecting}
+                  className="flex items-center gap-1 text-[12px] text-fg-muted transition-colors hover:text-fg disabled:opacity-50"
+                >
+                  <RefreshCw size={13} strokeWidth={1.75} className={sdkDetecting ? 'animate-spin' : ''} />
+                  重新检测
+                </button>
+              </div>
+
+              {/* SDK 状态 */}
+              <div
+                className={`mb-3 flex items-center gap-2 rounded-md border px-3 py-2 text-[13px] ${
+                  sdkDetected ? 'border-success/40 bg-success/5' : 'border-edge/15 bg-surface-1'
+                }`}
+              >
+                {sdkDetecting ? (
+                  <Loader2 size={15} strokeWidth={2} className="animate-spin text-fg-muted" />
+                ) : sdkDetected ? (
+                  <CheckCircle2 size={15} strokeWidth={2} className="text-success" />
+                ) : (
+                  <XCircle size={15} strokeWidth={2} className="text-danger" />
+                )}
+                <span className="text-fg">
+                  {sdkDetecting
+                    ? '正在探测本机 Ren\'Py SDK…'
+                    : sdkDetected
+                      ? `已检测到 Ren'Py SDK${sdkVersion ? ` v${sdkVersion}` : ''}`
+                      : '未检测到 Ren\'Py SDK'}
+                </span>
+                {sdkDetected && sdkPath && (
+                  <code className="ml-auto truncate t-micro t-mono text-fg-faint">{sdkPath}</code>
+                )}
+              </div>
+
+              {!sdkDetected && (
+                <p className="mb-3 t-micro leading-relaxed text-fg-subtle">
+                  {sdkHint ?? '请安装 Ren\'Py 并设置环境变量 RENPY_SDK 指向 SDK 根目录，或在下方手动指定路径后重试。'}
+                </p>
+              )}
+
+              {/* 手动指定 SDK 路径 */}
+              <div className="mb-3 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={manualSdk}
+                  onChange={(e) => setManualSdk(e.target.value)}
+                  placeholder="手动指定 Ren'Py SDK 根目录（可选）"
+                  className="flex-1 rounded-md border border-edge/15 bg-surface-3 px-2.5 py-1.5 text-xs text-fg outline-none transition-colors focus:border-signal/60"
+                />
+              </div>
+
+              {/* 引擎操作 */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="primary"
+                  onClick={() => runEngineAction('run')}
+                  disabled={engineBusy || totalLines === 0}
+                >
+                  <Play size={14} strokeWidth={1.75} className="mr-1" />
+                  在 Ren'Py 中预览
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => runEngineAction('build')}
+                  disabled={engineBusy || totalLines === 0}
+                >
+                  <Package size={14} strokeWidth={1.75} className="mr-1" />
+                  构建分发包
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => runEngineAction('lint')}
+                  disabled={engineBusy || totalLines === 0}
+                >
+                  <ShieldCheck size={14} strokeWidth={1.75} className="mr-1" />
+                  Lint 校验语法
+                </Button>
+              </div>
+              <p className="mt-2 t-micro leading-relaxed text-fg-subtle">
+                预览会直接拉起 Ren'Py 运行当前剧本；构建将分发包产出到暂存工程目录的 dist/；Lint 会调用 Ren'Py 内建语法检查并回显结果。以上均基于本机 SDK，未安装时将降级提示。
+              </p>
+
+              {engineResult && (
+                <pre className="mt-3 whitespace-pre-wrap rounded-md border border-edge/12 bg-surface-1 p-3 t-micro t-mono leading-relaxed text-fg">
+                  {engineResult}
+                </pre>
+              )}
             </section>
 
             {/* 校验结果 */}

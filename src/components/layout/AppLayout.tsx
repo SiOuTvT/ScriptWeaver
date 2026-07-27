@@ -36,6 +36,7 @@ import CommandPalette from './CommandPalette'
 import DiagnosticsPanel from './DiagnosticsPanel'
 import MultiExporter from './MultiExporter'
 import RenPyEcosystemHub from './RenPyEcosystemHub'
+import ScriptTextPanel from './ScriptTextPanel'
 import CollabPanel from './CollabPanel'
 import AuditLogHub from './AuditLogHub'
 import { useCollabStore } from '@/collab/collabStore'
@@ -583,6 +584,7 @@ export default function AppLayout() {
         {activeNavItem === 'diagnostics' && <DiagnosticsPanel />}
         {activeNavItem === 'exporter' && <MultiExporter />}
         {activeNavItem === 'renpy-hub' && <RenPyEcosystemHub />}
+        {activeNavItem === 'script' && <ScriptTextPanel />}
         {activeNavItem === 'audit-log' && <AuditLogHub />}
       </div>
 

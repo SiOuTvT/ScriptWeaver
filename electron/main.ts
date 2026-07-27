@@ -1,6 +1,8 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, nativeTheme, protocol } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import os from 'os'
+import { spawn } from 'child_process'
 import zlib from 'zlib'
 import { Readable } from 'stream'
 // AI 编排逻辑（纯函数）由主进程持有：密钥不进渲染进程，渲染端只发 prompt 收文本
@@ -952,6 +954,315 @@ ipcMain.handle('fs:exportRenpy', async (_event, bundle: RpyBundle) => {
 
   return { success: true, gameDir, copied }
 })
+
+// ===================== Ren'Py 引擎对接（SDK 探测 / 暂存 / 运行 / 构建 / Lint） =====================
+
+type RenpyAction = 'run' | 'build' | 'lint'
+
+interface RenpySdkInfo {
+  sdkPath: string
+  launcher: string
+  version: string | null
+}
+
+/** 判断路径是否为 Ren'Py SDK 启动器 */
+function isRenpyLauncher(p: string): boolean {
+  const base = path.basename(p).toLowerCase()
+  return base === 'renpy.exe' || base === 'renpy.sh' || base === 'renpy'
+}
+
+/** 离线读取 SDK 版本号（不启动 GUI）：从 renpy/__init__.py 抓取 version 字段 */
+function readRenpyVersion(sdkPath: string): string | null {
+  const candidates = [
+    path.join(sdkPath, 'renpy', '__init__.py'),
+    path.join(sdkPath, 'renpy.py'),
+  ]
+  for (const f of candidates) {
+    try {
+      const text = fs.readFileSync(f, 'utf-8')
+      const m = text.match(/version\s*=\s*['"]([\d.]+)['"]/)
+      if (m) return m[1]
+    } catch {
+      /* 忽略不存在的文件 */
+    }
+  }
+  return null
+}
+
+/** 在常见安装位置与环境变量中探测 Ren'Py SDK */
+function findRenpySdk(): RenpySdkInfo | null {
+  const bases: string[] = []
+  if (process.env.RENPY_SDK) bases.push(process.env.RENPY_SDK)
+  const home = os.homedir()
+  if (process.platform === 'win32') {
+    bases.push('C:\\Program Files\\RenPy', 'C:\\RenPy', path.join(home, 'renpy'), path.join(home, 'RenPy'))
+  } else if (process.platform === 'darwin') {
+    bases.push(path.join(home, 'renpy'), '/Applications/RenPy', '/Applications/renpy')
+  } else {
+    bases.push(path.join(home, 'renpy'), '/opt/renpy', '/usr/local/renpy')
+  }
+  // 下载目录下的 renpy* 文件夹
+  try {
+    const dl = path.join(home, 'Downloads')
+    for (const name of fs.readdirSync(dl)) {
+      if (/^renpy/i.test(name)) {
+        const full = path.join(dl, name)
+        try {
+          if (fs.statSync(full).isDirectory()) bases.push(full)
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+
+  // 逐级探测启动器：候选根 → 一层子目录
+  const scan = (base: string): string | null => {
+    let st: fs.Stats | null = null
+    try {
+      st = fs.statSync(base)
+    } catch {
+      return null
+    }
+    if (st.isFile()) return isRenpyLauncher(base) ? base : null
+    if (!st.isDirectory()) return null
+    try {
+      for (const name of fs.readdirSync(base)) {
+        const full = path.join(base, name)
+        try {
+          const s2 = fs.statSync(full)
+          if (s2.isFile() && isRenpyLauncher(full)) return full
+        } catch {
+          /* ignore */
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      for (const name of fs.readdirSync(base)) {
+        const full = path.join(base, name)
+        try {
+          if (fs.statSync(full).isDirectory()) {
+            for (const n2 of fs.readdirSync(full)) {
+              if (isRenpyLauncher(path.join(full, n2))) return path.join(full, n2)
+            }
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    return null
+  }
+
+  for (const b of bases) {
+    const launcher = scan(b)
+    if (launcher) {
+      const sdkPath = path.dirname(launcher)
+      return { sdkPath, launcher, version: readRenpyVersion(sdkPath) }
+    }
+  }
+  return null
+}
+
+/** 生成最小可运行 options.rpy，保证 Ren'Py 能启动与 build 分发包 */
+function buildMinimalOptions(title: string): string {
+  const safe = title.replace(/[^\w一-龥-]/g, '_')
+  return [
+    'init python:',
+    '    config.developer = True',
+    `    build.name = "${safe}"`,
+    `    config.window_title = "${title}"`,
+    '    config.save_directory = None',
+    '',
+  ].join('\n')
+}
+
+// 探测 SDK：渲染进程挂载时调用，给出状态与版本
+ipcMain.handle('renpy:detectSdk', async () => {
+  const info = findRenpySdk()
+  if (!info) {
+    return {
+      detected: false,
+      hint: '未检测到 Ren\'Py SDK。请安装 Ren\'Py（https://www.renpy.org）并设置环境变量 RENPY_SDK 指向 SDK 根目录，或在常见目录放置 SDK。',
+    }
+  }
+  return { detected: true, sdkPath: info.sdkPath, launcher: info.launcher, version: info.version }
+})
+
+// 将渲染进程构建好的 RpyBundle 暂存到 userData，得到可直接被 Ren'Py 打开的工程目录
+ipcMain.handle('renpy:stageProject', async (_event, payload: { bundle: RpyBundle; title: string }) => {
+  if (!mainWindow) return { success: false, error: 'No active window' }
+  const { bundle, title } = payload
+  const safeTitle = (title || 'scriptweaver_project').replace(/[^\w一-龥-]/g, '_').slice(0, 60)
+  const stageRoot = path.join(app.getPath('userData'), 'renpy-staging', safeTitle)
+  const gameDir = path.join(stageRoot, 'game')
+  try {
+    fs.rmSync(gameDir, { recursive: true, force: true })
+  } catch {
+    /* 首次无目录可忽略 */
+  }
+  ensureDir(path.join(gameDir, 'images', 'background'))
+  ensureDir(path.join(gameDir, 'images', 'sprite'))
+  ensureDir(path.join(gameDir, 'audio'))
+
+  try {
+    fs.writeFileSync(path.join(gameDir, 'script.rpy'), bundle.script ?? '', 'utf-8')
+    fs.writeFileSync(path.join(gameDir, 'definitions.rpy'), bundle.definitions ?? '', 'utf-8')
+    if (bundle.transforms && bundle.transforms.trim()) {
+      fs.writeFileSync(path.join(gameDir, 'transforms.rpy'), bundle.transforms, 'utf-8')
+    }
+    fs.writeFileSync(path.join(gameDir, 'options.rpy'), buildMinimalOptions(safeTitle), 'utf-8')
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message }
+  }
+
+  // 拷贝素材（依赖当前活动项目根目录）
+  let copied = 0
+  const missing: string[] = []
+  const srcRoot = activeProjectRoot ? path.resolve(activeProjectRoot) : null
+  for (const a of bundle.assets ?? []) {
+    if (!srcRoot) {
+      missing.push(a.exportRelPath)
+      continue
+    }
+    const src = path.resolve(srcRoot, a.sourceRelativePath)
+    if (src !== srcRoot && !src.startsWith(srcRoot + path.sep)) {
+      missing.push(a.exportRelPath)
+      continue
+    }
+    if (!fs.existsSync(src)) {
+      missing.push(a.exportRelPath)
+      continue
+    }
+    const dest = path.resolve(gameDir, a.exportRelPath)
+    try {
+      copyFile(src, dest)
+      copied++
+    } catch {
+      missing.push(a.exportRelPath)
+    }
+  }
+
+  return { success: true, projectDir: stageRoot, gameDir, copied, missingCount: missing.length }
+})
+
+// 调用 SDK 执行 run / build / lint
+ipcMain.handle(
+  'renpy:runEngine',
+  async (_event, payload: { action: RenpyAction; sdkPath?: string; projectDir: string }) => {
+    let info: RenpySdkInfo | null = null
+    if (payload.sdkPath) {
+      // 由调用方指定 SDK 根目录，需定位启动器
+      const launcher = [
+        path.join(payload.sdkPath, 'renpy.exe'),
+        path.join(payload.sdkPath, 'renpy.sh'),
+        path.join(payload.sdkPath, 'renpy'),
+      ].find((p) => {
+        try {
+          return fs.existsSync(p)
+        } catch {
+          return false
+        }
+      })
+      if (launcher) info = { sdkPath: payload.sdkPath, launcher, version: readRenpyVersion(payload.sdkPath) }
+    } else {
+      info = findRenpySdk()
+    }
+    if (!info) {
+      return {
+        success: false,
+        error:
+          '未检测到 Ren\'Py SDK。请安装 SDK 并设置环境变量 RENPY_SDK，或在「导出设置 · Ren\'Py 引擎」中手动指定路径。',
+      }
+    }
+
+    const projectDir = payload.projectDir
+    if (payload.action === 'run') {
+      // 启动 GUI 预览，后台分离，不阻塞主进程
+      try {
+        const child = spawn(info.launcher, [projectDir], { detached: true, stdio: 'ignore', windowsHide: false })
+        child.unref()
+        return { success: true, action: 'run', pid: child.pid, projectDir }
+      } catch (err: unknown) {
+        return { success: false, error: (err as Error).message }
+      }
+    }
+
+    if (payload.action === 'lint') {
+      // 语法校验：捕获控制台输出
+      return await new Promise<{ success: boolean; action: string; exitCode?: number; output?: string; error?: string }>(
+        (resolve) => {
+          let out = ''
+          let settled = false
+          const timer = setTimeout(() => {
+            if (!settled) {
+              settled = true
+              resolve({ success: false, action: 'lint', error: 'Lint 执行超时（60s），请检查工程是否可被 Ren\'Py 打开。' })
+            }
+          }, 60000)
+          try {
+            const child = spawn(info!.launcher, [projectDir, 'lint'], { windowsHide: false })
+            child.stdout?.on('data', (d) => (out += d.toString()))
+            child.stderr?.on('data', (d) => (out += d.toString()))
+            child.on('error', (e) => {
+              if (!settled) {
+                settled = true
+                clearTimeout(timer)
+                resolve({ success: false, action: 'lint', error: e.message })
+              }
+            })
+            child.on('close', (code) => {
+              if (!settled) {
+                settled = true
+                clearTimeout(timer)
+                resolve({ success: code === 0, action: 'lint', exitCode: code ?? -1, output: out || '(无输出)' })
+              }
+            })
+          } catch (err: unknown) {
+            if (!settled) {
+              settled = true
+              clearTimeout(timer)
+              resolve({ success: false, action: 'lint', error: (err as Error).message })
+            }
+          }
+        },
+      )
+    }
+
+    // build / distribute：后台分离，输出写入日志文件，产物落在 projectDir/dist
+    const logDir = path.join(app.getPath('userData'), 'renpy-build-logs')
+    ensureDir(logDir)
+    const logFile = path.join(logDir, `${path.basename(projectDir)}-${Date.now()}.log`)
+    try {
+      const out = fs.createWriteStream(logFile)
+      const child = spawn(info.launcher, [projectDir, 'distribute'], {
+        detached: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: false,
+      })
+      child.stdout?.pipe(out)
+      child.stderr?.pipe(out)
+      child.on('exit', () => out.end())
+      child.unref()
+      return {
+        success: true,
+        action: 'build',
+        started: true,
+        logFile,
+        distDir: path.join(projectDir, 'dist'),
+        projectDir,
+      }
+    } catch (err: unknown) {
+      return { success: false, error: (err as Error).message }
+    }
+  },
+)
 
 // ===================== 导出 Web 独立包（纯前端试玩） =====================
 

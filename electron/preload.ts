@@ -160,6 +160,41 @@ const api = {
   setActiveProjectRoot: (root: string | null): Promise<{ success: boolean }> =>
     ipcRenderer.invoke('fs:setActiveProjectRoot', root),
 
+  // --------------- Ren'Py 引擎对接 ---------------
+  /** 探测本机 Ren'Py SDK（版本、路径） */
+  renpyDetectSdk: (): Promise<{
+    detected: boolean
+    sdkPath?: string
+    launcher?: string
+    version?: string | null
+    hint?: string
+  }> => ipcRenderer.invoke('renpy:detectSdk'),
+
+  /** 将 RpyBundle 暂存为可直接被 Ren'Py 打开的工程目录 */
+  renpyStageProject: (payload: {
+    bundle: unknown
+    title: string
+  }): Promise<{ success: boolean; projectDir?: string; copied?: number; missingCount?: number; error?: string }> =>
+    ipcRenderer.invoke('renpy:stageProject', payload),
+
+  /** 调用 SDK 运行 / 构建分发包 / Lint 校验 */
+  renpyRunEngine: (payload: {
+    action: 'run' | 'build' | 'lint'
+    sdkPath?: string
+    projectDir: string
+  }): Promise<{
+    success: boolean
+    action?: string
+    pid?: number
+    projectDir?: string
+    output?: string
+    exitCode?: number
+    logFile?: string
+    distDir?: string
+    started?: boolean
+    error?: string
+  }> => ipcRenderer.invoke('renpy:runEngine', payload),
+
   /** 扫描项目 assets 目录，返回磁盘素材清单（元数据，无二进制） */
   scanProjectAssets: (projectRoot: string): Promise<{
     success: boolean
