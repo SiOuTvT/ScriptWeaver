@@ -1,2 +1,1318 @@
-"use strict";var pe=Object.defineProperty;var de=(t,e,s)=>e in t?pe(t,e,{enumerable:!0,configurable:!0,writable:!0,value:s}):t[e]=s;var L=(t,e,s)=>de(t,typeof e!="symbol"?e+"":e,s);const i=require("electron"),n=require("path"),f=require("fs"),he=require("zlib"),me=require("stream"),ee={openai:{endpoint:"https://api.openai.com/v1/chat/completions",model:"gpt-4o-mini"}};function W(){return{provider:"openai",endpoint:ee.openai.endpoint,apiKey:"",model:ee.openai.model,temperature:.7,maxTokens:2e3,ttsModel:"tts-1"}}class I extends Error{constructor(s,r=0,o="unknown"){super(s);L(this,"status");L(this,"kind");this.name="AIRequestError",this.status=r,this.kind=o}}function ge(t,e){var o,a;let s="";try{const c=JSON.parse(e);s=((o=c==null?void 0:c.error)==null?void 0:o.message)||((a=c==null?void 0:c.error)==null?void 0:a.type)||""}catch{}const r=s?`（${s.slice(0,160)}）`:e?`（${e.slice(0,160)}）`:"";switch(t){case 401:return`API 密钥无效或未授权（401）。请到 AI 设置中检查 Key 是否正确、是否过期${r}`;case 403:return`密钥无权访问该模型（403）。请确认账户权限或改用可用模型${r}`;case 404:return`请求的端点或模型不存在（404）。请检查 API 端点与模型名${r}`;case 429:return`触发频率限制（429）。请稍后重试，或降低并发 / 调小 max_tokens${r}`;default:return t>=500?`模型服务端错误（${t}）。上游暂时不可用，请稍后重试${r}`:`API 请求失败（${t}）${r}`}}function ye(t){const e=t;return(e==null?void 0:e.name)==="TimeoutError"?e.message||"请求超时":e instanceof I?e.message:(e==null?void 0:e.name)==="TypeError"?"网络请求失败：无法连接到该端点。请检查 API 地址、本地网络或代理设置（桌面端也需可访问外网）。":(e==null?void 0:e.message)||"未知错误"}const we=18e4,Se=3e4;async function je(t,e,s,r){return new Promise((o,a)=>{let c=!1;const l=setTimeout(()=>{c||(c=!0,r(),e.abort(),a(new Error("数据流中断")))},s);t.read().then(p=>{c||(c=!0,clearTimeout(l),o(p))}).catch(p=>{c||(c=!0,clearTimeout(l),a(p))})})}async function xe(t,e,s,r,o={}){var y,b,T,_,x,v;const a=o.timeoutMs??we,c=o.stallMs??Se,l=o.streaming??!0,p={model:t.model,messages:e,temperature:t.temperature,max_tokens:t.maxTokens,stream:l},u=new AbortController;let h=!1;const g=()=>{h=!0},w=()=>u.abort();r&&(r.aborted?u.abort():r.addEventListener("abort",w,{once:!0})),setTimeout(()=>{g(),u.abort()},a);try{const S=await fetch(t.endpoint,{method:"POST",headers:{"Content-Type":"application/json",Accept:"text/event-stream",Authorization:`Bearer ${t.apiKey}`},body:JSON.stringify(p),signal:u.signal});if(!S.ok){const k=await S.text().catch(()=>"");throw new I(ge(S.status,k),S.status,"http")}if(!S.body){const P=((T=(b=(y=(await S.json()).choices)==null?void 0:y[0])==null?void 0:b.message)==null?void 0:T.content)??"";return P&&s(P),P}const A=S.body.getReader(),ue=new TextDecoder;let U="",X="";for(;;){const{done:k,value:P}=await je(A,u,c,g);if(k)break;P&&(U+=ue.decode(P,{stream:!0}));const Z=U.split(`
-`);U=Z.pop()??"";for(const fe of Z){const Q=fe.trim();if(!Q.startsWith("data:"))continue;const Y=Q.slice(5).trim();if(Y!=="[DONE]")try{const J=(v=(x=(_=JSON.parse(Y).choices)==null?void 0:_[0])==null?void 0:x.delta)==null?void 0:v.content;J&&(X+=J,s(J))}catch{}}}return X}catch(S){if(h)throw new I(`请求超时（>${Math.round(a/1e3)}s 无响应 / 数据流中断），请检查网络连通性或端点是否正确`,0,"timeout");if(S instanceof I)throw S;const A=S;throw(A==null?void 0:A.name)==="AbortError"?S:(A==null?void 0:A.name)==="TypeError"?new I("网络请求失败：无法连接到该端点，请检查 API 地址、本地网络或代理设置",0,"network"):new I(S.message||"未知错误",0,"unknown")}}let d=null,M=null,q=!1;const re=[".png",".jpg",".jpeg",".webp",".gif"],V=[".mp3",".ogg",".wav",".flac"],be={".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".webp":"image/webp",".gif":"image/gif",".mp3":"audio/mpeg",".ogg":"audio/ogg",".wav":"audio/wav",".flac":"audio/flac"},ne=n.join("images","background"),oe=n.join("images","sprite"),ce="audio";let m=null;i.protocol.registerSchemesAsPrivileged([{scheme:"sw-asset",privileges:{secure:!0,standard:!0,supportFetchAPI:!0,stream:!0,bypassCSP:!1}}]);function O(){d=new i.BrowserWindow({width:1400,height:900,minWidth:1024,minHeight:680,title:"ScriptWeaver",webPreferences:{preload:n.join(__dirname,"preload.js"),contextIsolation:!0,nodeIntegration:!1}});const t=process.env.VITE_DEV_SERVER_URL||"http://localhost:5173",e=!!process.env.VITE_DEV_SERVER_URL||!i.app.isPackaged;if(d.webContents.session.webRequest.onHeadersReceived((s,r)=>{const o=e?["default-src 'self' http://localhost:* ws://localhost:*;","script-src 'self' 'unsafe-inline' http://localhost:*;","style-src 'self' 'unsafe-inline' http://localhost:*;","font-src 'self' data: http://localhost:*;","img-src 'self' data: sw-asset: blob: http://localhost:*;","media-src 'self' data: sw-asset: blob: http://localhost:*;","connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:*;"].join(" "):["default-src 'self';","script-src 'self' 'unsafe-inline';","style-src 'self' 'unsafe-inline';","font-src 'self' data:;","img-src 'self' data: sw-asset: blob:;","media-src 'self' data: sw-asset: blob:;"].join(" ");r({responseHeaders:{...s.responseHeaders,"Content-Security-Policy":[o]}})}),e){const s=(r=0)=>{d.loadURL(t).catch(o=>{console.warn(`[dev] loadURL ${t} failed (retry ${r}): ${String(o)}`),r<10?setTimeout(()=>s(r+1),1500):d.loadFile(n.join(__dirname,"../dist/index.html"))})};s(),d.webContents.openDevTools()}else d.loadFile(n.join(__dirname,"../dist/index.html"));d.on("close",s=>{q||(s.preventDefault(),d==null||d.hide())}),d.on("closed",()=>{d=null})}function te(){if(!d){O();return}d.isMinimized()&&d.restore(),d.show(),d.focus()}function ve(){if(M)return;const t=n.join(__dirname,"../assets/tray.png");let e=f.existsSync(t)?i.nativeImage.createFromPath(t):se();e.isEmpty()&&(e=se()),e=e.resize({width:32,height:32}),M=new i.Tray(e),M.setToolTip("ScriptWeaver"),M.setContextMenu(i.Menu.buildFromTemplate([{label:"显示窗口",click:()=>te()},{type:"separator"},{label:"退出",click:()=>{q=!0,i.app.quit()}}])),M.on("click",()=>te())}function se(){const[e,s,r,o]=[30,41,59,255],a=[];for(let u=0;u<32;u++){a.push(0);for(let h=0;h<32;h++)a.push(e,s,r,o)}const c=Buffer.alloc(13);c.writeUInt32BE(32,0),c.writeUInt32BE(32,4),c[8]=8,c[9]=6;const l=he.deflateSync(Buffer.from(a)),p=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),z("IHDR",c),z("IDAT",l),z("IEND",Buffer.alloc(0))]);return i.nativeImage.createFromBuffer(p)}function z(t,e){const s=Buffer.alloc(4);s.writeUInt32BE(e.length,0);const r=Buffer.from(t,"ascii"),o=Buffer.alloc(4);return o.writeUInt32BE(_e(Buffer.concat([r,e]))>>>0,0),Buffer.concat([s,r,e,o])}function _e(t){let e=-1;for(let s=0;s<t.length;s++){e^=t[s];for(let r=0;r<8;r++)e=e>>>1^3988292384&-(e&1)}return~e>>>0}i.app.whenReady().then(()=>{Te(),O(),ve(),i.app.on("activate",()=>{i.BrowserWindow.getAllWindows().length===0&&O()})});i.app.on("window-all-closed",()=>{process.platform!=="darwin"&&(q?i.app.quit():process.env.VITE_DEV_SERVER_URL?d||O():i.app.quit())});function j(t){f.existsSync(t)||f.mkdirSync(t,{recursive:!0})}function E(t,e){j(n.dirname(e)),f.copyFileSync(t,e)}function $(){return"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,t=>{const e=Math.random()*16|0;return(t==="x"?e:e&3|8).toString(16)})}function ae(t,e){return V.includes(t)?{subdir:ce,type:"audio"}:e==="background"?{subdir:ne,type:"background"}:{subdir:oe,type:"sprite"}}function ie(t){const e=n.extname(t).toLowerCase();return V.includes(e)?"audio":re.includes(e)?t.replace(/\\/g,"/").includes("/images/background/")?"background":"sprite":null}function Ae(){return i.app.isPackaged?n.join(process.resourcesPath,"web-player"):n.join(__dirname,"..","web-player")}i.app.on("before-quit",()=>{H()});function Te(){i.protocol.handle("sw-asset",t=>{try{const e=new URL(t.url);let s;try{s=decodeURIComponent(e.pathname)}catch{s=e.pathname}if(s=s.replace(/^\/+/,""),console.log("[sw-asset] request",t.url,"| rel=",s,"| activeRoot=",m),!s)return new Response("bad request",{status:400});const r=[];m&&r.push(m);for(const o of r){const a=n.resolve(o,"assets"),c=[n.resolve(o,s),n.resolve(o,"assets",s)];for(const l of c){const p=l===a||l.startsWith(a+n.sep),u=n.extname(l).toLowerCase(),h=re.includes(u)||V.includes(u),g=f.existsSync(l);if(!p||!h||!g)continue;const w=be[u]??"application/octet-stream",y=f.statSync(l).size,b=t.headers.get("range");if(b){const _=/bytes=(\d+)-(\d*)/.exec(b);let x=_?parseInt(_[1],10):0,v=_&&_[2]?parseInt(_[2],10):y-1;(isNaN(x)||isNaN(v)||x>v||v>=y)&&(x=0,v=y-1);const S=v-x+1,A=f.readFileSync(l,{start:x,end:v+1});return console.log("[sw-asset]  HIT(range)",l,x,"-",v,"/",y),new Response(new Uint8Array(A),{status:206,headers:{"Content-Type":w,"Content-Range":`bytes ${x}-${v}/${y}`,"Accept-Ranges":"bytes","Content-Length":String(S),"Cache-Control":"no-cache"}})}const T=me.Readable.toWeb(f.createReadStream(l));return console.log("[sw-asset]  HIT",l,w),new Response(T,{headers:{"Content-Type":w,"Cache-Control":"no-cache"}})}}return console.log("[sw-asset]  NOT FOUND for",s),new Response("not found",{status:404})}catch(e){return new Response(`error: ${e.message}`,{status:500})}})}let D=null,N=null;const R=new Map;function H(){if(D){try{D.close()}catch{}D=null}N=null;for(const t of R.values())clearTimeout(t);R.clear()}function G(t){if(N===t&&D)return;H();const e=n.join(t,"assets");j(e);try{D=f.watch(e,{recursive:!0},(s,r)=>{if(!r)return;const o=r.toString(),a=n.join(e,o),c=ie(a);if(!c)return;const l=a,p=R.get(l);p&&clearTimeout(p),R.set(l,setTimeout(()=>{R.delete(l);const u=("assets/"+n.relative(e,a).replace(/\\/g,"/")).replace(/\/+/g,"/"),h=f.existsSync(a);d==null||d.webContents.send("asset:changed",{relativePath:u,type:c,exists:h})},150))}),N=t}catch{D=null,N=null}}const K=n.join(i.app.getPath("userData"),"ai-config.json");function B(){try{if(f.existsSync(K)){const t=JSON.parse(f.readFileSync(K,"utf-8"));return{provider:t.provider??"openai",endpoint:t.endpoint??W().endpoint,apiKey:typeof t.apiKey=="string"?t.apiKey:"",model:t.model??W().model,temperature:typeof t.temperature=="number"?t.temperature:.7,maxTokens:typeof t.maxTokens=="number"?t.maxTokens:2e3,ttsModel:typeof t.ttsModel=="string"&&t.ttsModel.trim()?t.ttsModel:"tts-1"}}}catch{}return W()}function Pe(t){const e=B(),s={...e,...t};t.apiKey||(s.apiKey=e.apiKey);try{f.writeFileSync(K,JSON.stringify(s),"utf-8")}catch{}}i.ipcMain.handle("ai:getConfig",()=>{const t=B();return{...t,apiKey:"",hasApiKey:!!t.apiKey}});i.ipcMain.handle("ai:setConfig",(t,e)=>(Pe(e),{ok:!0}));let C=null;i.ipcMain.on("ai:chat",async(t,e)=>{const s=B();if(!s.apiKey){t.sender.send("ai:error","未配置 API Key（请在 AI 设置中填写，密钥仅存于本地安全区）");return}const r=new AbortController;C=r;try{const o=await xe(s,e.messages,a=>t.sender.send("ai:chunk",{delta:a}),r.signal);t.sender.send("ai:done",{full:o})}catch(o){const a=o;if((a==null?void 0:a.name)==="AbortError"){t.sender.send("ai:aborted");return}t.sender.send("ai:error",ye(o))}finally{C=null}});i.ipcMain.on("ai:abort",()=>{C==null||C.abort()});i.ipcMain.handle("tts:synthesize",async(t,e)=>{if(!m)return{success:!1,error:"请先保存项目，再使用 TTS 配音"};const s=B();if(!s.apiKey)return{success:!1,error:"未配置 AI API 密钥（请先在 AI 设置中填写密钥）"};try{const r=s.endpoint.replace(/\/chat\/completions\/?$/,"/audio/speech"),o=e.format||"mp3",a={model:s.ttsModel||"tts-1",input:e.text||" ",voice:e.voiceId||"alloy",response_format:o};e.speed!=null&&(a.speed=e.speed);const c=new AbortController,l=setTimeout(()=>c.abort(),12e4);let p;try{p=await fetch(r,{method:"POST",headers:{Authorization:`Bearer ${s.apiKey}`,"Content-Type":"application/json"},body:JSON.stringify(a),signal:c.signal})}finally{clearTimeout(l)}if(!p.ok){const x=await p.text().catch(()=>"");return{success:!1,error:`TTS API 返回 ${p.status}${x?": "+x.slice(0,200):""}`}}const u=Buffer.from(await p.arrayBuffer()),h=(e.charId||"unknown").replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,32),g=(e.lineTag||"L0").replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,16),w=$(),y=`tts_${h}_${g}_${w.slice(0,8)}.${o}`,b=n.join(m,"assets","audio");j(b);const T=n.join(b,y);f.writeFileSync(T,u);const _=n.join("assets","audio",y).replace(/\\/g,"/");return{success:!0,asset:{id:w,fileName:y,relativePath:_}}}catch(r){return{success:!1,error:`TTS 合成失败: ${r.message||String(r)}`}}});i.ipcMain.handle("app:getVersion",()=>i.app.getVersion());i.ipcMain.handle("app:getPath",(t,e)=>i.app.getPath(e));i.ipcMain.handle("app:clearLocalCache",()=>{try{const t=i.app.getPath("userData"),e=[n.join(t,"snapshots")];let s=0;for(const r of e)f.existsSync(r)&&(f.rmSync(r,{recursive:!0,force:!0}),s++);return{success:!0,removedDirs:s}}catch(t){return{success:!1,error:t.message}}});i.ipcMain.on("app:setNativeTheme",(t,e)=>{i.nativeTheme.themeSource=e});i.ipcMain.handle("fs:setActiveProjectRoot",(t,e)=>(m=e&&typeof e=="string"?e:null,m?G(m):H(),{success:!0}));i.ipcMain.handle("fs:scanProjectAssets",(t,e)=>{try{if(!e||typeof e!="string")return{success:!1,error:"缺少 projectRoot"};const s=n.join(e,"assets"),r=[],o=a=>{if(f.existsSync(a))for(const c of f.readdirSync(a,{withFileTypes:!0})){const l=n.join(a,c.name);if(c.isDirectory())o(l);else{const p=ie(l);if(!p)continue;const u="assets/"+n.relative(s,l).replace(/\\/g,"/");r.push({id:$(),type:p,name:n.parse(l).name,fileName:n.basename(l),relativePath:u,importedAt:new Date().toISOString()})}}};return o(s),{success:!0,assets:r}}catch(s){return{success:!1,error:s.message}}});function le(t,e,s){const r=n.join(t,"assets");j(n.join(r,ne)),j(n.join(r,oe)),j(n.join(r,ce)),j(n.join(r,"scripts"));const o=n.join(t,`${s||"untitled"}.swproj`);f.writeFileSync(o,e,"utf-8")}i.ipcMain.handle("dialog:saveProject",async(t,e)=>{if(!d)return{success:!1,error:"No active window"};const s=await i.dialog.showOpenDialog(d,{title:"选择项目保存目录",properties:["openDirectory","createDirectory"]});if(s.canceled||s.filePaths.length===0)return{success:!1};const r=s.filePaths[0];try{return le(r,e.projectJson,e.projectName),m=r,G(r),{success:!0,projectDir:r}}catch(o){return{success:!1,error:o.message}}});i.ipcMain.handle("dialog:saveProjectToPath",async(t,e)=>{try{return le(e.projectDir,e.projectJson,e.projectName),{success:!0}}catch(s){return{success:!1,error:s.message}}});i.ipcMain.handle("dialog:openProject",async()=>{if(!d)return{success:!1,error:"No active window"};const t=await i.dialog.showOpenDialog(d,{title:"打开项目",filters:[{name:"ScriptWeaver 项目",extensions:["swproj"]}],properties:["openFile"]});if(t.canceled||t.filePaths.length===0)return{success:!1};try{const e=t.filePaths[0],s=f.readFileSync(e,"utf-8"),r=n.dirname(e);return m=r,G(r),{success:!0,content:s,projectDir:r}}catch(e){return{success:!1,error:e.message}}});i.ipcMain.handle("dialog:pickAssetFiles",async(t,e)=>{if(!d)return{success:!1,error:"No active window"};const s=(e==null?void 0:e.filters)||[{name:"图片文件",extensions:["png","jpg","jpeg","webp"]},{name:"音频文件",extensions:["mp3","ogg","wav"]},{name:"所有文件",extensions:["*"]}],r=await i.dialog.showOpenDialog(d,{title:"导入素材",filters:s,properties:["openFile","multiSelections"]});if(r.canceled||r.filePaths.length===0)return{success:!1};try{if(!m)return{success:!1,error:"请先保存项目，再导入素材"};const o=[];for(const a of r.filePaths){const c=n.extname(a).toLowerCase(),l=n.basename(a),{subdir:p,type:u}=ae(c,e==null?void 0:e.kind),h=n.join(m,"assets",p);j(h);let g=n.join(h,l),w=1;for(;f.existsSync(g);){const b=n.parse(l);g=n.join(h,`${b.name}_${w}${b.ext}`),w++}E(a,g);const y=n.join("assets",p,n.basename(g)).replace(/\\/g,"/");o.push({id:$(),fileName:n.basename(g),relativePath:y,type:u})}return{success:!0,files:o}}catch(o){return{success:!1,error:o.message}}});i.ipcMain.handle("fs:importFilesFromPaths",async(t,e,s)=>{if(!Array.isArray(e)||e.length===0)return{success:!1,error:"未提供文件"};if(!m)return{success:!1,error:"请先保存项目，再导入素材"};try{const r=[];for(const o of e){if(typeof o!="string"||!f.existsSync(o))continue;const a=n.extname(o).toLowerCase(),c=n.basename(o),{subdir:l,type:p}=ae(a,s),u=n.join(m,"assets",l);j(u);let h=n.join(u,c),g=1;for(;f.existsSync(h);){const y=n.parse(c);h=n.join(u,`${y.name}_${g}${y.ext}`),g++}E(o,h);const w=n.join("assets",l,n.basename(h)).replace(/\\/g,"/");r.push({id:$(),fileName:n.basename(h),relativePath:w,type:p})}return{success:!0,files:r}}catch(r){return{success:!1,error:r.message}}});i.ipcMain.handle("fs:exportRenpy",async(t,e)=>{if(!d)return{success:!1,error:"No active window"};const s=await i.dialog.showOpenDialog(d,{title:"选择 Ren'Py 导出目录",properties:["openDirectory","createDirectory"]});if(s.canceled||s.filePaths.length===0)return{success:!1};const r=s.filePaths[0],o=n.join(r,"game"),a=n.join(o,"images","background"),c=n.join(o,"images","sprite"),l=n.join(o,"audio");if(j(a),j(c),j(l),!m)return{success:!1,error:"请先保存项目"};const p=m,u=n.resolve(p);let h=0;for(const g of e.assets??[]){const w=n.resolve(u,g.sourceRelativePath);if(w!==u&&!w.startsWith(u+n.sep)||!f.existsSync(w))continue;const y=n.resolve(o,g.exportRelPath);try{E(w,y),h++}catch{}}try{f.writeFileSync(n.join(o,"script.rpy"),e.script??"","utf-8"),f.writeFileSync(n.join(o,"definitions.rpy"),e.definitions??"","utf-8"),e.transforms&&e.transforms.trim()&&f.writeFileSync(n.join(o,"transforms.rpy"),e.transforms,"utf-8")}catch(g){return{success:!1,error:g.message}}return{success:!0,gameDir:o,copied:h}});i.ipcMain.handle("fs:exportWeb",async(t,e)=>{if(!d)return{success:!1,error:"No active window"};const s=await i.dialog.showOpenDialog(d,{title:"选择 Web 导出目录",properties:["openDirectory","createDirectory"]});if(s.canceled||s.filePaths.length===0)return{success:!1};const r=s.filePaths[0],o=Ae();if(!m)return{success:!1,error:"请先保存项目"};const a=m,c=n.resolve(a);try{for(const p of["index.html","style.css","player.js"]){const u=n.join(o,p);f.existsSync(u)&&E(u,n.join(r,p))}let l=0;for(const p of e.assetRefs??[]){const u=n.resolve(c,p.sourceRelativePath);if(u!==c&&!u.startsWith(c+n.sep)||!f.existsSync(u))continue;const h=n.resolve(r,p.exportRelPath);try{E(u,h),l++}catch{}}return f.writeFileSync(n.join(r,"game.json"),e.gameJson,"utf-8"),{success:!0,outDir:r,copied:l}}catch(l){return{success:!1,error:l.message}}});function F(t){const e=(t||"unsaved").replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,64);return n.join(i.app.getPath("userData"),"snapshots",e)}const Ie=60;i.ipcMain.handle("fs:snapshotProject",async(t,e)=>{try{const s=F(e.projectId);j(s);let r={};try{r=JSON.parse(e.projectJson)}catch{}const o=new Date,c=`${o.toISOString().replace(/[:.]/g,"-")}__${$().slice(0,6)}`,l={id:c,createdAt:o.toISOString(),label:e.label||(e.auto?"自动备份":"手动快照"),lineCount:Array.isArray(r.draftDeltas)?r.draftDeltas.length:0,assetCount:Array.isArray(r.assets)?r.assets.length:0,charCount:Array.isArray(r.characterConfigs)?r.characterConfigs.length:0,sizeBytes:Buffer.byteLength(e.projectJson,"utf-8"),auto:!!e.auto,projectJson:e.projectJson};f.writeFileSync(n.join(s,`${c}.json`),JSON.stringify(l,null,2),"utf-8");const p=f.readdirSync(s).filter(u=>u.endsWith(".json")).map(u=>({f:u,t:f.statSync(n.join(s,u)).mtimeMs})).sort((u,h)=>u.t-h.t);for(;p.length>Ie;){const u=p.shift();f.rmSync(n.join(s,u.f),{force:!0})}return{success:!0,id:c}}catch(s){return{success:!1,error:s.message}}});i.ipcMain.handle("fs:listSnapshots",(t,e)=>{try{const s=F(e);return f.existsSync(s)?{success:!0,snapshots:f.readdirSync(s).filter(o=>o.endsWith(".json")).map(o=>{try{const a=JSON.parse(f.readFileSync(n.join(s,o),"utf-8")),{projectJson:c,...l}=a;return l}catch{return null}}).filter(Boolean).sort((o,a)=>o.createdAt<a.createdAt?1:-1)}:{success:!0,snapshots:[]}}catch(s){return{success:!1,error:s.message,snapshots:[]}}});i.ipcMain.handle("fs:restoreSnapshot",(t,e,s)=>{try{const r=F(e),o=n.join(r,`${s}.json`);return f.existsSync(o)?{success:!0,projectJson:JSON.parse(f.readFileSync(o,"utf-8")).projectJson}:{success:!1,error:"快照不存在"}}catch(r){return{success:!1,error:r.message}}});i.ipcMain.handle("fs:deleteSnapshot",(t,e,s)=>{try{const r=F(e),o=n.join(r,`${s}.json`);return f.existsSync(o)&&f.rmSync(o,{force:!0}),{success:!0}}catch(r){return{success:!1,error:r.message}}});i.ipcMain.handle("fs:evictAssetCache",async(t,e)=>{try{const s=(e||"").replace(/\\/g,"/").replace(/^\/+/,"");if(!s||s.includes(".."))return{success:!1,error:"非法路径"};if(!m)return{success:!1,error:"请先保存项目"};const r=[m];let o=!1;for(const a of r){const c=n.resolve(a,s);c.startsWith(n.resolve(a)+n.sep)&&f.existsSync(c)&&(f.rmSync(c,{force:!0}),o=!0)}return{success:!0,removed:o}}catch(s){return{success:!1,error:s.message}}});i.ipcMain.handle("fs:downloadAsset",async(t,e,s)=>{try{if(!e||!/^https?:\/\//i.test(e))return{success:!1,error:"未配置有效的云端地址（remoteUrl）"};if(!m)return{success:!1,error:"请先保存项目"};const r=(s||"").replace(/\\/g,"/").replace(/^\/+/,"");if(!r||r.includes(".."))return{success:!1,error:"非法路径"};const o=n.join(m,n.dirname(r));j(o);const a=n.join(m,r),c=new AbortController,l=setTimeout(()=>c.abort(),12e4);let p;try{p=await fetch(e,{signal:c.signal})}catch(h){return clearTimeout(l),{success:!1,error:`下载失败：${h.message}`}}if(clearTimeout(l),!p.ok)return{success:!1,error:`云端返回 ${p.status}`};const u=Buffer.from(await p.arrayBuffer());return f.writeFileSync(a,u),{success:!0,bytes:u.length}}catch(r){return{success:!1,error:r.message}}});
+"use strict";
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+const electron = require("electron");
+const path = require("path");
+const fs = require("fs");
+const os = require("os");
+const child_process = require("child_process");
+const zlib = require("zlib");
+const stream = require("stream");
+const PROVIDER_PRESETS = {
+  openai: { endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini" }
+};
+function defaultAIConfig() {
+  return {
+    provider: "openai",
+    endpoint: PROVIDER_PRESETS.openai.endpoint,
+    apiKey: "",
+    model: PROVIDER_PRESETS.openai.model,
+    temperature: 0.7,
+    maxTokens: 2e3,
+    ttsModel: "tts-1"
+  };
+}
+class AIRequestError extends Error {
+  constructor(message, status = 0, kind = "unknown") {
+    super(message);
+    __publicField(this, "status");
+    __publicField(this, "kind");
+    this.name = "AIRequestError";
+    this.status = status;
+    this.kind = kind;
+  }
+}
+function classifyHttpError(status, raw) {
+  var _a, _b;
+  let detail = "";
+  try {
+    const j = JSON.parse(raw);
+    detail = ((_a = j == null ? void 0 : j.error) == null ? void 0 : _a.message) || ((_b = j == null ? void 0 : j.error) == null ? void 0 : _b.type) || "";
+  } catch {
+  }
+  const tail = detail ? `（${detail.slice(0, 160)}）` : raw ? `（${raw.slice(0, 160)}）` : "";
+  switch (status) {
+    case 401:
+      return `API 密钥无效或未授权（401）。请到 AI 设置中检查 Key 是否正确、是否过期${tail}`;
+    case 403:
+      return `密钥无权访问该模型（403）。请确认账户权限或改用可用模型${tail}`;
+    case 404:
+      return `请求的端点或模型不存在（404）。请检查 API 端点与模型名${tail}`;
+    case 429:
+      return `触发频率限制（429）。请稍后重试，或降低并发 / 调小 max_tokens${tail}`;
+    default:
+      if (status >= 500) return `模型服务端错误（${status}）。上游暂时不可用，请稍后重试${tail}`;
+      return `API 请求失败（${status}）${tail}`;
+  }
+}
+function describeAIError(err) {
+  const e = err;
+  if ((e == null ? void 0 : e.name) === "TimeoutError") return e.message || "请求超时";
+  if (e instanceof AIRequestError) return e.message;
+  if ((e == null ? void 0 : e.name) === "TypeError")
+    return "网络请求失败：无法连接到该端点。请检查 API 地址、本地网络或代理设置（桌面端也需可访问外网）。";
+  return (e == null ? void 0 : e.message) || "未知错误";
+}
+const AI_REQUEST_TIMEOUT_MS = 18e4;
+const AI_STALL_TIMEOUT_MS = 3e4;
+async function readChunk(reader, ctrl, stallMs, markTimeout) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      markTimeout();
+      ctrl.abort();
+      reject(new Error("数据流中断"));
+    }, stallMs);
+    reader.read().then((r) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(r);
+    }).catch((err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
+}
+async function streamChatCompletion(config, messages, onToken, signal, opts = {}) {
+  var _a, _b, _c, _d, _e, _f;
+  const timeoutMs = opts.timeoutMs ?? AI_REQUEST_TIMEOUT_MS;
+  const stallMs = opts.stallMs ?? AI_STALL_TIMEOUT_MS;
+  const streaming = opts.streaming ?? true;
+  const body = {
+    model: config.model,
+    messages,
+    temperature: config.temperature,
+    max_tokens: config.maxTokens,
+    stream: streaming
+  };
+  const ctrl = new AbortController();
+  let timedOut = false;
+  const markTimeout = () => {
+    timedOut = true;
+  };
+  const onUserAbort = () => ctrl.abort();
+  if (signal) {
+    if (signal.aborted) ctrl.abort();
+    else signal.addEventListener("abort", onUserAbort, { once: true });
+  }
+  setTimeout(() => {
+    markTimeout();
+    ctrl.abort();
+  }, timeoutMs);
+  try {
+    const res = await fetch(config.endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+        Authorization: `Bearer ${config.apiKey}`
+      },
+      body: JSON.stringify(body),
+      signal: ctrl.signal
+    });
+    if (!res.ok) {
+      const raw = await res.text().catch(() => "");
+      throw new AIRequestError(classifyHttpError(res.status, raw), res.status, "http");
+    }
+    if (!res.body) {
+      const data = await res.json();
+      const content = ((_c = (_b = (_a = data.choices) == null ? void 0 : _a[0]) == null ? void 0 : _b.message) == null ? void 0 : _c.content) ?? "";
+      if (content) onToken(content);
+      return content;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let full = "";
+    while (true) {
+      const { done, value } = await readChunk(reader, ctrl, stallMs, markTimeout);
+      if (done) break;
+      if (value) buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const payload = trimmed.slice(5).trim();
+        if (payload === "[DONE]") continue;
+        try {
+          const json = JSON.parse(payload);
+          const token = (_f = (_e = (_d = json.choices) == null ? void 0 : _d[0]) == null ? void 0 : _e.delta) == null ? void 0 : _f.content;
+          if (token) {
+            full += token;
+            onToken(token);
+          }
+        } catch {
+        }
+      }
+    }
+    return full;
+  } catch (err) {
+    if (timedOut) {
+      throw new AIRequestError(
+        `请求超时（>${Math.round(timeoutMs / 1e3)}s 无响应 / 数据流中断），请检查网络连通性或端点是否正确`,
+        0,
+        "timeout"
+      );
+    }
+    if (err instanceof AIRequestError) throw err;
+    const e = err;
+    if ((e == null ? void 0 : e.name) === "AbortError") throw err;
+    if ((e == null ? void 0 : e.name) === "TypeError") {
+      throw new AIRequestError(
+        "网络请求失败：无法连接到该端点，请检查 API 地址、本地网络或代理设置",
+        0,
+        "network"
+      );
+    }
+    throw new AIRequestError(err.message || "未知错误", 0, "unknown");
+  }
+}
+let mainWindow = null;
+let tray = null;
+let isQuiting = false;
+const IMG_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
+const AUDIO_EXTS = [".mp3", ".ogg", ".wav", ".flac"];
+const MIME_MAP = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".mp3": "audio/mpeg",
+  ".ogg": "audio/ogg",
+  ".wav": "audio/wav",
+  ".flac": "audio/flac"
+};
+const SUBDIR_BACKGROUND = path.join("images", "background");
+const SUBDIR_SPRITE = path.join("images", "sprite");
+const SUBDIR_AUDIO = "audio";
+let activeProjectRoot = null;
+electron.protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "sw-asset",
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+      stream: true,
+      bypassCSP: false
+    }
+  }
+]);
+function createWindow() {
+  mainWindow = new electron.BrowserWindow({
+    width: 1400,
+    height: 900,
+    minWidth: 1024,
+    minHeight: 680,
+    title: "ScriptWeaver",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  });
+  const devUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
+  const isDev = !!process.env.VITE_DEV_SERVER_URL || !electron.app.isPackaged;
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const csp = isDev ? [
+      "default-src 'self' http://localhost:* ws://localhost:*;",
+      "script-src 'self' 'unsafe-inline' http://localhost:*;",
+      "style-src 'self' 'unsafe-inline' http://localhost:*;",
+      "font-src 'self' data: http://localhost:*;",
+      "img-src 'self' data: sw-asset: blob: http://localhost:*;",
+      "media-src 'self' data: sw-asset: blob: http://localhost:*;",
+      "connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:*;"
+    ].join(" ") : [
+      "default-src 'self';",
+      "script-src 'self' 'unsafe-inline';",
+      "style-src 'self' 'unsafe-inline';",
+      "font-src 'self' data:;",
+      "img-src 'self' data: sw-asset: blob:;",
+      "media-src 'self' data: sw-asset: blob:;"
+    ].join(" ");
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        "Content-Security-Policy": [csp]
+      }
+    });
+  });
+  if (isDev) {
+    const tryLoad = (retries = 0) => {
+      mainWindow.loadURL(devUrl).catch((err) => {
+        console.warn(`[dev] loadURL ${devUrl} failed (retry ${retries}): ${String(err)}`);
+        if (retries < 10) {
+          setTimeout(() => tryLoad(retries + 1), 1500);
+        } else {
+          mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+        }
+      });
+    };
+    tryLoad();
+    mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+  }
+  mainWindow.on("close", (e) => {
+    if (!isQuiting) {
+      e.preventDefault();
+      mainWindow == null ? void 0 : mainWindow.hide();
+    }
+  });
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+}
+function showMainWindow() {
+  if (!mainWindow) {
+    createWindow();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+function createTray() {
+  if (tray) return;
+  const iconPath = path.join(__dirname, "../assets/tray.png");
+  let icon = fs.existsSync(iconPath) ? electron.nativeImage.createFromPath(iconPath) : makeFallbackTrayIcon();
+  if (icon.isEmpty()) icon = makeFallbackTrayIcon();
+  icon = icon.resize({ width: 32, height: 32 });
+  tray = new electron.Tray(icon);
+  tray.setToolTip("ScriptWeaver");
+  tray.setContextMenu(
+    electron.Menu.buildFromTemplate([
+      { label: "显示窗口", click: () => showMainWindow() },
+      { type: "separator" },
+      { label: "退出", click: () => {
+        isQuiting = true;
+        electron.app.quit();
+      } }
+    ])
+  );
+  tray.on("click", () => showMainWindow());
+}
+function makeFallbackTrayIcon() {
+  const size = 32;
+  const [r, g, b, a] = [30, 41, 59, 255];
+  const raw = [];
+  for (let y = 0; y < size; y++) {
+    raw.push(0);
+    for (let x = 0; x < size; x++) raw.push(r, g, b, a);
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  const idat = zlib.deflateSync(Buffer.from(raw));
+  const buf = Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pngChunk("IHDR", ihdr),
+    pngChunk("IDAT", idat),
+    pngChunk("IEND", Buffer.alloc(0))
+  ]);
+  return electron.nativeImage.createFromBuffer(buf);
+}
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length, 0);
+  const typeBuf = Buffer.from(type, "ascii");
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])) >>> 0, 0);
+  return Buffer.concat([len, typeBuf, data, crc]);
+}
+function crc32(buf) {
+  let c = -1;
+  for (let i = 0; i < buf.length; i++) {
+    c ^= buf[i];
+    for (let k = 0; k < 8; k++) c = c >>> 1 ^ 3988292384 & -(c & 1);
+  }
+  return ~c >>> 0;
+}
+electron.app.whenReady().then(() => {
+  registerAssetProtocol();
+  createWindow();
+  createTray();
+  electron.app.on("activate", () => {
+    if (electron.BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
+electron.app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    if (isQuiting) {
+      electron.app.quit();
+    } else if (process.env.VITE_DEV_SERVER_URL) {
+      if (!mainWindow) createWindow();
+    } else {
+      electron.app.quit();
+    }
+  }
+});
+function ensureDir(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+function copyFile(src, dest) {
+  ensureDir(path.dirname(dest));
+  fs.copyFileSync(src, dest);
+}
+function uuid() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    return (c === "x" ? r : r & 3 | 8).toString(16);
+  });
+}
+function resolveSubdir(ext, kind) {
+  if (AUDIO_EXTS.includes(ext)) return { subdir: SUBDIR_AUDIO, type: "audio" };
+  if (kind === "background") return { subdir: SUBDIR_BACKGROUND, type: "background" };
+  return { subdir: SUBDIR_SPRITE, type: "sprite" };
+}
+function classifyAsset(abs) {
+  const ext = path.extname(abs).toLowerCase();
+  if (AUDIO_EXTS.includes(ext)) return "audio";
+  if (IMG_EXTS.includes(ext)) {
+    const normalized = abs.replace(/\\/g, "/");
+    return normalized.includes("/images/background/") ? "background" : "sprite";
+  }
+  return null;
+}
+function getWebTemplateDir() {
+  if (electron.app.isPackaged) {
+    return path.join(process.resourcesPath, "web-player");
+  }
+  return path.join(__dirname, "..", "web-player");
+}
+electron.app.on("before-quit", () => {
+  stopAssetWatch();
+});
+function registerAssetProtocol() {
+  electron.protocol.handle("sw-asset", (request) => {
+    try {
+      const url = new URL(request.url);
+      let rel;
+      try {
+        rel = decodeURIComponent(url.pathname);
+      } catch {
+        rel = url.pathname;
+      }
+      rel = rel.replace(/^\/+/, "");
+      console.log("[sw-asset] request", request.url, "| rel=", rel, "| activeRoot=", activeProjectRoot);
+      if (!rel) return new Response("bad request", { status: 400 });
+      const roots = [];
+      if (activeProjectRoot) roots.push(activeProjectRoot);
+      for (const root of roots) {
+        const assetsDir = path.resolve(root, "assets");
+        const candidates = [
+          path.resolve(root, rel),
+          path.resolve(root, "assets", rel)
+        ];
+        for (const abs of candidates) {
+          const inTree = abs === assetsDir || abs.startsWith(assetsDir + path.sep);
+          const ext = path.extname(abs).toLowerCase();
+          const extOk = IMG_EXTS.includes(ext) || AUDIO_EXTS.includes(ext);
+          const exists = fs.existsSync(abs);
+          if (!inTree) continue;
+          if (!extOk) continue;
+          if (!exists) continue;
+          const mime = MIME_MAP[ext] ?? "application/octet-stream";
+          const total = fs.statSync(abs).size;
+          const range = request.headers.get("range");
+          if (range) {
+            const m = /bytes=(\d+)-(\d*)/.exec(range);
+            let start = m ? parseInt(m[1], 10) : 0;
+            let end = m && m[2] ? parseInt(m[2], 10) : total - 1;
+            if (isNaN(start) || isNaN(end) || start > end || end >= total) {
+              start = 0;
+              end = total - 1;
+            }
+            const sliceLen = end - start + 1;
+            const slice = fs.readFileSync(abs, { start, end: end + 1 });
+            console.log("[sw-asset]  HIT(range)", abs, start, "-", end, "/", total);
+            return new Response(new Uint8Array(slice), {
+              status: 206,
+              headers: {
+                "Content-Type": mime,
+                "Content-Range": `bytes ${start}-${end}/${total}`,
+                "Accept-Ranges": "bytes",
+                "Content-Length": String(sliceLen),
+                "Cache-Control": "no-cache"
+              }
+            });
+          }
+          const stream$1 = stream.Readable.toWeb(fs.createReadStream(abs));
+          console.log("[sw-asset]  HIT", abs, mime);
+          return new Response(stream$1, {
+            headers: { "Content-Type": mime, "Cache-Control": "no-cache" }
+          });
+        }
+      }
+      console.log("[sw-asset]  NOT FOUND for", rel);
+      return new Response("not found", { status: 404 });
+    } catch (err) {
+      return new Response(`error: ${err.message}`, { status: 500 });
+    }
+  });
+}
+let watcher = null;
+let watchedRoot = null;
+const watchDebounce = /* @__PURE__ */ new Map();
+function stopAssetWatch() {
+  if (watcher) {
+    try {
+      watcher.close();
+    } catch {
+    }
+    watcher = null;
+  }
+  watchedRoot = null;
+  for (const t of watchDebounce.values()) clearTimeout(t);
+  watchDebounce.clear();
+}
+function startAssetWatch(projectRoot) {
+  if (watchedRoot === projectRoot && watcher) return;
+  stopAssetWatch();
+  const assetsDir = path.join(projectRoot, "assets");
+  ensureDir(assetsDir);
+  try {
+    watcher = fs.watch(assetsDir, { recursive: true }, (_event, filename) => {
+      if (!filename) return;
+      const relFile = filename.toString();
+      const abs = path.join(assetsDir, relFile);
+      const type = classifyAsset(abs);
+      if (!type) return;
+      const key = abs;
+      const prev = watchDebounce.get(key);
+      if (prev) clearTimeout(prev);
+      watchDebounce.set(
+        key,
+        setTimeout(() => {
+          watchDebounce.delete(key);
+          const relativePath = ("assets/" + path.relative(assetsDir, abs).replace(/\\/g, "/")).replace(/\/+/g, "/");
+          const exists = fs.existsSync(abs);
+          mainWindow == null ? void 0 : mainWindow.webContents.send("asset:changed", {
+            relativePath,
+            type,
+            exists
+          });
+        }, 150)
+      );
+    });
+    watchedRoot = projectRoot;
+  } catch {
+    watcher = null;
+    watchedRoot = null;
+  }
+}
+const AI_CONFIG_PATH = path.join(electron.app.getPath("userData"), "ai-config.json");
+function readAIConfig() {
+  try {
+    if (fs.existsSync(AI_CONFIG_PATH)) {
+      const p = JSON.parse(fs.readFileSync(AI_CONFIG_PATH, "utf-8"));
+      return {
+        provider: p.provider ?? "openai",
+        endpoint: p.endpoint ?? defaultAIConfig().endpoint,
+        apiKey: typeof p.apiKey === "string" ? p.apiKey : "",
+        model: p.model ?? defaultAIConfig().model,
+        temperature: typeof p.temperature === "number" ? p.temperature : 0.7,
+        maxTokens: typeof p.maxTokens === "number" ? p.maxTokens : 2e3,
+        ttsModel: typeof p.ttsModel === "string" && p.ttsModel.trim() ? p.ttsModel : "tts-1"
+      };
+    }
+  } catch {
+  }
+  return defaultAIConfig();
+}
+function writeAIConfig(incoming) {
+  const existing = readAIConfig();
+  const merged = { ...existing, ...incoming };
+  if (!incoming.apiKey) merged.apiKey = existing.apiKey;
+  try {
+    fs.writeFileSync(AI_CONFIG_PATH, JSON.stringify(merged), "utf-8");
+  } catch {
+  }
+}
+electron.ipcMain.handle("ai:getConfig", () => {
+  const c = readAIConfig();
+  return { ...c, apiKey: "", hasApiKey: !!c.apiKey };
+});
+electron.ipcMain.handle("ai:setConfig", (_event, cfg) => {
+  writeAIConfig(cfg);
+  return { ok: true };
+});
+let activeChat = null;
+electron.ipcMain.on("ai:chat", async (event, payload) => {
+  const cfg = readAIConfig();
+  if (!cfg.apiKey) {
+    event.sender.send("ai:error", "未配置 API Key（请在 AI 设置中填写，密钥仅存于本地安全区）");
+    return;
+  }
+  const controller = new AbortController();
+  activeChat = controller;
+  try {
+    const full = await streamChatCompletion(
+      cfg,
+      payload.messages,
+      (delta) => event.sender.send("ai:chunk", { delta }),
+      controller.signal
+    );
+    event.sender.send("ai:done", { full });
+  } catch (err) {
+    const e = err;
+    if ((e == null ? void 0 : e.name) === "AbortError") {
+      event.sender.send("ai:aborted");
+      return;
+    }
+    event.sender.send("ai:error", describeAIError(err));
+  } finally {
+    activeChat = null;
+  }
+});
+electron.ipcMain.on("ai:abort", () => {
+  activeChat == null ? void 0 : activeChat.abort();
+});
+electron.ipcMain.handle("tts:synthesize", async (_event, payload) => {
+  if (!activeProjectRoot) return { success: false, error: "请先保存项目，再使用 TTS 配音" };
+  const cfg = readAIConfig();
+  if (!cfg.apiKey) {
+    return { success: false, error: "未配置 AI API 密钥（请先在 AI 设置中填写密钥）" };
+  }
+  try {
+    const ttsEndpoint = cfg.endpoint.replace(/\/chat\/completions\/?$/, "/audio/speech");
+    const fmt = payload.format || "mp3";
+    const body = {
+      model: cfg.ttsModel || "tts-1",
+      input: payload.text || " ",
+      voice: payload.voiceId || "alloy",
+      response_format: fmt
+    };
+    if (payload.speed != null) body.speed = payload.speed;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12e4);
+    let resp;
+    try {
+      resp = await fetch(ttsEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${cfg.apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body),
+        signal: ctrl.signal
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "");
+      return { success: false, error: `TTS API 返回 ${resp.status}${errText ? ": " + errText.slice(0, 200) : ""}` };
+    }
+    const buf = Buffer.from(await resp.arrayBuffer());
+    const safeChar = (payload.charId || "unknown").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32);
+    const safeLine = (payload.lineTag || "L0").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 16);
+    const id = uuid();
+    const fileName = `tts_${safeChar}_${safeLine}_${id.slice(0, 8)}.${fmt}`;
+    const destDir = path.join(activeProjectRoot, "assets", "audio");
+    ensureDir(destDir);
+    const dest = path.join(destDir, fileName);
+    fs.writeFileSync(dest, buf);
+    const relativePath = path.join("assets", "audio", fileName).replace(/\\/g, "/");
+    return {
+      success: true,
+      asset: { id, fileName, relativePath }
+    };
+  } catch (err) {
+    const msg = err.message || String(err);
+    return { success: false, error: `TTS 合成失败: ${msg}` };
+  }
+});
+electron.ipcMain.handle("app:getVersion", () => {
+  return electron.app.getVersion();
+});
+electron.ipcMain.handle("app:getPath", (_event, name) => {
+  return electron.app.getPath(name);
+});
+electron.ipcMain.handle("app:clearLocalCache", () => {
+  try {
+    const userData = electron.app.getPath("userData");
+    const targets = [path.join(userData, "snapshots")];
+    let removedDirs = 0;
+    for (const dir of targets) {
+      if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+        removedDirs++;
+      }
+    }
+    return { success: true, removedDirs };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.on("app:setNativeTheme", (_event, theme) => {
+  electron.nativeTheme.themeSource = theme;
+});
+electron.ipcMain.handle("fs:setActiveProjectRoot", (_event, root) => {
+  activeProjectRoot = root && typeof root === "string" ? root : null;
+  if (activeProjectRoot) {
+    startAssetWatch(activeProjectRoot);
+  } else {
+    stopAssetWatch();
+  }
+  return { success: true };
+});
+electron.ipcMain.handle("fs:scanProjectAssets", (_event, projectRoot) => {
+  try {
+    if (!projectRoot || typeof projectRoot !== "string") {
+      return { success: false, error: "缺少 projectRoot" };
+    }
+    const assetsDir = path.join(projectRoot, "assets");
+    const out = [];
+    const walk = (dir) => {
+      if (!fs.existsSync(dir)) return;
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const abs = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(abs);
+        } else {
+          const type = classifyAsset(abs);
+          if (!type) continue;
+          const relativePath = "assets/" + path.relative(assetsDir, abs).replace(/\\/g, "/");
+          out.push({
+            id: uuid(),
+            type,
+            name: path.parse(abs).name,
+            fileName: path.basename(abs),
+            relativePath,
+            importedAt: (/* @__PURE__ */ new Date()).toISOString()
+          });
+        }
+      }
+    };
+    walk(assetsDir);
+    return { success: true, assets: out };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+function writeProjectToDir(projectDir, projectJson, projectName) {
+  const assetsDir = path.join(projectDir, "assets");
+  ensureDir(path.join(assetsDir, SUBDIR_BACKGROUND));
+  ensureDir(path.join(assetsDir, SUBDIR_SPRITE));
+  ensureDir(path.join(assetsDir, SUBDIR_AUDIO));
+  ensureDir(path.join(assetsDir, "scripts"));
+  const projPath = path.join(projectDir, `${projectName || "untitled"}.swproj`);
+  fs.writeFileSync(projPath, projectJson, "utf-8");
+}
+electron.ipcMain.handle("dialog:saveProject", async (_event, data) => {
+  if (!mainWindow) return { success: false, error: "No active window" };
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "选择项目保存目录",
+    properties: ["openDirectory", "createDirectory"]
+  });
+  if (result.canceled || result.filePaths.length === 0) return { success: false };
+  const projectDir = result.filePaths[0];
+  try {
+    writeProjectToDir(projectDir, data.projectJson, data.projectName);
+    activeProjectRoot = projectDir;
+    startAssetWatch(projectDir);
+    return { success: true, projectDir };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("dialog:saveProjectToPath", async (_event, data) => {
+  try {
+    writeProjectToDir(data.projectDir, data.projectJson, data.projectName);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("dialog:openProject", async () => {
+  if (!mainWindow) return { success: false, error: "No active window" };
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "打开项目",
+    filters: [
+      { name: "ScriptWeaver 项目", extensions: ["swproj"] }
+    ],
+    properties: ["openFile"]
+  });
+  if (result.canceled || result.filePaths.length === 0) return { success: false };
+  try {
+    const filePath = result.filePaths[0];
+    const content = fs.readFileSync(filePath, "utf-8");
+    const projectDir = path.dirname(filePath);
+    activeProjectRoot = projectDir;
+    startAssetWatch(projectDir);
+    return { success: true, content, projectDir };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("dialog:pickAssetFiles", async (_event, options) => {
+  if (!mainWindow) return { success: false, error: "No active window" };
+  const filters = (options == null ? void 0 : options.filters) || [
+    { name: "图片文件", extensions: ["png", "jpg", "jpeg", "webp"] },
+    { name: "音频文件", extensions: ["mp3", "ogg", "wav"] },
+    { name: "所有文件", extensions: ["*"] }
+  ];
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "导入素材",
+    filters,
+    properties: ["openFile", "multiSelections"]
+  });
+  if (result.canceled || result.filePaths.length === 0) return { success: false };
+  try {
+    if (!activeProjectRoot) return { success: false, error: "请先保存项目，再导入素材" };
+    const files = [];
+    for (const srcPath of result.filePaths) {
+      const ext = path.extname(srcPath).toLowerCase();
+      const baseName = path.basename(srcPath);
+      const { subdir, type } = resolveSubdir(ext, options == null ? void 0 : options.kind);
+      const destDir = path.join(activeProjectRoot, "assets", subdir);
+      ensureDir(destDir);
+      let fileDest = path.join(destDir, baseName);
+      let counter = 1;
+      while (fs.existsSync(fileDest)) {
+        const parsed = path.parse(baseName);
+        fileDest = path.join(destDir, `${parsed.name}_${counter}${parsed.ext}`);
+        counter++;
+      }
+      copyFile(srcPath, fileDest);
+      const relativePath = path.join("assets", subdir, path.basename(fileDest)).replace(/\\/g, "/");
+      files.push({
+        id: uuid(),
+        fileName: path.basename(fileDest),
+        relativePath,
+        type
+      });
+    }
+    return { success: true, files };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("fs:importFilesFromPaths", async (_event, srcPaths, kind) => {
+  if (!Array.isArray(srcPaths) || srcPaths.length === 0) return { success: false, error: "未提供文件" };
+  if (!activeProjectRoot) return { success: false, error: "请先保存项目，再导入素材" };
+  try {
+    const files = [];
+    for (const srcPath of srcPaths) {
+      if (typeof srcPath !== "string" || !fs.existsSync(srcPath)) continue;
+      const ext = path.extname(srcPath).toLowerCase();
+      const baseName = path.basename(srcPath);
+      const { subdir, type } = resolveSubdir(ext, kind);
+      const destDir = path.join(activeProjectRoot, "assets", subdir);
+      ensureDir(destDir);
+      let fileDest = path.join(destDir, baseName);
+      let counter = 1;
+      while (fs.existsSync(fileDest)) {
+        const parsed = path.parse(baseName);
+        fileDest = path.join(destDir, `${parsed.name}_${counter}${parsed.ext}`);
+        counter++;
+      }
+      copyFile(srcPath, fileDest);
+      const relativePath = path.join("assets", subdir, path.basename(fileDest)).replace(/\\/g, "/");
+      files.push({
+        id: uuid(),
+        fileName: path.basename(fileDest),
+        relativePath,
+        type
+      });
+    }
+    return { success: true, files };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("fs:exportRenpy", async (_event, bundle) => {
+  if (!mainWindow) return { success: false, error: "No active window" };
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "选择 Ren'Py 导出目录",
+    properties: ["openDirectory", "createDirectory"]
+  });
+  if (result.canceled || result.filePaths.length === 0) return { success: false };
+  const root = result.filePaths[0];
+  const gameDir = path.join(root, "game");
+  const imgBg = path.join(gameDir, "images", "background");
+  const imgSpr = path.join(gameDir, "images", "sprite");
+  const audDir = path.join(gameDir, "audio");
+  ensureDir(imgBg);
+  ensureDir(imgSpr);
+  ensureDir(audDir);
+  if (!activeProjectRoot) return { success: false, error: "请先保存项目" };
+  const srcRoot = activeProjectRoot;
+  const resolvedSrcRoot = path.resolve(srcRoot);
+  let copied = 0;
+  for (const a of bundle.assets ?? []) {
+    const src = path.resolve(resolvedSrcRoot, a.sourceRelativePath);
+    if (src !== resolvedSrcRoot && !src.startsWith(resolvedSrcRoot + path.sep)) continue;
+    if (!fs.existsSync(src)) continue;
+    const dest = path.resolve(gameDir, a.exportRelPath);
+    try {
+      copyFile(src, dest);
+      copied++;
+    } catch {
+    }
+  }
+  try {
+    fs.writeFileSync(path.join(gameDir, "script.rpy"), bundle.script ?? "", "utf-8");
+    fs.writeFileSync(path.join(gameDir, "definitions.rpy"), bundle.definitions ?? "", "utf-8");
+    if (bundle.transforms && bundle.transforms.trim()) {
+      fs.writeFileSync(path.join(gameDir, "transforms.rpy"), bundle.transforms, "utf-8");
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+  return { success: true, gameDir, copied };
+});
+function isRenpyLauncher(p) {
+  const base = path.basename(p).toLowerCase();
+  return base === "renpy.exe" || base === "renpy.sh" || base === "renpy";
+}
+function readRenpyVersion(sdkPath) {
+  const candidates = [
+    path.join(sdkPath, "renpy", "__init__.py"),
+    path.join(sdkPath, "renpy.py")
+  ];
+  for (const f of candidates) {
+    try {
+      const text = fs.readFileSync(f, "utf-8");
+      const m = text.match(/version\s*=\s*['"]([\d.]+)['"]/);
+      if (m) return m[1];
+    } catch {
+    }
+  }
+  return null;
+}
+function findRenpySdk() {
+  const bases = [];
+  if (process.env.RENPY_SDK) bases.push(process.env.RENPY_SDK);
+  const home = os.homedir();
+  if (process.platform === "win32") {
+    bases.push("C:\\Program Files\\RenPy", "C:\\RenPy", path.join(home, "renpy"), path.join(home, "RenPy"));
+  } else if (process.platform === "darwin") {
+    bases.push(path.join(home, "renpy"), "/Applications/RenPy", "/Applications/renpy");
+  } else {
+    bases.push(path.join(home, "renpy"), "/opt/renpy", "/usr/local/renpy");
+  }
+  try {
+    const dl = path.join(home, "Downloads");
+    for (const name of fs.readdirSync(dl)) {
+      if (/^renpy/i.test(name)) {
+        const full = path.join(dl, name);
+        try {
+          if (fs.statSync(full).isDirectory()) bases.push(full);
+        } catch {
+        }
+      }
+    }
+  } catch {
+  }
+  const scan = (base) => {
+    let st = null;
+    try {
+      st = fs.statSync(base);
+    } catch {
+      return null;
+    }
+    if (st.isFile()) return isRenpyLauncher(base) ? base : null;
+    if (!st.isDirectory()) return null;
+    try {
+      for (const name of fs.readdirSync(base)) {
+        const full = path.join(base, name);
+        try {
+          const s2 = fs.statSync(full);
+          if (s2.isFile() && isRenpyLauncher(full)) return full;
+        } catch {
+        }
+      }
+    } catch {
+    }
+    try {
+      for (const name of fs.readdirSync(base)) {
+        const full = path.join(base, name);
+        try {
+          if (fs.statSync(full).isDirectory()) {
+            for (const n2 of fs.readdirSync(full)) {
+              if (isRenpyLauncher(path.join(full, n2))) return path.join(full, n2);
+            }
+          }
+        } catch {
+        }
+      }
+    } catch {
+    }
+    return null;
+  };
+  for (const b of bases) {
+    const launcher = scan(b);
+    if (launcher) {
+      const sdkPath = path.dirname(launcher);
+      return { sdkPath, launcher, version: readRenpyVersion(sdkPath) };
+    }
+  }
+  return null;
+}
+function buildMinimalOptions(title) {
+  const safe = title.replace(/[^\w一-龥-]/g, "_");
+  return [
+    "init python:",
+    "    config.developer = True",
+    `    build.name = "${safe}"`,
+    `    config.window_title = "${title}"`,
+    "    config.save_directory = None",
+    ""
+  ].join("\n");
+}
+electron.ipcMain.handle("renpy:detectSdk", async () => {
+  const info = findRenpySdk();
+  if (!info) {
+    return {
+      detected: false,
+      hint: "未检测到 Ren'Py SDK。请安装 Ren'Py（https://www.renpy.org）并设置环境变量 RENPY_SDK 指向 SDK 根目录，或在常见目录放置 SDK。"
+    };
+  }
+  return { detected: true, sdkPath: info.sdkPath, launcher: info.launcher, version: info.version };
+});
+electron.ipcMain.handle("renpy:stageProject", async (_event, payload) => {
+  if (!mainWindow) return { success: false, error: "No active window" };
+  const { bundle, title } = payload;
+  const safeTitle = (title || "scriptweaver_project").replace(/[^\w一-龥-]/g, "_").slice(0, 60);
+  const stageRoot = path.join(electron.app.getPath("userData"), "renpy-staging", safeTitle);
+  const gameDir = path.join(stageRoot, "game");
+  try {
+    fs.rmSync(gameDir, { recursive: true, force: true });
+  } catch {
+  }
+  ensureDir(path.join(gameDir, "images", "background"));
+  ensureDir(path.join(gameDir, "images", "sprite"));
+  ensureDir(path.join(gameDir, "audio"));
+  try {
+    fs.writeFileSync(path.join(gameDir, "script.rpy"), bundle.script ?? "", "utf-8");
+    fs.writeFileSync(path.join(gameDir, "definitions.rpy"), bundle.definitions ?? "", "utf-8");
+    if (bundle.transforms && bundle.transforms.trim()) {
+      fs.writeFileSync(path.join(gameDir, "transforms.rpy"), bundle.transforms, "utf-8");
+    }
+    fs.writeFileSync(path.join(gameDir, "options.rpy"), buildMinimalOptions(safeTitle), "utf-8");
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+  let copied = 0;
+  const missing = [];
+  const srcRoot = activeProjectRoot ? path.resolve(activeProjectRoot) : null;
+  for (const a of bundle.assets ?? []) {
+    if (!srcRoot) {
+      missing.push(a.exportRelPath);
+      continue;
+    }
+    const src = path.resolve(srcRoot, a.sourceRelativePath);
+    if (src !== srcRoot && !src.startsWith(srcRoot + path.sep)) {
+      missing.push(a.exportRelPath);
+      continue;
+    }
+    if (!fs.existsSync(src)) {
+      missing.push(a.exportRelPath);
+      continue;
+    }
+    const dest = path.resolve(gameDir, a.exportRelPath);
+    try {
+      copyFile(src, dest);
+      copied++;
+    } catch {
+      missing.push(a.exportRelPath);
+    }
+  }
+  return { success: true, projectDir: stageRoot, gameDir, copied, missingCount: missing.length };
+});
+electron.ipcMain.handle(
+  "renpy:runEngine",
+  async (_event, payload) => {
+    var _a, _b;
+    let info = null;
+    if (payload.sdkPath) {
+      const launcher = [
+        path.join(payload.sdkPath, "renpy.exe"),
+        path.join(payload.sdkPath, "renpy.sh"),
+        path.join(payload.sdkPath, "renpy")
+      ].find((p) => {
+        try {
+          return fs.existsSync(p);
+        } catch {
+          return false;
+        }
+      });
+      if (launcher) info = { sdkPath: payload.sdkPath, launcher, version: readRenpyVersion(payload.sdkPath) };
+    } else {
+      info = findRenpySdk();
+    }
+    if (!info) {
+      return {
+        success: false,
+        error: "未检测到 Ren'Py SDK。请安装 SDK 并设置环境变量 RENPY_SDK，或在「导出设置 · Ren'Py 引擎」中手动指定路径。"
+      };
+    }
+    const projectDir = payload.projectDir;
+    if (payload.action === "run") {
+      try {
+        const child = child_process.spawn(info.launcher, [projectDir], { detached: true, stdio: "ignore", windowsHide: false });
+        child.unref();
+        return { success: true, action: "run", pid: child.pid, projectDir };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+    if (payload.action === "lint") {
+      return await new Promise(
+        (resolve) => {
+          var _a2, _b2;
+          let out = "";
+          let settled = false;
+          const timer = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              resolve({ success: false, action: "lint", error: "Lint 执行超时（60s），请检查工程是否可被 Ren'Py 打开。" });
+            }
+          }, 6e4);
+          try {
+            const child = child_process.spawn(info.launcher, [projectDir, "lint"], { windowsHide: false });
+            (_a2 = child.stdout) == null ? void 0 : _a2.on("data", (d) => out += d.toString());
+            (_b2 = child.stderr) == null ? void 0 : _b2.on("data", (d) => out += d.toString());
+            child.on("error", (e) => {
+              if (!settled) {
+                settled = true;
+                clearTimeout(timer);
+                resolve({ success: false, action: "lint", error: e.message });
+              }
+            });
+            child.on("close", (code) => {
+              if (!settled) {
+                settled = true;
+                clearTimeout(timer);
+                resolve({ success: code === 0, action: "lint", exitCode: code ?? -1, output: out || "(无输出)" });
+              }
+            });
+          } catch (err) {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timer);
+              resolve({ success: false, action: "lint", error: err.message });
+            }
+          }
+        }
+      );
+    }
+    const logDir = path.join(electron.app.getPath("userData"), "renpy-build-logs");
+    ensureDir(logDir);
+    const logFile = path.join(logDir, `${path.basename(projectDir)}-${Date.now()}.log`);
+    try {
+      const out = fs.createWriteStream(logFile);
+      const child = child_process.spawn(info.launcher, [projectDir, "distribute"], {
+        detached: true,
+        stdio: ["ignore", "pipe", "pipe"],
+        windowsHide: false
+      });
+      (_a = child.stdout) == null ? void 0 : _a.pipe(out);
+      (_b = child.stderr) == null ? void 0 : _b.pipe(out);
+      child.on("exit", () => out.end());
+      child.unref();
+      return {
+        success: true,
+        action: "build",
+        started: true,
+        logFile,
+        distDir: path.join(projectDir, "dist"),
+        projectDir
+      };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+);
+electron.ipcMain.handle("fs:exportWeb", async (_event, bundle) => {
+  if (!mainWindow) return { success: false, error: "No active window" };
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "选择 Web 导出目录",
+    properties: ["openDirectory", "createDirectory"]
+  });
+  if (result.canceled || result.filePaths.length === 0) return { success: false };
+  const root = result.filePaths[0];
+  const tpl = getWebTemplateDir();
+  if (!activeProjectRoot) return { success: false, error: "请先保存项目" };
+  const srcRoot = activeProjectRoot;
+  const resolvedSrcRoot = path.resolve(srcRoot);
+  try {
+    for (const f of ["index.html", "style.css", "player.js"]) {
+      const src = path.join(tpl, f);
+      if (fs.existsSync(src)) copyFile(src, path.join(root, f));
+    }
+    let copied = 0;
+    for (const a of bundle.assetRefs ?? []) {
+      const src = path.resolve(resolvedSrcRoot, a.sourceRelativePath);
+      if (src !== resolvedSrcRoot && !src.startsWith(resolvedSrcRoot + path.sep)) continue;
+      if (!fs.existsSync(src)) continue;
+      const dest = path.resolve(root, a.exportRelPath);
+      try {
+        copyFile(src, dest);
+        copied++;
+      } catch {
+      }
+    }
+    fs.writeFileSync(path.join(root, "game.json"), bundle.gameJson, "utf-8");
+    return { success: true, outDir: root, copied };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+function getSnapshotsDir(projectId) {
+  const safe = (projectId || "unsaved").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
+  return path.join(electron.app.getPath("userData"), "snapshots", safe);
+}
+const MAX_SNAPSHOTS = 60;
+electron.ipcMain.handle(
+  "fs:snapshotProject",
+  async (_event, payload) => {
+    try {
+      const dir = getSnapshotsDir(payload.projectId);
+      ensureDir(dir);
+      let parsed = {};
+      try {
+        parsed = JSON.parse(payload.projectJson);
+      } catch {
+      }
+      const now = /* @__PURE__ */ new Date();
+      const ts = now.toISOString().replace(/[:.]/g, "-");
+      const id = `${ts}__${uuid().slice(0, 6)}`;
+      const meta = {
+        id,
+        createdAt: now.toISOString(),
+        label: payload.label || (payload.auto ? "自动备份" : "手动快照"),
+        lineCount: Array.isArray(parsed.draftDeltas) ? parsed.draftDeltas.length : 0,
+        assetCount: Array.isArray(parsed.assets) ? parsed.assets.length : 0,
+        charCount: Array.isArray(parsed.characterConfigs) ? parsed.characterConfigs.length : 0,
+        sizeBytes: Buffer.byteLength(payload.projectJson, "utf-8"),
+        auto: !!payload.auto,
+        projectJson: payload.projectJson
+      };
+      fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(meta, null, 2), "utf-8");
+      const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs })).sort((a, b) => a.t - b.t);
+      while (files.length > MAX_SNAPSHOTS) {
+        const victim = files.shift();
+        fs.rmSync(path.join(dir, victim.f), { force: true });
+      }
+      return { success: true, id };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+);
+electron.ipcMain.handle("fs:listSnapshots", (_event, projectId) => {
+  try {
+    const dir = getSnapshotsDir(projectId);
+    if (!fs.existsSync(dir)) return { success: true, snapshots: [] };
+    const list = fs.readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => {
+      try {
+        const m = JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8"));
+        const { projectJson: _p, ...meta } = m;
+        return meta;
+      } catch {
+        return null;
+      }
+    }).filter(Boolean).sort((a, b) => a.createdAt < b.createdAt ? 1 : -1);
+    return { success: true, snapshots: list };
+  } catch (err) {
+    return { success: false, error: err.message, snapshots: [] };
+  }
+});
+electron.ipcMain.handle("fs:restoreSnapshot", (_event, projectId, id) => {
+  try {
+    const dir = getSnapshotsDir(projectId);
+    const fp = path.join(dir, `${id}.json`);
+    if (!fs.existsSync(fp)) return { success: false, error: "快照不存在" };
+    const m = JSON.parse(fs.readFileSync(fp, "utf-8"));
+    return { success: true, projectJson: m.projectJson };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("fs:deleteSnapshot", (_event, projectId, id) => {
+  try {
+    const dir = getSnapshotsDir(projectId);
+    const fp = path.join(dir, `${id}.json`);
+    if (fs.existsSync(fp)) fs.rmSync(fp, { force: true });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("fs:evictAssetCache", async (_event, relativePath) => {
+  try {
+    const rel = (relativePath || "").replace(/\\/g, "/").replace(/^\/+/, "");
+    if (!rel || rel.includes("..")) return { success: false, error: "非法路径" };
+    if (!activeProjectRoot) return { success: false, error: "请先保存项目" };
+    const roots = [activeProjectRoot];
+    let removed = false;
+    for (const root of roots) {
+      const fp = path.resolve(root, rel);
+      if (!fp.startsWith(path.resolve(root) + path.sep)) continue;
+      if (fs.existsSync(fp)) {
+        fs.rmSync(fp, { force: true });
+        removed = true;
+      }
+    }
+    return { success: true, removed };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+electron.ipcMain.handle("fs:downloadAsset", async (_event, remoteUrl, relativePath) => {
+  try {
+    if (!remoteUrl || !/^https?:\/\//i.test(remoteUrl)) {
+      return { success: false, error: "未配置有效的云端地址（remoteUrl）" };
+    }
+    if (!activeProjectRoot) return { success: false, error: "请先保存项目" };
+    const rel = (relativePath || "").replace(/\\/g, "/").replace(/^\/+/, "");
+    if (!rel || rel.includes("..")) return { success: false, error: "非法路径" };
+    const dir = path.join(activeProjectRoot, path.dirname(rel));
+    ensureDir(dir);
+    const dest = path.join(activeProjectRoot, rel);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12e4);
+    let resp;
+    try {
+      resp = await fetch(remoteUrl, { signal: ctrl.signal });
+    } catch (e) {
+      clearTimeout(timer);
+      return { success: false, error: `下载失败：${e.message}` };
+    }
+    clearTimeout(timer);
+    if (!resp.ok) return { success: false, error: `云端返回 ${resp.status}` };
+    const buf = Buffer.from(await resp.arrayBuffer());
+    fs.writeFileSync(dest, buf);
+    return { success: true, bytes: buf.length };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
