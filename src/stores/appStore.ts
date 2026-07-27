@@ -59,7 +59,7 @@ interface HistorySnapshot {
   selectedLineIndex: number
 }
 
-export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'theme' | 'settings' | 'effects' | 'about' | 'help' | 'diagnostics' | 'exporter' | 'renpy-hub'
+export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'theme' | 'settings' | 'effects' | 'about' | 'help' | 'diagnostics' | 'exporter' | 'renpy-hub' | 'collab' | 'audit-log'
 
 /** 主题模式 */
 export type ThemeMode = 'dark' | 'light'
@@ -499,9 +499,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   updateDeltaAt: (index, updater) => {
-    get()._pushHistory()
     const deltas = [...get().draftDeltas]
     if (index < 0 || index >= deltas.length) return
+    get()._pushHistory()
     deltas[index] = updater(deltas[index])
     set({ draftDeltas: deltas, resolvedStates: reduceLines(deltas) })
   },
@@ -518,9 +518,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setLineType: (index, type) => {
-    get()._pushHistory()
     const deltas = [...get().draftDeltas]
     if (index < 0 || index >= deltas.length) return
+    get()._pushHistory()
     const prev = deltas[index]
     // 场景上下文（背景/角色/音频/滤镜）保留，仅切换行类型与专属字段
     const next: LineDelta = { ...prev, line_type: type }
@@ -538,9 +538,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setLineLabel: (index, label) => {
-    get()._pushHistory()
     const deltas = [...get().draftDeltas]
     if (index < 0 || index >= deltas.length) return
+    get()._pushHistory()
     const trimmed = label.trim()
     const next: LineDelta = { ...deltas[index] }
     if (trimmed) next.label = trimmed
@@ -566,9 +566,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteDeltaAt: (index) => {
-    get()._pushHistory()
     const deltas = [...get().draftDeltas]
     if (deltas.length <= 1 || index < 0 || index >= deltas.length) return
+    get()._pushHistory()
     deltas.splice(index, 1)
     const prev = get().selectedLineIndex
     const newIndex = prev >= deltas.length ? deltas.length - 1 : Math.min(prev, deltas.length - 1)
@@ -580,11 +580,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   moveDelta: (fromIndex, toIndex) => {
-    get()._pushHistory()
     const deltas = [...get().draftDeltas]
     if (fromIndex < 0 || fromIndex >= deltas.length) return
     if (toIndex < 0 || toIndex >= deltas.length) return
     if (fromIndex === toIndex) return
+    get()._pushHistory()
     const [removed] = deltas.splice(fromIndex, 1)
     deltas.splice(toIndex, 0, removed)
     set({

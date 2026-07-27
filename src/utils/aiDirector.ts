@@ -936,3 +936,87 @@ export async function streamChatCompletion(
     throw new AIRequestError((err as Error).message || '未知错误', 0, 'unknown')
   }
 }
+
+// ===================== 主进程 AI 桥接（Electron 下的唯一正道） =====================
+
+/** 是否存在主进程 AI 桥（Electron 环境） */
+export function hasMainAIBridge(): boolean {
+  return typeof window !== 'undefined' && !!(window as unknown as { electronAPI?: { aiChat?: unknown } }).electronAPI?.aiChat
+}
+
+/**
+ * 经主进程发起 AI 对话：密钥由主进程注入，渲染端只发 messages。
+ * 自带渲染端兜底超时（总超时 + 静默断流），防主进程异常时界面假死。
+ */
+export function chatViaMain(
+  messages: ChatMessage[],
+  onToken: (token: string) => void,
+  signal?: AbortSignal,
+  opts: AIStreamOpts = {},
+): Promise<string> {
+  const api = (window as unknown as { electronAPI: NonNullable<Window['electronAPI']> }).electronAPI
+  const timeoutMs = opts.timeoutMs ?? AI_REQUEST_TIMEOUT_MS
+  const stallMs = opts.stallMs ?? AI_STALL_TIMEOUT_MS
+
+  return new Promise<string>((resolve, reject) => {
+    let full = ''
+    let settled = false
+    let stallTimer: ReturnType<typeof setTimeout> | null = null
+
+    const cleanup = () => {
+      clearTimeout(totalTimer)
+      if (stallTimer) clearTimeout(stallTimer)
+      api.removeAiListeners?.()
+      signal?.removeEventListener('abort', onAbort)
+    }
+    const fail = (err: Error) => {
+      if (settled) return
+      settled = true
+      try { api.aiAbort?.() } catch { /* ignore */ }
+      cleanup()
+      reject(err)
+    }
+    const onAbort = () => {
+      if (settled) return
+      settled = true
+      try { api.aiAbort?.() } catch { /* ignore */ }
+      cleanup()
+      const e = new Error('用户已取消')
+      e.name = 'AbortError'
+      reject(e)
+    }
+    const resetStall = () => {
+      if (stallTimer) clearTimeout(stallTimer)
+      stallTimer = setTimeout(() => {
+        fail(new AIRequestError(`数据流中断（>${Math.round(stallMs / 1000)}s 未收到任何数据），请重试或检查网络`, 0, 'timeout'))
+      }, stallMs)
+    }
+    const totalTimer = setTimeout(() => {
+      fail(new AIRequestError(`请求超时（>${Math.round(timeoutMs / 1000)}s 未完成），请检查网络连通性或端点是否正确`, 0, 'timeout'))
+    }, timeoutMs)
+
+    if (signal?.aborted) { onAbort(); return }
+    signal?.addEventListener('abort', onAbort, { once: true })
+
+    api.removeAiListeners?.()
+    api.onAiChunk((d) => {
+      if (settled) return
+      full += d.delta
+      onToken(d.delta)
+      resetStall()
+    })
+    api.onAiDone((d) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      resolve(d.full || full)
+    })
+    api.onAiError((msg) => {
+      fail(new AIRequestError(msg || 'AI 请求失败', 0, 'unknown'))
+    })
+    api.onAiAborted(() => onAbort())
+
+    resetStall()
+    api.aiChat({ messages })
+  })
+}

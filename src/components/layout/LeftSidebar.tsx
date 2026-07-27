@@ -1,5 +1,5 @@
 import { useAppStore, NavItemId } from '@/stores/appStore'
-import { BookOpen, FileText, Images, Users, Download, Sparkles, Wand2, Info, HelpCircle, Settings, ChevronLeft, ChevronRight, Stethoscope, FileDown, Globe, Palette } from 'lucide-react'
+import { BookOpen, FileText, Images, Users, Download, Sparkles, Wand2, Info, HelpCircle, Settings, ChevronLeft, ChevronRight, Stethoscope, FileDown, Globe, Palette, Cloud, History } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 interface NavItem {
@@ -24,11 +24,14 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'renpy-hub', label: 'Ren\'Py 生态', code: '09', icon: <Globe size={18} strokeWidth={1.75} /> },
   // ---- 工程工具 ----
   { id: 'diagnostics', label: '工程体检', code: '10', icon: <Stethoscope size={18} strokeWidth={1.75} /> },
+  // ---- 协作 ----
+  { id: 'collab', label: 'P2P 协作', code: '11', icon: <Cloud size={18} strokeWidth={1.75} /> },
+  { id: 'audit-log', label: '协作日志', code: '12', icon: <History size={18} strokeWidth={1.75} /> },
   // ---- 个性化 & 信息 ----
-  { id: 'theme', label: '外观主题', code: '11', icon: <Palette size={18} strokeWidth={1.75} /> },
-  { id: 'settings', label: '设置中心', code: '12', icon: <Settings size={18} strokeWidth={1.75} /> },
-  { id: 'about', label: '关于', code: '13', icon: <Info size={18} strokeWidth={1.75} /> },
-  { id: 'help', label: '帮助中心', code: '14', icon: <HelpCircle size={18} strokeWidth={1.75} /> },
+  { id: 'theme', label: '外观主题', code: '13', icon: <Palette size={18} strokeWidth={1.75} /> },
+  { id: 'settings', label: '设置中心', code: '14', icon: <Settings size={18} strokeWidth={1.75} /> },
+  { id: 'about', label: '关于', code: '15', icon: <Info size={18} strokeWidth={1.75} /> },
+  { id: 'help', label: '帮助中心', code: '16', icon: <HelpCircle size={18} strokeWidth={1.75} /> },
 ]
 
 export default function LeftSidebar() {

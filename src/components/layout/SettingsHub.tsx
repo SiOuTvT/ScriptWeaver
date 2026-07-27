@@ -87,31 +87,34 @@ export default function SettingsHub() {
 
   const [activeSection, setActiveSection] = useState<SectionId>('general')
 
-  // AI Config（密钥存于主进程安全区，经 IPC 读写）
+  // AI Config（密钥存于主进程安全区，经 IPC 读写；getConfig 返回已脱敏 apiKey='' + hasApiKey）
   const [apiKey, setApiKey] = useState('')
-  const [apiEndpoint, setApiEndpoint] = useState('https://api.openai.com/v1')
-  const [model, setModel] = useState('gpt-4')
+  const [hasStoredKey, setHasStoredKey] = useState(false)
+  const [apiEndpoint, setApiEndpoint] = useState('https://api.openai.com/v1/chat/completions')
+  const [model, setModel] = useState('gpt-4o-mini')
   const [showKey, setShowKey] = useState(false)
 
   useEffect(() => {
     ;(async () => {
       try {
         const config = await (window as any).electronAPI?.aiGetConfig?.()
-        if (config?.apiKey) setApiKey(config.apiKey)
-        if (config?.baseURL) setApiEndpoint(config.baseURL)
+        if (config?.hasApiKey) setHasStoredKey(true)
+        if (config?.endpoint) setApiEndpoint(config.endpoint)
         if (config?.model) setModel(config.model)
       } catch { /* ignore */ }
     })()
   }, [])
 
   const handleSave = useCallback(() => {
-    if (apiKey) {
-      ;(window as any).electronAPI?.aiSetConfig?.({
-        apiKey,
-        baseURL: apiEndpoint,
-        model,
-      }).catch(() => {})
-    }
+    // 密钥留空 = 保留主进程已存密钥（writeAIConfig 约定），端点/模型始终保存
+    ;(window as any).electronAPI?.aiSetConfig?.({
+      apiKey,
+      endpoint: apiEndpoint,
+      model,
+    }).then(() => {
+      if (apiKey) setHasStoredKey(true)
+      setApiKey('')
+    }).catch(() => {})
     toast?.('设置已保存', 'success')
   }, [apiKey, apiEndpoint, model])
 
@@ -265,13 +268,13 @@ export default function SettingsHub() {
                         type={showKey ? 'text' : 'password'}
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="sk-..."
+                        placeholder={hasStoredKey ? '已保存（留空则保留现有密钥）' : 'sk-...'}
                         className="w-full rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2 text-[13px] text-fg font-mono placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
                       />
                     </div>
                     <p className="mt-1.5 text-[11px] text-fg-faint">
                       <Info size={11} className="inline mr-1" />
-                      密钥加密存储在本地
+                      {hasStoredKey ? '密钥已存于本地安全区，不会回显' : '密钥加密存储在本地'}
                     </p>
                   </div>
 

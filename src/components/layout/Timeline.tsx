@@ -1,6 +1,7 @@
 import { useMemo, useCallback, useRef, memo, useState, useEffect } from 'react'
 import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut, ListTree, Tag, Mic, Loader2 } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
+import { useCollabStore } from '@/collab/collabStore'
 import type { ResolvedLineState, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
 import { resolveCharColor, resolveAssetColor } from '@/utils/charColor'
 import { estimateLineDurationMs } from '@/utils/playback'
@@ -407,6 +408,8 @@ export default function Timeline() {
   const characterConfigs = useAppStore((s) => s.characterConfigs)
   const setAssets = useAppStore((s) => s.setAssets)
   const updateAsset = useAppStore((s) => s.updateAsset)
+  // 协作编辑锁：其他成员正在编辑的行（lineIndex → 锁信息）
+  const collabLocks = useCollabStore((s) => s.locks)
 
   const assetName = useCallback(
     (id: string | null) => (id ? (getAsset(id)?.name ?? id) : ''),
@@ -1094,14 +1097,21 @@ export default function Timeline() {
                 const isLast = i === resolvedStates.length - 1
                 const isFirst = i === 0
                 const onlyOne = resolvedStates.length <= 1
+                const remoteLock = collabLocks.get(i)
                 return (
                   <div
                     key={s.line_id}
                     className={`group relative flex shrink-0 flex-col border-r border-edge/10 ${
                       i === selectedIndex ? 'bg-primary/15' : ''
-                    }`}
+                    } ${remoteLock ? 'ring-1 ring-inset ring-warning/60 bg-warning/8' : ''}`}
                     style={{ width: cellWidth }}
+                    title={remoteLock ? `${remoteLock.displayName} 正在编辑此行` : undefined}
                   >
+                    {remoteLock && (
+                      <span className="pointer-events-none absolute -top-px left-0 right-0 z-10 truncate bg-warning/90 px-1 text-center text-[10px] font-medium leading-4 text-black/85">
+                        {remoteLock.displayName} 正在编辑...
+                      </span>
+                    )}
                     {/* 行号按钮 */}
                     <button
                       onClick={() => selectLine(i)}
@@ -1114,7 +1124,7 @@ export default function Timeline() {
                       <span className="font-mono leading-none text-[12px]">{s.line_id}</span>
                       <span className="w-full truncate text-center text-[12px] leading-tight text-fg-subtle">
                         {s.line_type === 'choice'
-                          ? `选择支 · ${(s.choices ?? []).length} 选项`
+                          ? `选择支 ${(s.choices ?? []).length} 选项`
                           : s.speaker ? `${s.speaker}：${s.dialogue}` : s.dialogue}
                       </span>
                       {s.label && (
@@ -1215,7 +1225,7 @@ export default function Timeline() {
                     key={`se-${ev.index}-${ev.items[0]}`}
                     className="group absolute top-1 bottom-1 z-10 flex items-center"
                     style={{ left: `${leftPct}%`, width: `clamp(30px, ${cellWidthPct}%, 64px)` }}
-                    title={`${ev.items.map(assetName).join(', ')}（第 ${Math.round(offset)}ms 切入 · 拖拽或 Alt+←→ 段落内微调）`}
+                    title={`${ev.items.map(assetName).join(', ')}（第 ${Math.round(offset)}ms 切入 拖拽或 Alt+←→ 段落内微调）`}
                   >
                     <div
                       onMouseDown={(e) => handleAudioOffsetDragStart(ev.index, 'se', ev.items[0], e)}

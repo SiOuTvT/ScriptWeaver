@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useAppStore } from '../../stores/appStore'
-import { streamChatCompletion, loadConfig, buildSystemPrompt, buildBlueprintSystemPrompt, buildBlueprintUserPrompt, parseDirective, describeAIError } from '../../utils/aiDirector'
+import { streamChatCompletion, chatViaMain, hasMainAIBridge, loadConfig, buildSystemPrompt, buildBlueprintSystemPrompt, buildBlueprintUserPrompt, parseDirective, describeAIError } from '../../utils/aiDirector'
 import type { DirectorBlueprint, AIMode as AIAIMode, ChatMessage } from '../../utils/aiDirector'
 import { toast } from '../../utils/toast'
 import {
@@ -91,8 +91,17 @@ export default function AIPanel() {
     abortRef.current = abortController
 
     try {
+      // Electron：密钥在主进程安全区，渲染端只需确认已配置；浏览器降级才读本地配置
+      const useMainBridge = hasMainAIBridge()
       const config = loadConfig()
-      if (!config.apiKey) {
+      if (useMainBridge) {
+        const remote = await window.electronAPI!.aiGetConfig()
+        if (!remote?.hasApiKey) {
+          setError('请先在设置中配置 AI API Key')
+          setLoading(false)
+          return
+        }
+      } else if (!config.apiKey) {
         setError('请先在设置中配置 AI API Key')
         setLoading(false)
         return
@@ -136,20 +145,22 @@ export default function AIPanel() {
       }
 
       let fullText = ''
-      await streamChatCompletion(
-        config,
-        messages,
-        (token: string) => {
-          fullText += token
-          setResponse(fullText)
-        },
-        abortController.signal,
-        {
-          timeoutMs: settings.timeoutTotalMs,
-          stallMs: settings.timeoutStallMs,
-          streaming: settings.streamingEnabled,
-        },
-      )
+      const onToken = (token: string) => {
+        fullText += token
+        setResponse(fullText)
+      }
+      const streamOpts = {
+        timeoutMs: settings.timeoutTotalMs,
+        stallMs: settings.timeoutStallMs,
+        streaming: settings.streamingEnabled,
+      }
+      if (useMainBridge) {
+        // 铁律3：Electron 下密钥不进渲染进程，请求经主进程注入密钥
+        fullText = await chatViaMain(messages, onToken, abortController.signal, streamOpts)
+        setResponse(fullText)
+      } else {
+        await streamChatCompletion(config, messages, onToken, abortController.signal, streamOpts)
+      }
 
       if (mode === 'blueprint' && fullText) {
         try {

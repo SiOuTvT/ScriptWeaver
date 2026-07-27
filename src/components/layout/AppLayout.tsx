@@ -37,7 +37,8 @@ import DiagnosticsPanel from './DiagnosticsPanel'
 import MultiExporter from './MultiExporter'
 import RenPyEcosystemHub from './RenPyEcosystemHub'
 import CollabPanel from './CollabPanel'
-
+import AuditLogHub from './AuditLogHub'
+import { useCollabStore } from '@/collab/collabStore'
 
 /**
  * 合并磁盘扫描出的素材：仅新增库中尚未存在（按 relativePath 去重）的文件，
@@ -90,6 +91,8 @@ export default function AppLayout() {
   const loadProjectData = useAppStore((s) => s.loadProjectData)
   const newProject = useAppStore((s) => s.newProject)
   const setProjectRoot = useAppStore((s) => s.setProjectRoot)
+  const collabStatus = useCollabStore((s) => s.status)
+  const collabRole = useCollabStore((s) => s.role)
   const debounceMsRef = useRef(settings.autoSaveIntervalMs)
   debounceMsRef.current = settings.autoSaveIntervalMs
 
@@ -98,6 +101,15 @@ export default function AppLayout() {
   const [showHistory, setShowHistory] = useState(false)
   const [showCollab, setShowCollab] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
+
+  // ---- 协作导航自动打开弹窗 ----
+  useEffect(() => {
+    if (activeNavItem === 'collab') {
+      setShowCollab(true)
+      // 打开后自动切回章节视图
+      useAppStore.getState().setActiveNavItem('chapters')
+    }
+  }, [activeNavItem])
 
   // ---- 自动静默备份：编辑停顿 4 分钟后自动建档（防丢稿） ----
   const autoBackupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -285,7 +297,7 @@ export default function AppLayout() {
       activateProjectRoot(result.projectDir)
       // 保存即静默建档，防止覆盖式保存丢失历史版本
       try {
-        await createSnapshot(serializeProject(draftDeltas, characterConfigs, assets), '自动备份·保存', true)
+        await createSnapshot(serializeProject(draftDeltas, characterConfigs, assets), '自动备份 保存', true)
       } catch {
         /* 建档失败不阻断保存 */
       }
@@ -423,6 +435,12 @@ export default function AppLayout() {
           </Button>
           <Button variant="ghost" size="md" icon={<Cloud size={14} strokeWidth={1.75} />} onClick={() => setShowCollab(true)}>
             协作
+            {collabStatus === 'connected' && collabRole === 'host' && (
+              <span className="ml-1 rounded bg-primary/20 px-1 py-px text-[10px] font-semibold text-primary">HOST</span>
+            )}
+            {collabStatus === 'connected' && collabRole === 'guest' && (
+              <span className="ml-1 rounded bg-info/20 px-1 py-px text-[10px] font-semibold text-info">ON</span>
+            )}
           </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
           <Button variant="outline" size="md" icon={<FileDown size={14} strokeWidth={1.75} />} onClick={handleExport}>
@@ -565,6 +583,7 @@ export default function AppLayout() {
         {activeNavItem === 'diagnostics' && <DiagnosticsPanel />}
         {activeNavItem === 'exporter' && <MultiExporter />}
         {activeNavItem === 'renpy-hub' && <RenPyEcosystemHub />}
+        {activeNavItem === 'audit-log' && <AuditLogHub />}
       </div>
 
       {/* ===== 新建确认对话框 ===== */}
