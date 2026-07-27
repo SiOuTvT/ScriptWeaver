@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react'
-import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2, Play, Package, ShieldCheck, RefreshCw } from 'lucide-react'
+import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2, Play, Package, ShieldCheck, RefreshCw, Languages } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import { Button } from '@/components/ui'
 import {
@@ -10,6 +10,8 @@ import {
   exportDefinitionsRpy,
   exportProjectPackage,
   buildBundle,
+  buildTranslationBundle,
+  downloadTranslation,
 } from '@/utils/rpyExporter'
 import { buildWebProject } from '@/utils/webExporter'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
@@ -315,6 +317,51 @@ export default function ExportSettings() {
     [engineBusy, draftDeltas, resolvedStates, projectTitle, manualSdk],
   )
 
+  // --------------- 多语言翻译导出 ---------------
+  const TL_PRESETS = ['chinese', 'japanese', 'korean', 'french', 'german', 'spanish', 'russian', 'portuguese', 'italian']
+  const [tlLang, setTlLang] = useState('chinese')
+  const [tlBusy, setTlBusy] = useState(false)
+  const [tlResult, setTlResult] = useState('')
+
+  const handleExportTranslation = useCallback(() => {
+    if (tlBusy || draftDeltas.length === 0) return
+    setTlBusy(true)
+    try {
+      const content = buildTranslationBundle(
+        draftDeltas,
+        resolvedStates,
+        characterConfigs,
+        assets,
+        DEFAULT_POSITION_SLOTS,
+        scriptLabel,
+        variables,
+        tlLang,
+      )
+      const count = (content.match(/-->/g) ?? []).length
+      downloadTranslation(
+        draftDeltas,
+        resolvedStates,
+        characterConfigs,
+        assets,
+        DEFAULT_POSITION_SLOTS,
+        scriptLabel,
+        variables,
+        tlLang,
+      )
+      const lang = tlLang.trim() || 'chinese'
+      setTlResult(
+        `已生成翻译骨架：提取原文 ${count} 处（台词与选择支）。\n` +
+          `下载文件：script_${lang}.rpy\n` +
+          `放置路径：将文件放入你的 Ren'Py 工程 game/tl/${lang}/script.rpy\n` +
+          `使用方法：把每行右侧（new）替换为译文，左侧（old）保持原文不变即可被 Ren'Py 精确匹配。`,
+      )
+    } catch (e) {
+      setTlResult('生成失败：' + (e as Error).message)
+    } finally {
+      setTlBusy(false)
+    }
+  }, [tlBusy, draftDeltas, resolvedStates, characterConfigs, assets, variables, tlLang])
+
   const totalLines = draftDeltas.length
   const speakerCount = new Set(draftDeltas.map((d) => d.speaker).filter(Boolean)).size
   const charInScene = characterConfigs.length
@@ -606,6 +653,59 @@ export default function ExportSettings() {
               {engineResult && (
                 <pre className="mt-3 whitespace-pre-wrap rounded-md border border-edge/12 bg-surface-1 p-3 t-micro t-mono leading-relaxed text-fg">
                   {engineResult}
+                </pre>
+              )}
+            </section>
+
+            {/* 多语言翻译导出 */}
+            <section className="panel p-4">
+              <div className="eyebrow">多语言翻译 Translation</div>
+              <p className="mt-1 t-micro leading-relaxed text-fg-subtle">
+                一键抽取当前剧本所有台词与选择支原文，生成标准 Ren'Py 翻译骨架（game/tl/&lt;语言&gt;/script.rpy）。无需本机 SDK，译文可直接被 Ren'Py 加载。
+              </p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {TL_PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setTlLang(p)}
+                    className={`rounded-md border px-2.5 py-1 text-[12px] transition-colors ${
+                      tlLang === p
+                        ? 'border-signal/60 bg-signal/10 text-fg'
+                        : 'border-edge/15 bg-surface-3 text-fg-muted hover:text-fg'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={tlLang}
+                  onChange={(e) => setTlLang(e.target.value)}
+                  placeholder="自定义语言代码（须与 Ren'Py translate 语言一致）"
+                  className="min-w-[260px] flex-1 rounded-md border border-edge/15 bg-surface-3 px-2.5 py-1.5 text-xs text-fg outline-none transition-colors focus:border-signal/60"
+                />
+                <Button
+                  variant="primary"
+                  onClick={handleExportTranslation}
+                  disabled={tlBusy || totalLines === 0}
+                >
+                  <Languages size={14} strokeWidth={1.75} className="mr-1" />
+                  生成并下载翻译骨架
+                </Button>
+              </div>
+
+              <p className="mt-2 t-micro leading-relaxed text-fg-subtle">
+                语言代码需与 Ren'Py 的 translate 语言标识一致（如 chinese / japanese）。生成后把文件放到工程 game/tl/&lt;语言&gt;/ 目录下即可生效。
+              </p>
+
+              {tlResult && (
+                <pre className="mt-3 whitespace-pre-wrap rounded-md border border-edge/12 bg-surface-1 p-3 t-micro t-mono leading-relaxed text-fg">
+                  {tlResult}
                 </pre>
               )}
             </section>
