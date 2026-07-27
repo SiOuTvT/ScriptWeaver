@@ -34,3 +34,33 @@ computing gzip size...
 
 [21208:0728/001252.060:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
 [21208:0728/001252.060:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[2m00:28:48[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/AppLayout.tsx, /src/components/layout/ThemeSettings.tsx, /src/components/layout/SettingsHub.tsx, /src/components/layout/ScriptDrawer.tsx, /src/components/layout/CollabPanel.tsx, /src/components/layout/ExportSettings.tsx, /src/components/layout/VersionHistory.tsx, /src/components/layout/EffectsLab.tsx, /src/components/layout/ScriptTextPanel.tsx, /src/components/layout/StagePreview.tsx, /src/components/layout/AssetManager.tsx, /src/components/layout/CharacterManager.tsx, /src/components/layout/SceneNavPanel.tsx, /src/components/layout/ClearCacheButton.tsx[22m
+[2m00:29:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
+[2m00:29:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
+[2m00:29:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
+[2m00:30:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
+[2m00:30:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
+[2m00:31:12[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
+[2m00:31:39[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /src/index.css[22m
+[2m00:31:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /src/index.css[22m
+[2m00:33:44[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/utils/__tests__/exportGolden.test.ts[22m
+[2m00:43:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /src/index.css[22m
+[2m00:43:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /src/index.css[22m
+[2m00:43:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /src/index.css[22m
+[2m00:43:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /src/index.css[22m
+[2m00:43:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /src/index.css[22m
+[2m00:43:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /src/index.css[22m
+[2m00:43:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /src/index.css[22m
+[2m00:43:34[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/AssetManager.tsx, /src/index.css[22m
+[2m00:43:42[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/Timeline.tsx, /src/index.css[22m
+[2m00:44:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CommandPalette.tsx, /src/index.css[22m
+[2m00:44:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CommandPalette.tsx, /src/index.css[22m
+[2m00:44:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CommandPalette.tsx, /src/index.css[22m
+[2m00:57:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/SceneNavPanel.tsx, /src/index.css[22m
+[2m00:57:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /src/index.css[22m
+[2m00:57:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/ExportSettings.tsx, /src/index.css[22m
+[2m00:57:14[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CharacterManager.tsx, /src/index.css[22m
+[2m01:08:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CharacterManager.tsx, /src/index.css[22m
+[2m01:08:10[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CharacterManager.tsx, /src/index.css[22m
+[2m01:08:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
+[2m01:08:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/CommandPalette.tsx, /src/index.css[22m

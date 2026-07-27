@@ -164,7 +164,10 @@ export default function CommandPalette() {
         id: 'preview-run', label: '舞台播放/运行预览',
         keywords: ['play', 'preview', 'stage'],
         icon: Play,
-        action: () => { /* stage preview is always visible */ },
+        action: () => {
+          window.dispatchEvent(new Event('sw:command-play'))
+          setOpen(false)
+        },
         category: 'tool',
       },
 

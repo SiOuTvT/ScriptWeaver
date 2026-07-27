@@ -1071,6 +1071,13 @@ export default function StagePreview() {
     advanceTo(selectedIndex)
   }, [playMode, pendingChoiceIndex, selectedIndex, startPlayback, advanceTo])
 
+  // 命令面板（Ctrl+K）可直接触发播放 / 暂停，避免「舞台播放」命令点了无反应
+  useEffect(() => {
+    const onCmdPlay = () => togglePlayPause()
+    window.addEventListener('sw:command-play', onCmdPlay)
+    return () => window.removeEventListener('sw:command-play', onCmdPlay)
+  }, [togglePlayPause])
+
   // 卸载清理交互播放定时器
   useEffect(() => {
     return () => {
