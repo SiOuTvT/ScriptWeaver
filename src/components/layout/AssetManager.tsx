@@ -194,6 +194,7 @@ export default function AssetManager() {
   const [editName, setEditName] = useState('')
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<AssetItem | null>(null)
+  const [blockedAsset, setBlockedAsset] = useState<AssetItem | null>(null)
   const [refsAsset, setRefsAsset] = useState<AssetItem | null>(null)
   const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -345,7 +346,9 @@ export default function AssetManager() {
     (asset: AssetItem) => {
       const r = getCharRefs(asset.id)
       if (r.length > 0) {
-        alert(`无法删除素材 "${asset.name}"，它被以下角色表情引用：\n${r.join('\n')}\n\n请先在角色管理中解除引用。`)
+        // 改为应用内弹窗，并提供一键跳转角色管理，比原生 alert 更顺手
+        setBlockedAsset(asset)
+        setContextMenu(null)
         return
       }
       setPendingDelete(asset)
@@ -396,13 +399,19 @@ export default function AssetManager() {
               >
                 <span className="shrink-0">{c.icon}</span>
                 <span className="truncate">{c.label}</span>
-                <span
-                  className={`ml-auto rounded-full px-1.5 text-[11px] tabular-nums ${
-                    active ? 'bg-primary/15 text-primary' : 'bg-surface-2 text-fg-faint'
-                  }`}
-                >
-                  {counts[c.id] ?? 0}
-                </span>
+                {c.enabled ? (
+                  <span
+                    className={`ml-auto rounded-full px-1.5 text-[11px] tabular-nums ${
+                      active ? 'bg-primary/15 text-primary' : 'bg-surface-2 text-fg-faint'
+                    }`}
+                  >
+                    {counts[c.id] ?? 0}
+                  </span>
+                ) : (
+                  <span className="ml-auto shrink-0 rounded bg-surface-2 px-1.5 text-[10px] text-fg-faint">
+                    即将开放
+                  </span>
+                )}
               </button>
             )
           })}
@@ -673,13 +682,38 @@ export default function AssetManager() {
           if (pendingDelete) {
             const res = deleteAsset(pendingDelete.id)
             if (!res.ok) {
-              alert(`无法删除素材 "${pendingDelete.name}"，它被以下角色表情引用：\n${res.refs.join('\n')}\n\n请先在角色管理中解除引用。`)
+              toast(`「${pendingDelete.name}」被 ${res.refs.length} 个角色表情引用，无法删除`, 'error')
             }
           }
           setPendingDelete(null)
         }}
         onCancel={() => setPendingDelete(null)}
         message={pendingDelete ? <>确定要删除素材「{pendingDelete.name}」吗？此操作不可撤销。</> : null}
+      />
+
+      {/* 被角色表情引用、无法删除：明确告知并支持一键跳转角色管理 */}
+      <ConfirmDialog
+        open={!!blockedAsset}
+        title="无法删除素材"
+        confirmText="去角色管理"
+        tone="danger"
+        onConfirm={() => {
+          setBlockedAsset(null)
+          setActiveNavItem('characters')
+        }}
+        onCancel={() => setBlockedAsset(null)}
+        message={
+          blockedAsset ? (
+            <>
+              素材「{blockedAsset.name}」正被以下角色的表情引用，需先到角色管理中解除绑定才能删除：
+              <div className="mt-2 max-h-44 overflow-y-auto rounded-md bg-surface-2 p-2 text-[12px] leading-relaxed">
+                {getCharRefs(blockedAsset.id).map((r, i) => (
+                  <div key={i} className="py-0.5">· {r}</div>
+                ))}
+              </div>
+            </>
+          ) : null
+        }
       />
     </div>
   )

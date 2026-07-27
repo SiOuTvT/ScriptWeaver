@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useSyncExternalStore } from 'react'
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
 import { setDragCache, DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
@@ -20,7 +20,16 @@ export default function SceneNavPanel({ embedded = false }: { embedded?: boolean
   const assets = useAppStore((s) => s.assets)
   const addAsset = useAppStore((s) => s.addAsset)
 
-  const [tab, setTab] = useState<TabId>('background')
+  // 记住上次停留的分类，下次打开素材库直接落到常用分类（免去每次重选）
+  const [tab, setTab] = useState<TabId>(() => {
+    const saved = localStorage.getItem('sw:scenenav-tab')
+    return saved === 'background' || saved === 'sprite' || saved === 'audio'
+      ? (saved as TabId)
+      : 'background'
+  })
+  useEffect(() => {
+    localStorage.setItem('sw:scenenav-tab', tab)
+  }, [tab])
   const [search, setSearch] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 

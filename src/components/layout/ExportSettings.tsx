@@ -13,6 +13,7 @@ import {
   buildTranslationBundle,
   downloadTranslation,
 } from '@/utils/rpyExporter'
+import { validateRenpyText } from '@/utils/renpyText'
 import { buildWebProject } from '@/utils/webExporter'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 
@@ -141,14 +142,37 @@ export default function ExportSettings() {
   const handleValidate = useCallback(() => {
     const lookups = resolveLookups(draftDeltas, characterConfigs, assets)
     const errors = validateExportNames(draftDeltas, lookups, characterConfigs)
-    if (errors.length === 0) {
-      setValidationResult({ ok: true, message: '所有引用均有效，无错误。' })
+
+    // 台词富文本体检：Ren'Py 文本标签配对 / 未知标签 / [变量] 未定义（逐行 + 选择支）
+    const varNames = variables.map((v) => v.name)
+    const textLines: string[] = []
+    const checkText = (raw: string | null | undefined, where: string) => {
+      if (!raw || !/[{[]/.test(raw)) return
+      for (const iss of validateRenpyText(raw, varNames)) {
+        textLines.push(`${iss.severity === 'error' ? '✕' : '⚠'} ${where}：${iss.message}`)
+      }
+    }
+    draftDeltas.forEach((d, i) => {
+      checkText(d.dialogue, `第 ${i + 1} 行台词`)
+      if (d.line_type === 'choice') {
+        checkText(d.prompt, `第 ${i + 1} 行选择支提示`)
+        for (const c of d.choices ?? []) checkText(c.text, `第 ${i + 1} 行选项「${c.text?.slice(0, 8) ?? ''}」`)
+      }
+    })
+
+    const hasTextError = textLines.some((l) => l.startsWith('✕'))
+    if (errors.length === 0 && !hasTextError) {
+      const suffix = textLines.length > 0 ? `\n\n文本标记提醒（不阻断导出）：\n${textLines.join('\n')}` : ''
+      setValidationResult({ ok: true, message: '所有引用均有效，无错误。' + suffix })
       setStage((s) => ({ ...s, validate: 'done', script: 'active' }))
     } else {
-      setValidationResult({ ok: false, message: formatValidationErrors(errors) })
+      const parts: string[] = []
+      if (errors.length > 0) parts.push(formatValidationErrors(errors))
+      if (textLines.length > 0) parts.push(`台词文本标记问题：\n${textLines.join('\n')}`)
+      setValidationResult({ ok: false, message: parts.join('\n\n') })
       setStage((s) => ({ ...s, validate: 'error' }))
     }
-  }, [draftDeltas, characterConfigs])
+  }, [draftDeltas, characterConfigs, assets, variables])
 
   const handleExportScript = useCallback(() => {
     downloadRpy(draftDeltas, resolvedStates, characterConfigs, assets, DEFAULT_POSITION_SLOTS, `${scriptLabel}.rpy`, variables)

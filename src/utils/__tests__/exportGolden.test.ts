@@ -116,7 +116,7 @@ const resolvedStates: ResolvedLineState[] = [
   },
 ]
 
-const variables: GlobalVariable[] = [{ name: 'trust', type: 'number', defaultValue: 0 }]
+const variables: GlobalVariable[] = [{ name: 'trust', type: 'number', initial: 0 }]
 
 // ===================== 黄金快照（整文件对拍，锁定导出行为） =====================
 

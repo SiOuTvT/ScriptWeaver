@@ -10,7 +10,7 @@ import { useAppStore, type NavItemId } from '@/stores/appStore'
 import {
   Search, Zap, FileText, Download, Bug, Camera, Sparkles,
   BookOpen, Images, Users, Wand2, Settings, HelpCircle, Info,
-  Save, Undo2, Redo2, Sun, Play, Globe, type LucideIcon
+  Save, Undo2, Redo2, Sun, Play, Globe, Plus, Copy, Trash2, type LucideIcon
 } from 'lucide-react'
 
 interface Command {
@@ -84,6 +84,40 @@ export default function CommandPalette() {
         keywords: ['ctrl+shift+z', 'ctrl+y'],
         icon: Redo2,
         action: () => { s.redo() },
+        category: 'editor',
+      },
+      {
+        id: 'insert-line', label: '在当前行后插入新行',
+        keywords: ['插入', '新行', 'add line', '新增'],
+        icon: Plus,
+        action: () => {
+          const st = useAppStore.getState()
+          st.insertDeltaAt(st.selectedLineIndex + 1)
+          setOpen(false)
+        },
+        category: 'editor',
+      },
+      {
+        id: 'duplicate-line', label: '复制当前行',
+        keywords: ['复制', 'duplicate', 'copy line'],
+        icon: Copy,
+        action: () => {
+          const st = useAppStore.getState()
+          const cur = st.draftDeltas[st.selectedLineIndex]
+          if (cur) st.insertDeltaAt(st.selectedLineIndex + 1, { ...cur, line_id: 'L' + Date.now() })
+          setOpen(false)
+        },
+        category: 'editor',
+      },
+      {
+        id: 'delete-line', label: '删除当前行',
+        keywords: ['删除', 'delete line', '移除'],
+        icon: Trash2,
+        action: () => {
+          const st = useAppStore.getState()
+          st.deleteDeltaAt(st.selectedLineIndex)
+          setOpen(false)
+        },
         category: 'editor',
       },
 

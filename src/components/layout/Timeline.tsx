@@ -213,6 +213,13 @@ const DropCell = memo(function DropCell({
           characters: { ...prev.characters, [trackCharId]: { sprite_id: 'default', position_slot: 'center', action: 'show' } },
         }))
         toast(`立绘 ${asset.name} 已添加到 ${trackCharId}`, 'success')
+      } else {
+        // 类型与轨道不匹配时给出明确提示，而不是静默丢弃让用户摸不着头脑
+        const typeName: Record<string, string> = { background: '背景', sprite: '立绘', audio: '音频' }
+        toast(
+          `「${asset.name}」是${typeName[asset.type] ?? asset.type}，请拖到${typeName[acceptType] ?? acceptType}轨道`,
+          'error',
+        )
       }
     },
     [lineIndex, trackId, acceptType, updateDeltaAt, selectLine, addCharacter, getCharacter],

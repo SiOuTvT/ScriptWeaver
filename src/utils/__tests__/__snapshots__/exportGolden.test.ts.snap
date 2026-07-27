@@ -31,7 +31,7 @@ define alice = Character("Alice", color="#ff6688")
 define bob = Character("Bob")
 
 # ---- 全局变量声明（default）----
-default trust = NaN
+default trust = 0
 
 # ---- 立绘 Image 声明 ----
 image alice smile = "images/sprite/alice_smile.png"
@@ -130,7 +130,7 @@ exports[`导出层黄金快照 · Web 导出 gameJson > gameJson 整文件对拍
     {
       "name": "trust",
       "type": "number",
-      "defaultValue": 0
+      "initial": 0
     }
   ],
   "charactersMeta": {

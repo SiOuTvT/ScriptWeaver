@@ -14,12 +14,13 @@ import {
   Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight,
   Plus, FileText, Play, Pause, Square, Copy, X, Pencil, Trash2, Sparkles,
 } from 'lucide-react'
-import { Skeleton, IconButton } from '@/components/ui'
+import { Skeleton, IconButton, RenpyRichText } from '@/components/ui'
 import EffectMountPanel from '@/components/effects/EffectMountPanel'
 import { PRESET_SLOTS, getPresetSlot } from '@/core/positionSlots'
 import { playAudioPreview, stopBgm, stopAmbient, stopOneShots } from '@/utils/audioManager'
 import { estimateLineDurationMs } from '@/utils/playback'
 import { evalCondition, findLabelIndex } from '@/utils/varRuntime'
+import { stripRenpyMarkup, validateRenpyText } from '@/utils/renpyText'
 
 // ===================== 共享坐标判定函数（唯一真理源） =====================
 
@@ -222,7 +223,8 @@ function getLineStayMs(state: ResolvedLineState | null, assets: AssetItem[]): nu
     const a = assets.find((x) => x.id === state.audio.voice)
     if (a?.duration && a.duration > 0) return Math.max(900, Math.round(a.duration * 1000) + 250)
   }
-  return estimateLineDurationMs(state?.dialogue)
+  // 按「玩家实际看到的字符」估时：{b}{w=0.5} 等标记与 [变量] 语法字符不计入
+  return estimateLineDurationMs(state?.dialogue ? stripRenpyMarkup(state.dialogue) : state?.dialogue)
 }
 
 export default function StagePreview() {
@@ -258,6 +260,14 @@ export default function StagePreview() {
   const runtimeValues = useAppStore((s) => s.runtimeValues)
   const applyRuntimeOps = useAppStore((s) => s.applyRuntimeOps)
   const resetRuntimeValues = useAppStore((s) => s.resetRuntimeValues)
+  const variables = useAppStore((s) => s.variables)
+
+  // 台词 [变量] 插值数据源：初始值兜底 + 运行时值覆盖（与变量监视器同源）
+  const interpValues = useMemo(() => {
+    const out: Record<string, unknown> = {}
+    for (const v of variables) out[v.name] = v.initial
+    return { ...out, ...runtimeValues }
+  }, [variables, runtimeValues])
 
   const currentDelta = draftDeltas[selectedIndex] ?? null
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
@@ -391,6 +401,35 @@ export default function StagePreview() {
       }))
     }, 300)
   }, [selectedIndex, updateDeltaAt])
+
+  // ============ Ren'Py 富文本台词：标签快捷插入 + 实时语法校验 ============
+  const dialogueInputRef = useRef<HTMLInputElement | null>(null)
+
+  /** 在台词光标处插入标记；有选区时把选区包进 open/close 之间 */
+  const insertMarkup = useCallback(
+    (open: string, close = '') => {
+      const el = dialogueInputRef.current
+      const start = el?.selectionStart ?? localDialogue.length
+      const end = el?.selectionEnd ?? localDialogue.length
+      const next =
+        localDialogue.slice(0, start) + open + localDialogue.slice(start, end) + close + localDialogue.slice(end)
+      setLocalDialogue(next)
+      commitDialogue(localSpeaker, next)
+      requestAnimationFrame(() => {
+        if (!el) return
+        el.focus()
+        const pos = close ? start + open.length + (end - start) : start + open.length
+        el.setSelectionRange(pos, pos)
+      })
+    },
+    [localDialogue, localSpeaker, commitDialogue],
+  )
+
+  /** 台词标记实时体检（未知标签 / 未闭合 / 未定义变量） */
+  const dialogueIssues = useMemo(() => {
+    if (!localDialogue || !/[{[]/.test(localDialogue)) return []
+    return validateRenpyText(localDialogue, variables.map((v) => v.name))
+  }, [localDialogue, variables])
 
   // 立绘图片加载失败（素材缺失 / 404 / 格式异常）的兜底：标记后改用带角色名的色块占位，
   // 避免「拖上去却什么都不显示」且没有任何提示的静默失败（铁律 1 下 sw-asset 404 时
@@ -1579,6 +1618,45 @@ export default function StagePreview() {
           )}
         </div>
 
+        {/* Ren'Py 式游戏对话框：所见即所得渲染当前行台词（富文本标签 + 变量实时插值 + 播放时打字机），
+            点击对话框即可进入编辑。视觉对齐 Ren'Py 默认 GUI：底部文本窗 + 左上说话人名牌 */}
+        {!inputActive && (state.dialogue || state.speaker) && (() => {
+          const spkCharId = state.speaker ? speakerToCharId.get(state.speaker.toLowerCase()) : undefined
+          const spkCfg = spkCharId ? characterConfigs.find((c) => c.charId === spkCharId) : undefined
+          const nameColor = spkCfg?.dialogueColor ?? '#7ec4ff'
+          return (
+            <div
+              className="absolute bottom-8 left-1/2 z-30 w-[min(760px,94%)] -translate-x-1/2 cursor-text"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); setInputActive(true) }}
+              title="点击编辑台词（快捷键 I）"
+            >
+              {state.speaker && (
+                <div
+                  className="mb-0.5 ml-3 inline-block rounded-t-md border border-b-0 border-white/10 bg-black/65 px-3 py-1 text-[14px] font-semibold backdrop-blur-sm"
+                  style={{ color: nameColor }}
+                >
+                  {state.speaker}
+                </div>
+              )}
+              <div className="min-h-[64px] rounded-xl border border-white/10 bg-black/60 px-5 py-3.5 shadow-2 backdrop-blur-sm">
+                {state.dialogue ? (
+                  <RenpyRichText
+                    key={`${selectedIndex}-${playMode}`}
+                    text={state.dialogue}
+                    values={interpValues}
+                    typing={playMode === 'playing'}
+                    basePx={15}
+                    className="text-[15px] leading-relaxed text-white/95"
+                  />
+                ) : (
+                  <span className="text-[14px] italic text-white/40">（本行暂无台词，点击输入）</span>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* 台词输入浮层：默认隐藏，点击悬浮按钮 / 快捷键「I」才弹出半透明浮层，激活时浮于舞台下方中央，不长期遮挡视线 */}
         {inputActive ? (
           <div
@@ -1616,6 +1694,7 @@ export default function StagePreview() {
               </div>
               <div className="min-w-0 flex-1">
                 <input
+                  ref={dialogueInputRef}
                   type="text"
                   value={localDialogue}
                   onChange={(e) => { setLocalDialogue(e.target.value); commitDialogue(localSpeaker, e.target.value) }}
@@ -1624,8 +1703,47 @@ export default function StagePreview() {
                 />
               </div>
             </div>
+
+            {/* Ren'Py 文本标签快捷工具条：选中文字后点按可整段包裹 */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+              <button type="button" onClick={() => insertMarkup('{b}', '{/b}')} title="加粗 {b}...{/b}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] font-semibold text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">B</button>
+              <button type="button" onClick={() => insertMarkup('{i}', '{/i}')} title="斜体 {i}...{/i}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] italic text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">I</button>
+              <button type="button" onClick={() => insertMarkup('{u}', '{/u}')} title="下划线 {u}...{/u}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] underline text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">U</button>
+              <button type="button" onClick={() => insertMarkup('{color=#e05555}', '{/color}')} title="颜色 {color=#hex}...{/color}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] text-red-400 transition-colors hover:border-signal/50">色</button>
+              <button type="button" onClick={() => insertMarkup('{size=+4}', '{/size}')} title="字号 {size=+4}...{/size}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">A+</button>
+              <button type="button" onClick={() => insertMarkup('{w}')} title="点击停顿 {w}（预览按 0.8 秒模拟）" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">停顿</button>
+              <button type="button" onClick={() => insertMarkup('{w=0.5}')} title="定时停顿 {w=0.5}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">0.5s</button>
+              <button type="button" onClick={() => insertMarkup('{p}')} title="换段停顿 {p}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">换段</button>
+              {variables.length > 0 && (
+                <>
+                  <span className="mx-0.5 h-3.5 w-px bg-edge/20" />
+                  {variables.slice(0, 6).map((v) => (
+                    <button
+                      key={v.name}
+                      type="button"
+                      onClick={() => insertMarkup(`[${v.name}]`)}
+                      title={`插入变量 [${v.name}]（当前值 ${String(interpValues[v.name])}）`}
+                      className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 font-mono text-[12px] text-signal transition-colors hover:border-signal/50"
+                    >
+                      [{v.name}]
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+
+            {/* 标签语法实时体检 */}
+            {dialogueIssues.length > 0 && (
+              <div className="mt-1.5 space-y-0.5">
+                {dialogueIssues.slice(0, 3).map((iss, i) => (
+                  <p key={i} className={`text-[12px] leading-snug ${iss.severity === 'error' ? 'text-danger' : 'text-warning'}`}>
+                    {iss.severity === 'error' ? '✕' : '⚠'} {iss.message}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
+        ) : !(state.dialogue || state.speaker) ? (
           <button
             type="button"
             onClick={() => setInputActive(true)}
@@ -1634,7 +1752,7 @@ export default function StagePreview() {
           >
             <Pencil size={13} strokeWidth={1.75} /> 写台词
           </button>
-        )}
+        ) : null}
 
         {/* 行进度条 */}
         <div className="absolute right-0 bottom-0 left-0 z-20 flex h-0.5">
