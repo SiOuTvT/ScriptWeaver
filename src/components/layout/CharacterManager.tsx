@@ -679,6 +679,9 @@ export default function CharacterManager() {
                       onChange={(e) => handleUpdateField('defaultScale', Number(e.target.value))}
                       className="w-full accent-signal"
                     />
+                    <p className="mt-1 text-[11px] text-fg-faint">
+                      仅作用于新拖入舞台的立绘，已放置的立绘保持原缩放
+                    </p>
                   </div>
 
                   {/* 默认槽位 */}
@@ -702,6 +705,9 @@ export default function CharacterManager() {
                         )
                       })}
                     </div>
+                    <p className="mt-1 text-[11px] text-fg-faint">
+                      新立绘默认站此位，已放置的立绘保持原站位
+                    </p>
                   </div>
                 </div>
 
@@ -1040,7 +1046,13 @@ export default function CharacterManager() {
                                   className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 font-mono text-[12px] text-fg outline-none"
                                 />
                               ) : (
-                                <div className="truncate font-mono text-[12px] font-medium text-signal">{expr.id}</div>
+                                <div
+                                  className="truncate font-mono text-[12px] font-medium text-signal"
+                                  title="双击重命名表情 Key"
+                                  onDoubleClick={() => startRenameExpr(expr)}
+                                >
+                                  {expr.id}
+                                </div>
                               )}
                               <div className="truncate text-[11px] text-fg-subtle">{expr.label}</div>
                             </div>

@@ -291,8 +291,15 @@ export default function SceneNavPanel({ embedded = false }: { embedded?: boolean
         {/* 素材列表（可拖拽） */}
         <div className="flex-1 overflow-y-auto p-1.5">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-1 py-8 text-[12px] text-fg-faint">
-              {search ? '没有匹配的素材' : '暂无素材，点击上方导入'}
+            <div className="flex flex-col items-center justify-center gap-1 px-4 py-10 text-center text-[12px] text-fg-faint">
+              {search ? (
+                '没有匹配的素材'
+              ) : (
+                <>
+                  当前「{TABS.find((t) => t.id === tab)?.label}」还没有素材
+                  <span className="mt-0.5 text-fg-subtle">点击上方「导入」按钮，即可拖到时间轴使用</span>
+                </>
+              )}
             </div>
           ) : (
             <div className={tab === 'audio' ? 'space-y-1.5' : 'space-y-0.5'}>

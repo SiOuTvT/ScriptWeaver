@@ -343,7 +343,11 @@ export default function ExportSettings() {
 
   // --------------- 多语言翻译导出 ---------------
   const TL_PRESETS = ['chinese', 'japanese', 'korean', 'french', 'german', 'spanish', 'russian', 'portuguese', 'italian']
-  const [tlLang, setTlLang] = useState('chinese')
+  // 记住上次生成翻译用的语言，下次直接沿用
+  const [tlLang, setTlLang] = useState(() => localStorage.getItem('sw:tl-lang') || 'chinese')
+  useEffect(() => {
+    localStorage.setItem('sw:tl-lang', tlLang)
+  }, [tlLang])
   const [tlBusy, setTlBusy] = useState(false)
   const [tlResult, setTlResult] = useState('')
 
