@@ -84,6 +84,13 @@ const SLOT_ANCHORS: Record<string, { x: number; y: number }> = Object.fromEntrie
 const SNAP_X = 0.035
 const SNAP_Y = 0.045
 
+/**
+ * 立绘统一基准渲染高度（px，舞台画布坐标系，等价于原 max-h-64 的 256px）。
+ * 所有立绘一律按此高度等比渲染，再叠加 char.scale / 角色 defaultScale 作相对倍率，
+ * 从根本上消除「导入的立绘有大有小」的参差——大图不再撑破、小图自动放大到一致高度。
+ */
+const SPRITE_BASE_HEIGHT = 256
+
 const SLOT_POSITIONS: Record<string, { x: string; y: string }> = Object.fromEntries(
   Object.entries(SLOT_ANCHORS).map(([k, v]) => [k, { x: `${v.x * 100}%`, y: `${v.y * 100}%` }]),
 )
@@ -511,16 +518,20 @@ export default function StagePreview() {
         // 每个落点生成「全局唯一实例 ID」作 map key，角色身份记在 char_id；
         // asset_id 绑定本次拖入的素材，使每个立绘各自渲染自己的图片、互不覆盖。
         const instanceId = genInstanceId(charId)
+        const charCfg = useAppStore.getState().getCharacter(charId)
         useAppStore.getState().updateDeltaAt(idx, (prev: LineDelta) => ({
           ...prev,
           characters: {
             ...prev.characters,
             [instanceId]: {
               sprite_id: 'default',
-              position_slot: slot,
+              // 角色配置了默认出场槽位则优先用它（「默认出场槽位」语义），否则用拖放落点
+              position_slot: charCfg?.defaultSlot ?? slot,
               action: 'show',
               char_id: charId,
               asset_id: asset.assetId,
+              // 角色配置了默认缩放则作为首次放置的初始 scale，随 Ren'Py 导出 zoom 一起对齐
+              scale: charCfg?.defaultScale ?? 1,
             },
           },
         }))
@@ -1385,11 +1396,12 @@ export default function StagePreview() {
           ([charId, char]: [string, ResolvedCharacterState]) => {
             const isTalking = speakingCharId === charId
             let spriteKey = char.asset_id ?? char.sprite_id
+            // 角色配置：先于渲染逻辑取出，供表情联动与默认缩放兜底共用
+            const cfg = char.char_id
+              ? characterConfigs.find((c) => c.charId === char.char_id)
+              : undefined
             // 表情联动：配音播放期间若角色有「说话」类表情，临时切换过去，结束后自动复原
             if (isTalking) {
-              const cfg = char.char_id
-                ? characterConfigs.find((c) => c.charId === char.char_id)
-                : undefined
               const talkExpr = cfg?.expressions.find((e) => /talk|speak|say|mouth|说话|开口/i.test(e.id))
               if (talkExpr) spriteKey = talkExpr.assetId
             }
@@ -1406,7 +1418,7 @@ export default function StagePreview() {
             const anchor = SLOT_ANCHORS[char.position_slot] ?? SLOT_ANCHORS.center
             const px = dragging ? dragPos!.x : char.pos_x ?? anchor.x
             const py = dragging ? dragPos!.y : char.pos_y ?? anchor.y
-            const scale = char.scale ?? 1
+            const scale = char.scale ?? cfg?.defaultScale ?? 1
             const hasOffset = char.pos_x != null || char.pos_y != null
             const selected = selectedCharId === charId
             const slotLabel = getPresetSlot(char.position_slot)?.label ?? char.position_slot
@@ -1443,8 +1455,8 @@ export default function StagePreview() {
                     src={spriteDataUrl}
                     alt={getDisplayName(char.char_id ?? charId)}
                     draggable={false}
-                    className="max-h-64 w-auto select-none object-contain drop-shadow-lg"
-                    style={{ minHeight: '80px' }}
+                    className="w-auto select-none object-contain drop-shadow-lg"
+                    style={{ height: SPRITE_BASE_HEIGHT, width: 'auto' }}
                     onError={() => markSpriteError(spriteKey)}
                     onLoad={() => {
                       if (spriteErrors.has(spriteKey)) {

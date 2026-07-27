@@ -425,9 +425,16 @@ export function resolveDirectiveToDelta(
       report.unresolved.push(`character:${key}`)
       continue
     }
+    const charCfg = ctx.characterConfigs.find((c2) => c2.charId === charId)
+    const resolvedSlot = resolveSlot(c.position_slot, ctx.slots)
+    // AI 未指定站位（或仅给通用 center）时，回落到角色配置的默认出场槽位
+    const position_slot =
+      resolvedSlot === 'center' || !c.position_slot
+        ? charCfg?.defaultSlot || resolvedSlot
+        : resolvedSlot
     const charDelta: CharacterDelta = {
       sprite_id: c.sprite_id,
-      position_slot: resolveSlot(c.position_slot, ctx.slots),
+      position_slot,
       action: c.action,
       char_id: charId,
     }
