@@ -931,7 +931,7 @@ export default function EffectsLab() {
           {results ? (
             <div>
               <div className="mb-3 text-[13px] font-medium text-fg-muted">搜索结果 · {results.length} 项</div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                 {results.map((it) => (
                   <EffectCard key={it.id} item={it} active={selected?.id === it.id} onClick={() => openItem(it)} />
                 ))}
@@ -953,7 +953,7 @@ export default function EffectsLab() {
                       </div>
                       <span className="rounded-full border border-edge/10 bg-surface-2 px-2.5 py-0.5 text-[12px] font-mono font-medium text-fg-muted">{cat.items.length}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                       {cat.items.map((it) => (
                         <EffectCard key={it.id} item={it} active={false} onClick={() => openItem(it)} />
                       ))}

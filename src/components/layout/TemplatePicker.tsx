@@ -41,7 +41,7 @@ export default function TemplatePicker({ onSelect, onClose, embedded }: Props) {
   // Page mode: full-screen layout with header
   if (embedded) {
     return (
-      <div className="flex h-full flex-col bg-canvas">
+      <div className="flex h-full min-w-0 flex-1 flex-col bg-canvas">
         <header className="flex shrink-0 items-center gap-3 border-b border-edge/10 bg-surface px-6 py-3">
           <button
             onClick={handleClose}

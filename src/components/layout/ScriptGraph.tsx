@@ -248,7 +248,7 @@ export default function ScriptGraph({ onFocusLine }: { onFocusLine?: (index: num
   const hasLabelNode = graph.blocks.some((b) => b.label !== 'start')
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-canvas">
+    <div className="flex h-full min-w-0 flex-1 flex-col bg-canvas">
       {/* 顶部工具条 */}
       <div className="flex shrink-0 items-center justify-between border-b border-edge/10 px-3 py-1.5">
         <div className="flex items-center gap-2">

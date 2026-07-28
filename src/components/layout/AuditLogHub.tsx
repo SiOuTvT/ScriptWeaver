@@ -102,7 +102,7 @@ export default function AuditLogHub() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-w-0 flex-1 flex-col">
       {/* ═══ Header ═══ */}
       <div className="flex items-center gap-2 border-b border-edge/10 px-3 py-2.5">
         <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/[0.06]">

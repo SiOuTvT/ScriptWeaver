@@ -305,7 +305,7 @@ export default function VersionHistory() {
   }, [refresh])
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
       {/* ═══ Header ═══ */}
       <div className="shrink-0 border-b border-edge/10 px-5 py-3">
         <div className="flex items-start gap-4">

@@ -156,7 +156,7 @@ export default function DiagnosticsPanel() {
             <span className="mt-1 text-[12px] text-fg-faint">剧本健康度良好</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-2 2xl:grid-cols-3">
             {filtered.map((item) => {
               const cfg = SEVERITY_CONFIG[item.severity]
               const canJump = item.lineIndex >= 0

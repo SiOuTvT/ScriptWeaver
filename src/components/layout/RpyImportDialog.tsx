@@ -64,7 +64,7 @@ export default function RpyImportDialog({ onImport, onClose, embedded }: Props) 
   // Page mode: full-screen layout with header
   if (embedded) {
     return (
-      <div className="flex h-full flex-col bg-canvas">
+      <div className="flex h-full min-w-0 flex-1 flex-col bg-canvas">
         {/* ═══ Header ═══ */}
         <div className="shrink-0 border-b border-edge/10 px-5 py-3">
           <div className="flex items-center justify-between">

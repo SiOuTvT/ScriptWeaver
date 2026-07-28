@@ -58,7 +58,7 @@ export default function CollabPanel() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
       {/* ====== 沉浸式页头 ====== */}
       <div className="shrink-0 border-b border-edge/10 px-6 pt-6 pb-5">
         <div className="flex items-start gap-4">
