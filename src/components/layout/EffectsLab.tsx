@@ -231,18 +231,19 @@ function DetailView({
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-canvas text-fg">
-      <div className="flex items-center gap-2 border-b border-edge/10 px-4 py-2.5">
+      <div className="flex items-center gap-3 border-b border-edge/10 px-5 py-3">
         <IconButton variant="ghost" size="sm" icon={<ArrowLeft size={15} strokeWidth={1.75} />} onClick={onBack} title="返回卡片墙" aria-label="返回卡片墙" />
-        <Sparkles size={16} strokeWidth={1.75} className="text-signal" />
+        <span className="signal-dot" />
         <div className="min-w-0">
-          <h1 className="truncate text-[15px] font-semibold leading-tight">{item.cn}</h1>
+          <div className="eyebrow text-[11px]">Effect Detail</div>
+          <h1 className="t-title truncate">{item.cn}</h1>
           <div className="font-mono text-[12px] text-signal">{item.name}</div>
         </div>
       </div>
 
       <div className="flex min-h-0 flex-1">
         {/* 左：本页速览 + 目录跳转（放在左边，长文可直跳板块） */}
-        <aside className="hidden w-60 shrink-0 overflow-y-auto border-r border-edge/10 bg-surface/40 px-4 py-6 lg:block">
+        <aside className="hidden w-60 shrink-0 overflow-y-auto border-r border-edge/10 bg-surface/95 px-4 py-5 lg:block">
           <p className="mb-2 text-[12px] font-semibold tracking-wide text-fg-faint">本页速览</p>
           <div className="mb-4 rounded-xl border border-edge/10 bg-surface-2 p-3 shadow-1">
             <p className="truncate text-[13px] font-semibold text-fg">{item.cn}</p>
@@ -307,7 +308,7 @@ function DetailView({
           {/* 📐 板块二：完备的底层参数拆解手册（新四大板块） */}
           {enc?.paramManual && enc.paramManual.length > 0 && (
             <Section title="参数拆解手册">
-              <div className="overflow-hidden rounded-lg border border-edge/12">
+              <div className="overflow-hidden rounded-xl border border-edge/10">
                 <table className="w-full border-collapse text-[12px]">
                   <thead>
                     <tr className="bg-surface-2 text-left text-fg-faint">
@@ -337,7 +338,7 @@ function DetailView({
           {/* 📐 原 Ren'Py 资料 · 参数底层数学逻辑（保留旧 enrich 数据，含 math） */}
           {item.params && item.params.length > 0 && (
             <Section id="enc-params-math" title="参数的数学逻辑">
-              <div className="overflow-hidden rounded-lg border border-edge/12">
+              <div className="overflow-hidden rounded-xl border border-edge/10">
                 <table className="w-full border-collapse text-[12px]">
                   <thead>
                     <tr className="bg-surface-2 text-left text-fg-faint">
@@ -365,11 +366,11 @@ function DetailView({
           {/* 💻 板块三：双引擎原生代码示例对照 */}
           {item.syntax && (
             <Section title="Ren'Py 代码示例">
-              <pre className="overflow-x-auto rounded-lg border border-edge/12 bg-surface-2 px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-fg-subtle">
+              <pre className="overflow-x-auto rounded-xl border border-edge/10 bg-surface p-3 font-mono text-[12px] leading-relaxed text-fg-subtle">
                 {item.syntax}
               </pre>
               {item.syntax2 && (
-                <pre className="mt-2 overflow-x-auto rounded-lg border border-edge/12 bg-surface-2 px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-fg-subtle">
+                <pre className="mt-2 overflow-x-auto rounded-xl border border-edge/10 bg-surface p-3 font-mono text-[12px] leading-relaxed text-fg-subtle">
                   {item.syntax2}
                 </pre>
               )}
@@ -377,7 +378,7 @@ function DetailView({
           )}
           {enc?.cssImpl && (
             <Section title="本项目实现（Electron + React + CSS）">
-              <pre className="overflow-x-auto rounded-lg border border-edge/12 bg-[#0d1117] px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-emerald-200/90">
+              <pre className="overflow-x-auto rounded-xl border border-edge/10 bg-[#0d1117] p-3 font-mono text-[12px] leading-relaxed text-emerald-200/90">
                 {enc.cssImpl}
               </pre>
             </Section>
@@ -422,12 +423,12 @@ function MiniDemo({ spec }: { spec: PreviewSpec }) {
   }, [playing])
   const active: ActiveSpec = useMemo(() => ({ spec, token }), [spec, token])
   return (
-    <div className="rounded-xl border border-edge/12 bg-surface-2/50 p-3">
+    <div className="rounded-xl border border-edge/10 bg-surface-2 p-3 shadow-1">
       <div className="mb-2 flex items-center justify-between">
         <span className="eyebrow">动态演示 · 概念拆解</span>
         <button
           onClick={() => setPlaying((p) => !p)}
-          className="rounded-md border border-edge/15 px-2 py-0.5 text-[12px] text-fg-subtle transition-colors hover:border-signal/40 hover:text-fg"
+          className="rounded-xl border border-edge/10 px-2 py-0.5 text-[12px] text-fg-subtle transition-colors hover:border-primary/25 hover:text-fg"
         >
           {playing ? '暂停循环' : '播放循环'}
         </button>
@@ -495,7 +496,7 @@ function ClassicBlock({ classic }: { classic: ClassicScene[] }) {
       <RailHead>经典 Galgame 名场面参考</RailHead>
       <div className="space-y-2">
         {classic.map((s, i) => (
-          <div key={i} className="rounded-lg border border-edge/12 bg-surface-2/50 p-3">
+          <div key={i} className="rounded-xl border border-edge/10 bg-surface-2 p-3 shadow-1">
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="truncate text-[13px] font-medium text-fg">{s.work}</span>
               <span className="shrink-0 rounded bg-surface px-1.5 py-0.5 text-[11px] text-fg-muted">{s.mood}</span>
@@ -635,11 +636,12 @@ function PreviewView({
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-canvas text-fg">
-      <div className="flex items-center gap-2 border-b border-edge/10 px-4 py-2.5">
+      <div className="flex items-center gap-3 border-b border-edge/10 px-5 py-3">
         <IconButton variant="ghost" size="sm" icon={<ArrowLeft size={15} strokeWidth={1.75} />} onClick={onBack} title="返回百科" aria-label="返回百科" />
-        <Sparkles size={16} strokeWidth={1.75} className="text-signal" />
+        <span className="signal-dot" />
         <div className="min-w-0">
-          <h1 className="truncate text-[15px] font-semibold leading-tight">{selected.cn}</h1>
+          <div className="eyebrow text-[11px]">Live Preview</div>
+          <h1 className="t-title truncate">{selected.cn}</h1>
           <div className="font-mono text-[12px] text-signal">{selected.name}</div>
         </div>
         <Button variant="outline" size="sm" icon={<RotateCw size={13} strokeWidth={1.75} />} onClick={onReplay} className="ml-auto">
@@ -649,14 +651,14 @@ function PreviewView({
 
       <div className="flex min-h-0 flex-1">
         {/* ========== 左：本类特效列表 + 参数滑块 ========== */}
-        <aside className="flex w-60 shrink-0 flex-col border-r border-edge/12 bg-surface/60">
+        <aside className="flex w-60 shrink-0 flex-col border-r border-edge/10 bg-surface/95">
           <div className="flex items-center gap-1 overflow-x-auto border-b border-edge/10 p-2">
             {EFFECT_CATEGORIES.map((c) => (
               <button
                 key={c.id}
                 onClick={() => onSelectCategory(c)}
-                className={`shrink-0 rounded-md px-2 py-1 text-[12px] transition-colors ${
-                  c.id === catId ? 'bg-primary/[0.12] text-fg' : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+                className={`shrink-0 rounded-xl px-2 py-1 text-[12px] transition-all duration-200 ${
+                  c.id === catId ? 'bg-primary/10 text-fg shadow-1' : 'text-fg-subtle hover:bg-surface-2 hover:text-fg'
                 }`}
               >
                 {c.name.replace(/（.*?）|·.*/g, '').slice(0, 4)}
@@ -671,10 +673,10 @@ function PreviewView({
                 <button
                   key={it.id}
                   onClick={() => onSelectInPreview(it)}
-                  className={`w-full rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
+                  className={`w-full rounded-xl px-2.5 py-1.5 text-left text-[13px] transition-all duration-200 ${
                     selected.id === it.id
-                      ? 'bg-primary/[0.10] text-fg ring-1 ring-primary/30'
-                      : 'text-fg-subtle hover:bg-surface-hover hover:text-fg'
+                      ? 'bg-primary/[0.08] text-fg ring-1 ring-primary/20'
+                      : 'text-fg-subtle hover:bg-surface-2 hover:text-fg'
                   }`}
                 >
                   <span className="block">{it.cn}</span>
@@ -758,9 +760,9 @@ function PreviewView({
         </main>
 
         {/* ========== 右：精简说明（不密密麻麻） ========== */}
-        <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-edge/12 bg-surface/60 p-4">
+        <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-edge/10 bg-surface/95 p-4">
           <div className="mb-1 text-[12px] font-medium text-fg-muted">当前演示</div>
-          <h2 className="text-[16px] font-semibold tracking-tight">{selected.cn}</h2>
+          <h2 className="text-[16px] font-semibold">{selected.cn}</h2>
           <div className="mt-0.5 font-mono text-[12px] text-signal">{selected.name}</div>
 
           <p className="mt-3 text-[13px] leading-relaxed text-fg-subtle">{selected.brief ?? firstLine(selected.desc)}</p>
@@ -893,30 +895,42 @@ export default function EffectsLab() {
   // ---------------- 首页：卡片墙 ----------------
   if (view === 'home') {
     return (
-      <div className="flex h-full w-full flex-col overflow-hidden bg-canvas text-fg">
-        <div className="flex items-center gap-2 border-b border-edge/10 px-4 py-2.5">
-          <Sparkles size={16} strokeWidth={1.75} className="text-signal" />
-          <h1 className="text-[15px] font-semibold tracking-tight">特效大本营</h1>
-          <span className="eyebrow ml-1">Ren&apos;Py Effects HQ</span>
-          <span className="ml-auto font-mono text-[12px] text-fg-faint">共 {TOTAL} 项 · 14 大类</span>
+      <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-canvas">
+        {/* Header */}
+        <div className="shrink-0 border-b border-edge/10 px-5 py-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="signal-dot" />
+              <span className="eyebrow">Effects HQ</span>
+            </div>
+            <h2 className="t-h2 mt-1.5">特效大本营</h2>
+            <p className="mt-0.5 t-subtitle">共 {TOTAL} 项 · 14 大类 · Ren'Py 特效百科全览</p>
+          </div>
         </div>
 
-        <div className="border-b border-edge/10 px-4 py-2">
-          <div className="flex items-center gap-2 rounded-xl border border-edge/10 bg-surface px-2.5 py-1.5 shadow-1">
-            <Search size={14} strokeWidth={1.75} className="text-fg-faint" />
+        {/* Search */}
+        <div className="shrink-0 border-b border-edge/10 px-5 py-2.5">
+          <div className="relative flex-1">
+            <Search size={14} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="搜索特效（中文 / 英文 / 语法）"
-              className="w-full bg-transparent text-[13px] text-fg outline-none placeholder:text-fg-faint"
+              className="w-full rounded-xl border border-edge/10 bg-surface/80 pl-9 pr-4 py-2 text-[13px] text-fg outline-none placeholder:text-fg-faint focus:ring-1 focus:ring-primary/30 focus:bg-surface transition-colors"
             />
+            {query && (
+              <button onClick={() => setQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-fg-muted hover:text-fg transition-colors">
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        {/* Content */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {results ? (
             <div>
-              <div className="mb-2 text-[13px] font-medium text-fg-muted">搜索结果 · {results.length} 项</div>
+              <div className="mb-3 text-[13px] font-medium text-fg-muted">搜索结果 · {results.length} 项</div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {results.map((it) => (
                   <EffectCard key={it.id} item={it} active={selected?.id === it.id} onClick={() => openItem(it)} />
@@ -924,20 +938,20 @@ export default function EffectsLab() {
               </div>
             </div>
           ) : (
-            <div className="space-y-7">
+            <div className="space-y-8">
               {EFFECT_CATEGORIES.map((cat) => {
                 const Icon = ICONS[cat.icon] ?? Sparkles
                 return (
                   <section key={cat.id}>
-                    <div className="mb-2.5 flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/[0.10] text-signal">
-                        <Icon size={16} strokeWidth={1.75} />
+                    <div className="mb-3 flex items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/[0.08] text-primary">
+                        <Icon size={17} strokeWidth={1.75} />
                       </span>
-                      <div className="min-w-0">
-                        <h2 className="text-[15px] font-semibold leading-tight text-fg">{cat.name}</h2>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="t-title">{cat.name}</h2>
                         <p className="truncate text-[12px] text-fg-subtle">{cat.desc}</p>
                       </div>
-                      <span className="ml-auto font-mono text-[12px] text-fg-faint">{cat.items.length}</span>
+                      <span className="rounded-full border border-edge/10 bg-surface-2 px-2.5 py-0.5 text-[12px] font-mono font-medium text-fg-muted">{cat.items.length}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                       {cat.items.map((it) => (

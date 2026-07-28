@@ -32,7 +32,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-        checked ? 'bg-primary' : 'bg-surface-2 border border-edge/20'
+        checked ? 'bg-primary' : 'bg-surface-3 border border-edge/10'
       }`}
     >
       <span
@@ -126,16 +126,17 @@ export default function SettingsHub() {
   const activeCfg = SECTIONS.find((s) => s.id === activeSection) ?? SECTIONS[0]
 
   return (
-    <div className="flex h-full flex-1 min-w-0 select-none">
+    <div className="flex h-full flex-1 min-w-0">
       {/* Left Nav */}
-      <div className="w-[180px] shrink-0 border-r border-edge/10 flex flex-col">
-        <div className="px-4 py-5 border-b border-edge/10">
+      <div className="flex w-[180px] shrink-0 flex-col border-r border-edge/10">
+        <div className="border-b border-edge/10 px-4 py-4">
           <div className="flex items-center gap-2">
-            <Settings size={15} className="text-fg-muted" />
-            <span className="text-[14px] font-semibold text-fg">设置</span>
+            <span className="signal-dot" />
+            <span className="eyebrow">Settings</span>
           </div>
+          <h2 className="t-h2 mt-1.5">设置</h2>
         </div>
-        <div className="flex-1 py-3 px-2 space-y-1">
+        <nav className="flex-1 space-y-1 px-2 py-3">
           {SECTIONS.map((section) => {
             const Icon = section.icon
             const active = activeSection === section.id
@@ -143,29 +144,32 @@ export default function SettingsHub() {
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+                className={`relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
                   active
-                    ? 'bg-primary/10 text-primary border border-primary/15'
-                    : 'text-fg-muted hover:text-fg hover:bg-surface-2/60 border border-transparent'
+                    ? 'bg-primary/[0.06] text-fg'
+                    : 'text-fg-muted hover:bg-surface-2 hover:text-fg'
                 }`}
               >
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+                )}
                 <Icon size={15} />
                 {section.label}
               </button>
             )
           })}
-        </div>
-        <div className="px-3 py-3 border-t border-edge/10 space-y-2">
+        </nav>
+        <div className="space-y-2 border-t border-edge/10 px-3 py-3">
           <button
             onClick={handleSave}
-            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary text-white px-3 py-2 text-[12px] font-medium hover:bg-primary-hover transition-colors"
+            className="btn-primary-sm w-full"
           >
             <Save size={13} />
             保存设置
           </button>
           <button
             onClick={handleReset}
-            className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-edge/10 bg-surface text-fg-muted hover:text-fg px-3 py-2 text-[12px] font-medium transition-colors"
+            className="btn-ghost-sm w-full"
           >
             <RotateCcw size={13} />
             恢复默认
@@ -174,11 +178,11 @@ export default function SettingsHub() {
       </div>
 
       {/* Right Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="px-6 py-6 w-full">
-          <div className="mb-6">
-            <h2 className="text-[14px] font-semibold text-fg">{activeCfg.label} 设置</h2>
-            <p className="mt-1 text-[12px] text-fg-muted">调整 ScriptWeaver 的基本配置与偏好</p>
+      <div className="flex-1 overflow-y-auto bg-canvas">
+        <div className="px-5 py-5">
+          <div className="mb-5">
+            <h2 className="t-title">{activeCfg.label} 设置</h2>
+            <p className="mt-0.5 text-[12px] text-fg-muted">调整 ScriptWeaver 的基本配置与偏好</p>
           </div>
 
           {/* ── 通用 ─────────────────────────────────── */}
@@ -260,7 +264,7 @@ export default function SettingsHub() {
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
                         placeholder={hasStoredKey ? '已保存（留空则保留现有密钥）' : 'sk-...'}
-                        className="w-full rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2 text-[13px] text-fg font-mono placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        className="w-full rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg font-mono placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
                       />
                     </div>
                     <p className="mt-1.5 text-[11px] text-fg-faint">
@@ -277,7 +281,7 @@ export default function SettingsHub() {
                       value={apiEndpoint}
                       onChange={(e) => setApiEndpoint(e.target.value)}
                       placeholder="https://api.openai.com/v1"
-                      className="w-full rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2 text-[13px] text-fg font-mono placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      className="w-full rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg font-mono placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
                     />
                     <p className="mt-1.5 text-[11px] text-fg-faint">支持 OpenAI 兼容 API</p>
                   </div>
@@ -288,7 +292,7 @@ export default function SettingsHub() {
                     <select
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
-                      className="w-full rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2 text-[13px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      className="w-full rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
                     >
                       <option value="gpt-4">GPT-4</option>
                       <option value="gpt-4-turbo">GPT-4 Turbo</option>

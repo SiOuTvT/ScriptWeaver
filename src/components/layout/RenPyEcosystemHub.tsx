@@ -8,7 +8,8 @@ import {
   Search, Sparkles, BookOpen, Globe,
   ExternalLink, Zap, Copy, Download,
   Check, ChevronDown, ChevronRight,
-  GraduationCap, Puzzle, Shield, X
+  GraduationCap, Puzzle, Shield, X,
+  CheckCircle2, Bookmark, Library
 } from 'lucide-react'
 
 // ── Audit Data ──────────────────────────────────────────────────────
@@ -121,25 +122,31 @@ export default function RenPyEcosystemHub() {
   }
 
   return (
-    <div className="flex h-full flex-1 min-w-0 flex-col select-none">
-      {/* Header */}
-      <div className="shrink-0 border-b border-edge/10 px-6 py-5">
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-canvas">
+
+      {/* ═══ Header: signal-dot + eyebrow + t-h2 ═══ */}
+      <div className="shrink-0 border-b border-edge/10 px-5 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[15px] font-semibold text-fg">Ren'Py 生态大厅</h1>
-            <p className="mt-0.5 text-[12px] text-fg-muted">特效审计 · 社区插件 Hub · 语法学院 —— 三位一体知识中心</p>
+            <div className="flex items-center gap-2">
+              <span className="signal-dot" />
+              <span className="eyebrow">Ecosystem Hub</span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-edge/10 bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">
+                <Library size={11} />
+                {COMMUNITY_PLUGINS.length + SYNTAX_LESSONS.length} 项资源
+              </span>
+            </div>
+            <h2 className="t-h2 mt-1.5">Ren'Py 生态大厅</h2>
+            <p className="mt-0.5 t-subtitle">特效审计 · 社区插件 Hub · 语法学院 —— 三位一体知识中心</p>
           </div>
-          <span className="text-[11px] text-fg-faint bg-surface-2/60 px-2.5 py-1 rounded-md border border-edge/10">
-            19 大类 · {COMMUNITY_PLUGINS.length} 插件 · {SYNTAX_LESSONS.length} 教程
-          </span>
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 mt-4">
+        <div className="mt-3 flex items-center gap-1.5">
           {([
-            { id: 'audit' as const, label: '特效审计', icon: Shield, desc: '19 大类全覆盖清单' },
-            { id: 'plugins' as const, label: '社区插件', icon: Puzzle, desc: `${COMMUNITY_PLUGINS.length} 个高质量插件` },
-            { id: 'academy' as const, label: '语法学院', icon: GraduationCap, desc: `${SYNTAX_LESSONS.length} 篇模块化教程` },
+            { id: 'audit' as const, label: '特效审计', icon: Shield },
+            { id: 'plugins' as const, label: '社区插件', icon: Puzzle },
+            { id: 'academy' as const, label: '语法学院', icon: GraduationCap },
           ]).map((tab) => {
             const Icon = tab.icon
             const active = activeTab === tab.id
@@ -147,130 +154,144 @@ export default function RenPyEcosystemHub() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-medium transition-colors border ${
+                className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[13px] font-medium transition-all duration-200 ${
                   active
-                    ? 'border-primary/20 bg-primary/5 text-primary'
-                    : 'border-transparent text-fg-muted hover:text-fg hover:bg-surface-2/60'
+                    ? 'border-primary/25 bg-primary/[0.06] text-primary shadow-1'
+                    : 'border-transparent text-fg-muted hover:text-fg hover:bg-surface-2'
                 }`}
               >
-                <Icon size={15} />
+                <Icon size={14} />
                 {tab.label}
-                {!active && <span className="text-fg-faint text-[11px]">{tab.desc}</span>}
               </button>
             )
           })}
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="shrink-0 px-6 py-4">
-        <div className="relative">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-faint" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={
-              activeTab === 'audit' ? '搜索特效大类或特效名...'
-              : activeTab === 'plugins' ? '搜索插件名、描述或标签...'
-              : '搜索教程标题、内容或标签...'
-            }
-            className="w-full rounded-lg border border-edge/10 bg-surface pl-10 pr-4 py-2 text-[13px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-faint hover:text-fg">
-              <X size={14} />
-            </button>
+      {/* ═══ Search Bar ═══ */}
+      <div className="shrink-0 border-b border-edge/10 px-5 py-3">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={
+                activeTab === 'audit' ? '搜索特效大类或特效名...'
+                : activeTab === 'plugins' ? '搜索插件名、描述或标签...'
+                : '搜索教程标题、内容或标签...'
+              }
+              className="w-full rounded-xl border border-edge/10 bg-surface/80 pl-9 pr-8 py-2 text-[13px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30 focus:bg-surface transition-colors"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-fg-muted hover:text-fg hover:bg-surface-2 transition-colors">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          {activeTab === 'plugins' && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {PLUGIN_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setPluginCategory(cat)}
+                  className={`rounded-xl px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+                    pluginCategory === cat
+                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-1'
+                      : 'border border-transparent text-fg-muted hover:text-fg hover:bg-surface-2'
+                  }`}
+                >{cat}</button>
+              ))}
+            </div>
+          )}
+          {activeTab === 'academy' && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {ACADEMY_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setAcademyCategory(cat)}
+                  className={`rounded-xl px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+                    academyCategory === cat
+                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-1'
+                      : 'border border-transparent text-fg-muted hover:text-fg hover:bg-surface-2'
+                  }`}
+                >{cat}</button>
+              ))}
+            </div>
           )}
         </div>
-        {activeTab === 'plugins' && (
-          <div className="flex items-center gap-1.5 mt-3">
-            {PLUGIN_CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setPluginCategory(cat)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                  pluginCategory === cat ? 'bg-primary/10 text-primary border border-primary/20' : 'text-fg-muted hover:text-fg hover:bg-surface-2/60'
-                }`}
-              >{cat}</button>
-            ))}
-          </div>
-        )}
-        {activeTab === 'academy' && (
-          <div className="flex items-center gap-1.5 mt-3">
-            {ACADEMY_CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setAcademyCategory(cat)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                  academyCategory === cat ? 'bg-primary/10 text-primary border border-primary/20' : 'text-fg-muted hover:text-fg hover:bg-surface-2/60'
-                }`}
-              >{cat}</button>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 pb-8">
-        
+      {/* ═══ Content ═══ */}
+      <div className="flex-1 overflow-y-auto px-5 py-5">
+
         {/* ── Audit Panel ──────────────────────────────────────── */}
         {activeTab === 'audit' && (
-          <div className="space-y-6">
+          <div className="space-y-5">
+
             {/* Stats Dashboard */}
-            <div className="grid grid-cols-4 gap-3">
-              <div className="rounded-xl border border-edge/12 bg-surface-2 p-4 shadow-1 hover:-translate-y-0.5 hover:shadow-2 transition-all duration-200 relative overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-fg-faint/30 to-transparent" />
-                <div className="text-[11px] text-fg-faint mb-1">大类总数</div>
-                <div className="text-[24px] font-semibold text-fg">{auditStats.total}</div>
-              </div>
-              <div className="rounded-xl border border-blue-500/12 bg-blue-500/[0.04] p-4 shadow-1 hover:-translate-y-0.5 hover:shadow-2 transition-all duration-200 relative overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-blue-500/40 to-transparent" />
-                <div className="text-[11px] text-blue-600 mb-1">已全覆盖</div>
-                <div className="text-[24px] font-semibold text-blue-600">{auditStats.covered}</div>
-              </div>
-              <div className="rounded-xl border border-edge/12 bg-surface-2 p-4 shadow-1 hover:-translate-y-0.5 hover:shadow-2 transition-all duration-200 relative overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-fg-muted/20 to-transparent" />
-                <div className="text-[11px] text-fg-muted mb-1">补充覆盖</div>
-                <div className="text-[24px] font-semibold text-fg-subtle">{auditStats.supplement}</div>
-              </div>
-              <div className="rounded-xl border border-edge/12 bg-surface-2 p-4 shadow-1 hover:-translate-y-0.5 hover:shadow-2 transition-all duration-200 relative overflow-hidden flex flex-col justify-between">
-                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent" />
-                <div className="text-[11px] text-fg-faint">特效大本营</div>
-                <button
-                  onClick={() => setActiveNavItem('effects')}
-                  className="inline-flex items-center gap-1.5 text-[12px] text-primary hover:text-primary/80 transition-colors"
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {[{
+                label: '大类总数', value: auditStats.total, icon: Bookmark, color: 'text-fg',
+                bg: 'bg-surface-2', ring: 'ring-fg-muted/10',
+              }, {
+                label: '已全覆盖', value: auditStats.covered, icon: CheckCircle2, color: 'text-signal',
+                bg: 'bg-signal/[0.06]', ring: 'ring-signal/20',
+              }, {
+                label: '补充覆盖', value: auditStats.supplement, icon: Puzzle, color: 'text-fg-muted',
+                bg: 'bg-surface-2', ring: 'ring-fg-muted/10',
+              }, {
+                label: '特效大本营', value: null, icon: Sparkles, color: 'text-primary',
+                bg: 'bg-surface-2', ring: 'ring-primary/10',
+              }].map((stat, i) => (
+                <div
+                  key={stat.label}
+                  className={`group rounded-2xl border border-edge/10 ${stat.bg} p-4 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 hover:${stat.ring} hover:ring-1 relative overflow-hidden animate-slide-up`}
+                  style={{ animationDelay: `${i * 40}ms` }}
                 >
-                  打开特效大本营 <ExternalLink size={12} />
-                </button>
-              </div>
+                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="flex items-center gap-2">
+                    <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${stat.color === 'text-signal' ? 'bg-signal/10' : 'bg-fg-faint/10'} ${stat.color} group-hover:scale-105 transition-transform`}>
+                      <stat.icon size={15} />
+                    </div>
+                    <span className="text-[12px] font-medium text-fg-muted">{stat.label}</span>
+                  </div>
+                  {stat.value !== null ? (
+                    <div className={`mt-3 text-[22px] font-semibold tabular-nums ${stat.color}`}>{stat.value}</div>
+                  ) : (
+                    <button
+                      onClick={() => setActiveNavItem('effects')}
+                      className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-primary font-medium hover:underline"
+                    >
+                      打开特效大本营 <ExternalLink size={11} />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
 
-            {/* Coverage Grid: 2 columns on xl */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            {/* Coverage Grid */}
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
               {filteredAudit.map((cat) => (
                 <div
                   key={cat.id}
-                  className={`rounded-xl border p-4 shadow-1 hover:-translate-y-0.5 hover:shadow-2 transition-all duration-200 relative overflow-hidden ${
-                    cat.covered
-                      ? 'border-blue-500/12 bg-surface-2'
-                      : 'border-edge/12 bg-surface-2'
+                  className={`group rounded-xl border bg-surface-2 p-4 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 relative overflow-hidden ${
+                    cat.covered ? 'border-edge/10' : 'border-edge/10'
                   }`}
                 >
                   <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${
-                    cat.covered
-                      ? 'from-blue-500/40 to-transparent'
-                      : 'from-fg-muted/20 to-transparent'
+                    cat.covered ? 'from-signal/50 to-transparent' : 'from-fg-muted/25 to-transparent'
                   }`} />
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${cat.covered ? 'bg-blue-500' : 'bg-fg-muted'}`} />
-                      <h3 className="text-[13px] font-medium text-fg">{cat.name}</h3>
+                      <span className={`h-2 w-2 rounded-full ${cat.covered ? 'bg-signal' : 'bg-fg-muted'}`} />
+                      <h3 className="t-title text-[14px]">{cat.name}</h3>
                     </div>
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
                       cat.covered
-                        ? 'bg-blue-500/10 text-blue-600 border border-blue-500/15'
-                        : 'bg-surface-2 text-fg-muted border border-edge/10'
+                        ? 'border-signal/20 bg-signal/[0.06] text-signal'
+                        : 'border-edge/10 bg-surface text-fg-muted'
                     }`}>
                       {cat.covered ? '已覆盖' : '补充覆盖'}
                     </span>
@@ -279,12 +300,12 @@ export default function RenPyEcosystemHub() {
                     {cat.items.map((item) => (
                       <span
                         key={item}
-                        className="inline-flex px-2 py-0.5 rounded text-[11px] font-mono bg-surface-2/60 border border-edge/8 text-fg-muted"
+                        className="inline-flex rounded-xl border border-edge/10 bg-surface px-2 py-0.5 text-[11px] font-mono text-fg-subtle"
                       >{item}</span>
                     ))}
                   </div>
                   {cat.supplement && (
-                    <p className="mt-2.5 text-[11px] text-fg-faint leading-snug">{cat.supplement}</p>
+                    <p className="mt-2.5 text-[11px] leading-snug text-fg-faint">{cat.supplement}</p>
                   )}
                 </div>
               ))}
@@ -294,11 +315,13 @@ export default function RenPyEcosystemHub() {
 
         {/* ── Plugins Panel ─────────────────────────────────────── */}
         {activeTab === 'plugins' && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
             {filteredPlugins.length === 0 && (
-              <div className="col-span-full flex flex-col items-center py-16 text-fg-muted">
-                <Puzzle size={32} className="mb-2 opacity-40" />
-                <span className="text-[13px]">未找到匹配的插件</span>
+              <div className="col-span-full flex flex-col items-center py-20 text-fg-muted">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-edge/10 bg-surface-2">
+                  <Puzzle size={22} className="opacity-40" />
+                </div>
+                <span className="text-[13px] text-fg-muted">未找到匹配的插件</span>
               </div>
             )}
             {filteredPlugins.map((plugin) => {
@@ -306,43 +329,46 @@ export default function RenPyEcosystemHub() {
               return (
                 <div
                   key={plugin.id}
-                  className="rounded-xl border border-edge/12 bg-surface-2 shadow-1 hover:-translate-y-0.5 hover:shadow-2 hover:border-primary/20 transition-all duration-200 relative overflow-hidden"
+                  className="group flex flex-col overflow-hidden rounded-xl border border-edge/10 bg-surface-2 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2"
                 >
-                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent" />
+                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <button
                     onClick={() => togglePlugin(plugin.id)}
-                    className="w-full text-left px-4 py-3 flex items-start gap-3"
+                    className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="text-[14px] font-medium text-fg">{plugin.name}</span>
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.08] text-primary">
+                      <Puzzle size={15} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <span className="t-title text-[14px]">{plugin.name}</span>
                         {plugin.tags.slice(0, 2).map((t) => (
-                          <span key={t} className="text-[10px] px-1.5 py-0 rounded bg-surface-2/60 text-fg-faint border border-edge/8">{t}</span>
+                          <span key={t} className="rounded-full border border-edge/10 bg-surface px-1.5 py-0 text-[10px] text-fg-muted">{t}</span>
                         ))}
                       </div>
-                      <p className="text-[12px] text-fg-muted leading-relaxed line-clamp-2">{plugin.desc}</p>
+                      <p className="line-clamp-2 text-[12px] leading-relaxed text-fg-subtle">{plugin.desc}</p>
                     </div>
-                    <span className={`mt-1 text-fg-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                    <span className={`mt-1.5 text-fg-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
                       <ChevronDown size={15} />
                     </span>
                   </button>
                   {isExpanded && (
-                    <div className="px-4 pb-4 space-y-3 border-t border-edge/8 pt-3">
+                    <div className="space-y-3 border-t border-edge/10 px-4 pb-4 pt-3">
                       {plugin.snippet && (
                         <div>
-                          <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-1.5">代码范例</div>
-                          <pre className="rounded-md bg-surface-2/80 border border-edge/10 p-3 text-[12px] font-mono text-fg-muted overflow-x-auto whitespace-pre-wrap">{plugin.snippet}</pre>
+                          <div className="t-label mb-1.5">代码范例</div>
+                          <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-edge/10 bg-surface p-3 text-[12px] font-mono leading-relaxed text-fg-subtle">{plugin.snippet}</pre>
                         </div>
                       )}
                       {plugin.install && (
                         <div>
-                          <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-1.5">安装说明</div>
-                          <p className="text-[12px] text-fg-muted leading-relaxed">{plugin.install}</p>
+                          <div className="t-label mb-1.5">安装说明</div>
+                          <p className="text-[12px] leading-relaxed text-fg-subtle">{plugin.install}</p>
                         </div>
                       )}
                       <button
                         onClick={(e) => { e.stopPropagation(); insertToScript(plugin.snippet ?? '', plugin.name) }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-primary/15 bg-primary/5 hover:bg-primary/10 px-3 py-1.5 text-[12px] text-primary transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-primary/15 bg-primary/5 px-3 py-1.5 text-[12px] text-primary transition-colors hover:bg-primary/10"
                       >
                         <Download size={12} />
                         插入到剧本
@@ -357,11 +383,13 @@ export default function RenPyEcosystemHub() {
 
         {/* ── Academy Panel ─────────────────────────────────────── */}
         {activeTab === 'academy' && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
             {filteredTutorials.length === 0 && (
-              <div className="col-span-full flex flex-col items-center py-16 text-fg-muted">
-                <GraduationCap size={32} className="mb-2 opacity-40" />
-                <span className="text-[13px]">未找到匹配的教程</span>
+              <div className="col-span-full flex flex-col items-center py-20 text-fg-muted">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-edge/10 bg-surface-2">
+                  <GraduationCap size={22} className="opacity-40" />
+                </div>
+                <span className="text-[13px] text-fg-muted">未找到匹配的教程</span>
               </div>
             )}
             {filteredTutorials.map((lesson) => {
@@ -369,39 +397,40 @@ export default function RenPyEcosystemHub() {
               return (
                 <div
                   key={lesson.id}
-                  className="rounded-xl border border-edge/12 bg-surface-2 shadow-1 hover:-translate-y-0.5 hover:shadow-2 hover:border-primary/20 transition-all duration-200 relative overflow-hidden"
+                  className="group flex flex-col overflow-hidden rounded-xl border border-edge/10 bg-surface-2 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2"
                 >
-                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent" />
+                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <button
                     onClick={() => toggleTutorial(lesson.id)}
-                    className="w-full text-left px-4 py-3 flex items-start gap-3"
+                    className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.08] text-primary">
+                      <BookOpen size={15} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
                         <span className="text-[12px] font-mono text-fg-faint">#{lesson.id}</span>
-                        <span className="text-[14px] font-medium text-fg">{lesson.title}</span>
+                        <span className="t-title text-[14px]">{lesson.title}</span>
                         {difficultyBadge(lesson.level)}
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[11px] px-1.5 py-0 rounded bg-surface-2/60 text-fg-muted border border-edge/8">{lesson.category}</span>
-                      </div>
+                      <span className="inline-flex rounded-full border border-edge/10 bg-surface px-1.5 py-0 text-[10px] text-fg-muted">{lesson.category}</span>
                     </div>
-                    <span className={`mt-1 text-fg-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                    <span className={`mt-1.5 text-fg-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
                       <ChevronDown size={15} />
                     </span>
                   </button>
                   {isExpanded && (
-                    <div className="px-4 pb-4 space-y-3 border-t border-edge/8 pt-3">
-                      <div className="prose-content text-[13px] text-fg leading-relaxed space-y-2" dangerouslySetInnerHTML={{ __html: lesson.content }} />
+                    <div className="space-y-3 border-t border-edge/10 px-4 pb-4 pt-3">
+                      <div className="prose-content space-y-2 text-[13px] leading-relaxed text-fg" dangerouslySetInnerHTML={{ __html: lesson.content }} />
                       {lesson.codeExample && (
                         <div>
-                          <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-1.5">可运行范例</div>
-                          <pre className="rounded-md bg-surface-2/80 border border-edge/10 p-3 text-[12px] font-mono text-fg-muted overflow-x-auto whitespace-pre-wrap">{lesson.codeExample}</pre>
+                          <div className="t-label mb-1.5">可运行范例</div>
+                          <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-edge/10 bg-surface p-3 text-[12px] font-mono leading-relaxed text-fg-subtle">{lesson.codeExample}</pre>
                         </div>
                       )}
                       <button
                         onClick={(e) => { e.stopPropagation(); insertToScript(lesson.codeExample ?? '', lesson.title) }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-primary/15 bg-primary/5 hover:bg-primary/10 px-3 py-1.5 text-[12px] text-primary transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-primary/15 bg-primary/5 px-3 py-1.5 text-[12px] text-primary transition-colors hover:bg-primary/10"
                       >
                         <Download size={12} />
                         插入到剧本

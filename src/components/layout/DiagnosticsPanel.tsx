@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useAppStore } from '../../stores/appStore'
 import { runDiagnostics, type DiagSeverity, type DiagnosticItem } from '../../utils/diagnostics'
-import { Bug, AlertTriangle, Info, ShieldCheck, Zap, Search, SlidersHorizontal } from 'lucide-react'
+import { Bug, AlertTriangle, Info, ShieldCheck, Zap, Search, SlidersHorizontal, CheckCircle2, Wrench } from 'lucide-react'
 
-const SEVERITY_CONFIG: Record<DiagSeverity, { label: string; color: string; bg: string; border: string; dotColor: string }> = {
-  error:   { label: '错误', color: 'text-red-400', bg: 'bg-red-500/8', border: 'border-red-500/20', dotColor: 'bg-red-500' },
-  warning: { label: '警告', color: 'text-amber-400', bg: 'bg-amber-500/8', border: 'border-amber-500/20', dotColor: 'bg-amber-500' },
-  info:    { label: '提示', color: 'text-blue-400', bg: 'bg-blue-500/8', border: 'border-blue-500/20', dotColor: 'bg-blue-500' },
+const SEVERITY_CONFIG: Record<DiagSeverity, { label: string; color: string; icon: typeof Bug; ring: string }> = {
+  error:   { label: '错误', color: 'text-danger', icon: Bug, ring: 'ring-danger/15' },
+  warning: { label: '警告', color: 'text-warning', icon: AlertTriangle, ring: 'ring-warning/15' },
+  info:    { label: '提示', color: 'text-info', icon: Info, ring: 'ring-info/15' },
 }
 
 const CheckCircle = ({ size = 24, className = '' }: { size?: number; className?: string }) => (
@@ -46,46 +46,57 @@ export default function DiagnosticsPanel() {
   }, [selectLine, setActiveNavItem])
 
   return (
-    <div className="flex h-full flex-1 min-w-0 flex-col select-none">
-      {/* Header */}
-      <div className="shrink-0 border-b border-edge/10 px-6 py-5">
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-canvas">
+
+      {/* ═══ Header ═══ */}
+      <div className="shrink-0 border-b border-edge/10 px-5 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[15px] font-semibold text-fg">工程体检</h1>
-            <p className="mt-0.5 text-[12px] text-fg-muted">自动扫描剧本中的跳转断裂、缺素材、分支孤岛等问题</p>
+            <div className="flex items-center gap-2">
+              <span className="signal-dot" />
+              <span className="eyebrow">Diagnostics</span>
+            </div>
+            <h2 className="t-h2 mt-1.5">工程体检</h2>
+            <p className="mt-0.5 t-subtitle">自动扫描剧本中的跳转断裂、缺素材、分支孤岛等问题</p>
           </div>
-          <div className="inline-flex items-center gap-1 rounded-xl border border-edge/10 bg-surface-2 px-3 py-1.5 text-[12px] text-fg-muted shadow-1">
-            <Zap size={13} />
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-edge/10 bg-surface-2 px-3 py-1.5 text-[12px] text-fg-muted">
+            <Wrench size={12} />
             已扫描
-          </div>
+          </span>
         </div>
       </div>
 
-      {/* Dashboard Stats */}
-      <div className="shrink-0 px-6 py-4">
-        <div className="grid grid-cols-4 gap-3">
+      {/* ═══ Dashboard Stats ═══ */}
+      <div className="shrink-0 border-b border-edge/10 px-5 py-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
-            { value: report.totalIssues, label: '总计', icon: ShieldCheck, color: 'text-fg-muted' },
-            { value: report.errors, label: '错误', icon: Bug, color: 'text-red-400' },
-            { value: report.warnings, label: '警告', icon: AlertTriangle, color: 'text-amber-400' },
-            { value: report.infos, label: '提示', icon: Info, color: 'text-blue-400' },
-          ].map((s) => {
+            { value: report.totalIssues, label: '总计', icon: ShieldCheck, color: 'text-fg', happy: false },
+            { value: report.errors, label: '错误', icon: Bug, color: 'text-danger', happy: true },
+            { value: report.warnings, label: '警告', icon: AlertTriangle, color: 'text-warning', happy: true },
+            { value: report.infos, label: '提示', icon: Info, color: 'text-info', happy: false },
+          ].map((s, i) => {
             const Icon = s.icon
-            const isHealthy = s.label === '错误' ? s.value === 0 : s.label === '总计' ? s.value === 0 : false
+            const isHealthy = s.happy && s.value === 0
             return (
               <div
                 key={s.label}
-                className={`rounded-xl border bg-surface-2 px-4 py-3 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 ${
-                  isHealthy
-                    ? 'border-emerald-500/20 bg-emerald-500/5'
-                    : 'border-edge/10 bg-surface'
+                className={`group rounded-2xl border border-edge/10 bg-surface p-4 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 hover:ring-1 animate-slide-up relative overflow-hidden ${
+                  isHealthy ? 'hover:ring-emerald-500/20' : 'hover:ring-fg-muted/10'
                 }`}
+                style={{ animationDelay: `${i * 40}ms` }}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] text-fg-faint">{s.label}</span>
-                  <Icon size={14} className={s.color} />
+                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="flex items-center gap-2">
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+                    s.color === 'text-danger' ? 'bg-danger/10' :
+                    s.color === 'text-warning' ? 'bg-warning/10' :
+                    s.color === 'text-info' ? 'bg-info/10' : 'bg-fg-faint/10'
+                  } ${s.color}`}>
+                    <Icon size={14} />
+                  </div>
+                  <span className="text-[12px] font-medium text-fg-muted">{s.label}</span>
                 </div>
-                <div className={`text-[24px] font-semibold ${isHealthy ? 'text-emerald-400' : 'text-fg'}`}>
+                <div className={`mt-3 text-[22px] font-semibold tabular-nums ${isHealthy ? 'text-emerald-500' : 'text-fg'}`}>
                   {s.value}
                 </div>
               </div>
@@ -94,78 +105,82 @@ export default function DiagnosticsPanel() {
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="shrink-0 px-6 pb-4 flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索诊断结果..."
-            className="w-full rounded-lg border border-edge/10 bg-surface pl-9 pr-3 py-1.5 text-[12px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
-          />
-        </div>
-        <SlidersHorizontal size={13} className="text-fg-faint" />
-        <div className="flex items-center gap-1.5">
-          {(['all', 'error', 'warning', 'info'] as const).map((s) => {
-            const active = severityFilter === s
-            const cfg = s === 'all' ? null : SEVERITY_CONFIG[s]
-            return (
-              <button
-                key={s}
-                onClick={() => setSeverityFilter(s)}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                  active
-                    ? cfg
-                      ? `${cfg.bg} ${cfg.color} border ${cfg.border}`
-                      : 'bg-surface-2 text-fg border border-edge/15'
-                    : 'text-fg-muted hover:text-fg hover:bg-surface-2/60'
-                }`}
-              >
-                {cfg && <span className={`w-1.5 h-1.5 rounded-full ${cfg.dotColor}`} />}
-                {s === 'all' ? '全部' : SEVERITY_CONFIG[s].label}
-                {s === 'all' && <span className="text-fg-faint">({report.totalIssues})</span>}
-              </button>
-            )
-          })}
+      {/* ═══ Filter Bar ═══ */}
+      <div className="shrink-0 border-b border-edge/10 px-5 py-2.5">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="搜索诊断结果..."
+              className="w-full rounded-xl border border-edge/10 bg-surface/80 pl-9 pr-3 py-2 text-[12px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30 focus:bg-surface transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <SlidersHorizontal size={13} className="mr-0.5 text-fg-muted" />
+            {(['all', 'error', 'warning', 'info'] as const).map((s) => {
+              const active = severityFilter === s
+              const cfg = s !== 'all' ? SEVERITY_CONFIG[s] : null
+              return (
+                <button
+                  key={s}
+                  onClick={() => setSeverityFilter(s)}
+                  className={`inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+                    active
+                      ? cfg
+                        ? `bg-surface-2 text-${s === 'error' ? 'danger' : s === 'warning' ? 'warning' : 'info'} border border-edge/10 shadow-1`
+                        : 'bg-surface-2 text-fg border border-edge/10 shadow-1'
+                      : 'border border-transparent text-fg-muted hover:text-fg hover:bg-surface-2'
+                  }`}
+                >
+                  {cfg && <span className={`h-1.5 w-1.5 rounded-full ${s === 'error' ? 'bg-danger' : s === 'warning' ? 'bg-warning' : 'bg-info'}`} />}
+                  {s === 'all' ? '全部' : cfg!.label}
+                  {s === 'all' && <span className="text-fg-faint">({report.totalIssues})</span>}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Issues Grid */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
+      {/* ═══ Issues Grid ═══ */}
+      <div className="flex-1 overflow-y-auto px-5 py-4">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-fg-muted">
-            <CheckCircle size={32} className="mb-2 text-emerald-400/60" />
-            <span className="text-[13px]">未发现问题</span>
-            <span className="text-[12px] text-fg-faint mt-1">剧本健康度良好</span>
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-edge/10 bg-surface-2">
+              <CheckCircle2 size={22} className="text-emerald-500/60" />
+            </div>
+            <span className="text-[13px] font-medium text-fg-muted">未发现问题</span>
+            <span className="mt-1 text-[12px] text-fg-faint">剧本健康度良好</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-2">
             {filtered.map((item) => {
               const cfg = SEVERITY_CONFIG[item.severity]
               const canJump = item.lineIndex >= 0
               return (
                 <div
                   key={item.id}
-                  className={`rounded-xl border px-4 py-3 transition-all duration-200 hover:shadow-2 cursor-pointer ${cfg.bg} ${cfg.border} ${canJump ? 'hover:border-primary/25 hover:bg-surface-hover/30 hover:-translate-y-0.5' : ''}`}
+                  className={`group rounded-xl border border-edge/10 bg-surface-2 px-4 py-3 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 hover:ring-1 ${cfg.ring} ${canJump ? 'cursor-pointer' : ''}`}
                   onClick={() => canJump && handleJump(item)}
                 >
                   <div className="flex items-start gap-3">
-                    <span className={`mt-0.5 w-1.5 h-1.5 rounded-full ${cfg.dotColor} shrink-0`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[11px] font-medium uppercase tracking-[0.05em] ${cfg.color}`}>
-                          {cfg.label}
-                        </span>
-                        <span className="text-[11px] text-fg-faint truncate">{item.category}</span>
+                    <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${item.severity === 'error' ? 'bg-danger/10 text-danger' : item.severity === 'warning' ? 'bg-warning/10 text-warning' : 'bg-info/10 text-info'}`}>
+                      <cfg.icon size={12} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className={`text-[11px] font-medium ${cfg.color}`}>{cfg.label}</span>
+                        <span className="truncate text-[11px] text-fg-faint">{item.category}</span>
                       </div>
-                      <p className="text-[13px] text-fg leading-relaxed">{item.message}</p>
+                      <p className="text-[13px] leading-relaxed text-fg">{item.message}</p>
                     </div>
                     {canJump && (
-                      <span className="shrink-0 text-[11px] text-primary/70 hover:text-primary transition-colors mt-0.5">
-                        <Zap size={12} className="inline mr-0.5" />
-                        跳转到行
+                      <span className="mt-0.5 shrink-0 rounded-xl border border-primary/15 bg-primary/5 px-2 py-0.5 text-[11px] text-primary transition-colors group-hover:bg-primary/10">
+                        <Zap size={10} className="mr-0.5 inline" />
+                        跳转
                       </span>
                     )}
                   </div>

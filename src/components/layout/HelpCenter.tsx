@@ -542,7 +542,7 @@ export default function HelpCenter() {
   }
 
   return (
-    <div className="flex h-full flex-1 min-w-0 select-none">
+    <div className="flex h-full min-w-0 flex-1">
       {/* ====== Left Nav: 可展开收起的分类目录树 ====== */}
       <div className="w-[200px] shrink-0 border-r border-edge/10 flex flex-col">
         <div className="px-4 py-4 border-b border-edge/10">
@@ -573,12 +573,15 @@ export default function HelpCenter() {
                   <button
                     key={t.id}
                     onClick={() => setSelectedTopic(t.id)}
-                    className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[14px] text-left transition-colors ${
+                    className={`relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] text-left transition-all duration-200 ${
                       active
-                        ? 'bg-primary/10 text-primary border border-primary/15 font-medium'
-                        : 'text-fg-muted hover:text-fg hover:bg-surface-2/60 border border-transparent'
+                        ? 'bg-primary/[0.06] text-fg font-medium'
+                        : 'text-fg-muted hover:bg-surface-2 hover:text-fg'
                     }`}
                   >
+                    {active && (
+                      <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+                    )}
                     <Icon size={16} className={active ? 'text-primary' : ''} />
                     <span className="truncate">{t.label}</span>
                     {active && <span className="ml-auto w-1 h-4 rounded-full bg-primary/60 shrink-0" />}
@@ -601,7 +604,7 @@ export default function HelpCenter() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索帮助内容..."
-              className="w-full rounded-lg border border-edge/10 bg-surface pl-10 pr-4 py-2 text-[14px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="w-full rounded-xl border border-edge/10 bg-surface/80 pl-10 pr-4 py-2 text-[13px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30 focus:bg-surface transition-colors"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-faint hover:text-fg">
@@ -611,7 +614,7 @@ export default function HelpCenter() {
           </div>
           {/* Search Results Dropdown */}
           {searchResults && (
-            <div className="mt-2 absolute z-20 left-6 right-6 max-w-[680px] rounded-lg border border-edge/10 bg-surface shadow-lg overflow-hidden">
+            <div className="mt-2 absolute z-20 left-6 right-6 max-w-[680px] rounded-xl border border-edge/10 bg-surface shadow-lg overflow-hidden">
               {searchResults.length === 0 ? (
                 <div className="px-4 py-3 text-[14px] text-fg-muted text-center">未找到匹配内容</div>
               ) : (
@@ -666,7 +669,7 @@ export default function HelpCenter() {
                     <button
                       key={link.label}
                       onClick={() => openExternal(link.url)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[14px] text-fg-muted hover:text-fg hover:border-edge/20 transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-muted shadow-1 hover:text-fg hover:border-primary/15 transition-all duration-200"
                     >
                       <ExternalLink size={13} />
                       {link.label}
@@ -686,21 +689,21 @@ export default function HelpCenter() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => openExternal(GITHUB_LINKS.newBug)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[14px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle shadow-1 hover:text-fg hover:border-primary/15 transition-all duration-200"
                 >
                   <Bug size={15} className="text-rose-400" />
                   报告 Bug
                 </button>
                 <button
                   onClick={() => openExternal(GITHUB_LINKS.newFeature)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[14px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle shadow-1 hover:text-fg hover:border-primary/15 transition-all duration-200"
                 >
                   <Heart size={15} className="text-violet-400" />
                   功能建议
                 </button>
                 <button
                   onClick={() => openExternal(GITHUB_LINKS.issues)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[14px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle shadow-1 hover:text-fg hover:border-primary/15 transition-all duration-200"
                 >
                   <MessageCircle size={15} className="text-sky-400" />
                   反馈与建议
@@ -777,7 +780,7 @@ function renderMarkdown(md: string): React.ReactNode {
       const headerCells = tableLines[0]?.split('|').filter(Boolean).map((c) => c.trim()) ?? []
       const rows = tableLines.slice(2).map((r) => r.split('|').filter(Boolean).map((c) => c.trim()))
       elements.push(
-        <div key={key++} className="overflow-x-auto my-3 rounded-lg border border-edge/10">
+        <div key={key++} className="overflow-x-auto my-3 rounded-xl border border-edge/10">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="bg-surface-2/60">
@@ -810,7 +813,7 @@ function renderMarkdown(md: string): React.ReactNode {
       }
       i++
       elements.push(
-        <pre key={key++} className="bg-surface-2/80 rounded-lg border border-edge/10 p-3 my-3 overflow-x-auto text-[13px] font-mono text-fg-muted whitespace-pre-wrap">
+        <pre key={key++} className="bg-surface-2/80 rounded-xl border border-edge/10 p-3 my-3 overflow-x-auto text-[13px] font-mono text-fg-muted whitespace-pre-wrap">
           {codeLines.join('\n')}
         </pre>
       )
