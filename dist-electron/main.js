@@ -883,6 +883,21 @@ electron.ipcMain.handle("fs:exportRenpy", async (_event, bundle) => {
     if (bundle.transforms && bundle.transforms.trim()) {
       fs.writeFileSync(path.join(gameDir, "transforms.rpy"), bundle.transforms, "utf-8");
     }
+    if (bundle.options && bundle.options.trim()) {
+      fs.writeFileSync(path.join(gameDir, "options.rpy"), bundle.options, "utf-8");
+    }
+    if (bundle.ui && bundle.ui.trim()) {
+      fs.writeFileSync(path.join(gameDir, "ui.rpy"), bundle.ui, "utf-8");
+    }
+    if (bundle.iconSourceRelativePath) {
+      const iconSrc = path.resolve(resolvedSrcRoot, bundle.iconSourceRelativePath);
+      if (iconSrc !== resolvedSrcRoot && iconSrc.startsWith(resolvedSrcRoot + path.sep) && fs.existsSync(iconSrc)) {
+        try {
+          copyFile(iconSrc, path.join(root, "icon.ico"));
+        } catch {
+        }
+      }
+    }
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -1016,7 +1031,10 @@ electron.ipcMain.handle("renpy:stageProject", async (_event, payload) => {
     if (bundle.transforms && bundle.transforms.trim()) {
       fs.writeFileSync(path.join(gameDir, "transforms.rpy"), bundle.transforms, "utf-8");
     }
-    fs.writeFileSync(path.join(gameDir, "options.rpy"), buildMinimalOptions(safeTitle), "utf-8");
+    fs.writeFileSync(path.join(gameDir, "options.rpy"), bundle.options && bundle.options.trim() ? bundle.options : buildMinimalOptions(safeTitle), "utf-8");
+    if (bundle.ui && bundle.ui.trim()) {
+      fs.writeFileSync(path.join(gameDir, "ui.rpy"), bundle.ui, "utf-8");
+    }
   } catch (err) {
     return { success: false, error: err.message };
   }

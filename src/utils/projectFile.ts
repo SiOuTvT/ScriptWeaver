@@ -4,7 +4,7 @@
 
 import { useAppStore } from '@/stores/appStore'
 import { saveDraft } from '@/utils/draftStorage'
-import type { ProjectFile, LineDelta, CharacterConfig, AssetItem, GlobalVariable } from '@/core/types'
+import type { ProjectFile, LineDelta, CharacterConfig, AssetItem, GlobalVariable, ProjectMeta } from '@/core/types'
 
 /** 剥离 assets 中的 blobUrl 易失字段 —— 仅 Web 降级内存渲染使用，不入 .swproj / localStorage */
 function stripVolatile(assets: AssetItem[]): AssetItem[] {
@@ -21,6 +21,7 @@ export function serializeProject(deltas: LineDelta[], characterConfigs: Characte
     variables: useAppStore.getState().variables,
     savedAt: new Date().toISOString(),
     canvasRatio: useAppStore.getState().canvasRatio,
+    projectMeta: useAppStore.getState().projectMeta,
   }
   return JSON.stringify(project, null, 2)
 }
@@ -32,6 +33,7 @@ export function deserializeProject(json: string): {
   assets: AssetItem[]
   variables: GlobalVariable[]
   canvasRatio?: { w: number; h: number }
+  projectMeta?: ProjectMeta
 } | null {
   try {
     const data = JSON.parse(json) as ProjectFile
@@ -42,6 +44,7 @@ export function deserializeProject(json: string): {
       assets: data.assets ?? [],
       variables: data.variables ?? [],
       canvasRatio: data.canvasRatio,
+      projectMeta: data.projectMeta ?? { title: 'My Visual Novel' },
     }
   } catch {
     return null

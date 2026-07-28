@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { LineDelta, ResolvedLineState, AssetItem, CharacterConfig, GlobalVariable, LineType, VariableOperation } from '@/core/types'
+import type { LineDelta, ResolvedLineState, AssetItem, CharacterConfig, GlobalVariable, LineType, VariableOperation, ProjectMeta } from '@/core/types'
 import { reduceLines, normalizeDelta } from '@/core/reducer'
 import { DEFAULT_ACCENT } from '@/utils/themeColor'
 import type { RuntimeValues } from '@/utils/varRuntime'
@@ -168,6 +168,10 @@ interface AppState {
   canvasRatio: { w: number; h: number }
   setCanvasRatio: (r: { w: number; h: number }) => void
 
+  // ---- 游戏元信息：标题 / 封面 / 图标（导出 Ren'Py 时使用） ----
+  projectMeta: ProjectMeta
+  setProjectMeta: (patch: Partial<ProjectMeta>) => void
+
   // ---- 全局应用设置 ----
   settings: AppSettings
   updateSettings: (patch: Partial<AppSettings>) => void
@@ -286,6 +290,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ---- 场景画布比例（默认 16:9） ----
   canvasRatio: { w: 16, h: 9 },
+
+  // ---- 游戏元信息（默认标题，封面/图标可选） ----
+  projectMeta: { title: 'My Visual Novel' },
 
   // ---- 全局应用设置 ----
   settings: loadSettings(),
@@ -492,6 +499,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       assets: data.assets ?? [],
       characterConfigs: data.characterConfigs ?? [],
       variables: data.variables ?? [],
+      projectMeta: data.projectMeta ?? { title: 'My Visual Novel' },
       projectRoot: data.projectRoot,
       selectedLineIndex: 0,
       _history: [],
@@ -676,6 +684,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ---- 场景画布比例 ----
   setCanvasRatio: (r) => set({ canvasRatio: r }),
+
+  // ---- 游戏元信息 ----
+  setProjectMeta: (patch) => set((s) => ({ projectMeta: { ...s.projectMeta, ...patch } })),
 
   // ---- 全局应用设置 ----
   updateSettings: (patch) => {

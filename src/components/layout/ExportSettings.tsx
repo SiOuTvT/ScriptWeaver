@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react'
-import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2, Play, Package, ShieldCheck, RefreshCw, Languages } from 'lucide-react'
+import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2, Play, Package, ShieldCheck, RefreshCw, Languages, Gamepad2 } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import { Button } from '@/components/ui'
 import {
@@ -116,7 +116,8 @@ export default function ExportSettings() {
   const assets = useAppStore((s) => s.assets)
   const variables = useAppStore((s) => s.variables)
   const canvasRatio = useAppStore((s) => s.canvasRatio)
-  const projectTitle = characterConfigs[0]?.displayName || 'ScriptWeaver'
+  const projectMeta = useAppStore((s) => s.projectMeta)
+  const setProjectMeta = useAppStore((s) => s.setProjectMeta)
 
 
 
@@ -217,10 +218,11 @@ export default function ExportSettings() {
       DEFAULT_POSITION_SLOTS,
       scriptLabel,
       variables,
+      projectMeta,
     )
     setPackageResult({ ok: res.success, message: res.message })
     setStage((s) => (res.success ? { ...s, pack: 'done', done: 'done' } : { ...s, pack: 'error' }))
-  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel, variables])
+  }, [draftDeltas, resolvedStates, characterConfigs, assets, scriptLabel, variables, projectMeta])
 
   const handleExportWeb = useCallback(async () => {
     const api = window.electronAPI
@@ -234,7 +236,7 @@ export default function ExportSettings() {
       assets,
       variables,
       canvasRatio,
-      title: projectTitle,
+      title: projectMeta.title,
     })
     const res = await api.exportWeb({
       gameJson: bundle.gameJson,
@@ -304,8 +306,9 @@ export default function ExportSettings() {
           DEFAULT_POSITION_SLOTS,
           scriptLabel,
           variables,
+          projectMeta,
         )
-        const stage = await window.electronAPI?.renpyStageProject({ bundle, title: projectTitle })
+        const stage = await window.electronAPI?.renpyStageProject({ bundle, title: projectMeta.title })
         if (!stage?.success) {
           setEngineResult('暂存工程失败：' + (stage?.error ?? '未知错误'))
           return
@@ -412,6 +415,57 @@ export default function ExportSettings() {
           <h2 className="t-h1 mt-1.5">导出设置</h2>
           <p className="mt-0.5 t-subtitle">选择导出目标、配置打包偏好并校验脚本完整性</p>
         </header>
+
+        {/* ============ 游戏信息（标题 / 封面 / 图标） ============ */}
+        <section className="mb-6 rounded-xl border border-line bg-surface p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Gamepad2 size={16} className="text-primary" />
+            <h3 className="t-h3">游戏信息</h3>
+          </div>
+          <p className="mb-4 t-subtitle">导出的 Ren'Py 游戏将使用下列元信息：窗口标题、打开时的封面画面与图标。</p>
+
+          {/* 游戏名称 */}
+          <label className="label">游戏名称</label>
+          <input
+            className="input mt-1 w-full"
+            value={projectMeta.title}
+            onChange={(e) => setProjectMeta({ title: e.target.value })}
+            placeholder="我的视觉小说"
+          />
+          <p className="mt-1 text-[11px] text-fg-faint">作为窗口标题、关于页名称与打包目录名</p>
+
+          {/* 标题画面封面 */}
+          <div className="mt-4">
+            <label className="label">标题画面封面（可选）</label>
+            <select
+              className="input mt-1 w-full"
+              value={projectMeta.coverAssetId ?? ''}
+              onChange={(e) => setProjectMeta({ coverAssetId: e.target.value || undefined })}
+            >
+              <option value="">使用 Ren'Py 默认主菜单</option>
+              {assets.filter((a) => a.type === 'background').map((a) => (
+                <option key={a.id} value={a.id}>{a.fileName}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-fg-faint">选一张背景图作为打开游戏时的封面；不选则使用默认主菜单</p>
+          </div>
+
+          {/* 游戏图标 */}
+          <div className="mt-4">
+            <label className="label">游戏图标（可选）</label>
+            <select
+              className="input mt-1 w-full"
+              value={projectMeta.iconAssetId ?? ''}
+              onChange={(e) => setProjectMeta({ iconAssetId: e.target.value || undefined })}
+            >
+              <option value="">不设置（使用 Ren'Py 默认图标）</option>
+              {assets.filter((a) => a.type === 'background' || a.type === 'sprite' || a.type === 'image').map((a) => (
+                <option key={a.id} value={a.id}>{a.fileName}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-fg-faint">导出为根目录 icon.ico；Windows 打包为 .exe 图标建议使用真实 .ico 文件</p>
+          </div>
+        </section>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
           {/* ============ 左栏：导出平台 / 格式导航 ============ */}

@@ -899,7 +899,13 @@ interface RpyBundle {
   script: string
   definitions: string
   transforms?: string
+  /** options.rpy：窗口标题 / 打包名 / 关于页名 */
+  options?: string
+  /** ui.rpy：覆盖主菜单，包含标题画面(封面) */
+  ui?: string
   assets: ExportAssetRef[]
+  /** 游戏图标源相对路径（相对项目 assets 根），用于拷贝为根目录 icon.ico */
+  iconSourceRelativePath?: string
 }
 
 ipcMain.handle('fs:exportRenpy', async (_event, bundle: RpyBundle) => {
@@ -947,6 +953,25 @@ ipcMain.handle('fs:exportRenpy', async (_event, bundle: RpyBundle) => {
     fs.writeFileSync(path.join(gameDir, 'definitions.rpy'), bundle.definitions ?? '', 'utf-8')
     if (bundle.transforms && bundle.transforms.trim()) {
       fs.writeFileSync(path.join(gameDir, 'transforms.rpy'), bundle.transforms, 'utf-8')
+    }
+    // 游戏元信息：窗口标题 / 打包名（options.rpy）
+    if (bundle.options && bundle.options.trim()) {
+      fs.writeFileSync(path.join(gameDir, 'options.rpy'), bundle.options, 'utf-8')
+    }
+    // 标题画面(封面)：覆盖主菜单（ui.rpy）
+    if (bundle.ui && bundle.ui.trim()) {
+      fs.writeFileSync(path.join(gameDir, 'ui.rpy'), bundle.ui, 'utf-8')
+    }
+    // 游戏图标：拷贝为根目录 icon.ico（Ren'Py 构建时自动识别）
+    if (bundle.iconSourceRelativePath) {
+      const iconSrc = path.resolve(resolvedSrcRoot, bundle.iconSourceRelativePath)
+      if (iconSrc !== resolvedSrcRoot && iconSrc.startsWith(resolvedSrcRoot + path.sep) && fs.existsSync(iconSrc)) {
+        try {
+          copyFile(iconSrc, path.join(root, 'icon.ico'))
+        } catch {
+          /* 图标拷贝失败不阻断整体导出 */
+        }
+      }
     }
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message }
@@ -1117,7 +1142,12 @@ ipcMain.handle('renpy:stageProject', async (_event, payload: { bundle: RpyBundle
     if (bundle.transforms && bundle.transforms.trim()) {
       fs.writeFileSync(path.join(gameDir, 'transforms.rpy'), bundle.transforms, 'utf-8')
     }
-    fs.writeFileSync(path.join(gameDir, 'options.rpy'), buildMinimalOptions(safeTitle), 'utf-8')
+    // 优先用 bundle 自带的 options（含 config.name / build.name），兜底用最小配置
+    fs.writeFileSync(path.join(gameDir, 'options.rpy'), bundle.options && bundle.options.trim() ? bundle.options : buildMinimalOptions(safeTitle), 'utf-8')
+    // 标题画面(封面)：覆盖主菜单
+    if (bundle.ui && bundle.ui.trim()) {
+      fs.writeFileSync(path.join(gameDir, 'ui.rpy'), bundle.ui, 'utf-8')
+    }
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message }
   }

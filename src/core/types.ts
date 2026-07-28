@@ -349,6 +349,16 @@ export interface LineDelta {
 
 // --------------- 项目文件格式 ---------------
 
+/** 游戏元信息：导出 Ren'Py 时的窗口标题 / 标题画面封面 / 游戏图标 */
+export interface ProjectMeta {
+  /** 游戏名称：作为窗口标题(config.window_title)、关于页名(config.name)、打包名(build.name) */
+  title: string
+  /** 标题画面(封面)背景图素材 id，可选；设置后生成带封面的主菜单 */
+  coverAssetId?: string
+  /** 游戏图标素材 id，可选；导出时拷贝为根目录 icon.ico（Windows 打包建议提供 .ico） */
+  iconAssetId?: string
+}
+
 export interface ProjectFile {
   version: number
   draftDeltas: LineDelta[]
@@ -359,6 +369,8 @@ export interface ProjectFile {
   savedAt: string
   /** 场景画布比例（Ren'Py 式自选）；缺省按 16:9 处理 */
   canvasRatio?: { w: number; h: number }
+  /** 游戏元信息：标题 / 封面 / 图标 */
+  projectMeta?: ProjectMeta
 }
 
 // --------------- 云端同步与版本快照 ---------------
