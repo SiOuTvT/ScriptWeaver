@@ -2,9 +2,11 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import {
   BookOpen, ChevronRight, Search, ExternalLink,
   HelpCircle, FileText, Keyboard, Zap, Video, Sparkles,
-  Globe, Users, Download, ArrowRight, X, MessageCircle, Bug, Heart
+  Globe, Users, Download, ArrowRight, X, MessageCircle, Bug, Heart,
+  ChevronDown,
 } from 'lucide-react'
 import { GITHUB_LINKS } from '../../data/links'
+import { openExternal } from '@/utils/openExternal'
 
 interface HelpTopic {
   id: string
@@ -200,13 +202,16 @@ A: 欢迎通过 GitHub Issue 或内置反馈渠道联系我们。` },
   },
 ]
 
+
 export default function HelpCenter() {
   const [selectedTopic, setSelectedTopic] = useState<string>('getting-started')
   const [searchQuery, setSearchQuery] = useState('')
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
+  const [activeSection, setActiveSection] = useState<string>('')
 
   const topic = TOPICS.find((t) => t.id === selectedTopic) ?? TOPICS[0]
+  const contentRef = useRef<HTMLDivElement>(null)
 
-  // Group topics by category
   const grouped = useMemo(() => {
     const map = new Map<string, HelpTopic[]>()
     TOPICS.forEach((t) => {
@@ -217,7 +222,6 @@ export default function HelpCenter() {
     return Array.from(map.entries())
   }, [])
 
-  // Search results
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return null
     const q = searchQuery.toLowerCase()
@@ -240,23 +244,66 @@ export default function HelpCenter() {
     }, 100)
   }
 
+  const toggleCategory = (cat: string) => {
+    setCollapsedCategories((prev) => {
+      const next = new Set(prev)
+      if (next.has(cat)) next.delete(cat)
+      else next.add(cat)
+      return next
+    })
+  }
+
+  // IntersectionObserver to track visible sections for right TOC
+  useEffect(() => {
+    const container = contentRef.current
+    if (!container) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting)
+        if (visible.length > 0) {
+          setActiveSection(visible[0].target.id)
+        }
+      },
+      { rootMargin: '-40px 0px -60% 0px', threshold: 0 }
+    )
+    const sectionEls = container.querySelectorAll('[id^="section-"]')
+    sectionEls.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [topic.id])
+
+  const scrollToSection = (sectionId: string) => {
+    const el = document.getElementById(`section-${sectionId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   return (
     <div className="flex h-full flex-1 min-w-0 select-none">
-      {/* Left Nav: 200px */}
+      {/* ====== Left Nav: 可展开收起的分类目录树 ====== */}
       <div className="w-[200px] shrink-0 border-r border-edge/10 flex flex-col">
-        <div className="px-4 py-5 border-b border-edge/10">
+        <div className="px-4 py-4 border-b border-edge/10">
           <div className="flex items-center gap-2">
             <BookOpen size={15} className="text-primary" />
             <span className="text-[14px] font-semibold text-fg">帮助中心</span>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto py-3 px-2">
+        <div className="flex-1 overflow-y-auto py-2 px-2">
           {grouped.map(([category, topics]) => (
-            <div key={category} className="mb-4 last:mb-0">
-              <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.08em] px-2 mb-1.5">
+            <div key={category} className="mb-3">
+              {/* 分类标题——可点击展开/收起 */}
+              <button
+                onClick={() => toggleCategory(category)}
+                className="flex w-full items-center gap-1.5 px-2 py-1.5 text-[11px] font-medium text-fg-faint uppercase tracking-[0.06em] hover:text-fg-muted transition-colors"
+              >
+                <ChevronDown
+                  size={10}
+                  strokeWidth={2}
+                  className={`shrink-0 transition-transform ${collapsedCategories.has(category) ? '-rotate-90' : ''}`}
+                />
                 {category}
-              </div>
-              {topics.map((t) => {
+              </button>
+              {!collapsedCategories.has(category) && topics.map((t) => {
                 const Icon = t.icon
                 const active = selectedTopic === t.id
                 return (
@@ -270,8 +317,8 @@ export default function HelpCenter() {
                     }`}
                   >
                     <Icon size={15} className={active ? 'text-primary' : ''} />
-                    {t.label}
-                    {active && <span className="ml-auto w-1 h-4 rounded-full bg-primary/60" />}
+                    <span className="truncate">{t.label}</span>
+                    {active && <span className="ml-auto w-1 h-4 rounded-full bg-primary/60 shrink-0" />}
                   </button>
                 )
               })}
@@ -280,12 +327,11 @@ export default function HelpCenter() {
         </div>
       </div>
 
-      {/* Middle Content */}
+      {/* ====== Middle Content: 高可读性 Markdown 正文 ====== */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-        {/* Search + Header */}
-        <div className="shrink-0 border-b border-edge/10 px-6 py-4">
-          <div className="relative">
+        {/* Search bar */}
+        <div className="shrink-0 border-b border-edge/10 px-6 py-3.5">
+          <div className="relative max-w-[680px]">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-faint" />
             <input
               type="text"
@@ -300,10 +346,9 @@ export default function HelpCenter() {
               </button>
             )}
           </div>
-
           {/* Search Results Dropdown */}
           {searchResults && (
-            <div className="mt-2 rounded-lg border border-edge/10 bg-surface shadow-lg overflow-hidden">
+            <div className="mt-2 absolute z-20 left-6 right-6 max-w-[680px] rounded-lg border border-edge/10 bg-surface shadow-lg overflow-hidden">
               {searchResults.length === 0 ? (
                 <div className="px-4 py-3 text-[13px] text-fg-muted text-center">未找到匹配内容</div>
               ) : (
@@ -323,28 +368,26 @@ export default function HelpCenter() {
           )}
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-6 py-6 w-full">
+        {/* Scrollable content area */}
+        <div ref={contentRef} className="flex-1 overflow-y-auto">
+          <div className="max-w-[680px] mx-auto px-8 py-8">
             {/* Topic Title */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2.5 mb-1">
-                {React.createElement(topic.icon, { size: 18, className: 'text-primary' })}
-                <h1 className="text-[16px] font-semibold text-fg">{topic.label}</h1>
+            <div className="mb-8 pb-6 border-b border-edge/10">
+              <div className="flex items-center gap-2.5 mb-2">
+                {React.createElement(topic.icon, { size: 20, className: 'text-primary' })}
+                <h1 className="text-[18px] font-semibold text-fg">{topic.label}</h1>
               </div>
-              <span className="text-[12px] text-fg-faint">{topic.category}</span>
+              <span className="text-[13px] text-fg-faint">{topic.category}</span>
             </div>
 
-            {/* Sections */}
-            <div className={`grid grid-cols-1 gap-5 ${topic.sections.length > 1 ? 'xl:grid-cols-2' : ''}`}>
+            {/* Sections — 干净正文布局，无卡片包裹 */}
+            <div className="space-y-10">
               {topic.sections.map((section) => (
-                <div
-                  key={section.id}
-                  id={`section-${section.id}`}
-                  className="rounded-xl border border-edge/10 bg-surface p-5"
-                >
-                  <h2 className="text-[14px] font-medium text-fg mb-3 pb-3 border-b border-edge/8">{section.title}</h2>
-                  <div className="prose-help">
+                <div key={section.id} id={`section-${section.id}`} className="scroll-mt-6">
+                  <h2 className="text-[15px] font-semibold text-fg mb-4 pb-2 border-b border-edge/8">
+                    {section.title}
+                  </h2>
+                  <div className="prose-help max-w-none">
                     {renderMarkdown(section.content)}
                   </div>
                 </div>
@@ -353,92 +396,89 @@ export default function HelpCenter() {
 
             {/* Links */}
             {topic.links && topic.links.length > 0 && (
-              <div className="mt-6 pt-6 border-t border-edge/10">
+              <div className="mt-10 pt-6 border-t border-edge/10">
                 <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-3">相关链接</h3>
                 <div className="flex flex-wrap gap-2">
                   {topic.links.map((link) => (
-                    <a
+                    <button
                       key={link.label}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2 text-[13px] text-fg-muted hover:text-fg hover:border-primary/15 transition-colors"
+                      onClick={() => openExternal(link.url)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-muted hover:text-fg hover:border-edge/20 transition-colors"
                     >
                       <ExternalLink size={12} />
                       {link.label}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Feedback - 常驻 GitHub 入口 */}
-            <div className="mt-8 rounded-xl border border-edge/10 bg-surface p-5">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-                  <MessageCircle size={18} className="text-primary" />
-                </div>
-                <div>
-                  <div className="text-[13px] font-medium text-fg">还有问题？</div>
-                  <div className="text-[12px] text-fg-muted mt-0.5">直接到 GitHub 反馈，我们会持续跟进</div>
-                </div>
+            {/* Feedback — 简洁区块 */}
+            <div className="mt-12 pt-6 border-t border-edge/10">
+              <div className="flex items-center gap-3 mb-3">
+                <MessageCircle size={17} className="text-primary" />
+                <span className="text-[14px] font-medium text-fg">还有问题？</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <a
-                  href={GITHUB_LINKS.newBug}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-1.5 rounded-lg border border-edge/8 bg-surface-2/60 px-2 py-2.5 text-[12px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
+              <p className="text-[13px] text-fg-subtle mb-4">直接到 GitHub 反馈，我们会持续跟进。</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => openExternal(GITHUB_LINKS.newBug)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
                 >
-                  <Bug size={16} className="text-rose-500" />
+                  <Bug size={14} className="text-rose-400" />
                   报告 Bug
-                </a>
-                <a
-                  href={GITHUB_LINKS.newFeature}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-1.5 rounded-lg border border-edge/8 bg-surface-2/60 px-2 py-2.5 text-[12px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
+                </button>
+                <button
+                  onClick={() => openExternal(GITHUB_LINKS.newFeature)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
                 >
-                  <Heart size={16} className="text-amber-500" />
+                  <Heart size={14} className="text-violet-400" />
                   功能建议
-                </a>
-                <a
-                  href={GITHUB_LINKS.issues}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-1.5 rounded-lg border border-edge/8 bg-surface-2/60 px-2 py-2.5 text-[12px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
+                </button>
+                <button
+                  onClick={() => openExternal(GITHUB_LINKS.issues)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
                 >
-                  <MessageCircle size={16} className="text-emerald-500" />
+                  <MessageCircle size={14} className="text-sky-400" />
                   反馈与建议
-                </a>
+                </button>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Right TOC */}
-        <div className="hidden xl:block w-[180px] shrink-0 border-l border-edge/10 overflow-y-auto">
-          <div className="px-3 py-5">
-            <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-3 px-1">页面目录</div>
-            {topic.sections.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  document.getElementById(`section-${s.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }}
-                className="w-full text-left px-3 py-1.5 text-[12px] text-fg-muted hover:text-fg hover:bg-surface-2/60 rounded-md transition-colors truncate"
-              >
-                {s.title}
-              </button>
-            ))}
+      {/* ====== Right TOC: On this page 悬浮导航 ====== */}
+      <div className="w-[180px] shrink-0 border-l border-edge/10 overflow-y-auto">
+        <div className="sticky top-0 px-3 py-5">
+          <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-3 px-1">
+            页面目录
           </div>
+          <nav className="space-y-0.5">
+            {topic.sections.map((s) => {
+              const isActive = activeSection === `section-${s.id}`
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => scrollToSection(s.id)}
+                  className={`w-full text-left pl-3 pr-2 py-1.5 text-[12px] rounded-md transition-colors border-l-2 truncate ${
+                    isActive
+                      ? 'text-primary border-primary bg-primary/[0.04] font-medium'
+                      : 'text-fg-muted border-transparent hover:text-fg hover:border-edge/20 hover:bg-surface-2/60'
+                  }`}
+                >
+                  {s.title}
+                </button>
+              )
+            })}
+          </nav>
         </div>
       </div>
     </div>
   )
 }
 
-// ── Simple Markdown Renderer ──────────────────────────────────────
+// ── Simple Markdown Renderer (unchanged) ──────────────────────────
 function renderMarkdown(md: string): React.ReactNode {
   const lines = md.split('\n')
   const elements: React.ReactNode[] = []
@@ -505,7 +545,7 @@ function renderMarkdown(md: string): React.ReactNode {
       while (i < lines.length && !lines[i].startsWith('```')) {
         codeLines.push(lines[i]); i++
       }
-      i++ // skip closing ```
+      i++
       elements.push(
         <pre key={key++} className="bg-surface-2/80 rounded-lg border border-edge/10 p-3 my-3 overflow-x-auto text-[12px] font-mono text-fg-muted whitespace-pre-wrap">
           {codeLines.join('\n')}
@@ -539,13 +579,11 @@ function renderMarkdown(md: string): React.ReactNode {
 }
 
 function renderInlineMarkdown(text: string): React.ReactNode {
-  // Bold: **text**
   const parts = text.split(/(\*\*[^*]+\*\*)/g)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>
     }
-    // Inline code: `text`
     const codeParts = part.split(/(`[^`]+`)/g)
     return codeParts.map((cp, j) => {
       if (cp.startsWith('`') && cp.endsWith('`')) {

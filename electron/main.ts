@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, nativeTheme, protocol } from 'electron'
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, nativeTheme, protocol, shell } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import os from 'os'
@@ -611,6 +611,12 @@ ipcMain.handle('tts:synthesize', async (_event, payload: {
   } catch (err: unknown) {
     const msg = (err as Error).message || String(err)
     return { success: false, error: `TTS 合成失败: ${msg}` }
+  }
+})
+
+ipcMain.handle('shell:openExternal', (_event, url: string) => {
+  if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
+    shell.openExternal(url)
   }
 })
 

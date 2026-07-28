@@ -76,7 +76,7 @@ interface HistorySnapshot {
   selectedLineIndex: number
 }
 
-export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'script' | 'settings' | 'effects' | 'about' | 'help' | 'diagnostics' | 'exporter' | 'renpy-hub' | 'collab' | 'audit-log' | 'templates' | 'import-rpy'
+export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'script' | 'settings' | 'effects' | 'about' | 'help' | 'diagnostics' | 'exporter' | 'renpy-hub' | 'collab' | 'audit-log' | 'templates' | 'import-rpy' | 'history'
 
 /** 主题模式 */
 export type ThemeMode = 'dark' | 'light'

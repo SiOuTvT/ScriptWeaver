@@ -5,6 +5,7 @@ import {
   Sparkles, Globe, BookOpen, MessageCircle
 } from 'lucide-react'
 import { GITHUB_LINKS } from '../../data/links'
+import { openExternal } from '@/utils/openExternal'
 
 const GithubIcon = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -29,7 +30,7 @@ const FEATURES = [
 ]
 
 export default function About() {
-  const [version, setVersion] = useState('0.9.0')
+  const [version, setVersion] = useState('1.0.0')
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'up-to-date' | 'available'>('idle')
 
   useEffect(() => {
@@ -62,17 +63,14 @@ export default function About() {
 
   return (
     <div className="flex h-full flex-1 min-w-0 flex-col overflow-y-auto select-none">
-      {/* Hero Section: full-width gradient banner */}
+      {/* Hero Section */}
       <div className="relative shrink-0 overflow-hidden border-b border-edge/10">
-        {/* subtle gradient backdrop */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
         <div className="relative px-6 py-10">
           <div className="flex items-center gap-6">
-            {/* Logo */}
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-rose-500 flex items-center justify-center shadow-lg shrink-0 ring-1 ring-white/10">
               <span className="text-white text-2xl font-semibold">SW</span>
             </div>
-            {/* Brand */}
             <div>
               <h1 className="text-[18px] font-semibold text-fg">ScriptWeaver</h1>
               <p className="mt-1 text-[13px] text-fg-muted">视觉小说引擎 · 一站式创作工具</p>
@@ -111,7 +109,6 @@ export default function About() {
 
           {/* Column 1: 核心功能 + 技术栈 */}
           <div className="space-y-6">
-            {/* 核心功能 */}
             <section>
               <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">核心功能</h2>
               <div className="grid grid-cols-1 gap-3">
@@ -120,8 +117,9 @@ export default function About() {
                   return (
                     <div
                       key={f.label}
-                      className="rounded-lg border border-edge/10 bg-surface p-5 hover:border-primary/20 transition-colors"
+                      className="rounded-xl border border-edge/12 bg-surface-2 p-5 shadow-1 hover:-translate-y-0.5 hover:shadow-2 hover:border-primary/20 transition-all duration-200 relative overflow-hidden"
                     >
+                      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent" />
                       <div className="flex items-center gap-3 mb-2">
                         <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
                           <Icon size={16} className="text-primary" />
@@ -135,17 +133,17 @@ export default function About() {
               </div>
             </section>
 
-            {/* 技术栈 */}
             <section>
               <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">技术栈</h2>
-              <div className="rounded-lg border border-edge/10 bg-surface p-5">
+              <div className="rounded-xl border border-edge/12 bg-surface-2 p-5 shadow-1 relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-fg-faint/20 to-transparent" />
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {TECH_STACK.map((tech) => {
                     const Icon = tech.icon
                     return (
                       <span
                         key={tech.label}
-                        className="flex items-center gap-2.5 px-3 py-3 rounded-lg border border-edge/8 bg-surface-2/60 text-[13px] text-fg-muted transition-colors hover:border-primary/15 hover:bg-surface-hover/40"
+                        className="flex items-center gap-2.5 px-3 py-3 rounded-lg border border-edge/8 bg-surface-3/60 text-[13px] text-fg-muted transition-all duration-200 hover:border-primary/15 hover:-translate-y-0.5"
                       >
                         {Icon ? <Icon size={16} style={{ color: tech.color }} /> : (
                           <span className="w-4 h-4 rounded-sm shrink-0" style={{ backgroundColor: tech.color }} />
@@ -159,11 +157,12 @@ export default function About() {
             </section>
           </div>
 
-          {/* Column 2: 社区反馈 + 开源协议 + 致谢 */}
+          {/* Column 2: 社区反馈 + 开源协议 */}
           <div className="space-y-6">
             <section>
               <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">社区与反馈</h2>
-              <div className="rounded-lg border border-edge/10 bg-surface p-5">
+              <div className="rounded-xl border border-edge/12 bg-surface-2 p-5 shadow-1 relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent" />
                 <div className="grid grid-cols-1 gap-2.5">
                   {[
                     { icon: GithubIcon, label: 'GitHub 仓库', href: GITHUB_LINKS.repo },
@@ -173,19 +172,17 @@ export default function About() {
                   ].map((link) => {
                     const Icon = link.icon
                     return (
-                    <a
-                      key={link.label}
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/8 bg-surface-2/60 text-[14px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 transition-colors"
-                    >
-                      <span className="flex items-center gap-3">
-                        <Icon size={17} />
-                        {link.label}
-                      </span>
-                      <ExternalLink size={14} className="text-fg-faint" />
-                    </a>
+                      <button
+                        key={link.label}
+                        onClick={() => openExternal(link.href)}
+                        className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/8 bg-surface-3/60 text-[14px] text-fg-muted hover:text-fg hover:border-primary/15 hover:bg-surface-hover/40 hover:-translate-y-0.5 transition-all duration-200 w-full text-left"
+                      >
+                        <span className="flex items-center gap-3">
+                          <Icon size={17} />
+                          {link.label}
+                        </span>
+                        <ExternalLink size={14} className="text-fg-faint shrink-0" />
+                      </button>
                     )
                   })}
                 </div>
@@ -194,7 +191,8 @@ export default function About() {
 
             <section>
               <h2 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.1em] mb-4">开源协议</h2>
-              <div className="rounded-lg border border-edge/10 bg-surface p-5">
+              <div className="rounded-xl border border-edge/12 bg-surface-2 p-5 shadow-1 relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-fg-faint/20 to-transparent" />
                 <p className="text-[14px] text-fg-muted leading-relaxed">
                   基于 AGPL-3.0 协议开源<br />
                   GNU Affero General Public License v3.0
@@ -202,15 +200,13 @@ export default function About() {
                 <p className="mt-3 text-[12px] text-fg-faint leading-relaxed">
                   强 copyleft：修改后分发或作为网络服务提供，均须以同协议开源并附带源码
                 </p>
-                <a
-                  href={`${GITHUB_LINKS.repo}/blob/main/LICENSE`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => openExternal(`${GITHUB_LINKS.repo}/blob/main/LICENSE`)}
                   className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-primary hover:text-primary/80 transition-colors"
                 >
                   <ExternalLink size={12} />
                   查看完整 LICENSE
-                </a>
+                </button>
               </div>
             </section>
           </div>

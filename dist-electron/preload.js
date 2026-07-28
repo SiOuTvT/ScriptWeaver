@@ -3,6 +3,8 @@ const electron = require("electron");
 const api = {
   getVersion: () => electron.ipcRenderer.invoke("app:getVersion"),
   getPath: (name) => electron.ipcRenderer.invoke("app:getPath", name),
+  /** 用系统默认浏览器打开外部链接（绕过 Electron 内嵌窗口） */
+  openExternal: (url) => electron.ipcRenderer.invoke("shell:openExternal", url),
   /** 清除本地缓存：清理 snapshots 目录（素材已统一存储于项目目录下） */
   clearLocalCache: () => electron.ipcRenderer.invoke("app:clearLocalCache"),
   /** 导出 Ren'Py 项目包：选目录 → 建 game/ 结构 → 磁盘直拷素材 → 写 .rpy */

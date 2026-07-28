@@ -4,6 +4,8 @@ import type { AIConfig, ChatMessage } from '../src/utils/aiDirector'
 const api = {
   getVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
   getPath: (name: string): Promise<string> => ipcRenderer.invoke('app:getPath', name),
+  /** 用系统默认浏览器打开外部链接（绕过 Electron 内嵌窗口） */
+  openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
 
   /** 清除本地缓存：清理 snapshots 目录（素材已统一存储于项目目录下） */
   clearLocalCache: (): Promise<{ success: boolean; removedDirs?: number; error?: string }> =>

@@ -97,25 +97,17 @@ export default function AppLayout() {
 
   // ---- 对话框状态 ----
   const [showNewConfirm, setShowNewConfirm] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
-  const [showCollab, setShowCollab] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [showRpyImport, setShowRpyImport] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
 
-  // ---- 侧栏 / 命令面板 通过事件打开弹窗 ----
+  // ---- 侧栏事件：模板/导入维持弹窗，协作/历史已改为全屏页面走导航 ----
   useEffect(() => {
-    const openHistory = () => setShowHistory(true)
-    const openCollab = () => setShowCollab(true)
     const openTemplates = () => setShowTemplates(true)
     const openRpyImport = () => setShowRpyImport(true)
-    window.addEventListener('sw:open-history', openHistory)
-    window.addEventListener('sw:open-collab', openCollab)
     window.addEventListener('sw:open-templates', openTemplates)
     window.addEventListener('sw:open-import-rpy', openRpyImport)
     return () => {
-      window.removeEventListener('sw:open-history', openHistory)
-      window.removeEventListener('sw:open-collab', openCollab)
       window.removeEventListener('sw:open-templates', openTemplates)
       window.removeEventListener('sw:open-import-rpy', openRpyImport)
     }
@@ -611,6 +603,8 @@ export default function AppLayout() {
         {activeNavItem === 'renpy-hub' && <RenPyEcosystemHub />}
         {activeNavItem === 'script' && <ScriptTextPanel />}
         {activeNavItem === 'audit-log' && <AuditLogHub />}
+        {activeNavItem === 'collab' && <CollabPanel />}
+        {activeNavItem === 'history' && <VersionHistory />}
       </div>
 
       {/* ===== 新建确认对话框 ===== */}
@@ -654,11 +648,7 @@ export default function AppLayout() {
         </div>
       )}
 
-      {/* ===== 版本历史（云端备份 / 回滚） ===== */}
-      {showHistory && <VersionHistory open={showHistory} onClose={() => setShowHistory(false)} />}
-
-      {/* ===== 协作空间（邀请码 / 多端协同脚手架） ===== */}
-      {showCollab && <CollabPanel open={showCollab} onClose={() => setShowCollab(false)} />}
+      {/* ===== 版本历史 & 协作空间：已重构为全屏独立页面，通过左侧导航栏进入 ===== */}
 
       {/* ===== 项目模板选择器 ===== */}
       {showTemplates && (

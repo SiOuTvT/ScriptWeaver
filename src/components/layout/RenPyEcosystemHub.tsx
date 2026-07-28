@@ -112,7 +112,7 @@ export default function RenPyEcosystemHub() {
 
   const difficultyBadge = (level: string) => {
     const map: Record<string, string> = { beginner: '入门', intermediate: '中等', advanced: '高级', 入门: '入门', 进阶: '进阶', 高级: '高级' }
-    const colors: Record<string, string> = { beginner: 'bg-emerald-500/10 text-emerald-500', intermediate: 'bg-amber-500/10 text-amber-500', advanced: 'bg-rose-500/10 text-rose-500', 入门: 'bg-emerald-500/10 text-emerald-500', 进阶: 'bg-amber-500/10 text-amber-500', 高级: 'bg-rose-500/10 text-rose-500' }
+    const colors: Record<string, string> = { beginner: 'bg-blue-500/10 text-blue-600', intermediate: 'bg-violet-500/10 text-violet-600', advanced: 'bg-rose-500/10 text-rose-600', 入门: 'bg-blue-500/10 text-blue-600', 进阶: 'bg-violet-500/10 text-violet-600', 高级: 'bg-rose-500/10 text-rose-600' }
     return (
       <span className={`inline-flex px-1.5 py-0 text-[10px] font-medium rounded ${colors[level] ?? 'bg-surface-2 text-fg-muted'}`}>
         {map[level] ?? level}
@@ -219,19 +219,23 @@ export default function RenPyEcosystemHub() {
           <div className="space-y-6">
             {/* Stats Dashboard */}
             <div className="grid grid-cols-4 gap-3">
-              <div className="rounded-lg border border-edge/10 bg-surface p-4">
+              <div className="rounded-xl border border-edge/12 bg-surface-2 p-4 shadow-1 hover:-translate-y-0.5 hover:shadow-2 transition-all duration-200 relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-fg-faint/30 to-transparent" />
                 <div className="text-[11px] text-fg-faint mb-1">大类总数</div>
                 <div className="text-[24px] font-semibold text-fg">{auditStats.total}</div>
               </div>
-              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
-                <div className="text-[11px] text-emerald-600 mb-1">已全覆盖</div>
-                <div className="text-[24px] font-semibold text-emerald-500">{auditStats.covered}</div>
+              <div className="rounded-xl border border-blue-500/12 bg-blue-500/[0.04] p-4 shadow-1 hover:-translate-y-0.5 hover:shadow-2 transition-all duration-200 relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-blue-500/40 to-transparent" />
+                <div className="text-[11px] text-blue-600 mb-1">已全覆盖</div>
+                <div className="text-[24px] font-semibold text-blue-600">{auditStats.covered}</div>
               </div>
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
-                <div className="text-[11px] text-amber-600 mb-1">补充覆盖</div>
-                <div className="text-[24px] font-semibold text-amber-500">{auditStats.supplement}</div>
+              <div className="rounded-xl border border-edge/12 bg-surface-2 p-4 shadow-1 hover:-translate-y-0.5 hover:shadow-2 transition-all duration-200 relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-fg-muted/20 to-transparent" />
+                <div className="text-[11px] text-fg-muted mb-1">补充覆盖</div>
+                <div className="text-[24px] font-semibold text-fg-subtle">{auditStats.supplement}</div>
               </div>
-              <div className="rounded-lg border border-edge/10 bg-surface p-4 flex flex-col justify-between">
+              <div className="rounded-xl border border-edge/12 bg-surface-2 p-4 shadow-1 hover:-translate-y-0.5 hover:shadow-2 transition-all duration-200 relative overflow-hidden flex flex-col justify-between">
+                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent" />
                 <div className="text-[11px] text-fg-faint">特效大本营</div>
                 <button
                   onClick={() => setActiveNavItem('effects')}
@@ -247,21 +251,26 @@ export default function RenPyEcosystemHub() {
               {filteredAudit.map((cat) => (
                 <div
                   key={cat.id}
-                  className={`rounded-lg border p-4 transition-colors ${
+                  className={`rounded-xl border p-4 shadow-1 hover:-translate-y-0.5 hover:shadow-2 transition-all duration-200 relative overflow-hidden ${
                     cat.covered
-                      ? 'border-emerald-500/15 bg-emerald-500/3'
-                      : 'border-amber-500/15 bg-amber-500/3'
+                      ? 'border-blue-500/12 bg-surface-2'
+                      : 'border-edge/12 bg-surface-2'
                   }`}
                 >
+                  <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${
+                    cat.covered
+                      ? 'from-blue-500/40 to-transparent'
+                      : 'from-fg-muted/20 to-transparent'
+                  }`} />
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${cat.covered ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                      <span className={`w-2 h-2 rounded-full ${cat.covered ? 'bg-blue-500' : 'bg-fg-muted'}`} />
                       <h3 className="text-[13px] font-medium text-fg">{cat.name}</h3>
                     </div>
                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
                       cat.covered
-                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                        : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                        ? 'bg-blue-500/10 text-blue-600 border border-blue-500/15'
+                        : 'bg-surface-2 text-fg-muted border border-edge/10'
                     }`}>
                       {cat.covered ? '已覆盖' : '补充覆盖'}
                     </span>
@@ -297,8 +306,9 @@ export default function RenPyEcosystemHub() {
               return (
                 <div
                   key={plugin.id}
-                  className="rounded-lg border border-edge/10 bg-surface transition-colors hover:border-primary/15"
+                  className="rounded-xl border border-edge/12 bg-surface-2 shadow-1 hover:-translate-y-0.5 hover:shadow-2 hover:border-primary/20 transition-all duration-200 relative overflow-hidden"
                 >
+                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent" />
                   <button
                     onClick={() => togglePlugin(plugin.id)}
                     className="w-full text-left px-4 py-3 flex items-start gap-3"
@@ -359,8 +369,9 @@ export default function RenPyEcosystemHub() {
               return (
                 <div
                   key={lesson.id}
-                  className="rounded-lg border border-edge/10 bg-surface transition-colors hover:border-primary/15"
+                  className="rounded-xl border border-edge/12 bg-surface-2 shadow-1 hover:-translate-y-0.5 hover:shadow-2 hover:border-primary/20 transition-all duration-200 relative overflow-hidden"
                 >
+                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent" />
                   <button
                     onClick={() => toggleTutorial(lesson.id)}
                     className="w-full text-left px-4 py-3 flex items-start gap-3"

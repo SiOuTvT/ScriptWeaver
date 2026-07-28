@@ -2,7 +2,7 @@ import { useAppStore } from '@/stores/appStore'
 import {
   BookOpen, FileText, Images, Users, Download, Sparkles, Wand2, Info, HelpCircle, Settings,
   ChevronLeft, ChevronRight, Stethoscope, FileDown, Globe, Cloud, History, Code, ScrollText,
-  ChevronDown, FilePlus2, FolderOpen,
+  FilePlus2, FolderOpen,
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
@@ -57,14 +57,8 @@ const NAV_GROUPS: NavGroup[] = [
         action: () => window.dispatchEvent(new Event('sw:open-import-rpy')),
       },
       { id: 'diagnostics', label: '工程体检', code: '13', icon: <Stethoscope size={18} strokeWidth={1.75} /> },
-      {
-        id: 'history', label: '版本历史', code: '14', icon: <History size={18} strokeWidth={1.75} />,
-        action: () => window.dispatchEvent(new Event('sw:open-history')),
-      },
-      {
-        id: 'collab', label: 'P2P 协作', code: '15', icon: <Cloud size={18} strokeWidth={1.75} />,
-        action: () => window.dispatchEvent(new Event('sw:open-collab')),
-      },
+      { id: 'history', label: '版本历史', code: '14', icon: <History size={18} strokeWidth={1.75} /> },
+      { id: 'collab', label: 'P2P 协作', code: '15', icon: <Cloud size={18} strokeWidth={1.75} /> },
       { id: 'audit-log', label: '协作日志', code: '16', icon: <ScrollText size={18} strokeWidth={1.75} /> },
     ],
   },
@@ -86,15 +80,11 @@ export default function LeftSidebar() {
   const setActive = useAppStore((s) => s.setActiveNavItem)
   const toggle = useAppStore((s) => s.toggleLeftSidebar)
 
-  const [appVersion, setAppVersion] = useState('0.4.0')
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
+  const [appVersion, setAppVersion] = useState('1.0.0')
 
   useEffect(() => {
     window.electronAPI?.getVersion().then((v) => setAppVersion(v)).catch(() => {})
   }, [])
-
-  const toggleGroup = (title: string) =>
-    setCollapsedGroups((prev) => ({ ...prev, [title]: !prev[title] }))
 
   const width = collapsed ? 'w-12' : 'w-44'
 
@@ -136,6 +126,15 @@ export default function LeftSidebar() {
     )
   }
 
+  const renderGroupDivider = (title: string) => (
+    <div
+      key={`divider-${title}`}
+      className="mb-1 mt-0.5 px-2.5 py-1 text-[11px] font-medium tracking-[0.06em] text-fg-faint/60 select-none"
+    >
+      — {title} —
+    </div>
+  )
+
   return (
     <aside
       className={`${width} flex shrink-0 flex-col border-r border-edge/12 bg-surface transition-all duration-200`}
@@ -149,36 +148,17 @@ export default function LeftSidebar() {
         {collapsed ? <ChevronRight size={16} strokeWidth={1.75} /> : <ChevronLeft size={16} strokeWidth={1.75} />}
       </button>
 
-      {/* 导航项 */}
-      <nav className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
-        {collapsed ? (
-          ALL_ITEMS.map(renderItem)
-        ) : (
-          NAV_GROUPS.map((group) => {
-            const isGroupCollapsed = collapsedGroups[group.title]
-            return (
-              <div key={group.title} className="mb-1">
-                <button
-                  onClick={() => toggleGroup(group.title)}
-                  className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[12px] font-medium tracking-wide text-fg-faint transition-colors hover:text-fg-muted"
-                  title={isGroupCollapsed ? '展开分组' : '收起分组'}
-                >
-                  <span>{group.title}</span>
-                  {isGroupCollapsed ? (
-                    <ChevronRight size={13} strokeWidth={1.75} />
-                  ) : (
-                    <ChevronDown size={13} strokeWidth={1.75} />
-                  )}
-                </button>
-                {!isGroupCollapsed && (
-                  <div className="mt-0.5 flex flex-col gap-0.5">
-                    {group.items.map(renderItem)}
-                  </div>
-                )}
+      {/* 导航项：折叠态全部直接列出，展开态按分组平铺 + 分组标题分隔 */}
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2">
+        {collapsed
+          ? ALL_ITEMS.map(renderItem)
+          : NAV_GROUPS.map((group) => (
+              <div key={group.title}>
+                {renderGroupDivider(group.title)}
+                {group.items.map(renderItem)}
               </div>
-            )
-          })
-        )}
+            ))
+        }
       </nav>
 
       {/* 底部版本号 */}
