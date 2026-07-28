@@ -345,6 +345,9 @@ export interface LineDelta {
     needs_review: boolean
     source_text_span: [number, number]
   }
+
+  /** 存档点标记：为 true 时导出 `$ renpy.autosave()` 在该行自动存档 */
+  save_point?: boolean
 }
 
 // --------------- 项目文件格式 ---------------
@@ -363,6 +366,36 @@ export interface ProjectMeta {
   endingAssetId?: string
   /** 结局画面文字，默认「The End」 */
   endingText?: string
+  /** 文字显示速度 (cps)，0 = 立即显示，默认 30 */
+  textSpeed?: number
+  /** 自动前进延迟（秒），默认 15 */
+  autoForwardDelay?: number
+  /** 音乐音量 0-100，默认 100 */
+  musicVolume?: number
+  /** 音效音量 0-100，默认 100 */
+  soundVolume?: number
+  /** 语音音量 0-100，默认 100 */
+  voiceVolume?: number
+  /** 跳过未读文本，默认 true（允许跳过未读行） */
+  skipUnseen?: boolean
+  /** 选择后允许跳过，默认 true */
+  skipAfterChoices?: boolean
+  /** 存档槽数量，默认 20 */
+  saveSlots?: number
+  /** CG 画廊是否启用 */
+  galleryEnabled?: boolean
+  /** CG 画册条目 */
+  galleryItems?: GalleryItem[]
+}
+
+export interface GalleryItem {
+  id: string
+  /** 这张 CG 对应的素材 assetId */
+  assetId: string
+  /** CG 名称/描述 */
+  label: string
+  /** 关联的剧情标签（可选，用于自动解锁条件） */
+  unlockLabel?: string
 }
 
 export interface ProjectFile {
@@ -460,4 +493,6 @@ export interface ResolvedLineState {
   prompt?: string
   /** 合并透传的剧情块标签（label 节点名） */
   label?: string
+  /** 存档点标记（合并透传） */
+  save_point?: boolean
 }

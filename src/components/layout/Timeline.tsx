@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useRef, memo, useState, useEffect } from 'react'
-import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut, ListTree, Tag, Mic, Loader2 } from 'lucide-react'
+import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut, ListTree, Tag, Mic, Loader2, FloppyDisk } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import { useCollabStore } from '@/collab/collabStore'
 import type { ResolvedLineState, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
@@ -1142,6 +1142,19 @@ export default function Timeline() {
                           #{s.label}
                         </span>
                       )}
+                    </button>
+
+                    {/* 存档点切换按钮 */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); updateDeltaAt(i, (prev: LineDelta) => ({ ...prev, save_point: !prev.save_point })) }}
+                      title={s.save_point ? '取消存档点（导出时该行自动存档）' : '设为存档点（导出时该行自动存档）'}
+                      className={`absolute top-0.5 right-0.5 rounded p-0.5 transition-all ${
+                        s.save_point
+                          ? 'text-signal opacity-100'
+                          : 'text-fg-faint opacity-0 group-hover:opacity-100'
+                      }`}
+                    >
+                      <FloppyDisk size={12} strokeWidth={2} fill={s.save_point ? 'currentColor' : 'none'} />
                     </button>
 
                     {/* 行操作按钮（hover 出现） */}

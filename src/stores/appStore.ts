@@ -76,7 +76,7 @@ interface HistorySnapshot {
   selectedLineIndex: number
 }
 
-export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'script' | 'theme' | 'settings' | 'effects' | 'about' | 'help' | 'diagnostics' | 'exporter' | 'renpy-hub' | 'collab' | 'audit-log'
+export type NavItemId = 'chapters' | 'assets' | 'characters' | 'export' | 'ai' | 'script-overview' | 'script' | 'settings' | 'effects' | 'about' | 'help' | 'diagnostics' | 'exporter' | 'renpy-hub' | 'collab' | 'audit-log'
 
 /** 主题模式 */
 export type ThemeMode = 'dark' | 'light'
@@ -293,7 +293,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   canvasRatio: { w: 16, h: 9 },
 
   // ---- 游戏元信息（默认标题，封面/图标可选，结局画面默认开启） ----
-  projectMeta: { title: 'My Visual Novel', endingEnabled: true, endingText: 'The End' },
+  projectMeta: { title: 'My Visual Novel', endingEnabled: true, endingText: 'The End', textSpeed: 30, autoForwardDelay: 15, musicVolume: 100, soundVolume: 100, voiceVolume: 100, skipUnseen: true, skipAfterChoices: true, saveSlots: 20, galleryEnabled: false, galleryItems: [] },
 
   // ---- 全局应用设置 ----
   settings: loadSettings(),
@@ -500,7 +500,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       assets: data.assets ?? [],
       characterConfigs: data.characterConfigs ?? [],
       variables: data.variables ?? [],
-      projectMeta: data.projectMeta ?? { title: 'My Visual Novel', endingEnabled: true, endingText: 'The End' },
+      projectMeta: data.projectMeta ?? { title: 'My Visual Novel', endingEnabled: true, endingText: 'The End', textSpeed: 30, autoForwardDelay: 15, musicVolume: 100, soundVolume: 100, voiceVolume: 100, skipUnseen: true, skipAfterChoices: true, saveSlots: 20, galleryEnabled: false, galleryItems: [] },
       projectRoot: data.projectRoot,
       selectedLineIndex: 0,
       _history: [],

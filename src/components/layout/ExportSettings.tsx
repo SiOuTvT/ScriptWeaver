@@ -1,6 +1,8 @@
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react'
-import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2, Play, Package, ShieldCheck, RefreshCw, Languages, Gamepad2 } from 'lucide-react'
+import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2, Play, Package, ShieldCheck, RefreshCw, Languages, Gamepad2, SlidersHorizontal, Image, Plus, Trash2 } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
+import { resolveAssetSrc } from '@/utils/resolveAsset'
+import type { GalleryItem } from '@/core/types'
 import { Button } from '@/components/ui'
 import {
   downloadRpy,
@@ -506,6 +508,237 @@ export default function ExportSettings() {
             )}
           </div>
         </section>
+
+        {/* ============ Ren'Py 运行设置 ============ */}
+        <section className="mb-6 rounded-xl border border-line bg-surface p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <SlidersHorizontal size={16} className="text-primary" />
+            <h3 className="t-h3">Ren'Py 运行设置</h3>
+          </div>
+          <p className="mb-4 t-subtitle">这些设置将写入 options.rpy，控制玩家游玩时的文字速度、音量、跳过行为和存档槽数。</p>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* 左列：显示 + 游戏 */}
+            <div className="space-y-5">
+              {/* 文字速度 */}
+              <div>
+                <label className="label">文字速度 <span className="text-fg-muted font-normal">({projectMeta.textSpeed ?? 30} cps)</span></label>
+                <input
+                  type="range"
+                  min={0} max={200} step={5}
+                  value={projectMeta.textSpeed ?? 30}
+                  onChange={(e) => setProjectMeta({ textSpeed: Number(e.target.value) })}
+                  className="mt-1 w-full"
+                />
+                <div className="mt-0.5 flex justify-between text-[11px] text-fg-faint">
+                  <span>立即显示</span><span>很慢 (200)</span>
+                </div>
+              </div>
+
+              {/* 自动前进延迟 */}
+              <div>
+                <label className="label">自动前进延迟 <span className="text-fg-muted font-normal">({projectMeta.autoForwardDelay ?? 15}s)</span></label>
+                <input
+                  type="range"
+                  min={1} max={60} step={1}
+                  value={projectMeta.autoForwardDelay ?? 15}
+                  onChange={(e) => setProjectMeta({ autoForwardDelay: Number(e.target.value) })}
+                  className="mt-1 w-full"
+                />
+                <div className="mt-0.5 flex justify-between text-[11px] text-fg-faint">
+                  <span>1s</span><span>60s</span>
+                </div>
+              </div>
+
+              {/* 跳过行为 */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={projectMeta.skipUnseen !== false}
+                    onChange={(e) => setProjectMeta({ skipUnseen: e.target.checked })}
+                    className="checkbox accent-signal"
+                  />
+                  <span className="text-[13px]">允许跳过未读文本</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={projectMeta.skipAfterChoices !== false}
+                    onChange={(e) => setProjectMeta({ skipAfterChoices: e.target.checked })}
+                    className="checkbox accent-signal"
+                  />
+                  <span className="text-[13px]">选择支后仍允许跳过</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={!!projectMeta.galleryEnabled}
+                    onChange={(e) => setProjectMeta({ galleryEnabled: e.target.checked })}
+                    className="checkbox accent-signal"
+                  />
+                  <span className="text-[13px]">启用 CG 画廊（可在「CG 画廊」卡片中管理图册）</span>
+                </label>
+              </div>
+            </div>
+
+            {/* 右列：音量 + 存档 */}
+            <div className="space-y-5">
+              {/* 音乐音量 */}
+              <div>
+                <label className="label">音乐音量 <span className="text-fg-muted font-normal">({projectMeta.musicVolume ?? 100}%)</span></label>
+                <input
+                  type="range"
+                  min={0} max={100} step={5}
+                  value={projectMeta.musicVolume ?? 100}
+                  onChange={(e) => setProjectMeta({ musicVolume: Number(e.target.value) })}
+                  className="mt-1 w-full"
+                />
+              </div>
+
+              {/* 音效音量 */}
+              <div>
+                <label className="label">音效音量 <span className="text-fg-muted font-normal">({projectMeta.soundVolume ?? 100}%)</span></label>
+                <input
+                  type="range"
+                  min={0} max={100} step={5}
+                  value={projectMeta.soundVolume ?? 100}
+                  onChange={(e) => setProjectMeta({ soundVolume: Number(e.target.value) })}
+                  className="mt-1 w-full"
+                />
+              </div>
+
+              {/* 语音音量 */}
+              <div>
+                <label className="label">语音音量 <span className="text-fg-muted font-normal">({projectMeta.voiceVolume ?? 100}%)</span></label>
+                <input
+                  type="range"
+                  min={0} max={100} step={5}
+                  value={projectMeta.voiceVolume ?? 100}
+                  onChange={(e) => setProjectMeta({ voiceVolume: Number(e.target.value) })}
+                  className="mt-1 w-full"
+                />
+              </div>
+
+              {/* 存档槽数 */}
+              <div>
+                <label className="label">存档槽数量 <span className="text-fg-muted font-normal">({projectMeta.saveSlots ?? 20})</span></label>
+                <input
+                  type="range"
+                  min={1} max={100} step={1}
+                  value={projectMeta.saveSlots ?? 20}
+                  onChange={(e) => setProjectMeta({ saveSlots: Number(e.target.value) })}
+                  className="mt-1 w-full"
+                />
+                <div className="mt-0.5 flex justify-between text-[11px] text-fg-faint">
+                  <span>1</span><span>100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ============ CG 画廊管理 ============ */}
+        {projectMeta.galleryEnabled && (
+          <section className="mb-6 rounded-xl border border-line bg-surface p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Image size={16} className="text-primary" />
+                <h3 className="t-h3">CG 画廊</h3>
+                <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">{(projectMeta.galleryItems ?? []).length} 张</span>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost-sm text-signal"
+                onClick={() => {
+                  const items = projectMeta.galleryItems ?? []
+                  const newItem: GalleryItem = { id: crypto.randomUUID(), assetId: '', label: `CG ${items.length + 1}` }
+                  setProjectMeta({ galleryItems: [...items, newItem] })
+                }}
+              >
+                <Plus size={14} className="mr-1 inline" />添加 CG
+              </button>
+            </div>
+            <p className="mb-4 t-subtitle">标记关键画面的素材为 CG 收藏卡，导出的 options.rpy 将生成画廊界面供玩家在菜单中浏览已解锁的 CG。</p>
+
+            {(projectMeta.galleryItems ?? []).length === 0 ? (
+              <div className="rounded-lg border border-dashed border-line bg-surface-2/50 py-8 text-center text-[13px] text-fg-muted">
+                暂无 CG 条目，点击「添加 CG」开始配置
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(projectMeta.galleryItems ?? []).map((item, idx) => (
+                  <div key={item.id} className="flex items-start gap-3 rounded-lg border border-line bg-surface-2/40 p-3">
+                    {/* 缩略图预览 */}
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-surface-2">
+                      {item.assetId ? (
+                        <img src={resolveAssetSrc(item.assetId)} alt={item.label} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-fg-faint">
+                          <Image size={20} />
+                        </div>
+                      )}
+                    </div>
+                    {/* 配置区 */}
+                    <div className="flex-1 space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          className="input flex-1 text-[13px]"
+                          value={item.label}
+                          onChange={(e) => {
+                            const items = [...(projectMeta.galleryItems ?? [])]
+                            items[idx] = { ...items[idx], label: e.target.value }
+                            setProjectMeta({ galleryItems: items })
+                          }}
+                          placeholder="CG 名称，如「初遇」「告白」"
+                        />
+                        <button
+                          type="button"
+                          className="btn-ghost-sm text-fg-muted hover:text-danger"
+                          title="删除此 CG 条目"
+                          onClick={() => {
+                            const items = (projectMeta.galleryItems ?? []).filter((_, i) => i !== idx)
+                            setProjectMeta({ galleryItems: items })
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
+                        {/* 素材选择 */}
+                        <select
+                          className="input flex-1 text-[12px]"
+                          value={item.assetId}
+                          onChange={(e) => {
+                            const items = [...(projectMeta.galleryItems ?? [])]
+                            items[idx] = { ...items[idx], assetId: e.target.value }
+                            setProjectMeta({ galleryItems: items })
+                          }}
+                        >
+                          <option value="">选择 CG 图片素材</option>
+                          {assets.filter((a) => a.type === 'sprite' || a.type === 'background').map((a) => (
+                            <option key={a.id} value={a.id}>{a.fileName}</option>
+                          ))}
+                        </select>
+                        {/* 解锁标签 */}
+                        <input
+                          className="input w-40 text-[12px]"
+                          value={item.unlockLabel ?? ''}
+                          onChange={(e) => {
+                            const items = [...(projectMeta.galleryItems ?? [])]
+                            items[idx] = { ...items[idx], unlockLabel: e.target.value || undefined }
+                            setProjectMeta({ galleryItems: items })
+                          }}
+                          placeholder="解锁标签（可选）"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
           {/* ============ 左栏：导出平台 / 格式导航 ============ */}

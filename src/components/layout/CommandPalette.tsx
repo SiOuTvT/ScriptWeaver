@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useAppStore, type NavItemId } from '@/stores/appStore'
 import {
-  Search, Zap, FileText, Download, Bug, Camera, Sparkles,
+  Search, Zap, FileText, Download, Bug, Camera, Sparkles, Code, History, Cloud,
   BookOpen, Images, Users, Wand2, Settings, HelpCircle, Info,
   Save, Undo2, Redo2, Sun, Play, Globe, Plus, Copy, Trash2, ChevronLeft, ChevronRight, type LucideIcon
 } from 'lucide-react'
@@ -36,17 +36,19 @@ export default function CommandPalette() {
     const navItems: { id: NavItemId; label: string }[] = [
       { id: 'chapters', label: '场景导航' },
       { id: 'script-overview', label: '剧本总览' },
+      { id: 'script', label: '脚本编辑' },
+      { id: 'ai', label: 'AI 功能' },
       { id: 'assets', label: '素材管理' },
       { id: 'characters', label: '角色管理' },
       { id: 'effects', label: '特效大本营' },
-      { id: 'renpy-hub', label: 'Ren\'Py 生态大厅' },
       { id: 'export', label: '导出设置' },
-      { id: 'ai', label: 'AI 功能' },
-      { id: 'settings', label: '设置中心' },
-      { id: 'about', label: '关于' },
-      { id: 'help', label: '帮助中心' },
-      { id: 'diagnostics', label: '工程体检' },
       { id: 'exporter', label: '多格式导出' },
+      { id: 'renpy-hub', label: 'Ren\'Py 生态' },
+      { id: 'diagnostics', label: '工程体检' },
+      { id: 'audit-log', label: '协作日志' },
+      { id: 'settings', label: '设置中心' },
+      { id: 'help', label: '帮助与社区大厅' },
+      { id: 'about', label: '关于' },
     ]
 
     const cmds: Command[] = [
@@ -158,6 +160,20 @@ export default function CommandPalette() {
         keywords: ['ai', '生成', 'copilot', '剧情'],
         icon: Sparkles,
         action: () => { useAppStore.getState().setActiveNavItem('ai'); setOpen(false) },
+        category: 'tool',
+      },
+      {
+        id: 'open-collab', label: 'P2P 协作',
+        keywords: ['collab', '协作', '多人'],
+        icon: Cloud,
+        action: () => { window.dispatchEvent(new Event('sw:open-collab')); setOpen(false) },
+        category: 'tool',
+      },
+      {
+        id: 'open-history', label: '版本历史',
+        keywords: ['history', '版本', '历史', '快照'],
+        icon: History,
+        action: () => { window.dispatchEvent(new Event('sw:open-history')); setOpen(false) },
         category: 'tool',
       },
       {
@@ -416,6 +432,8 @@ function getNavIcon(id: NavItemId): LucideIcon {
     diagnostics: Bug,
     exporter: FileText,
     'renpy-hub': Globe,
+    script: Code,
+    'audit-log': History,
   }
   return map[id] || Zap
 }

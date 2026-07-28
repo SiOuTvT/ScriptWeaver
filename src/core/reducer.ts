@@ -104,6 +104,7 @@ export function applyDelta(
     choices: delta.line_type === 'choice' ? (delta.choices ?? []) : undefined,
     prompt: delta.line_type === 'choice' ? (delta.prompt ?? '') : undefined,
     label: delta.label?.trim() ? delta.label.trim() : undefined,
+    save_point: delta.save_point,
     audio: {
       bgm,
       ambient,
@@ -172,6 +173,7 @@ export function normalizeDelta(d: LineDelta): LineDelta {
   if (d.label !== undefined) base.label = d.label
   if (d.stageEffects !== undefined) base.stageEffects = d.stageEffects ?? []
   if (d.variableOps) base.variableOps = d.variableOps
+  if (d.save_point !== undefined) base.save_point = d.save_point
   return base
 }
 

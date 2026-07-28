@@ -12,7 +12,6 @@ import EffectsLab from './EffectsLab'
 import AIPanel from './AIPanel'
 import ExportSettings from './ExportSettings'
 import SettingsHub from './SettingsHub'
-import ThemeSettings from './ThemeSettings'
 import About from './About'
 import HelpCenter from './HelpCenter'
 import ChoiceEditor from './ChoiceEditor'
@@ -21,13 +20,13 @@ import OverlayDrawer from './OverlayDrawer'
 import VariableDebugger from './VariableDebugger'
 import { applyAccent } from '@/utils/themeColor'
 import { useAppStore, createSampleLine } from '@/stores/appStore'
-import { downloadRpy } from '@/utils/rpyExporter'
+import { downloadRpy, buildBundle } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
 import { deserializeProject, restoreProjectFromJson, serializeProject } from '@/utils/projectFile'
 import { bindAssetWatcher } from '@/services/assetSync'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 import { subscribe, getToastItems, toast, type ToastItem } from '@/utils/toast'
-import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown, Images, FileText, Activity, GitBranch, Cloud, ChevronUp, ChevronDown } from 'lucide-react'
+import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown, Images, FileText, Activity, GitBranch, Play, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button, IconButton, ConfirmDialog } from '@/components/ui'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem, GlobalVariable } from '@/core/types'
 import { createSnapshot } from '@/utils/cloudSync'
@@ -39,7 +38,6 @@ import RenPyEcosystemHub from './RenPyEcosystemHub'
 import ScriptTextPanel from './ScriptTextPanel'
 import CollabPanel from './CollabPanel'
 import AuditLogHub from './AuditLogHub'
-import { useCollabStore } from '@/collab/collabStore'
 
 /**
  * 合并磁盘扫描出的素材：仅新增库中尚未存在（按 relativePath 去重）的文件，
@@ -92,8 +90,6 @@ export default function AppLayout() {
   const loadProjectData = useAppStore((s) => s.loadProjectData)
   const newProject = useAppStore((s) => s.newProject)
   const setProjectRoot = useAppStore((s) => s.setProjectRoot)
-  const collabStatus = useCollabStore((s) => s.status)
-  const collabRole = useCollabStore((s) => s.role)
   const debounceMsRef = useRef(settings.autoSaveIntervalMs)
   debounceMsRef.current = settings.autoSaveIntervalMs
 
@@ -103,14 +99,41 @@ export default function AppLayout() {
   const [showCollab, setShowCollab] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
 
-  // ---- 协作导航自动打开弹窗 ----
+  // ---- 侧栏 / 命令面板 通过事件打开版本历史、P2P 协作 弹窗 ----
   useEffect(() => {
-    if (activeNavItem === 'collab') {
-      setShowCollab(true)
-      // 打开后自动切回章节视图
-      useAppStore.getState().setActiveNavItem('chapters')
+    const openHistory = () => setShowHistory(true)
+    const openCollab = () => setShowCollab(true)
+    window.addEventListener('sw:open-history', openHistory)
+    window.addEventListener('sw:open-collab', openCollab)
+    return () => {
+      window.removeEventListener('sw:open-history', openHistory)
+      window.removeEventListener('sw:open-collab', openCollab)
     }
-  }, [activeNavItem])
+  }, [])
+
+  // ---- 顶栏「测试运行」：组装工程并启动 Ren'Py 预览 ----
+  const handleTestRun = useCallback(async () => {
+    const st = useAppStore.getState()
+    if (!window.electronAPI?.renpyStageProject || !window.electronAPI?.renpyRunEngine) {
+      toast('未检测到 Ren\'Py SDK 集成', 'error')
+      return
+    }
+    const bundle = buildBundle(
+      st.draftDeltas, st.resolvedStates, st.characterConfigs, st.assets,
+      DEFAULT_POSITION_SLOTS, 'start', st.variables, st.projectMeta,
+    )
+    const stage = await window.electronAPI.renpyStageProject({ bundle, title: st.projectMeta.title })
+    if (!stage?.success) {
+      toast(`测试运行准备失败：${stage?.error ?? '未知错误'}`, 'error')
+      return
+    }
+    const res = await window.electronAPI.renpyRunEngine({ action: 'run', projectDir: stage.projectDir as string })
+    if (!res?.success) {
+      toast(`启动 Ren'Py 失败：${res?.error ?? '未知错误'}`, 'error')
+      return
+    }
+    toast('已启动 Ren\'Py 预览', 'success')
+  }, [])
 
   // ---- 自动静默备份：编辑停顿 4 分钟后自动建档（防丢稿） ----
   const autoBackupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -433,17 +456,8 @@ export default function AppLayout() {
           <Button variant="ghost" size="md" icon={<Save size={14} strokeWidth={1.75} />} onClick={handleSave}>
             保存
           </Button>
-          <Button variant="ghost" size="md" icon={<GitBranch size={14} strokeWidth={1.75} />} onClick={() => setShowHistory(true)}>
-            历史
-          </Button>
-          <Button variant="ghost" size="md" icon={<Cloud size={14} strokeWidth={1.75} />} onClick={() => setShowCollab(true)}>
-            协作
-            {collabStatus === 'connected' && collabRole === 'host' && (
-              <span className="ml-1 rounded bg-primary/20 px-1 py-px text-[10px] font-semibold text-primary">HOST</span>
-            )}
-            {collabStatus === 'connected' && collabRole === 'guest' && (
-              <span className="ml-1 rounded bg-info/20 px-1 py-px text-[10px] font-semibold text-info">ON</span>
-            )}
+          <Button variant="ghost" size="md" icon={<Play size={14} strokeWidth={1.75} />} onClick={handleTestRun}>
+            测试运行
           </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
           <Button variant="outline" size="md" icon={<FileDown size={14} strokeWidth={1.75} />} onClick={handleExport}>
@@ -580,7 +594,6 @@ export default function AppLayout() {
         {activeNavItem === 'export' && <ExportSettings />}
         {activeNavItem === 'ai' && <AIPanel />}
         {activeNavItem === 'settings' && <SettingsHub />}
-        {activeNavItem === 'theme' && <ThemeSettings />}
         {activeNavItem === 'about' && <About />}
         {activeNavItem === 'help' && <HelpCenter />}
         {activeNavItem === 'diagnostics' && <DiagnosticsPanel />}

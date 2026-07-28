@@ -70,7 +70,7 @@ function PreviewFrame({ dark, style }: { dark?: boolean; style?: CSSProperties }
  *  - 点「保存」才把草稿写入 store + localStorage，全局小数线/卡片/按钮同步变色；
  *  - 「取消」丢弃草稿，「恢复默认紫毫」一键回填默认草稿。
  */
-export default function ThemeSettings() {
+export default function ThemeSettings({ embedded = false }: { embedded?: boolean }) {
   const accentColor = useAppStore((s) => s.accentColor)
   const setAccentColor = useAppStore((s) => s.setAccentColor)
   const theme = useAppStore((s) => s.theme)
@@ -108,20 +108,8 @@ export default function ThemeSettings() {
   const revert = () => setDraft(accentColor)
   const restoreDefault = () => setDraft(DEFAULT_ACCENT)
 
-  return (
-    <div className="flex-1 overflow-auto bg-canvas">
-      <div className="p-6">
-        {/* 页头 */}
-        <header className="mb-6">
-          <div className="flex items-center gap-2">
-            <span className="signal-dot" />
-            <span className="eyebrow">Appearance</span>
-          </div>
-          <h2 className="t-h1 mt-1.5">外观与主题色</h2>
-          <p className="mt-0.5 t-subtitle">选好主色后点「保存」生效，全站按钮、链接、焦点与信号随即同步</p>
-        </header>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[420px_1fr]">
+  const content = (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[420px_1fr]">
           {/* ============ 左栏：实时预览 + 预设主题大图卡片 ============ */}
           <div className="flex flex-col gap-4">
             {/* 实时双语境预览 */}
@@ -321,6 +309,23 @@ export default function ThemeSettings() {
             </section>
           </div>
         </div>
+  )
+
+  if (embedded) {
+    return <div className="space-y-6">{content}</div>
+  }
+  return (
+    <div className="flex-1 overflow-auto bg-canvas">
+      <div className="p-6">
+        <header className="mb-6">
+          <div className="flex items-center gap-2">
+            <span className="signal-dot" />
+            <span className="eyebrow">Appearance</span>
+          </div>
+          <h2 className="t-h1 mt-1.5">外观与主题色</h2>
+          <p className="mt-0.5 t-subtitle">选好主色后点「保存」生效，全站按钮、链接、焦点与信号随即同步</p>
+        </header>
+        {content}
       </div>
     </div>
   )

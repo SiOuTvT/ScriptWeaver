@@ -2,9 +2,10 @@ import { useState, useCallback, useEffect } from 'react'
 import { useAppStore, DEFAULT_SETTINGS } from '../../stores/appStore'
 import { Button } from '@/components/ui'
 import { ClearCacheButton } from './ClearCacheButton'
+import ThemeSettings from './ThemeSettings'
 import { toast } from '../../utils/toast'
 import {
-  Settings, Palette, Key, Database, Save, RotateCcw, Eye, EyeOff, Info, ArrowRight,
+  Settings, Palette, Key, Database, Save, RotateCcw, Eye, EyeOff, Info,
 } from 'lucide-react'
 
 type SectionId = 'general' | 'appearance' | 'ai' | 'data'
@@ -83,7 +84,6 @@ function SliderRow({
 export default function SettingsHub() {
   const settings = useAppStore((s) => s.settings)
   const updateSettings = useAppStore((s) => s.updateSettings)
-  const setActiveNavItem = useAppStore((s) => s.setActiveNavItem)
 
   const [activeSection, setActiveSection] = useState<SectionId>('general')
 
@@ -225,23 +225,14 @@ export default function SettingsHub() {
           {/* ── 外观 ─────────────────────────────────── */}
           {activeSection === 'appearance' && (
             <div className="space-y-6">
-              <section>
-                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">外观</h3>
-                <div className="px-5 py-5 rounded-xl border border-edge/10 bg-surface flex items-center justify-between gap-4">
-                  <div>
-                    <div className="text-[14px] font-medium text-fg">外观主题</div>
-                    <div className="text-[12px] text-fg-muted mt-1">
-                      调整界面主色、明暗模式与主题预设，实时预览双语境效果。
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setActiveNavItem('theme')}
-                    className="shrink-0 inline-flex items-center gap-1.5"
-                  >
-                    打开外观主题 <ArrowRight size={14} />
-                  </Button>
+              <section className="space-y-4">
+                <div>
+                  <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-2">外观与主题色</h3>
+                  <p className="text-[12px] text-fg-muted">
+                    调整界面主色、明暗模式与主题预设，实时预览双语境效果（更改需点「保存」生效）。
+                  </p>
                 </div>
+                <ThemeSettings embedded />
               </section>
             </div>
           )}
