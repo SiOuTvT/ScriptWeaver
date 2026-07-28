@@ -10,7 +10,7 @@ import { useAppStore, type NavItemId } from '@/stores/appStore'
 import {
   Search, Zap, FileText, Download, Bug, Camera, Sparkles,
   BookOpen, Images, Users, Wand2, Settings, HelpCircle, Info,
-  Save, Undo2, Redo2, Sun, Play, Globe, Plus, Copy, Trash2, type LucideIcon
+  Save, Undo2, Redo2, Sun, Play, Globe, Plus, Copy, Trash2, ChevronLeft, ChevronRight, type LucideIcon
 } from 'lucide-react'
 
 interface Command {
@@ -166,6 +166,28 @@ export default function CommandPalette() {
         icon: Play,
         action: () => {
           window.dispatchEvent(new Event('sw:command-play'))
+          setOpen(false)
+        },
+        category: 'tool',
+      },
+      {
+        id: 'prev-scene', label: '切换到上一个场景',
+        keywords: ['上一步', 'prev', 'back', '上一幕'],
+        icon: ChevronLeft,
+        action: () => {
+          const st = useAppStore.getState()
+          if (st.selectedLineIndex > 0) st.selectLine(st.selectedLineIndex - 1)
+          setOpen(false)
+        },
+        category: 'tool',
+      },
+      {
+        id: 'next-scene', label: '切换到下一个场景',
+        keywords: ['下一步', 'next', 'forward', '下一幕'],
+        icon: ChevronRight,
+        action: () => {
+          const st = useAppStore.getState()
+          if (st.selectedLineIndex < st.draftDeltas.length - 1) st.selectLine(st.selectedLineIndex + 1)
           setOpen(false)
         },
         category: 'tool',
