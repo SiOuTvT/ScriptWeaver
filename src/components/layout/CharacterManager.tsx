@@ -7,7 +7,7 @@ import { toast } from '@/utils/toast'
 import { getAudioCategory } from '@/utils/assetHelpers'
 import { toggleAssetPreview, isAssetPlaying, playAudioPreview } from '@/utils/audioManager'
 import { PRESET_SLOTS } from '@/core/positionSlots'
-import type { CharacterConfig, ExpressionRef, AssetItem, AssetType } from '@/core/types'
+import type { CharacterConfig, ExpressionRef, AssetItem, AssetType, LineDelta } from '@/core/types'
 import { synthesizeVoice } from '@/utils/tts'
 import {
   Plus,
@@ -24,6 +24,7 @@ import {
   Image as ImageIcon,
   Mic,
   Loader2,
+  Wand2,
 } from 'lucide-react'
 
 const CHAR_ID_REGEX = /^[a-z][a-z0-9_]*$/
@@ -80,6 +81,38 @@ function makeAsset(f: { id: string; fileName: string; relativePath: string; type
 }
 
 // ============================ 主组件 ============================
+
+/** 将当前角色的默认缩放/槽位，一键同步到剧本中所有已放置的该角色立绘 */
+function applyDefaultToPlaced(charId: string) {
+  const st = useAppStore.getState()
+  const cfg = st.characterConfigs.find((c) => c.id === charId)
+  if (!cfg) return
+  const scale = cfg.defaultScale ?? 1
+  const slot = cfg.defaultSlot ?? 'center'
+  const updates: { index: number; updater: (prev: LineDelta) => LineDelta }[] = []
+  st.draftDeltas.forEach((d, i) => {
+    if (!d.characters) return
+    const matched = Object.values(d.characters).some((c) => c.char_id === charId)
+    if (!matched) return
+    updates.push({
+      index: i,
+      updater: (prev) => ({
+        ...prev,
+        characters: Object.fromEntries(
+          Object.entries(prev.characters ?? {}).map(([k, c]) =>
+            c.char_id === charId ? [k, { ...c, scale, position_slot: slot }] : [k, c],
+          ),
+        ),
+      }),
+    })
+  })
+  if (updates.length === 0) {
+    toast('该角色暂无已放置的立绘', 'info')
+    return
+  }
+  st.batchUpdateDeltas(updates)
+  toast(`已将默认配置应用到 ${updates.length} 处已放置立绘`, 'success')
+}
 
 export default function CharacterManager() {
   const characterConfigs = useAppStore((s) => s.characterConfigs)
@@ -709,6 +742,14 @@ export default function CharacterManager() {
                       新立绘默认站此位，已放置的立绘保持原站位
                     </p>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => applyDefaultToPlaced(selectedChar.id)}
+                    className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-signal/40 bg-signal/5 py-2 text-[13px] font-medium text-signal transition-colors hover:bg-signal/10"
+                  >
+                    <Wand2 size={14} strokeWidth={1.75} /> 将默认配置应用到已放置立绘
+                  </button>
                 </div>
 
                 {/* 右：对话框样式实时 Preview */}

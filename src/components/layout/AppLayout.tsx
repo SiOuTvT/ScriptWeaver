@@ -20,7 +20,7 @@ import Dock from './Dock'
 import OverlayDrawer from './OverlayDrawer'
 import VariableDebugger from './VariableDebugger'
 import { applyAccent } from '@/utils/themeColor'
-import { useAppStore } from '@/stores/appStore'
+import { useAppStore, createSampleLine } from '@/stores/appStore'
 import { downloadRpy } from '@/utils/rpyExporter'
 import { saveDraft, loadDraft, clearDraft } from '@/utils/draftStorage'
 import { deserializeProject, restoreProjectFromJson, serializeProject } from '@/utils/projectFile'
@@ -267,9 +267,11 @@ export default function AppLayout() {
     clearDraft()
     // 3) 清空 store
     newProject()
+    // 3.5) 注入一行示例旁白，给新项目一个明确起点（不依赖任何角色/素材）
+    useAppStore.getState().insertDeltaAt(0, createSampleLine())
     // 4) 新项目无根目录：停止监听、清空协议根
     window.electronAPI?.setActiveProjectRoot?.(null)
-    toast('项目数据已清除，可从草稿框开始新创作', 'info')
+    toast('已创建新项目，从示例旁白开始你的创作', 'info')
   }, [newProject])
 
   const handleSave = async () => {

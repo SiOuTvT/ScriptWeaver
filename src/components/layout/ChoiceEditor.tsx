@@ -56,9 +56,10 @@ export default function ChoiceEditor({ embedded = false }: { embedded?: boolean 
   }
 
   const addChoice = () => {
+    // 预填占位文本，给出明确起点，用户直接替换即可（输入框另有格式 placeholder）
     const next: ChoiceItem[] = [
       ...choices,
-      { uid: genChoiceUid(), text: '', target_label: '', condition: '' },
+      { uid: genChoiceUid(), text: `选项 ${choices.length + 1}`, target_label: '', condition: '' },
     ]
     commitChoices(next)
   }

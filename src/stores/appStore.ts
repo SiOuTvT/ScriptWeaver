@@ -49,6 +49,23 @@ function createEmptyDelta(nextId: string, lineType: LineType = 'dialogue'): Line
   }
 }
 
+/**
+ * 新建项目时注入的一行示例旁白，给用户一个明确的起点。
+ * 保持纯净：不依赖任何角色 / 素材；首次打开走 initialState（仍为空），
+ * 仅当用户主动「新建」时由 UI 注入，不动 newProject 本身以免破坏测试。
+ */
+export function createSampleLine(): LineDelta {
+  return {
+    line_id: 'L1',
+    speaker: null,
+    dialogue: '在这里写下你的第一句旁白，或拖入立绘与背景开始创作。',
+    background: null,
+    characters: {},
+    audio: { bgm: null, ambient: null, se: [], voice: null },
+    line_type: 'narration',
+  }
+}
+
 // ==================== 撤销/重做 快照 ====================
 
 interface HistorySnapshot {
