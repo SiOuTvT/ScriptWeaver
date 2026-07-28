@@ -660,15 +660,15 @@ export default function HelpCenter() {
             {/* Links */}
             {topic.links && topic.links.length > 0 && (
               <div className="mt-10 pt-6 border-t border-edge/10">
-                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-3">相关链接</h3>
+                <h3 className="text-[13px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-3">相关链接</h3>
                 <div className="flex flex-wrap gap-2">
                   {topic.links.map((link) => (
                     <button
                       key={link.label}
                       onClick={() => openExternal(link.url)}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-muted hover:text-fg hover:border-edge/20 transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[14px] text-fg-muted hover:text-fg hover:border-edge/20 transition-colors"
                     >
-                      <ExternalLink size={12} />
+                      <ExternalLink size={13} />
                       {link.label}
                     </button>
                   ))}
@@ -679,30 +679,30 @@ export default function HelpCenter() {
             {/* Feedback — 简洁区块 */}
             <div className="mt-12 pt-6 border-t border-edge/10">
               <div className="flex items-center gap-3 mb-3">
-                <MessageCircle size={17} className="text-primary" />
-                <span className="text-[14px] font-medium text-fg">还有问题？</span>
+                <MessageCircle size={18} className="text-primary" />
+                <span className="text-[15px] font-medium text-fg">还有问题？</span>
               </div>
-              <p className="text-[13px] text-fg-subtle mb-4">直接到 GitHub 反馈，我们会持续跟进。</p>
+              <p className="text-[14px] text-fg-subtle mb-4">直接到 GitHub 反馈，我们会持续跟进。</p>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => openExternal(GITHUB_LINKS.newBug)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[14px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
                 >
-                  <Bug size={14} className="text-rose-400" />
+                  <Bug size={15} className="text-rose-400" />
                   报告 Bug
                 </button>
                 <button
                   onClick={() => openExternal(GITHUB_LINKS.newFeature)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[14px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
                 >
-                  <Heart size={14} className="text-violet-400" />
+                  <Heart size={15} className="text-violet-400" />
                   功能建议
                 </button>
                 <button
                   onClick={() => openExternal(GITHUB_LINKS.issues)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface-2 px-3 py-2 text-[14px] text-fg-subtle hover:text-fg hover:border-edge/20 transition-colors"
                 >
-                  <MessageCircle size={14} className="text-sky-400" />
+                  <MessageCircle size={15} className="text-sky-400" />
                   反馈与建议
                 </button>
               </div>
@@ -714,7 +714,7 @@ export default function HelpCenter() {
       {/* ====== Right TOC: On this page 悬浮导航 ====== */}
       <div className="w-[180px] shrink-0 border-l border-edge/10 overflow-y-auto">
         <div className="sticky top-0 px-3 py-5">
-          <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-3 px-1">
+          <div className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-3 px-1">
             页面目录
           </div>
           <nav className="space-y-0.5">
@@ -724,7 +724,7 @@ export default function HelpCenter() {
                 <button
                   key={s.id}
                   onClick={() => scrollToSection(s.id)}
-                  className={`w-full text-left pl-3 pr-2 py-1.5 text-[12px] rounded-md transition-colors border-l-2 truncate ${
+                  className={`w-full text-left pl-3 pr-2 py-1.5 text-[13px] rounded-md transition-colors border-l-2 truncate ${
                     isActive
                       ? 'text-primary border-primary bg-primary/[0.04] font-medium'
                       : 'text-fg-muted border-transparent hover:text-fg hover:border-edge/20 hover:bg-surface-2/60'
@@ -756,15 +756,15 @@ function renderMarkdown(md: string): React.ReactNode {
 
     // Heading
     if (line.startsWith('### ')) {
-      elements.push(<h3 key={key++} className="text-[13px] font-medium text-fg mt-4 mb-2">{line.slice(4)}</h3>)
+      elements.push(<h3 key={key++} className="text-[14px] font-medium text-fg mt-4 mb-2">{line.slice(4)}</h3>)
       i++; continue
     }
     if (line.startsWith('## ')) {
-      elements.push(<h2 key={key++} className="text-[14px] font-medium text-fg mt-4 mb-2">{line.slice(3)}</h2>)
+      elements.push(<h2 key={key++} className="text-[15px] font-medium text-fg mt-4 mb-2">{line.slice(3)}</h2>)
       i++; continue
     }
     if (line.startsWith('# ')) {
-      elements.push(<h1 key={key++} className="text-[15px] font-semibold text-fg mt-4 mb-2">{line.slice(2)}</h1>)
+      elements.push(<h1 key={key++} className="text-[16px] font-semibold text-fg mt-4 mb-2">{line.slice(2)}</h1>)
       i++; continue
     }
 
@@ -778,7 +778,7 @@ function renderMarkdown(md: string): React.ReactNode {
       const rows = tableLines.slice(2).map((r) => r.split('|').filter(Boolean).map((c) => c.trim()))
       elements.push(
         <div key={key++} className="overflow-x-auto my-3 rounded-lg border border-edge/10">
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[13px]">
             <thead>
               <tr className="bg-surface-2/60">
                 {headerCells.map((c, ci) => (
@@ -810,7 +810,7 @@ function renderMarkdown(md: string): React.ReactNode {
       }
       i++
       elements.push(
-        <pre key={key++} className="bg-surface-2/80 rounded-lg border border-edge/10 p-3 my-3 overflow-x-auto text-[12px] font-mono text-fg-muted whitespace-pre-wrap">
+        <pre key={key++} className="bg-surface-2/80 rounded-lg border border-edge/10 p-3 my-3 overflow-x-auto text-[13px] font-mono text-fg-muted whitespace-pre-wrap">
           {codeLines.join('\n')}
         </pre>
       )
@@ -824,7 +824,7 @@ function renderMarkdown(md: string): React.ReactNode {
         items.push(lines[i].replace(/^[\*\-\d]\.?\s/, '')); i++
       }
       elements.push(
-        <ul key={key++} className="list-disc list-inside my-2 space-y-1 text-[13px] text-fg leading-relaxed">
+        <ul key={key++} className="list-disc list-inside my-2 space-y-1 text-[14px] text-fg leading-relaxed">
           {items.map((item, ii) => <li key={ii}>{renderInlineMarkdown(item)}</li>)}
         </ul>
       )
@@ -833,12 +833,12 @@ function renderMarkdown(md: string): React.ReactNode {
 
     // Paragraph
     elements.push(
-      <p key={key++} className="text-[13px] text-fg leading-relaxed my-2">{renderInlineMarkdown(line)}</p>
+      <p key={key++} className="text-[14px] text-fg leading-relaxed my-2">{renderInlineMarkdown(line)}</p>
     )
     i++
   }
 
-  return elements.length > 0 ? elements : <p className="text-[13px] text-fg-muted italic">暂无内容</p>
+  return elements.length > 0 ? elements : <p className="text-[14px] text-fg-muted italic">暂无内容</p>
 }
 
 function renderInlineMarkdown(text: string): React.ReactNode {
@@ -850,7 +850,7 @@ function renderInlineMarkdown(text: string): React.ReactNode {
     const codeParts = part.split(/(`[^`]+`)/g)
     return codeParts.map((cp, j) => {
       if (cp.startsWith('`') && cp.endsWith('`')) {
-        return <code key={j} className="font-mono text-[12px] bg-surface-2/80 px-1 rounded">{cp.slice(1, -1)}</code>
+        return <code key={j} className="font-mono text-[13px] bg-surface-2/80 px-1 rounded">{cp.slice(1, -1)}</code>
       }
       return cp
     })
