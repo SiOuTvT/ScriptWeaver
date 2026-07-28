@@ -10,7 +10,8 @@ import { useAppStore, type NavItemId } from '@/stores/appStore'
 import {
   Search, Zap, FileText, Download, Bug, Camera, Sparkles, Code, History, Cloud,
   BookOpen, Images, Users, Wand2, Settings, HelpCircle, Info,
-  Save, Undo2, Redo2, Sun, Play, Globe, Plus, Copy, Trash2, ChevronLeft, ChevronRight, type LucideIcon
+  Save, Undo2, Redo2, Sun, Play, Globe, Plus, Copy, Trash2, ChevronLeft, ChevronRight,
+  FilePlus2, FolderOpen, type LucideIcon
 } from 'lucide-react'
 
 interface Command {
@@ -44,6 +45,8 @@ export default function CommandPalette() {
       { id: 'export', label: '导出设置' },
       { id: 'exporter', label: '多格式导出' },
       { id: 'renpy-hub', label: 'Ren\'Py 生态' },
+      { id: 'templates', label: '从模板新建' },
+      { id: 'import-rpy', label: '导入 Ren\'Py 工程' },
       { id: 'diagnostics', label: '工程体检' },
       { id: 'audit-log', label: '协作日志' },
       { id: 'settings', label: '设置中心' },
@@ -167,6 +170,20 @@ export default function CommandPalette() {
         keywords: ['collab', '协作', '多人'],
         icon: Cloud,
         action: () => { window.dispatchEvent(new Event('sw:open-collab')); setOpen(false) },
+        category: 'tool',
+      },
+      {
+        id: 'open-templates', label: '从模板新建项目',
+        keywords: ['template', '模板', '新建'],
+        icon: FilePlus2,
+        action: () => { window.dispatchEvent(new Event('sw:open-templates')); setOpen(false) },
+        category: 'tool',
+      },
+      {
+        id: 'open-import-rpy', label: '导入 Ren\'Py 工程',
+        keywords: ['import', '导入', 'renpy'],
+        icon: FolderOpen,
+        action: () => { window.dispatchEvent(new Event('sw:open-import-rpy')); setOpen(false) },
         category: 'tool',
       },
       {

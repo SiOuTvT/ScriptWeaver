@@ -217,6 +217,7 @@ interface AppState {
   setProjectRoot: (root: string | null) => void
   setAssets: (assets: AssetItem[]) => void
   setCharacterConfigs: (configs: CharacterConfig[]) => void
+  setVariables: (vars: GlobalVariable[]) => void
   /** 释放当前全部素材的临时 blob URL（应用卸载 / 页面关闭时调用，防内存泄漏） */
   disposeAllBlobs: () => void
 
@@ -518,6 +519,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   setCharacterConfigs: (configs) => {
     get()._pushHistory()
     set({ characterConfigs: configs })
+  },
+
+  setVariables: (vars) => {
+    get()._pushHistory()
+    set({ variables: vars })
   },
 
   disposeAllBlobs: () => {

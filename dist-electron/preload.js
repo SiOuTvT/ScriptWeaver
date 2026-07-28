@@ -50,6 +50,13 @@ const api = {
   evictAssetCache: (relativePath) => electron.ipcRenderer.invoke("fs:evictAssetCache", relativePath),
   /** 按需从云端地址重新下载素材到会话目录 */
   downloadAsset: (remoteUrl, relativePath) => electron.ipcRenderer.invoke("fs:downloadAsset", remoteUrl, relativePath),
+  /** 选择目录 */
+  selectDirectory: () => electron.ipcRenderer.invoke("dialog:selectDirectory"),
+  /** 文件系统基础操作（用于导入 Ren'Py 工程） */
+  fs: {
+    readdir: (dirPath) => electron.ipcRenderer.invoke("fs:readdir", dirPath),
+    readFile: (filePath, encoding) => electron.ipcRenderer.invoke("fs:readFile", filePath, encoding)
+  },
   /** 保存项目：选目录 → 复制素材 → 写 .swproj */
   saveProject: (data) => electron.ipcRenderer.invoke("dialog:saveProject", data),
   /** 静默保存：直接写入已知项目目录，不弹对话框（自动保存用） */

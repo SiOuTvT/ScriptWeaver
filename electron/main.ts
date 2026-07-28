@@ -1509,3 +1509,27 @@ ipcMain.handle('fs:downloadAsset', async (_event, remoteUrl: string, relativePat
     return { success: false, error: (err as Error).message }
   }
 })
+
+// --------------- 目录选择与文件读写（用于导入 Ren'Py 工程）---------------
+ipcMain.handle('dialog:selectDirectory', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+    title: '选择 Ren'Py 工程目录',
+  })
+  if (canceled || filePaths.length === 0) return { cancelled: true }
+  return { path: filePaths[0] }
+})
+
+ipcMain.handle('fs:readdir', async (_event, dirPath: string) => {
+  try {
+    const files = await fs.promises.readdir(dirPath)
+    return files
+  } catch {
+    return []
+  }
+})
+
+ipcMain.handle('fs:readFile', async (_event, filePath: string, encoding: string) => {
+  const buf = await fs.promises.readFile(filePath)
+  return buf.toString(encoding as BufferEncoding || 'utf-8')
+})

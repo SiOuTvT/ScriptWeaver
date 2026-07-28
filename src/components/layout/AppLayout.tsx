@@ -38,6 +38,8 @@ import RenPyEcosystemHub from './RenPyEcosystemHub'
 import ScriptTextPanel from './ScriptTextPanel'
 import CollabPanel from './CollabPanel'
 import AuditLogHub from './AuditLogHub'
+import TemplatePicker from './TemplatePicker'
+import RpyImportDialog from './RpyImportDialog'
 
 /**
  * 合并磁盘扫描出的素材：仅新增库中尚未存在（按 relativePath 去重）的文件，
@@ -97,17 +99,25 @@ export default function AppLayout() {
   const [showNewConfirm, setShowNewConfirm] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showCollab, setShowCollab] = useState(false)
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [showRpyImport, setShowRpyImport] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
 
-  // ---- 侧栏 / 命令面板 通过事件打开版本历史、P2P 协作 弹窗 ----
+  // ---- 侧栏 / 命令面板 通过事件打开弹窗 ----
   useEffect(() => {
     const openHistory = () => setShowHistory(true)
     const openCollab = () => setShowCollab(true)
+    const openTemplates = () => setShowTemplates(true)
+    const openRpyImport = () => setShowRpyImport(true)
     window.addEventListener('sw:open-history', openHistory)
     window.addEventListener('sw:open-collab', openCollab)
+    window.addEventListener('sw:open-templates', openTemplates)
+    window.addEventListener('sw:open-import-rpy', openRpyImport)
     return () => {
       window.removeEventListener('sw:open-history', openHistory)
       window.removeEventListener('sw:open-collab', openCollab)
+      window.removeEventListener('sw:open-templates', openTemplates)
+      window.removeEventListener('sw:open-import-rpy', openRpyImport)
     }
   }, [])
 
@@ -649,6 +659,49 @@ export default function AppLayout() {
 
       {/* ===== 协作空间（邀请码 / 多端协同脚手架） ===== */}
       {showCollab && <CollabPanel open={showCollab} onClose={() => setShowCollab(false)} />}
+
+      {/* ===== 项目模板选择器 ===== */}
+      {showTemplates && (
+        <TemplatePicker
+          onClose={() => setShowTemplates(false)}
+          onSelect={(template) => {
+            setShowTemplates(false)
+            const st = useAppStore.getState()
+            st.setDraftDeltas(template.deltas)
+            st.setCharacterConfigs(template.characters)
+            st.setVariables(template.variables)
+            toast(`已加载模板「${template.name}」`, 'success')
+          }}
+        />
+      )}
+
+      {/* ===== Ren'Py 工程导入 ===== */}
+      {showRpyImport && (
+        <RpyImportDialog
+          onClose={() => setShowRpyImport(false)}
+          onImport={(result) => {
+            setShowRpyImport(false)
+            const st = useAppStore.getState()
+            // 合并已有行（追加模式）
+            const merged = [...st.draftDeltas, ...result.deltas]
+            st.setDraftDeltas(merged)
+            // 合并角色
+            const existingChars = new Set(st.characterConfigs.map((c) => c.variableName))
+            const newChars = result.characters.filter((c) => !existingChars.has(c.variableName))
+            if (newChars.length > 0) st.setCharacterConfigs([...st.characterConfigs, ...newChars])
+            // 合并变量
+            const existingVars = new Set(st.variables.map((v) => v.name))
+            const newVars = result.variables.filter((v) => !existingVars.has(v.name))
+            if (newVars.length > 0) st.setVariables([...st.variables, ...newVars])
+            // 警告
+            if (result.warnings.length > 0) {
+              toast(`导入完成（${result.deltas.length} 行，${result.warnings.length} 条警告）`, 'warning')
+            } else {
+              toast(`已导入 ${result.deltas.length} 行剧本`, 'success')
+            }
+          }}
+        />
+      )}
 
       {/* ===== 全局命令面板（Ctrl+K） ===== */}
       <CommandPalette />

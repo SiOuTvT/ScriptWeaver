@@ -107,6 +107,16 @@ const api = {
   downloadAsset: (remoteUrl: string, relativePath: string): Promise<{ success: boolean; bytes?: number; error?: string }> =>
     ipcRenderer.invoke('fs:downloadAsset', remoteUrl, relativePath),
 
+  /** 选择目录 */
+  selectDirectory: (): Promise<{ path?: string; cancelled?: boolean }> =>
+    ipcRenderer.invoke('dialog:selectDirectory'),
+
+  /** 文件系统基础操作（用于导入 Ren'Py 工程） */
+  fs: {
+    readdir: (dirPath: string): Promise<string[]> => ipcRenderer.invoke('fs:readdir', dirPath),
+    readFile: (filePath: string, encoding: string): Promise<string> => ipcRenderer.invoke('fs:readFile', filePath, encoding),
+  },
+
 
   /** 保存项目：选目录 → 复制素材 → 写 .swproj */
   saveProject: (data: {

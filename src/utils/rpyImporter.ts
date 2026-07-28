@@ -31,7 +31,7 @@ export function parseRpySource(source: string): RpyImportResult {
   const vars: { name: string; value: string }[] = []
   const st: ParseState = { inMenu: false, menuChoices: [], menuTargets: [], inPython: false, indent: 0, lineIdx: 0, warnings: [] }
 
-  const emit = (d: LineDelta) => { d._sourceLine = st.lineIdx + 1; deltas.push(d) }
+  const emit = (d: LineDelta) => { deltas.push(d) }
 
   for (st.lineIdx = 0; st.lineIdx < lines.length; st.lineIdx++) {
     const raw = lines[st.lineIdx]

@@ -2,7 +2,7 @@ import { useAppStore } from '@/stores/appStore'
 import {
   BookOpen, FileText, Images, Users, Download, Sparkles, Wand2, Info, HelpCircle, Settings,
   ChevronLeft, ChevronRight, Stethoscope, FileDown, Globe, Cloud, History, Code, ScrollText,
-  ChevronDown,
+  ChevronDown, FilePlus2, FolderOpen,
 } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
@@ -48,24 +48,32 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: '工程与协作',
     items: [
-      { id: 'diagnostics', label: '工程体检', code: '11', icon: <Stethoscope size={18} strokeWidth={1.75} /> },
       {
-        id: 'history', label: '版本历史', code: '12', icon: <History size={18} strokeWidth={1.75} />,
+        id: 'templates', label: '从模板新建', code: '11', icon: <FilePlus2 size={18} strokeWidth={1.75} />,
+        action: () => window.dispatchEvent(new Event('sw:open-templates')),
+      },
+      {
+        id: 'import-rpy', label: '导入 Ren\'Py 工程', code: '12', icon: <FolderOpen size={18} strokeWidth={1.75} />,
+        action: () => window.dispatchEvent(new Event('sw:open-import-rpy')),
+      },
+      { id: 'diagnostics', label: '工程体检', code: '13', icon: <Stethoscope size={18} strokeWidth={1.75} /> },
+      {
+        id: 'history', label: '版本历史', code: '14', icon: <History size={18} strokeWidth={1.75} />,
         action: () => window.dispatchEvent(new Event('sw:open-history')),
       },
       {
-        id: 'collab', label: 'P2P 协作', code: '13', icon: <Cloud size={18} strokeWidth={1.75} />,
+        id: 'collab', label: 'P2P 协作', code: '15', icon: <Cloud size={18} strokeWidth={1.75} />,
         action: () => window.dispatchEvent(new Event('sw:open-collab')),
       },
-      { id: 'audit-log', label: '协作日志', code: '14', icon: <ScrollText size={18} strokeWidth={1.75} /> },
+      { id: 'audit-log', label: '协作日志', code: '16', icon: <ScrollText size={18} strokeWidth={1.75} /> },
     ],
   },
   {
     title: '设置与帮助',
     items: [
-      { id: 'settings', label: '设置中心', code: '15', icon: <Settings size={18} strokeWidth={1.75} /> },
-      { id: 'help', label: '帮助与社区大厅', code: '16', icon: <HelpCircle size={18} strokeWidth={1.75} /> },
-      { id: 'about', label: '关于', code: '17', icon: <Info size={18} strokeWidth={1.75} /> },
+      { id: 'settings', label: '设置中心', code: '17', icon: <Settings size={18} strokeWidth={1.75} /> },
+      { id: 'help', label: '帮助与社区大厅', code: '18', icon: <HelpCircle size={18} strokeWidth={1.75} /> },
+      { id: 'about', label: '关于', code: '19', icon: <Info size={18} strokeWidth={1.75} /> },
     ],
   },
 ]

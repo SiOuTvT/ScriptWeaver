@@ -160,6 +160,15 @@ interface ElectronAPI {
   /** 按需从云端地址重新下载素材到会话目录 */
   downloadAsset: (remoteUrl: string, relativePath: string) => Promise<{ success: boolean; bytes?: number; error?: string }>
 
+  /** 选择目录（返回路径） */
+  selectDirectory: () => Promise<{ path?: string; cancelled?: boolean }>
+
+  /** 文件系统基础操作（用于导入 Ren'Py 工程） */
+  fs: {
+    readdir: (dirPath: string) => Promise<string[]>
+    readFile: (filePath: string, encoding: string) => Promise<string>
+  }
+
   on: (channel: string, callback: (...args: unknown[]) => void) => void
   off: (channel: string, callback: (...args: unknown[]) => void) => void
 }
