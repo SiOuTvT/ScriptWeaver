@@ -292,8 +292,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   // ---- 场景画布比例（默认 16:9） ----
   canvasRatio: { w: 16, h: 9 },
 
-  // ---- 游戏元信息（默认标题，封面/图标可选） ----
-  projectMeta: { title: 'My Visual Novel' },
+  // ---- 游戏元信息（默认标题，封面/图标可选，结局画面默认开启） ----
+  projectMeta: { title: 'My Visual Novel', endingEnabled: true, endingText: 'The End' },
 
   // ---- 全局应用设置 ----
   settings: loadSettings(),
@@ -500,7 +500,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       assets: data.assets ?? [],
       characterConfigs: data.characterConfigs ?? [],
       variables: data.variables ?? [],
-      projectMeta: data.projectMeta ?? { title: 'My Visual Novel' },
+      projectMeta: data.projectMeta ?? { title: 'My Visual Novel', endingEnabled: true, endingText: 'The End' },
       projectRoot: data.projectRoot,
       selectedLineIndex: 0,
       _history: [],

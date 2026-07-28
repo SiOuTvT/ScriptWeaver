@@ -465,6 +465,46 @@ export default function ExportSettings() {
             </select>
             <p className="mt-1 text-[11px] text-fg-faint">导出为根目录 icon.ico；Windows 打包为 .exe 图标建议使用真实 .ico 文件</p>
           </div>
+
+          {/* 结局画面 */}
+          <div className="mt-5 border-t border-edge/8 pt-4">
+            <Switch
+              checked={!!projectMeta.endingEnabled}
+              onChange={() => setProjectMeta({ endingEnabled: !projectMeta.endingEnabled })}
+              label="结局画面"
+              hint="剧情跑完退回主菜单前，定格展示一段「The End」字幕"
+            />
+
+            {!!projectMeta.endingEnabled && (
+              <div className="mt-3 space-y-4">
+                <div>
+                  <label className="label">结局背景（可选）</label>
+                  <select
+                    className="input mt-1 w-full"
+                    value={projectMeta.endingAssetId ?? ''}
+                    onChange={(e) => setProjectMeta({ endingAssetId: e.target.value || undefined })}
+                  >
+                    <option value="">使用当前场景画面</option>
+                    {assets.filter((a) => a.type === 'background').map((a) => (
+                      <option key={a.id} value={a.id}>{a.fileName}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-fg-faint">选一张背景图铺满结局画面；不选则叠在最后一幕场景之上</p>
+                </div>
+
+                <div>
+                  <label className="label">结局文字</label>
+                  <input
+                    className="input mt-1 w-full"
+                    value={projectMeta.endingText ?? 'The End'}
+                    onChange={(e) => setProjectMeta({ endingText: e.target.value })}
+                    placeholder="The End"
+                  />
+                  <p className="mt-1 text-[11px] text-fg-faint">居中显示的大字，可改成「完」「终章」等</p>
+                </div>
+              </div>
+            )}
+          </div>
         </section>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">

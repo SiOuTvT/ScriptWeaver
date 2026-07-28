@@ -349,7 +349,7 @@ export interface LineDelta {
 
 // --------------- 项目文件格式 ---------------
 
-/** 游戏元信息：导出 Ren'Py 时的窗口标题 / 标题画面封面 / 游戏图标 */
+/** 游戏元信息：导出 Ren'Py 时的窗口标题 / 标题画面封面 / 游戏图标 / 结局画面 */
 export interface ProjectMeta {
   /** 游戏名称：作为窗口标题(config.window_title)、关于页名(config.name)、打包名(build.name) */
   title: string
@@ -357,6 +357,12 @@ export interface ProjectMeta {
   coverAssetId?: string
   /** 游戏图标素材 id，可选；导出时拷贝为根目录 icon.ico（Windows 打包建议提供 .ico） */
   iconAssetId?: string
+  /** 是否启用结局画面：剧情跑完返回主菜单前展示「The End」字样（可选背景） */
+  endingEnabled?: boolean
+  /** 结局画面背景图素材 id，可选；不设置则仅显示文字于当前场景之上 */
+  endingAssetId?: string
+  /** 结局画面文字，默认「The End」 */
+  endingText?: string
 }
 
 export interface ProjectFile {
