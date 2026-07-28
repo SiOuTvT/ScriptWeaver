@@ -1,7 +1,0 @@
-src/components/layout/CharacterManager.tsx(88,49): error TS2339: Property 'id' does not exist on type 'CharacterConfig'.
-src/components/layout/CharacterManager.tsx(748,70): error TS2339: Property 'id' does not exist on type 'CharacterConfig'.
-src/components/layout/ExportSettings.tsx(257,70): error TS2304: Cannot find name 'projectTitle'.
-src/components/layout/ExportSettings.tsx(344,47): error TS2304: Cannot find name 'projectTitle'.
-src/components/layout/ExportSettings.tsx(462,87): error TS2367: This comparison appears to be unintentional because the types '"audio"' and '"image"' have no overlap.
-src/stores/appStore.ts(65,5): error TS2322: Type '"narration"' is not assignable to type 'LineType | undefined'.
-src/stores/appStore.ts(502,25): error TS2339: Property 'projectMeta' does not exist on type '{ deltas: LineDelta[]; assets: AssetItem[]; characterConfigs: CharacterConfig[]; variables?: GlobalVariable[] | undefined; projectRoot: string | null; }'.

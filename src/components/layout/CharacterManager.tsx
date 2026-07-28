@@ -85,7 +85,7 @@ function makeAsset(f: { id: string; fileName: string; relativePath: string; type
 /** 将当前角色的默认缩放/槽位，一键同步到剧本中所有已放置的该角色立绘 */
 function applyDefaultToPlaced(charId: string) {
   const st = useAppStore.getState()
-  const cfg = st.characterConfigs.find((c) => c.id === charId)
+  const cfg = st.characterConfigs.find((c) => c.charId === charId)
   if (!cfg) return
   const scale = cfg.defaultScale ?? 1
   const slot = cfg.defaultSlot ?? 'center'
@@ -745,7 +745,7 @@ export default function CharacterManager() {
 
                   <button
                     type="button"
-                    onClick={() => applyDefaultToPlaced(selectedChar.id)}
+                    onClick={() => applyDefaultToPlaced(selectedChar.charId)}
                     className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-signal/40 bg-signal/5 py-2 text-[13px] font-medium text-signal transition-colors hover:bg-signal/10"
                   >
                     <Wand2 size={14} strokeWidth={1.75} /> 将默认配置应用到已放置立绘

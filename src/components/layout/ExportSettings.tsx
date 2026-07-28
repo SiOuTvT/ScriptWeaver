@@ -254,7 +254,7 @@ export default function ExportSettings() {
       setPackageResult({ ok: false, message: res.error || '导出失败' })
       setStage((s) => ({ ...s, pack: 'error' }))
     }
-  }, [draftDeltas, characterConfigs, assets, variables, canvasRatio, projectTitle])
+  }, [draftDeltas, characterConfigs, assets, variables, canvasRatio, projectMeta])
 
   // --------------- Ren'Py 引擎对接 ---------------
   const [sdkDetecting, setSdkDetecting] = useState(true)
@@ -341,7 +341,7 @@ export default function ExportSettings() {
         setEngineBusy(false)
       }
     },
-    [engineBusy, draftDeltas, resolvedStates, projectTitle, manualSdk],
+    [engineBusy, draftDeltas, resolvedStates, projectMeta, manualSdk],
   )
 
   // --------------- 多语言翻译导出 ---------------
@@ -459,7 +459,7 @@ export default function ExportSettings() {
               onChange={(e) => setProjectMeta({ iconAssetId: e.target.value || undefined })}
             >
               <option value="">不设置（使用 Ren'Py 默认图标）</option>
-              {assets.filter((a) => a.type === 'background' || a.type === 'sprite' || a.type === 'image').map((a) => (
+              {assets.filter((a) => a.type === 'background' || a.type === 'sprite').map((a) => (
                 <option key={a.id} value={a.id}>{a.fileName}</option>
               ))}
             </select>

@@ -62,7 +62,7 @@ export function createSampleLine(): LineDelta {
     background: null,
     characters: {},
     audio: { bgm: null, ambient: null, se: [], voice: null },
-    line_type: 'narration',
+    line_type: 'dialogue',
   }
 }
 
@@ -211,6 +211,7 @@ interface AppState {
     assets: AssetItem[]
     characterConfigs: CharacterConfig[]
     variables?: GlobalVariable[]
+    projectMeta?: ProjectMeta
     projectRoot: string | null
   }) => void
   setProjectRoot: (root: string | null) => void
