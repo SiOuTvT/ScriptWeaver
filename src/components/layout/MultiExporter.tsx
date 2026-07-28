@@ -104,7 +104,7 @@ export default function MultiExporter() {
                       <button
                         key={opt.id}
                         onClick={() => setFormat(opt.id)}
-                        className={`w-full text-left rounded-lg border px-4 py-3 transition-colors ${
+                        className={`w-full text-left rounded-xl border px-4 py-3 transition-all duration-200 hover:shadow-2 ${
                           active
                             ? 'border-primary/30 bg-primary/5 ring-1 ring-primary/10'
                             : 'border-edge/10 bg-surface hover:border-primary/15 hover:bg-surface-hover/40'
@@ -131,7 +131,7 @@ export default function MultiExporter() {
                 <select
                   value={filterChar}
                   onChange={(e) => setFilterChar(e.target.value)}
-                  className="w-full rounded-lg border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  className="w-full rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
                 >
                   <option value="">全部角色</option>
                   {characters.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -149,7 +149,7 @@ export default function MultiExporter() {
                     { label: '对白行', value: stats.dialogueLines },
                     { label: '选择支', value: stats.choiceLines },
                   ].map((s) => (
-                    <div key={s.label} className="rounded-lg border border-edge/10 bg-surface-2/60 px-3 py-2.5">
+                    <div key={s.label} className="rounded-xl border border-edge/10 bg-surface-2 px-3 py-2.5 shadow-1">
                       <div className="text-[11px] text-fg-faint">{s.label}</div>
                       <div className="text-[18px] font-semibold text-fg mt-0.5">{s.value}</div>
                     </div>
@@ -168,11 +168,11 @@ export default function MultiExporter() {
                 {filterChar && <span className="text-primary">· {filterChar}</span>}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={handleCopy} className="inline-flex items-center gap-1.5 rounded-lg border border-edge/10 bg-surface px-3 py-1.5 text-[12px] text-fg-muted hover:text-fg hover:border-primary/20 transition-colors">
+                <button onClick={handleCopy} className="inline-flex items-center gap-1.5 rounded-xl border border-edge/10 bg-surface px-3 py-1.5 text-[12px] text-fg-muted hover:text-fg hover:border-primary/20 transition-colors">
                   {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
                   {copied ? '已复制' : '复制'}
                 </button>
-                <button onClick={handleDownload} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 hover:bg-primary/15 px-3 py-1.5 text-[12px] text-primary transition-colors">
+                <button onClick={handleDownload} className="inline-flex items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/10 hover:bg-primary/15 px-3 py-1.5 text-[12px] text-primary transition-colors">
                   <Download size={13} />
                   下载
                 </button>

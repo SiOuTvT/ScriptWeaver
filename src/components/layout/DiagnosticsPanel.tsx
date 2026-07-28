@@ -54,7 +54,7 @@ export default function DiagnosticsPanel() {
             <h1 className="text-[15px] font-semibold text-fg">工程体检</h1>
             <p className="mt-0.5 text-[12px] text-fg-muted">自动扫描剧本中的跳转断裂、缺素材、分支孤岛等问题</p>
           </div>
-          <div className="inline-flex items-center gap-1 rounded-lg border border-edge/10 bg-surface px-3 py-1.5 text-[12px] text-fg-muted">
+          <div className="inline-flex items-center gap-1 rounded-xl border border-edge/10 bg-surface-2 px-3 py-1.5 text-[12px] text-fg-muted shadow-1">
             <Zap size={13} />
             已扫描
           </div>
@@ -75,7 +75,7 @@ export default function DiagnosticsPanel() {
             return (
               <div
                 key={s.label}
-                className={`rounded-lg border px-4 py-3.5 ${
+                className={`rounded-xl border bg-surface-2 px-4 py-3 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 ${
                   isHealthy
                     ? 'border-emerald-500/20 bg-emerald-500/5'
                     : 'border-edge/10 bg-surface'
@@ -148,7 +148,7 @@ export default function DiagnosticsPanel() {
               return (
                 <div
                   key={item.id}
-                  className={`rounded-lg border px-4 py-3 transition-colors cursor-pointer ${cfg.bg} ${cfg.border} ${canJump ? 'hover:border-primary/25 hover:bg-surface-hover/30' : ''}`}
+                  className={`rounded-xl border px-4 py-3 transition-all duration-200 hover:shadow-2 cursor-pointer ${cfg.bg} ${cfg.border} ${canJump ? 'hover:border-primary/25 hover:bg-surface-hover/30 hover:-translate-y-0.5' : ''}`}
                   onClick={() => canJump && handleJump(item)}
                 >
                   <div className="flex items-start gap-3">

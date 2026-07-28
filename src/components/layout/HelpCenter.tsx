@@ -633,7 +633,7 @@ export default function HelpCenter() {
 
         {/* Scrollable content area */}
         <div ref={contentRef} className="flex-1 overflow-y-auto">
-          <div className="max-w-[680px] mx-auto px-8 py-8">
+          <div className="px-8 py-8">
             {/* Topic Title */}
             <div className="mb-8 pb-6 border-b border-edge/10">
               <div className="flex items-center gap-2.5 mb-2">

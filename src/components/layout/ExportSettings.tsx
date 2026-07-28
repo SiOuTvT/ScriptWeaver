@@ -662,13 +662,13 @@ export default function ExportSettings() {
             <p className="mb-4 t-subtitle">标记关键画面的素材为 CG 收藏卡，导出的 options.rpy 将生成画廊界面供玩家在菜单中浏览已解锁的 CG。</p>
 
             {(projectMeta.galleryItems ?? []).length === 0 ? (
-              <div className="rounded-lg border border-dashed border-line bg-surface-2/50 py-8 text-center text-[13px] text-fg-muted">
+              <div className="rounded-xl border border-dashed border-line bg-surface-2/50 py-8 text-center text-[13px] text-fg-muted shadow-1">
                 暂无 CG 条目，点击「添加 CG」开始配置
               </div>
             ) : (
               <div className="space-y-3">
                 {(projectMeta.galleryItems ?? []).map((item, idx) => (
-                  <div key={item.id} className="flex items-start gap-3 rounded-lg border border-line bg-surface-2/40 p-3">
+                  <div key={item.id} className="flex items-start gap-3 rounded-xl border border-edge/10 bg-surface-2 p-3 shadow-1">
                     {/* 缩略图预览 */}
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-surface-2">
                       {item.assetId ? (
@@ -751,10 +751,10 @@ export default function ExportSettings() {
                   key={p.id}
                   type="button"
                   onClick={() => setPlatform(p.id)}
-                  className={`group relative flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                  className={`group relative flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left shadow-1 transition-all duration-200 hover:-translate-y-0.5 ${
                     active
-                      ? 'border-primary/45 bg-primary-soft'
-                      : 'border-edge/12 bg-surface-2 hover:bg-surface-hover'
+                      ? 'border-primary/40 bg-primary-soft shadow-2'
+                      : 'border-edge/10 bg-surface-2'
                   }`}
                 >
                   {active && (

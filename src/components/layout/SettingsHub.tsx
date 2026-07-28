@@ -58,7 +58,7 @@ function SliderRow({
   onChange: (v: number) => void
 }) {
   return (
-    <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+    <div className="px-4 py-3 rounded-xl border border-edge/10 bg-surface-2 shadow-1">
       <div className="flex items-center justify-between mb-3">
         <div>
           <div className="text-[13px] font-medium text-fg">{label}</div>
@@ -244,7 +244,7 @@ export default function SettingsHub() {
                 <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">API 配置</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* API Key */}
-                  <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                  <div className="px-4 py-3 rounded-xl border border-edge/10 bg-surface-2 shadow-1">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-[13px] font-medium text-fg">API Key</label>
                       <button
@@ -270,7 +270,7 @@ export default function SettingsHub() {
                   </div>
 
                   {/* Endpoint */}
-                  <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                  <div className="px-4 py-3 rounded-xl border border-edge/10 bg-surface-2 shadow-1">
                     <label className="text-[13px] font-medium text-fg block mb-2">API 端点</label>
                     <input
                       type="text"
@@ -283,7 +283,7 @@ export default function SettingsHub() {
                   </div>
 
                   {/* Model */}
-                  <div className="px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                  <div className="px-4 py-3 rounded-xl border border-edge/10 bg-surface-2 shadow-1">
                     <label className="text-[13px] font-medium text-fg block mb-2">模型</label>
                     <select
                       value={model}
@@ -304,7 +304,7 @@ export default function SettingsHub() {
               <section>
                 <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">请求与超时</h3>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  <label className="flex items-center justify-between px-4 py-3 rounded-lg border border-edge/10 bg-surface">
+                  <label className="flex items-center justify-between px-4 py-3 rounded-xl border border-edge/10 bg-surface-2 shadow-1">
                     <div>
                       <div className="text-[13px] font-medium text-fg">流式输出</div>
                       <div className="text-[12px] text-fg-muted mt-0.5">逐字流式生成；关闭则等待整段返回</div>
@@ -344,7 +344,7 @@ export default function SettingsHub() {
             <div className="space-y-6">
               <section>
                 <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">本地缓存</h3>
-                <div className="px-5 py-5 rounded-xl border border-edge/10 bg-surface flex items-center justify-between gap-4">
+                <div className="px-5 py-5 rounded-xl border border-edge/10 bg-surface-2 shadow-1 flex items-center justify-between gap-4">
                   <div>
                     <div className="text-[14px] font-medium text-fg">清除本地缓存</div>
                     <div className="text-[12px] text-fg-muted mt-1">

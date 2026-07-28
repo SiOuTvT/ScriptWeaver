@@ -97,21 +97,20 @@ export default function AppLayout() {
 
   // ---- 对话框状态 ----
   const [showNewConfirm, setShowNewConfirm] = useState(false)
-  const [showTemplates, setShowTemplates] = useState(false)
-  const [showRpyImport, setShowRpyImport] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
 
-  // ---- 侧栏事件：模板/导入维持弹窗，协作/历史已改为全屏页面走导航 ----
+  // ---- 侧栏事件：模板/导入改为全屏页面走导航 ----
+  const setActiveNavItem = useAppStore((s) => s.setActiveNavItem)
   useEffect(() => {
-    const openTemplates = () => setShowTemplates(true)
-    const openRpyImport = () => setShowRpyImport(true)
+    const openTemplates = () => setActiveNavItem('templates')
+    const openRpyImport = () => setActiveNavItem('import-rpy')
     window.addEventListener('sw:open-templates', openTemplates)
     window.addEventListener('sw:open-import-rpy', openRpyImport)
     return () => {
       window.removeEventListener('sw:open-templates', openTemplates)
       window.removeEventListener('sw:open-import-rpy', openRpyImport)
     }
-  }, [])
+  }, [setActiveNavItem])
 
   // ---- 顶栏「测试运行」：组装工程并启动 Ren'Py 预览 ----
   const handleTestRun = useCallback(async () => {
@@ -605,6 +604,43 @@ export default function AppLayout() {
         {activeNavItem === 'audit-log' && <AuditLogHub />}
         {activeNavItem === 'collab' && <CollabPanel />}
         {activeNavItem === 'history' && <VersionHistory />}
+        {activeNavItem === 'templates' && (
+          <TemplatePicker
+            embedded
+            onSelect={(template) => {
+              setActiveNavItem('chapters')
+              const st = useAppStore.getState()
+              st.setDraftDeltas(template.deltas)
+              st.setCharacterConfigs(template.characters)
+              st.setVariables(template.variables)
+              toast(`已加载模板「${template.name}」`, 'success')
+            }}
+          />
+        )}
+        {activeNavItem === 'import-rpy' && (
+          <RpyImportDialog
+            embedded
+            onImport={(result) => {
+              setActiveNavItem('chapters')
+              const st = useAppStore.getState()
+              const merged = [...st.draftDeltas, ...result.deltas]
+              st.setDraftDeltas(merged)
+              const existingChars = new Set(st.characterConfigs.map((c) => c.charId))
+              const newChars = result.characters.filter((c) => !existingChars.has(c.charId))
+              if (newChars.length > 0) st.setCharacterConfigs([...st.characterConfigs, ...newChars])
+              const existingVars = new Set(st.variables.map((v) => v.name))
+              const newVars = result.variables
+                .filter((v) => !existingVars.has(v.name))
+                .map((v) => ({ name: v.name, type: 'number' as const, initial: Number(v.value) || 0, note: `从 Ren'Py 导入 (原始: ${v.value})` }))
+              if (newVars.length > 0) st.setVariables([...st.variables, ...newVars])
+              if (result.warnings.length > 0) {
+                toast(`导入完成（${result.deltas.length} 行，${result.warnings.length} 条警告）`, 'warning')
+              } else {
+                toast(`已导入 ${result.deltas.length} 行剧本`, 'success')
+              }
+            }}
+          />
+        )}
       </div>
 
       {/* ===== 新建确认对话框 ===== */}
@@ -646,53 +682,6 @@ export default function AppLayout() {
             )
           })}
         </div>
-      )}
-
-      {/* ===== 版本历史 & 协作空间：已重构为全屏独立页面，通过左侧导航栏进入 ===== */}
-
-      {/* ===== 项目模板选择器 ===== */}
-      {showTemplates && (
-        <TemplatePicker
-          onClose={() => setShowTemplates(false)}
-          onSelect={(template) => {
-            setShowTemplates(false)
-            const st = useAppStore.getState()
-            st.setDraftDeltas(template.deltas)
-            st.setCharacterConfigs(template.characters)
-            st.setVariables(template.variables)
-            toast(`已加载模板「${template.name}」`, 'success')
-          }}
-        />
-      )}
-
-      {/* ===== Ren'Py 工程导入 ===== */}
-      {showRpyImport && (
-        <RpyImportDialog
-          onClose={() => setShowRpyImport(false)}
-          onImport={(result) => {
-            setShowRpyImport(false)
-            const st = useAppStore.getState()
-            // 合并已有行（追加模式）
-            const merged = [...st.draftDeltas, ...result.deltas]
-            st.setDraftDeltas(merged)
-            // 合并角色
-            const existingChars = new Set(st.characterConfigs.map((c) => c.charId))
-            const newChars = result.characters.filter((c) => !existingChars.has(c.charId))
-            if (newChars.length > 0) st.setCharacterConfigs([...st.characterConfigs, ...newChars])
-            // 合并变量（导入变量转为 GlobalVariable 格式）
-            const existingVars = new Set(st.variables.map((v) => v.name))
-            const newVars = result.variables
-              .filter((v) => !existingVars.has(v.name))
-              .map((v) => ({ name: v.name, type: 'number' as const, initial: Number(v.value) || 0, note: `从 Ren'Py 导入 (原始: ${v.value})` }))
-            if (newVars.length > 0) st.setVariables([...st.variables, ...newVars])
-            // 警告
-            if (result.warnings.length > 0) {
-              toast(`导入完成（${result.deltas.length} 行，${result.warnings.length} 条警告）`, 'warning')
-            } else {
-              toast(`已导入 ${result.deltas.length} 行剧本`, 'success')
-            }
-          }}
-        />
       )}
 
       {/* ===== 全局命令面板（Ctrl+K） ===== */}

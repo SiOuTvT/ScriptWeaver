@@ -171,21 +171,30 @@ function MatPicker({
 }
 
 // ============================================================
-// 特效卡片（首页卡片墙）
+// 特效卡片（首页卡片墙）——对齐 ScriptOverview SceneCard 统一风格
 // ============================================================
 function EffectCard({ item, active, onClick }: { item: EffectItem; active: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className={`flex h-full flex-col rounded-lg border p-3 text-left transition-colors ${
+      className={`group relative flex flex-col overflow-hidden rounded-xl border bg-surface-2 p-3.5 text-left shadow-1 outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 ${
         active
-          ? 'border-signal/50 bg-primary/[0.08]'
-          : 'border-edge/12 bg-surface-2 hover:border-edge-strong/25 hover:bg-surface-hover'
+          ? 'border-signal/40 ring-2 ring-signal/25'
+          : 'border-edge/10'
       }`}
     >
+      {/* 顶部渐变装饰条 */}
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/60 to-transparent" />
       <span className="text-[14px] font-semibold leading-snug text-fg">{item.cn}</span>
       <span className="mt-0.5 font-mono text-[12px] text-signal">{item.name}</span>
-      <span className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-fg-subtle">{firstLine(item.desc)}</span>
+      <span className="mt-1.5 line-clamp-2 min-h-[2em] text-[13px] leading-relaxed text-fg-subtle">{firstLine(item.desc)}</span>
+      {/* 底部属性行 */}
+      <div className="mt-auto flex items-center gap-2 pt-2 text-[12px] text-fg-faint">
+        <span className="inline-flex items-center gap-1 rounded-full bg-surface px-1.5 py-0.5 text-[10px]">
+          <Sparkles size={10} strokeWidth={1.5} />
+          {item.preview.kind}
+        </span>
+      </div>
     </button>
   )
 }
@@ -235,7 +244,7 @@ function DetailView({
         {/* 左：本页速览 + 目录跳转（放在左边，长文可直跳板块） */}
         <aside className="hidden w-60 shrink-0 overflow-y-auto border-r border-edge/10 bg-surface/40 px-4 py-6 lg:block">
           <p className="mb-2 text-[12px] font-semibold tracking-wide text-fg-faint">本页速览</p>
-          <div className="mb-4 rounded-lg border border-edge/12 bg-surface-2/60 p-3">
+          <div className="mb-4 rounded-xl border border-edge/10 bg-surface-2 p-3 shadow-1">
             <p className="truncate text-[13px] font-semibold text-fg">{item.cn}</p>
             <p className="truncate font-mono text-[12px] text-signal">{item.name}</p>
           </div>
@@ -464,7 +473,7 @@ function CombosBlock({ combos }: { combos: ComboItem[] }) {
         {combos.map((c, i) => {
           const Icon = COMBO_ICON[c.kind]
           return (
-            <div key={i} className="rounded-lg border border-edge/12 bg-surface-2/50 p-3">
+            <div key={i} className="rounded-xl border border-edge/10 bg-surface-2 p-3 shadow-1">
               <div className="mb-1 flex items-center gap-1.5">
                 <span className="inline-flex items-center gap-1 rounded bg-primary/[0.10] px-1.5 py-0.5 text-[11px] font-medium text-signal">
                   <Icon size={11} strokeWidth={2} /> {c.kind}
@@ -525,7 +534,7 @@ function PitfallsBlock({ pitfalls }: { pitfalls: PitfallItem[] }) {
 function PitfallCard({ p }: { p: PitfallItem }) {
   const [good, setGood] = useState(false)
   return (
-    <div className="overflow-hidden rounded-lg border border-edge/12 bg-surface-2/50">
+    <div className="overflow-hidden rounded-xl border border-edge/10 bg-surface-2 shadow-1">
       <div className="flex border-b border-edge/10 text-[12px]">
         <button
           onClick={() => setGood(false)}
@@ -716,7 +725,7 @@ function PreviewView({
 
         {/* ========== 中：素材条 + 预览舞台 ========== */}
         <main className="flex min-w-0 flex-1 flex-col gap-3 p-4">
-          <div className="flex flex-col gap-2 rounded-lg border border-edge/12 bg-surface-2 p-2.5">
+          <div className="flex flex-col gap-2 rounded-xl border border-edge/10 bg-surface-2 p-2.5 shadow-1">
             <MatPicker
               label="背景"
               list={bgList}
@@ -756,7 +765,7 @@ function PreviewView({
 
           <p className="mt-3 text-[13px] leading-relaxed text-fg-subtle">{selected.brief ?? firstLine(selected.desc)}</p>
 
-          <div className="mt-4 space-y-2 rounded-lg border border-edge/12 bg-surface-2 p-3">
+          <div className="mt-4 space-y-2 rounded-xl border border-edge/10 bg-surface-2 p-3 shadow-1">
             <div className="flex items-center justify-between text-[12px]">
               <span className="text-fg-muted">时长</span>
               <span className="font-mono text-fg">{(duration / 1000).toFixed(1)}s</span>
@@ -893,7 +902,7 @@ export default function EffectsLab() {
         </div>
 
         <div className="border-b border-edge/10 px-4 py-2">
-          <div className="flex items-center gap-2 rounded-lg border border-edge/15 bg-surface px-2.5 py-1.5">
+          <div className="flex items-center gap-2 rounded-xl border border-edge/10 bg-surface px-2.5 py-1.5 shadow-1">
             <Search size={14} strokeWidth={1.75} className="text-fg-faint" />
             <input
               value={query}
