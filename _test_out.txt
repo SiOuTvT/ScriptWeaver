@@ -6,20 +6,20 @@
 
 [1m[46m RUN [49m[22m [36mv3.2.4 [39m[90md:/ScriptWeaver[39m
 
- [32m✓[39m src/utils/__tests__/varRuntime.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/utils/__tests__/renpyText.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/varRuntime.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 9[2mms[22m[39m
  [32m✓[39m src/core/__tests__/reducer.test.ts [2m([22m[2m35 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m src/utils/__tests__/scriptDsl.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/utils/__tests__/rpyExporter.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 30[2mms[22m[39m
- [32m✓[39m src/stores/__tests__/appStore.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m src/utils/__tests__/exportGolden.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/collab/__tests__/collabBridge.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 427[2mms[22m[39m
-   [33m[2m✓[22m[39m collabBridge - 生命周期[2m > [22mstartHost 触发 connected 后进入 host 在线态 [33m 399[2mms[22m[39m
- [32m✓[39m src/components/layout/__tests__/Timeline.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 71[2mms[22m[39m
- [32m✓[39m src/components/layout/__tests__/StagePreview.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/exportGolden.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 393[2mms[22m[39m
+   [33m[2m✓[22m[39m collabBridge - 生命周期[2m > [22mstartHost 触发 connected 后进入 host 在线态 [33m 362[2mms[22m[39m
+ [32m✓[39m src/components/layout/__tests__/Timeline.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 118[2mms[22m[39m
+ [32m✓[39m src/components/layout/__tests__/StagePreview.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 35[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m10 passed[39m[22m[90m (10)[39m
 [2m      Tests [22m [1m[32m140 passed[39m[22m[90m (140)[39m
-[2m   Start at [22m 23:32:01
-[2m   Duration [22m 6.76s[2m (transform 2.99s, setup 1.50s, collect 6.10s, tests 638ms, environment 33.60s, prepare 14.06s)[22m
+[2m   Start at [22m 23:35:32
+[2m   Duration [22m 3.80s[2m (transform 2.90s, setup 1.49s, collect 4.79s, tests 657ms, environment 15.75s, prepare 4.12s)[22m
 

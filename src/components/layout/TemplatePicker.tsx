@@ -53,7 +53,7 @@ export default function TemplatePicker({ onSelect, onClose, embedded }: Props) {
           <h1 className="text-[15px] font-semibold">从模板新建项目</h1>
         </header>
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {BUILTIN_TEMPLATES.map((tpl) => {
               const active = tpl.id === selectedId
               return (

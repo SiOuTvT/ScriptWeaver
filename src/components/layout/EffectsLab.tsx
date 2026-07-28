@@ -910,7 +910,7 @@ export default function EffectsLab() {
 
         {/* Search */}
         <div className="shrink-0 border-b border-edge/10 px-5 py-2.5">
-          <div className="relative flex-1">
+          <div className="relative max-w-lg">
             <Search size={14} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
             <input
               value={query}

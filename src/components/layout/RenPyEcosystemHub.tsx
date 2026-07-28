@@ -171,7 +171,7 @@ export default function RenPyEcosystemHub() {
       {/* ═══ Search Bar ═══ */}
       <div className="shrink-0 border-b border-edge/10 px-5 py-3">
         <div className="flex items-center gap-3">
-          <div className="relative flex-1">
+          <div className="relative max-w-lg">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
             <input
               type="text"
@@ -272,7 +272,7 @@ export default function RenPyEcosystemHub() {
             </div>
 
             {/* Coverage Grid */}
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 2xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {filteredAudit.map((cat) => (
                 <div
                   key={cat.id}

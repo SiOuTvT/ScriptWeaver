@@ -108,7 +108,7 @@ export default function DiagnosticsPanel() {
       {/* ═══ Filter Bar ═══ */}
       <div className="shrink-0 border-b border-edge/10 px-5 py-2.5">
         <div className="flex items-center gap-3">
-          <div className="relative flex-1">
+          <div className="relative max-w-lg">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" />
             <input
               type="text"
@@ -156,7 +156,7 @@ export default function DiagnosticsPanel() {
             <span className="mt-1 text-[12px] text-fg-faint">剧本健康度良好</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-2 2xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {filtered.map((item) => {
               const cfg = SEVERITY_CONFIG[item.severity]
               const canJump = item.lineIndex >= 0
