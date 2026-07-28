@@ -686,12 +686,14 @@ export default function AppLayout() {
             const merged = [...st.draftDeltas, ...result.deltas]
             st.setDraftDeltas(merged)
             // 合并角色
-            const existingChars = new Set(st.characterConfigs.map((c) => c.variableName))
-            const newChars = result.characters.filter((c) => !existingChars.has(c.variableName))
+            const existingChars = new Set(st.characterConfigs.map((c) => c.charId))
+            const newChars = result.characters.filter((c) => !existingChars.has(c.charId))
             if (newChars.length > 0) st.setCharacterConfigs([...st.characterConfigs, ...newChars])
-            // 合并变量
+            // 合并变量（导入变量转为 GlobalVariable 格式）
             const existingVars = new Set(st.variables.map((v) => v.name))
-            const newVars = result.variables.filter((v) => !existingVars.has(v.name))
+            const newVars = result.variables
+              .filter((v) => !existingVars.has(v.name))
+              .map((v) => ({ name: v.name, type: 'number' as const, initial: Number(v.value) || 0, note: `从 Ren'Py 导入 (原始: ${v.value})` }))
             if (newVars.length > 0) st.setVariables([...st.variables, ...newVars])
             // 警告
             if (result.warnings.length > 0) {

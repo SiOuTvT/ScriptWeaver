@@ -1,78 +1,8 @@
-npm notice
-npm notice package: loupe@3.2.1
-npm notice Tarball Contents
-npm notice 1.1kB LICENSE
-npm notice 2.2kB README.md
-npm notice 168B lib/arguments.d.ts
-npm notice 245B lib/arguments.d.ts.map
-npm notice 246B lib/arguments.js
-npm notice 169B lib/array.d.ts
-npm notice 241B lib/array.d.ts.map
-npm notice 795B lib/array.js
-npm notice 160B lib/bigint.d.ts
-npm notice 227B lib/bigint.d.ts.map
-npm notice 270B lib/bigint.js
-npm notice 189B lib/class.d.ts
-npm notice 275B lib/class.d.ts.map
-npm notice 584B lib/class.js
-npm notice 158B lib/date.d.ts
-npm notice 223B lib/date.d.ts.map
-npm notice 486B lib/date.js
-npm notice 157B lib/error.d.ts
-npm notice 227B lib/error.d.ts.map
-npm notice 1.1kB lib/error.js
-npm notice 249B lib/function.d.ts
-npm notice 317B lib/function.d.ts.map
-npm notice 381B lib/function.js
-npm notice 684B lib/helpers.d.ts
-npm notice 750B lib/helpers.d.ts.map
-npm notice 5.6kB lib/helpers.js
-npm notice 437B lib/html.d.ts
-npm notice 502B lib/html.d.ts.map
-npm notice 1.7kB lib/html.js
-npm notice 427B lib/index.d.ts
-npm notice 432B lib/index.d.ts.map
-npm notice 5.8kB lib/index.js
-npm notice 166B lib/map.d.ts
-npm notice 257B lib/map.d.ts.map
-npm notice 680B lib/map.js
-npm notice 160B lib/number.d.ts
-npm notice 237B lib/number.d.ts.map
-npm notice 642B lib/number.js
-npm notice 160B lib/object.d.ts
-npm notice 238B lib/object.d.ts.map
-npm notice 924B lib/object.js
-npm notice 238B lib/promise.d.ts
-npm notice 301B lib/promise.d.ts.map
-npm notice 78B lib/promise.js
-npm notice 159B lib/regexp.d.ts
-npm notice 237B lib/regexp.d.ts.map
-npm notice 331B lib/regexp.js
-npm notice 157B lib/set.d.ts
-npm notice 246B lib/set.d.ts.map
-npm notice 414B lib/set.js
-npm notice 160B lib/string.d.ts
-npm notice 238B lib/string.d.ts.map
-npm notice 828B lib/string.js
-npm notice 98B lib/symbol.d.ts
-npm notice 171B lib/symbol.d.ts.map
-npm notice 209B lib/symbol.js
-npm notice 328B lib/typedarray.d.ts
-npm notice 362B lib/typedarray.d.ts.map
-npm notice 1.7kB lib/typedarray.js
-npm notice 426B lib/types.d.ts
-npm notice 543B lib/types.d.ts.map
-npm notice 11B lib/types.js
-npm notice 19.1kB loupe.js
-npm notice 2.2kB package.json
-npm notice Tarball Details
-npm notice name: loupe
-npm notice version: 3.2.1
-npm notice filename: loupe-3.2.1.tgz
-npm notice package size: 15.2 kB
-npm notice unpacked size: 58.6 kB
-npm notice shasum: 0095cf56dc5b7a9a7c08ff5b1a8796ec8ad17e76
-npm notice integrity: sha512-CdzqowRJCeLU7[...]goJ0t/bbwHbLQ==
-npm notice total files: 64
-npm notice
-loupe-3.2.1.tgz
+[周二 2026/07/28 13:35:18.82] Build started 
+  • electron-builder  version=24.13.3 os=10.0.26100
+  • loaded configuration  file=d:\ScriptWeaver\electron-builder.yml
+  • author is missed in the package.json  appPackageFile=d:\ScriptWeaver\package.json
+  • packaging       platform=win32 arch=x64 electron=31.7.7 appOutDir=release_build2\win-unpacked
+  • default Electron icon is used  reason=application icon is not set
+  • building        target=zip arch=x64 file=release_build2\ScriptWeaver-1.1.0-x64.zip
+  • building        target=nsis file=release_build2\ScriptWeaver-1.1.0-x64.exe archs=x64 oneClick=false perMachine=true

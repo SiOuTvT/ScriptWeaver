@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useRef, memo, useState, useEffect } from 'react'
-import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut, ListTree, Tag, Mic, Loader2, FloppyDisk } from 'lucide-react'
+import { ChevronUp, ChevronDown, X, Plus, ZoomIn, ZoomOut, ListTree, Tag, Mic, Loader2, Save } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import { useCollabStore } from '@/collab/collabStore'
 import type { ResolvedLineState, LineDelta, CharacterConfig, AssetItem } from '@/core/types'
@@ -1154,7 +1154,7 @@ export default function Timeline() {
                           : 'text-fg-faint opacity-0 group-hover:opacity-100'
                       }`}
                     >
-                      <FloppyDisk size={12} strokeWidth={2} fill={s.save_point ? 'currentColor' : 'none'} />
+                      <Save size={12} strokeWidth={2} fill={s.save_point ? 'currentColor' : 'none'} />
                     </button>
 
                     {/* 行操作按钮（hover 出现） */}

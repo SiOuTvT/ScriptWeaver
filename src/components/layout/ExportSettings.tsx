@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2, Play, Package, ShieldCheck, RefreshCw, Languages, Gamepad2, SlidersHorizontal, Image, Plus, Trash2 } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
-import { resolveAssetSrc } from '@/utils/resolveAsset'
+import { resolveAssetSrc } from '@/utils/assetSrc'
 import type { GalleryItem } from '@/core/types'
 import { Button } from '@/components/ui'
 import {
@@ -672,7 +672,7 @@ export default function ExportSettings() {
                     {/* 缩略图预览 */}
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-surface-2">
                       {item.assetId ? (
-                        <img src={resolveAssetSrc(item.assetId)} alt={item.label} className="h-full w-full object-cover" />
+                        <img src={resolveAssetSrc(assets.find(a => a.id === item.assetId))} alt={item.label} className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-fg-faint">
                           <Image size={20} />

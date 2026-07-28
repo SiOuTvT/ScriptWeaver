@@ -32,7 +32,7 @@ export default function RpyImportDialog({ onImport, onClose }: Props) {
   }
 
   const handlePreview = async () => {
-    if (!dirPath.trim()) { setError('请先选择 Ren'Py 工程目录'); return }
+    if (!dirPath.trim()) { setError("请先选择 Ren'Py 工程目录"); return }
     setLoading(true)
     setError('')
     try {
