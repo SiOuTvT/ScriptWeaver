@@ -1,25 +1,150 @@
-
-> scriptweaver@1.0.0 test
-> vitest run --run
-
 [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
 
 [1m[46m RUN [49m[22m [36mv3.2.4 [39m[90md:/ScriptWeaver[39m
 
- [32m✓[39m src/utils/__tests__/varRuntime.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/__tests__/reducer.test.ts [2m([22m[2m35 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m src/utils/__tests__/renpyText.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/utils/__tests__/scriptDsl.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/utils/__tests__/rpyExporter.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 39[2mms[22m[39m
- [32m✓[39m src/stores/__tests__/appStore.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/utils/__tests__/exportGolden.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/collab/__tests__/collabBridge.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 393[2mms[22m[39m
-   [33m[2m✓[22m[39m collabBridge - 生命周期[2m > [22mstartHost 触发 connected 后进入 host 在线态 [33m 362[2mms[22m[39m
- [32m✓[39m src/components/layout/__tests__/Timeline.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 118[2mms[22m[39m
- [32m✓[39m src/components/layout/__tests__/StagePreview.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/varRuntime.test.ts[2m > [22mvarRuntime · 运行时变量引擎[2m > [22minitRuntimeValues 取变量初始值[32m 2[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/varRuntime.test.ts[2m > [22mvarRuntime · 运行时变量引擎[2m > [22mapplyOp：set / add / subtract / toggle[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/varRuntime.test.ts[2m > [22mvarRuntime · 运行时变量引擎[2m > [22mapplyOps 顺序应用（不可变原对象）[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/varRuntime.test.ts[2m > [22mvarRuntime · 运行时变量引擎[2m > [22mevalCondition：比较 / 布尔 / and / or / not[32m 2[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/varRuntime.test.ts[2m > [22mvarRuntime · 运行时变量引擎[2m > [22mevalCondition：空条件恒为真（放宽显示）[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/varRuntime.test.ts[2m > [22mvarRuntime · 运行时变量引擎[2m > [22mevalCondition：注入式危险字符串被安全放宽（不抛错、返回 true）[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/varRuntime.test.ts[2m > [22mvarRuntime · 运行时变量引擎[2m > [22mfindLabelIndex：start → 0，命中返回行号，未定义返回 -1[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mtokenizeRenpyText 分词[2m > [22m纯文本原样输出[32m 3[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mtokenizeRenpyText 分词[2m > [22m成对标签与自闭合标签正确区分[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mtokenizeRenpyText 分词[2m > [22m变量插值与转换后缀[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mtokenizeRenpyText 分词[2m > [22m字面转义 {{ 与 [[ 不产生标签[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mtokenizeRenpyText 分词[2m > [22m未闭合花括号报错且不抛异常[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mvalidateRenpyText 校验[2m > [22m合法富文本零问题[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mvalidateRenpyText 校验[2m > [22m未知标签报错[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mvalidateRenpyText 校验[2m > [22m未闭合成对标签报错[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mvalidateRenpyText 校验[2m > [22m交叉嵌套报错[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mvalidateRenpyText 校验[2m > [22m缺参数标签报错（color/size/w=非数字）[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mvalidateRenpyText 校验[2m > [22m未定义变量给警告，已定义不报[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mstripRenpyMarkup 净化[2m > [22m去除全部标签保留可见文本[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mstripRenpyMarkup 净化[2m > [22m插值按运行时值替换[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mstripRenpyMarkup 净化[2m > [22m无值时保留变量名[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mlayoutRenpyText 渲染布局[2m > [22m样式正确叠加与闭合[32m 2[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mlayoutRenpyText 渲染布局[2m > [22m{w} 与 {p} 生成停顿与换行事件[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mlayoutRenpyText 渲染布局[2m > [22m插值用运行时值，缺失保留 [var] 提示[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mlayoutRenpyText 渲染布局[2m > [22m未知标签原样显示不吞字[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22mlayoutRenpyText 渲染布局[2m > [22m颜色与字号进入样式[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22m辅助函数[2m > [22mresolveSizeCss 相对与绝对换算[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/renpyText.test.ts[2m > [22m辅助函数[2m > [22mcountVisibleChars 只数可见字符[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m基础场景[2m > [22m空输入返回空数组[32m 3[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m基础场景[2m > [22m单行 Delta 正确归约[32m 1[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m基础场景[2m > [22mgetResolvedState 便捷函数正常工作[32m 1[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m继承（null 语义）[2m > [22m背景 null → 继承上一行背景[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m继承（null 语义）[2m > [22m未提及的角色 → 继承上一行的 sprite/位置[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m继承（null 语义）[2m > [22mBGM null → 持续跨行继承[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m继承（null 语义）[2m > [22mBGM 继承不受中间 se/voice 干扰[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m继承（null 语义）[2m > [22m环境音（ambient）独立继承，不受 BGM 变更影响[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m继承（null 语义）[2m > [22m首行有 null 背景时，背景为 null[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m显式覆盖[2m > [22m角色换表情（sprite_id 切换）[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m显式覆盖[2m > [22m角色移动位置（position_slot 切换）[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m显式覆盖[2m > [22m背景显式切换覆盖继承[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m显式覆盖[2m > [22mBGM 显式替换，不再继承旧 BGM[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m显式覆盖[2m > [22m多个角色独立继承，只修改其中一个[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m__CLEAR__ 清除语义[2m > [22mBGM __CLEAR__ → 停止播放[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m__CLEAR__ 清除语义[2m > [22mBGM __CLEAR__ 后不再继承[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m__CLEAR__ 清除语义[2m > [22m环境音 __CLEAR__ 独立清除，BGM 不受影响[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m__CLEAR__ 清除语义[2m > [22m角色 hide → 从活跃角色中移除[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m__CLEAR__ 清除语义[2m > [22m角色 __CLEAR__ → 立即移除（与 hide 语义一致，均为移除）[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m__CLEAR__ 清除语义[2m > [22m角色退场后，后续行不继承该角色[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m一次性事件（SE / Voice）[2m > [22mSE 不进入继承链，每行独立[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m一次性事件（SE / Voice）[2m > [22mVoice 不进入继承链，每行独立[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m槽位复用[2m > [22m角色引用的是槽位ID而非坐标数值[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m槽位复用[2m > [22m多个角色可同时使用不同槽位[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m槽位复用[2m > [22m未下达指令的角色直接复用上一行的 position_slot 引用[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m音频区间跨行延续[2m > [22mBGM 跨多行持续播放（时间轴色块覆盖多行）[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m音频区间跨行延续[2m > [22mBGM 和 Ambient 各自独立跨行[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m音频区间跨行延续[2m > [22mBGM 在中间替换后延续[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m音频区间跨行延续[2m > [22mAmbient 在中间替换后延续，BGM 不受影响[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m综合场景[2m > [22m完整对话场景：背景切换 + 角色出入 + BGM 替换[32m 2[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m综合场景[2m > [22mapplyDelta 纯函数：相同输入产生相同输出[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m边界情况[2m > [22mspeaker 为 null（旁白）正常处理[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m边界情况[2m > [22m空 characters 对象不影响继承[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m边界情况[2m > [22mshow 同一个角色多次，最后一条生效[32m 0[2mms[22m[39m
+ [32m✓[39m src/core/__tests__/reducer.test.ts[2m > [22m边界情况[2m > [22m背景带 transition 参数正确传递[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts[2m > [22mscriptDsl - 往返幂等[2m > [22mserialize → parse → serialize 文本一致[32m 3[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts[2m > [22mscriptDsl - 解析正确性[2m > [22m解析出 3 行，且类型正确[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts[2m > [22mscriptDsl - 解析正确性[2m > [22m立绘 show 带 scale / slot / 资源[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts[2m > [22mscriptDsl - 解析正确性[2m > [22m背景带过渡与特效[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts[2m > [22mscriptDsl - 解析正确性[2m > [22m音频轨道（bgm / se / voice）还原[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts[2m > [22mscriptDsl - 解析正确性[2m > [22m变量操作与舞台滤镜还原[32m 2[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts[2m > [22mscriptDsl - 解析正确性[2m > [22mhide 指令与 bgm 清除还原[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts[2m > [22mscriptDsl - 解析正确性[2m > [22m选择支选项带 jump / if / ops[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts[2m > [22mscriptDsl - 解析正确性[2m > [22mlabel 锚点挂回对应行[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/scriptDsl.test.ts[2m > [22mscriptDsl - 人工可读文本[2m > [22m输出人类可辨识的脚本[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · Ren'Py 合规产出[2m > [22mlabel 与语句缩进为 4 空格[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · Ren'Py 合规产出[2m > [22m缩放通过合规 transform（sw_pos/sw_zoom），绝不使用非法的 zoom() 调用[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · Ren'Py 合规产出[2m > [22m自定义特效过渡（push）被定义为 transform，保证 with 可被解析[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · Ren'Py 合规产出[2m > [22m内建过渡（dissolve）无需额外定义即可使用[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · Ren'Py 合规产出[2m > [22m隐藏角色生成 hide 语句[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · Ren'Py 合规产出[2m > [22m所有非内建 with <name> 都在 definitions 中有 transform 定义[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · Ren'Py 合规产出[2m > [22mbuildBundle 同时产出 script 与 definitions[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 挂载特效导出闭环（任务 2/2）[2m > [22mtransforms.rpy 生成参数化 transform 定义（shake/blink），且内建工厂 dissolve 不重复定义[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 挂载特效导出闭环（任务 2/2）[2m > [22mshow 语句把 transform 型挂载特效追加到 at 子句[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 挂载特效导出闭环（任务 2/2）[2m > [22m背景挂载内建过渡工厂 → with dissolve(0.5) 直接调用[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 挂载特效导出闭环（任务 2/2）[2m > [22m同一特效多次挂载只生成一次 transform 定义（去重）[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 挂载特效导出闭环（任务 2/2）[2m > [22m关闭启用的挂载特效在导出中被忽略[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 三大类目与缺失项补全（增补任务）[2m > [22m所有可挂载特效均归属三大核心类目（无遗漏、无游离）[32m 3[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 三大类目与缺失项补全（增补任务）[2m > [22mWipe 转场映射到 Ren'Py 内建 with wiperight(time) 且不生成自定义 transform[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 三大类目与缺失项补全（增补任务）[2m > [22m滤镜挂载导出为 show layer master: matrixcolor（全屏色调），且不进 transforms.rpy[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 三大类目与缺失项补全（增补任务）[2m > [22m多滤镜按 ColorMatrix 乘法组合（Saturation * Hue），关闭后回退 IdentityMatrix[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 三大类目与缺失项补全（增补任务）[2m > [22mSepia 滤镜导出为内建 SepiaMatrix()[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 三大类目与缺失项补全（增补任务）[2m > [22m呼吸 / 位置微调作为元素特效导出 at sw_custom_breathing / sw_custom_nudge[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 舞台级全局滤镜（stageEffects，任务 1/3）[2m > [22mstageEffects 导出为整层 show layer master: matrixcolor，关闭后自动复位 IdentityMatrix[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 舞台级全局滤镜（stageEffects，任务 1/3）[2m > [22m舞台滤镜与立绘/背景滤镜共存时合并到同一整层 matrixcolor[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 全局变量中央数据库（任务 1/3）[2m > [22mdefinitions.rpy 输出 default 声明（boolean 为大写 True/False）[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 全局变量中央数据库（任务 1/3）[2m > [22m剧本行变量操作导出为 $ <python 表达式>，且位于台词之前[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 全局变量中央数据库（任务 1/3）[2m > [22mtoggle 操作导出为 $ x = not x[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 选择支行（ChoiceLine，任务 2/3）[2m > [22m导出为 Ren'Py menu: 块，含 if 条件与 jump 目标，缩进合规[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 选择支行（ChoiceLine，任务 2/3）[2m > [22m选择支行不发射 say 台词节点（提示语作为 menu 标题而非独立 say）[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 选择支行（ChoiceLine，任务 2/3）[2m > [22m校验：选项文本为空时报错[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 选择支行（ChoiceLine，任务 2/3）[2m > [22m校验：选择支至少需要一个选项[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 剧情标签节点化与多分支（任务 3/3）[2m > [22m任意行携带 label 导出为独立 label 节点（剧情块），且被 jump 引用时合法可达[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 剧情标签节点化与多分支（任务 3/3）[2m > [22m被 jump 引用的分支段在段尾补 return，避免穿透进下一剧情块[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 剧情标签节点化与多分支（任务 3/3）[2m > [22m铁律4：未定义/缺失的 target_label 绝不发射 jump，降级为注释 + return（无 NameError）[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 剧情标签节点化与多分支（任务 3/3）[2m > [22m选项内联变量操作导出为选项分支内 12 空格缩进的 $ 语句，且在 jump 之前[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 剧情标签节点化与多分支（任务 3/3）[2m > [22m校验：标签名非合法标识符时报错[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 剧情标签节点化与多分支（任务 3/3）[2m > [22m校验：重复标签名报错[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/rpyExporter.test.ts[2m > [22mrpyExporter · 剧情标签节点化与多分支（任务 3/3）[2m > [22m校验：标签名 start 与入口冲突报错[32m 0[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts[2m > [22mappStore - Undo/Redo[2m > [22mshould push history on updateDeltaAt[32m 4[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts[2m > [22mappStore - Undo/Redo[2m > [22mshould undo back to previous state[32m 1[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts[2m > [22mappStore - Undo/Redo[2m > [22mshould redo after undo[32m 1[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts[2m > [22mappStore - Undo/Redo[2m > [22mshould clear future on new mutation after undo[32m 1[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts[2m > [22mappStore - Undo/Redo[2m > [22mshould track assets changes[32m 1[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts[2m > [22mappStore - Undo/Redo[2m > [22mshould track character changes[32m 1[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts[2m > [22mappStore - Undo/Redo[2m > [22mcanUndo returns false with empty history[32m 0[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts[2m > [22mappStore - LineDelta CRUD[2m > [22minsertDeltaAt adds a line[32m 0[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts[2m > [22mappStore - LineDelta CRUD[2m > [22mupdateDeltaAt modifies a line[32m 1[2mms[22m[39m
+ [32m✓[39m src/stores/__tests__/appStore.test.ts[2m > [22mappStore - LineDelta CRUD[2m > [22mbatchUpdateDeltas updates multiple lines[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/exportGolden.test.ts[2m > [22m导出层黄金快照 · Ren'Py bundle 整文件[2m > [22mscript.rpy 整文件对拍[32m 3[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/exportGolden.test.ts[2m > [22m导出层黄金快照 · Ren'Py bundle 整文件[2m > [22mdefinitions.rpy 整文件对拍[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/exportGolden.test.ts[2m > [22m导出层黄金快照 · Ren'Py bundle 整文件[2m > [22mtransforms.rpy 整文件对拍[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/exportGolden.test.ts[2m > [22m导出层黄金快照 · 挂载特效转 Ren'Py[2m > [22m特效脚本整文件对拍[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/exportGolden.test.ts[2m > [22m导出层黄金快照 · 挂载特效转 Ren'Py[2m > [22m特效 transforms 整文件对拍[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/exportGolden.test.ts[2m > [22m导出层黄金快照 · 多语言翻译骨架[2m > [22mchinese 翻译骨架整文件对拍[32m 2[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/exportGolden.test.ts[2m > [22m导出层黄金快照 · Web 导出 gameJson[2m > [22mgameJson 整文件对拍[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/__tests__/exportGolden.test.ts[2m > [22m导出层黄金快照 · 选择支（menu + 变量操作）[2m > [22m选择支行导出整文件对拍[32m 0[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - 生命周期[2m > [22mstartHost 触发 connected 后进入 host 在线态[32m 193[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - 生命周期[2m > [22mjoinSession 触发 connected 后进入 guest 在线态[32m 2[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - 本地编辑广播[2m > [22m单行改动 → 广播 delta_set 并写入审计日志[32m 7[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - 权限强制（仅查看）[2m > [22mguest 仅查看模式下本地编辑被回滚并报错[32m 3[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - 远端消息应用[2m > [22m收到 delta_set → 应用到本地并记远端审计[32m 2[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - 远端消息应用[2m > [22m收到 delta_insert → 插入到指定位置[32m 2[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - Host 中继与权限拦截[2m > [22mHost 对仅查看成员的编辑予以拦截并发全量纠正[32m 4[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - Host 中继与权限拦截[2m > [22mHost 对可编辑成员的编辑予以中继并应用[32m 2[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - 审计与踢人[2m > [22mkickPeer 由 host 触发且生成 danger 级审计[32m 2[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - 审计与踢人[2m > [22msetPeerPermission 由 host 触发并生成 warning 级审计[32m 2[2mms[22m[39m
+ [32m✓[39m src/collab/__tests__/collabBridge.test.ts[2m > [22mcollabBridge - 审计与踢人[2m > [22m非 host 调用 setPeerPermission / kickPeer 静默无效[32m 1[2mms[22m[39m
+ [32m✓[39m src/components/layout/__tests__/Timeline.test.tsx[2m > [22mTimeline[2m > [22mshould render track headers[32m 65[2mms[22m[39m
+ [32m✓[39m src/components/layout/__tests__/Timeline.test.tsx[2m > [22mTimeline[2m > [22mshould render track labels (BGM, Ambient, SE)[32m 10[2mms[22m[39m
+ [32m✓[39m src/components/layout/__tests__/StagePreview.test.tsx[2m > [22mStagePreview[2m > [22mshould render without crashing[32m 33[2mms[22m[39m
+ [32m✓[39m src/components/layout/__tests__/StagePreview.test.tsx[2m > [22mStagePreview[2m > [22mshould show empty state when no states available[32m 3[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m10 passed[39m[22m[90m (10)[39m
 [2m      Tests [22m [1m[32m140 passed[39m[22m[90m (140)[39m
-[2m   Start at [22m 23:35:32
-[2m   Duration [22m 3.80s[2m (transform 2.90s, setup 1.49s, collect 4.79s, tests 657ms, environment 15.75s, prepare 4.12s)[22m
+[2m   Start at [22m 01:49:47
+[2m   Duration [22m 3.64s[2m (transform 1.97s, setup 1.64s, collect 3.80s, tests 425ms, environment 18.98s, prepare 1.67s)[22m
 

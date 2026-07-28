@@ -98,8 +98,7 @@ export default function CollabPanel() {
 
         {/* ---- 未连接：双栏布局 ---- */}
         {!isConnected && (
-          <div className="grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* 左栏：身份 + 创建 */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="space-y-5">
               <section className="rounded-xl border border-edge/10 bg-surface-2 p-5 shadow-1">
                 <div className="mb-4 flex items-center gap-2 text-[14px] font-semibold text-fg">
@@ -196,7 +195,7 @@ export default function CollabPanel() {
 
         {/* ---- 已连接 ---- */}
         {isConnected && (
-          <div className="grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* 左栏 */}
             <div className="space-y-5">
               {isHost && (

@@ -247,22 +247,24 @@ export default function RenPyEcosystemHub() {
               }].map((stat, i) => (
                 <div
                   key={stat.label}
-                  className={`group rounded-2xl border border-edge/10 ${stat.bg} p-4 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 hover:${stat.ring} hover:ring-1 relative overflow-hidden animate-slide-up`}
+                  className={`group relative flex animate-slide-up flex-col gap-2 overflow-hidden rounded-2xl border border-edge/10 ${stat.bg} p-4 shadow-1 transition-all duration-300 hover:-translate-y-0.5 hover:border-edge/20 hover:shadow-2`}
                   style={{ animationDelay: `${i * 40}ms` }}
                 >
-                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="flex items-center gap-2">
-                    <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${stat.color === 'text-signal' ? 'bg-signal/10' : 'bg-fg-faint/10'} ${stat.color} group-hover:scale-105 transition-transform`}>
-                      <stat.icon size={15} />
+                  <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-primary/5 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+                  <div className="flex items-center gap-2.5">
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${stat.color === 'text-signal' ? 'bg-signal/10' : 'bg-fg-faint/10'} ${stat.color}`}>
+                      <stat.icon size={16} />
                     </div>
-                    <span className="text-[12px] font-medium text-fg-muted">{stat.label}</span>
+                    <span className="t-label text-fg-muted">{stat.label}</span>
                   </div>
                   {stat.value !== null ? (
-                    <div className={`mt-3 text-[22px] font-semibold tabular-nums ${stat.color}`}>{stat.value}</div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[22px] font-semibold leading-none text-fg tabular-nums">{stat.value}</span>
+                    </div>
                   ) : (
                     <button
                       onClick={() => setActiveNavItem('effects')}
-                      className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-primary font-medium hover:underline"
+                      className="mt-1 inline-flex items-center gap-1.5 text-[12px] text-primary font-medium hover:underline"
                     >
                       打开特效大本营 <ExternalLink size={11} />
                     </button>

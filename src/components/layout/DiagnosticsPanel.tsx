@@ -80,24 +80,24 @@ export default function DiagnosticsPanel() {
             return (
               <div
                 key={s.label}
-                className={`group rounded-2xl border border-edge/10 bg-surface p-4 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 hover:ring-1 animate-slide-up relative overflow-hidden ${
-                  isHealthy ? 'hover:ring-emerald-500/20' : 'hover:ring-fg-muted/10'
-                }`}
+                className={`group relative flex animate-slide-up flex-col gap-2 overflow-hidden rounded-2xl border border-edge/10 bg-surface p-4 shadow-1 transition-all duration-300 hover:-translate-y-0.5 hover:border-edge/20 hover:shadow-2`}
                 style={{ animationDelay: `${i * 40}ms` }}
               >
-                <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="flex items-center gap-2">
-                  <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-primary/5 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+                <div className="flex items-center gap-2.5">
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
                     s.color === 'text-danger' ? 'bg-danger/10' :
                     s.color === 'text-warning' ? 'bg-warning/10' :
                     s.color === 'text-info' ? 'bg-info/10' : 'bg-fg-faint/10'
                   } ${s.color}`}>
-                    <Icon size={14} />
+                    <Icon size={16} />
                   </div>
-                  <span className="text-[12px] font-medium text-fg-muted">{s.label}</span>
+                  <span className="t-label text-fg-muted">{s.label}</span>
                 </div>
-                <div className={`mt-3 text-[22px] font-semibold tabular-nums ${isHealthy ? 'text-emerald-500' : 'text-fg'}`}>
-                  {s.value}
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-[22px] font-semibold leading-none tabular-nums ${isHealthy ? 'text-emerald-500' : 'text-fg'}`}>
+                    {s.value}
+                  </span>
                 </div>
               </div>
             )

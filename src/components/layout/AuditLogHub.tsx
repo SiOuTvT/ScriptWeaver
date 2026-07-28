@@ -91,12 +91,16 @@ export default function AuditLogHub() {
 
   if (store.status === 'disconnected') {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-edge/10 bg-surface-2">
-          <History size={22} strokeWidth={1.5} className="text-fg-faint/40" />
+      <div className="flex h-full min-w-0 flex-1 flex-col">
+        <div className="flex flex-1 items-center justify-center p-6">
+          <div className="flex flex-col items-center justify-center gap-3 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-edge/10 bg-surface-2">
+              <History size={22} strokeWidth={1.5} className="text-fg-faint/40" />
+            </div>
+            <p className="text-[13px] font-medium text-fg-muted">未连接协作网络</p>
+            <p className="text-[12px] text-fg-faint">连接后可查看协作审计日志</p>
+          </div>
         </div>
-        <p className="text-[13px] font-medium text-fg-muted">未连接协作网络</p>
-        <p className="text-[12px] text-fg-faint">连接后可查看协作审计日志</p>
       </div>
     )
   }
@@ -146,9 +150,9 @@ export default function AuditLogHub() {
       {/* ═══ Content: Log List + Stats Panel ═══ */}
       <div className="flex flex-1 min-h-0">
         {/* Log List */}
-        <div className="flex-1 overflow-y-auto">
-          {filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+        {filtered.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center overflow-y-auto">
+            <div className="flex flex-col items-center justify-center gap-2 text-center">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-edge/10 bg-surface-2">
                 <Clock size={18} strokeWidth={1.5} className="text-fg-faint/40" />
               </div>
@@ -156,8 +160,9 @@ export default function AuditLogHub() {
                 {store.auditLogs.length === 0 ? '暂无协作记录' : '无匹配日志'}
               </p>
             </div>
-          )}
-
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto">
           {filtered.map((entry) => (
             <div
               key={entry.id}
@@ -196,6 +201,7 @@ export default function AuditLogHub() {
             </div>
           ))}
         </div>
+        )}
 
         {/* ═══ Right: Stats Panel (persistent) ═══ */}
         <div className="w-[280px] shrink-0 border-l border-edge/10 overflow-y-auto bg-surface">
