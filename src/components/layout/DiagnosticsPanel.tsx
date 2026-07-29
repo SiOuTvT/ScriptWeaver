@@ -150,7 +150,7 @@ export default function DiagnosticsPanel() {
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-edge/10 bg-surface-2">
-              <CheckCircle2 size={22} className="text-emerald-500/60" />
+              <CheckCircle2 size={22} className="text-[rgb(var(--c-success)/0.6)]" />
             </div>
             <span className="text-[13px] font-medium text-fg-muted">未发现问题</span>
             <span className="mt-1 text-[12px] text-fg-faint">剧本健康度良好</span>

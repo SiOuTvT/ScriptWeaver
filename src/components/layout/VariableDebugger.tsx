@@ -87,7 +87,7 @@ export default function VariableDebugger({ embedded = false }: { embedded?: bool
                   <div
                     key={v.name}
                     className={`flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors duration-300 ${
-                      isFlash ? 'border-signal/60 bg-signal/20' : 'border-edge/10 bg-canvas/40'
+                      isFlash ? 'border-signal/60 bg-signal/20' : 'border-edge/10 bg-surface-2/50'
                     }`}
                   >
                     <div className="min-w-0 flex-1">

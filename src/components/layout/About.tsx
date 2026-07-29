@@ -65,10 +65,10 @@ export default function About() {
     <div className="flex h-full flex-1 min-w-0 flex-col overflow-y-auto select-none">
       {/* Hero Section */}
       <div className="relative shrink-0 overflow-hidden border-b border-edge/10">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-[rgb(var(--c-primary)/0.05)]" />
         <div className="relative px-6 py-10">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-rose-500 flex items-center justify-center shadow-lg shrink-0 ring-1 ring-white/10">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[rgb(var(--c-primary))] via-[rgb(var(--c-primary))] to-[rgb(var(--c-danger))] flex items-center justify-center shadow-lg shrink-0 ring-1 ring-white/10">
               <span className="text-white text-2xl font-semibold">SW</span>
             </div>
             <div>
@@ -86,9 +86,9 @@ export default function About() {
                   {updateStatus === 'checking' ? (
                     <RefreshCw size={13} className="animate-spin" />
                   ) : updateStatus === 'up-to-date' ? (
-                    <CheckCircle2 size={13} className="text-emerald-500" />
+                    <CheckCircle2 size={13} className="text-[rgb(var(--c-success))]" />
                   ) : updateStatus === 'available' ? (
-                    <AlertTriangle size={13} className="text-amber-500" />
+                    <AlertTriangle size={13} className="text-[rgb(var(--c-warning))]" />
                   ) : null}
                   <span>
                     {updateStatus === 'checking' ? '检查中...'

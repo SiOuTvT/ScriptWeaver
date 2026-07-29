@@ -59,6 +59,13 @@ export default function AIPanel() {
 
   const modeCfg = MODE_CONFIG[mode]
 
+  // Theme-safe mode colors (mapped to CSS variable semantic colors)
+  const MODE_THEME: Record<string, { bg: string; border: string; text: string; dot: string; gradFrom: string; gradTo: string }> = {
+    indigo: { bg: 'bg-[rgb(var(--c-primary)/0.06)]', border: 'border-[rgb(var(--c-primary)/0.15)]', text: 'text-[rgb(var(--c-primary))]', dot: 'bg-[rgb(var(--c-primary))]', gradFrom: 'from-[rgb(var(--c-primary)/0.05)]', gradTo: 'to-[rgb(var(--c-primary)/0.02)]' },
+    emerald: { bg: 'bg-[rgb(var(--c-success)/0.06)]', border: 'border-[rgb(var(--c-success)/0.15)]', text: 'text-[rgb(var(--c-success))]', dot: 'bg-[rgb(var(--c-success))]', gradFrom: 'from-[rgb(var(--c-success)/0.05)]', gradTo: 'to-[rgb(var(--c-success)/0.02)]' },
+    violet: { bg: 'bg-[rgb(var(--c-signal)/0.06)]', border: 'border-[rgb(var(--c-signal)/0.15)]', text: 'text-[rgb(var(--c-signal))]', dot: 'bg-[rgb(var(--c-signal))]', gradFrom: 'from-[rgb(var(--c-signal)/0.05)]', gradTo: 'to-[rgb(var(--c-signal)/0.02)]' },
+  }
+
   // Context stats
   const contextInfo = useMemo(() => ({
     lines: draftDeltas.length,
@@ -256,13 +263,9 @@ export default function AIPanel() {
       </div>
 
       {/* Mode Description Bar */}
-      <div className={`shrink-0 mx-6 mt-4 rounded-lg border px-4 py-2.5 bg-gradient-to-r ${
-        modeCfg.color === 'indigo' ? 'from-indigo-500/5 to-indigo-500/2 border-indigo-500/15'
-        : modeCfg.color === 'emerald' ? 'from-emerald-500/5 to-emerald-500/2 border-emerald-500/15'
-        : 'from-violet-500/5 to-violet-500/2 border-violet-500/15'
-      }`}>
+      <div className={`shrink-0 mx-6 mt-4 rounded-lg border px-4 py-2.5 bg-gradient-to-r ${MODE_THEME[modeCfg.color].gradFrom} ${MODE_THEME[modeCfg.color].gradTo} ${MODE_THEME[modeCfg.color].border}`}>
         <div className="flex items-center gap-2.5">
-          {React.createElement(modeCfg.icon, { size: 15, className: modeCfg.color === 'indigo' ? 'text-indigo-500' : modeCfg.color === 'emerald' ? 'text-emerald-500' : 'text-violet-500' })}
+          {React.createElement(modeCfg.icon, { size: 15, className: MODE_THEME[modeCfg.color].text })}
           <span className="text-[13px] text-fg font-medium">{modeCfg.label}</span>
           <span className="text-[12px] text-fg-muted">{modeCfg.desc}</span>
         </div>
@@ -303,7 +306,7 @@ export default function AIPanel() {
             {draftDeltas.slice(-15).map((d, i) => (
               <div key={i} className="truncate">
                 {d.label && <span className="text-primary">[{d.label}] </span>}
-                {d.speaker && <span className="text-blue-400">{d.speaker}: </span>}
+                {d.speaker && <span className="text-[rgb(var(--c-info))]">{d.speaker}: </span>}
                 <span>{(d.dialogue || '').slice(0, 80)}</span>
               </div>
             ))}
@@ -318,10 +321,10 @@ export default function AIPanel() {
         {/* Response */}
         <div ref={responseRef} className="flex-1 overflow-y-auto mb-4 rounded-xl border border-edge/10 bg-surface p-5">
             {error && (
-              <div className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/5 p-4">
-                <AlertTriangle size={16} className="text-red-400 mt-0.5 shrink-0" />
+              <div className="flex items-start gap-3 rounded-lg border border-[rgb(var(--c-danger)/0.2)] bg-[rgb(var(--c-danger)/0.05)] p-4">
+                <AlertTriangle size={16} className="text-[rgb(var(--c-danger))] mt-0.5 shrink-0" />
                 <div>
-                  <div className="text-[13px] font-medium text-red-400 mb-1">请求失败</div>
+                  <div className="text-[13px] font-medium text-[rgb(var(--c-danger))] mb-1">请求失败</div>
                   <div className="text-[12px] text-fg-muted leading-relaxed">{error}</div>
                 </div>
               </div>
@@ -384,14 +387,14 @@ export default function AIPanel() {
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
                       {(blueprint.nodes ?? []).map((node) => (
                         <div key={node.id} className={`rounded-lg border px-3 py-2 text-[12px] leading-snug ${
-                          node.kind === 'start' ? 'border-emerald-500/20 bg-emerald-500/5'
-                          : node.kind === 'ending' ? 'border-red-500/20 bg-red-500/5'
+                          node.kind === 'start' ? 'border-[rgb(var(--c-success)/0.2)] bg-[rgb(var(--c-success)/0.05)]'
+                          : node.kind === 'ending' ? 'border-[rgb(var(--c-danger)/0.2)] bg-[rgb(var(--c-danger)/0.05)]'
                           : 'border-edge/10 bg-surface-2/40'
                         }`}>
                           <div className="flex items-center gap-1.5 mb-1">
                             <span className={`w-1.5 h-1.5 rounded-full ${
-                              node.kind === 'start' ? 'bg-emerald-500'
-                              : node.kind === 'ending' ? 'bg-red-500'
+                              node.kind === 'start' ? 'bg-[rgb(var(--c-success))]'
+                              : node.kind === 'ending' ? 'bg-[rgb(var(--c-danger))]'
                               : 'bg-primary'
                             }`} />
                             <span className="font-medium text-fg">{node.title}</span>
@@ -418,17 +421,17 @@ export default function AIPanel() {
                   {modeCfg.desc}。在下方输入框描述需求，按 Enter 发送即可开始。
                 </p>
                 {mode === 'blueprint' && (
-                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-1.5 text-[12px] text-violet-500">
+                  <div className={`mt-4 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] ${MODE_THEME.violet.border} ${MODE_THEME.violet.bg} ${MODE_THEME.violet.text}`}>
                     <GitBranch size={13} /> 输入核心梗概，AI 自动生成分支结局树
                   </div>
                 )}
                 {mode === 'mentor' && (
-                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-[12px] text-emerald-500">
+                  <div className={`mt-4 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] ${MODE_THEME.emerald.border} ${MODE_THEME.emerald.bg} ${MODE_THEME.emerald.text}`}>
                     <BookOpen size={13} /> 粘贴剧本片段，获取结构、角色与台词建议
                   </div>
                 )}
                 {mode === 'director' && (
-                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-3 py-1.5 text-[12px] text-indigo-500">
+                  <div className={`mt-4 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] ${MODE_THEME.indigo.border} ${MODE_THEME.indigo.bg} ${MODE_THEME.indigo.text}`}>
                     <Wand2 size={13} /> 描述场景构想，AI 协助编排角色与演出节奏
                   </div>
                 )}

@@ -1616,7 +1616,7 @@ export default function StagePreview() {
             </span>
           )}
           {state.audio.voice && (
-            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[12px] text-purple-400">
+            <span className="flex items-center justify-end gap-1 rounded bg-surface-2/80 px-2 py-0.5 text-[12px] text-[rgb(var(--c-primary))]">
               <Volume2 size={10} strokeWidth={1.75} /> {state.audio.voice}
             </span>
           )}
@@ -1716,7 +1716,7 @@ export default function StagePreview() {
               <button type="button" onClick={() => insertMarkup('{b}', '{/b}')} title="加粗 {b}...{/b}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] font-semibold text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">B</button>
               <button type="button" onClick={() => insertMarkup('{i}', '{/i}')} title="斜体 {i}...{/i}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] italic text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">I</button>
               <button type="button" onClick={() => insertMarkup('{u}', '{/u}')} title="下划线 {u}...{/u}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] underline text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">U</button>
-              <button type="button" onClick={() => insertMarkup('{color=#e05555}', '{/color}')} title="颜色 {color=#hex}...{/color}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] text-red-400 transition-colors hover:border-signal/50">色</button>
+              <button type="button" onClick={() => insertMarkup('{color=#e05555}', '{/color}')} title="颜色 {color=#hex}...{/color}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] text-[rgb(var(--c-danger))] transition-colors hover:border-signal/50">色</button>
               <button type="button" onClick={() => insertMarkup('{size=+4}', '{/size}')} title="字号 {size=+4}...{/size}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">A+</button>
               <button type="button" onClick={() => insertMarkup('{w}')} title="点击停顿 {w}（预览按 0.8 秒模拟）" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">停顿</button>
               <button type="button" onClick={() => insertMarkup('{w=0.5}')} title="定时停顿 {w=0.5}" className="rounded border border-edge/15 bg-surface-3 px-1.5 py-0.5 text-[12px] text-fg-muted transition-colors hover:border-signal/50 hover:text-fg">0.5s</button>

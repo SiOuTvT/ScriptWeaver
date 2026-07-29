@@ -79,9 +79,9 @@ export default function MultiExporter() {
             <p className="mt-0.5 text-[12px] text-fg-muted">将剧本导出为 Markdown / 纯文本 / HTML / CV 台词表</p>
           </div>
           <div className="flex items-center gap-3 text-[12px] text-fg-muted">
-            <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{stats.totalLines} 行</span>
+            <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--c-success))]" />{stats.totalLines} 行</span>
             <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-primary" />{stats.totalChars} 字</span>
-            <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" />{stats.dialogueLines} 对白</span>
+            <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[rgb(var(--c-info))]" />{stats.dialogueLines} 对白</span>
           </div>
         </div>
       </div>
@@ -149,7 +149,7 @@ export default function MultiExporter() {
                     { label: '对白行', value: stats.dialogueLines },
                     { label: '选择支', value: stats.choiceLines },
                   ].map((s) => (
-                    <div key={s.label} className="rounded-xl border border-edge/10 bg-surface-2 px-3 py-2.5 shadow-1">
+                    <div key={s.label} className="rounded-xl border border-edge/10 bg-surface px-3 py-2.5 shadow-1">
                       <div className="text-[11px] text-fg-faint">{s.label}</div>
                       <div className="text-[18px] font-semibold text-fg mt-0.5">{s.value}</div>
                     </div>
@@ -169,7 +169,7 @@ export default function MultiExporter() {
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={handleCopy} className="inline-flex items-center gap-1.5 rounded-xl border border-edge/10 bg-surface px-3 py-1.5 text-[12px] text-fg-muted hover:text-fg hover:border-primary/20 transition-colors">
-                  {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                  {copied ? <Check size={13} className="text-[rgb(var(--c-success))]" /> : <Copy size={13} />}
                   {copied ? '已复制' : '复制'}
                 </button>
                 <button onClick={handleDownload} className="inline-flex items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/10 hover:bg-primary/15 px-3 py-1.5 text-[12px] text-primary transition-colors">

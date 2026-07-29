@@ -378,7 +378,7 @@ function DetailView({
           )}
           {enc?.cssImpl && (
             <Section title="本项目实现（Electron + React + CSS）">
-              <pre className="overflow-x-auto rounded-xl border border-edge/10 bg-[#0d1117] p-3 font-mono text-[12px] leading-relaxed text-emerald-200/90">
+              <pre className="overflow-x-auto rounded-xl border border-edge/10 bg-surface-1 p-3 font-mono text-[12px] leading-relaxed text-fg-subtle">
                 {enc.cssImpl}
               </pre>
             </Section>
@@ -540,7 +540,7 @@ function PitfallCard({ p }: { p: PitfallItem }) {
         <button
           onClick={() => setGood(false)}
           className={`flex-1 px-2 py-1.5 font-medium transition-colors ${
-            !good ? 'bg-rose-500/15 text-rose-400' : 'text-fg-faint hover:text-fg-subtle'
+            !good ? 'bg-[rgb(var(--c-danger)/0.15)] text-[rgb(var(--c-danger))]' : 'text-fg-faint hover:text-fg-subtle'
           }`}
         >
           拉跨用法
@@ -548,7 +548,7 @@ function PitfallCard({ p }: { p: PitfallItem }) {
         <button
           onClick={() => setGood(true)}
           className={`flex-1 border-l border-edge/10 px-2 py-1.5 font-medium transition-colors ${
-            good ? 'bg-emerald-500/15 text-emerald-400' : 'text-fg-faint hover:text-fg-subtle'
+            good ? 'bg-[rgb(var(--c-success)/0.15)] text-[rgb(var(--c-success))]' : 'text-fg-faint hover:text-fg-subtle'
           }`}
         >
           高级用法

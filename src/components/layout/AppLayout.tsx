@@ -463,7 +463,7 @@ export default function AppLayout() {
       </header>
 
       {/* ===== 主内容区 ===== */}
-      <div className="relative flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden bg-canvas">
         <LeftSidebar />
 
         {/* --- 场景导航：完整创作工作区 --- */}

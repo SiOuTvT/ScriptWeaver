@@ -419,10 +419,10 @@ export default function ExportSettings() {
         </header>
 
         {/* ============ 游戏信息（标题 / 封面 / 图标） ============ */}
-        <section className="mb-6 rounded-xl border border-line bg-surface p-5">
+        <section className="mb-6 rounded-xl border border-edge/10 bg-surface p-5">
           <div className="mb-4 flex items-center gap-2">
             <Gamepad2 size={16} className="text-primary" />
-            <h3 className="t-h3">游戏信息</h3>
+            <h3 className="t-title">游戏信息</h3>
           </div>
           <p className="mb-4 t-subtitle">导出的 Ren'Py 游戏将使用下列元信息：窗口标题、打开时的封面画面与图标。</p>
 
@@ -510,10 +510,10 @@ export default function ExportSettings() {
         </section>
 
         {/* ============ Ren'Py 运行设置 ============ */}
-        <section className="mb-6 rounded-xl border border-line bg-surface p-5">
+        <section className="mb-6 rounded-xl border border-edge/10 bg-surface p-5">
           <div className="mb-4 flex items-center gap-2">
             <SlidersHorizontal size={16} className="text-primary" />
-            <h3 className="t-h3">Ren'Py 运行设置</h3>
+            <h3 className="t-title">Ren'Py 运行设置</h3>
           </div>
           <p className="mb-4 t-subtitle">这些设置将写入 options.rpy，控制玩家游玩时的文字速度、音量、跳过行为和存档槽数。</p>
 
@@ -640,11 +640,11 @@ export default function ExportSettings() {
 
         {/* ============ CG 画廊管理 ============ */}
         {projectMeta.galleryEnabled && (
-          <section className="mb-6 rounded-xl border border-line bg-surface p-5">
+          <section className="mb-6 rounded-xl border border-edge/10 bg-surface p-5">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Image size={16} className="text-primary" />
-                <h3 className="t-h3">CG 画廊</h3>
+                <h3 className="t-title">CG 画廊</h3>
                 <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">{(projectMeta.galleryItems ?? []).length} 张</span>
               </div>
               <button
@@ -662,7 +662,7 @@ export default function ExportSettings() {
             <p className="mb-4 t-subtitle">标记关键画面的素材为 CG 收藏卡，导出的 options.rpy 将生成画廊界面供玩家在菜单中浏览已解锁的 CG。</p>
 
             {(projectMeta.galleryItems ?? []).length === 0 ? (
-              <div className="rounded-xl border border-dashed border-line bg-surface-2/50 py-8 text-center text-[13px] text-fg-muted shadow-1">
+              <div className="rounded-xl border border-dashed border-edge/10 bg-surface-2/50 py-8 text-center text-[13px] text-fg-muted shadow-1">
                 暂无 CG 条目，点击「添加 CG」开始配置
               </div>
             ) : (

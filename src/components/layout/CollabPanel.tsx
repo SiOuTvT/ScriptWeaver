@@ -100,7 +100,7 @@ export default function CollabPanel() {
         {!isConnected && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="space-y-5">
-              <section className="rounded-xl border border-edge/10 bg-surface-2 p-5 shadow-1">
+              <section className="rounded-xl border border-edge/10 bg-surface p-5 shadow-1">
                 <div className="mb-4 flex items-center gap-2 text-[14px] font-semibold text-fg">
                   <UserPlus size={16} strokeWidth={1.5} /> 你的身份
                 </div>
@@ -114,7 +114,7 @@ export default function CollabPanel() {
                 <p className="mt-2 text-[12px] text-fg-muted">无需登录，仅用于协作中的身份标识。本地记忆。</p>
               </section>
 
-              <section className="rounded-xl border border-edge/10 bg-surface-2 p-5 shadow-1">
+              <section className="rounded-xl border border-edge/10 bg-surface p-5 shadow-1">
                 <div className="mb-4 flex items-center gap-2 text-[14px] font-semibold text-fg">
                   <Shield size={16} strokeWidth={1.5} className="text-primary" /> 创建主机
                 </div>
@@ -134,7 +134,7 @@ export default function CollabPanel() {
 
             {/* 右栏：加入 + 错误 */}
             <div className="space-y-5">
-              <section className="rounded-xl border border-edge/10 bg-surface-2 p-5 shadow-1">
+              <section className="rounded-xl border border-edge/10 bg-surface p-5 shadow-1">
                 <div className="mb-4 flex items-center gap-2 text-[14px] font-semibold text-fg">
                   <LogIn size={16} strokeWidth={1.5} className="text-signal" /> 加入协作
                 </div>
@@ -231,7 +231,7 @@ export default function CollabPanel() {
 
             {/* 右栏：成员列表 */}
             <div className="space-y-5">
-              <section className="rounded-xl border border-edge/10 bg-surface-2 p-5 shadow-1">
+              <section className="rounded-xl border border-edge/10 bg-surface p-5 shadow-1">
                 <div className="mb-5 flex items-center gap-2 text-[14px] font-semibold text-fg">
                   <Users size={16} strokeWidth={1.5} />
                   在线成员

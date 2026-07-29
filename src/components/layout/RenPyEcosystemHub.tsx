@@ -113,7 +113,7 @@ export default function RenPyEcosystemHub() {
 
   const difficultyBadge = (level: string) => {
     const map: Record<string, string> = { beginner: '入门', intermediate: '中等', advanced: '高级', 入门: '入门', 进阶: '进阶', 高级: '高级' }
-    const colors: Record<string, string> = { beginner: 'bg-blue-500/10 text-blue-600', intermediate: 'bg-violet-500/10 text-violet-600', advanced: 'bg-rose-500/10 text-rose-600', 入门: 'bg-blue-500/10 text-blue-600', 进阶: 'bg-violet-500/10 text-violet-600', 高级: 'bg-rose-500/10 text-rose-600' }
+    const colors: Record<string, string> = { beginner: 'bg-[rgb(var(--c-info)/0.1)] text-[rgb(var(--c-info))]', intermediate: 'bg-[rgb(var(--c-primary)/0.1)] text-[rgb(var(--c-primary))]', advanced: 'bg-[rgb(var(--c-danger)/0.1)] text-[rgb(var(--c-danger))]', 入门: 'bg-[rgb(var(--c-info)/0.1)] text-[rgb(var(--c-info))]', 进阶: 'bg-[rgb(var(--c-primary)/0.1)] text-[rgb(var(--c-primary))]', 高级: 'bg-[rgb(var(--c-danger)/0.1)] text-[rgb(var(--c-danger))]' }
     return (
       <span className={`inline-flex px-1.5 py-0 text-[10px] font-medium rounded ${colors[level] ?? 'bg-surface-2 text-fg-muted'}`}>
         {map[level] ?? level}

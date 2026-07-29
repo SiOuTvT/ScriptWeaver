@@ -27,9 +27,9 @@ const AUTO_SNAPSHOT_IDLE_MS = 4 * 60 * 1000 // 4 分钟无操作自动快照
 const MIN_DELTA_COUNT_FOR_AUTO = 1 // 至少有 1 行剧本才自动快照
 
 const DIFF_COLORS: Record<string, string> = {
-  added: 'border-blue-500/12 bg-blue-500/[0.04]',
-  removed: 'border-red-500/12 bg-red-500/[0.04]',
-  modified: 'border-violet-500/12 bg-violet-500/[0.04]',
+  added: 'border-[rgb(var(--c-success)/0.12)] bg-[rgb(var(--c-success)/0.04)]',
+  removed: 'border-[rgb(var(--c-danger)/0.12)] bg-[rgb(var(--c-danger)/0.04)]',
+  modified: 'border-[rgb(var(--c-primary)/0.12)] bg-[rgb(var(--c-primary)/0.04)]',
 }
 
 const fmtTime = (iso: string) => {
@@ -100,15 +100,15 @@ function DiffRow({ diff, isExpanded, onToggle }: {
     <div className={`px-4 py-3 ${color} border-b border-edge/10 last:border-b-0`}>
       <div className="flex items-start gap-3 cursor-pointer" onClick={onToggle}>
         <span className={`mt-1 shrink-0 w-1.5 h-1.5 rounded-full ${
-          diff.type === 'added' ? 'bg-blue-500' : diff.type === 'removed' ? 'bg-red-500' : 'bg-violet-500'
+          diff.type === 'added' ? 'bg-[rgb(var(--c-success))]' : diff.type === 'removed' ? 'bg-[rgb(var(--c-danger))]' : 'bg-[rgb(var(--c-primary))]'
         }`} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-[12px] font-medium text-fg">{label}</span>
             <span className={`text-[11px] px-1.5 py-px rounded-full ${
-              diff.type === 'added' ? 'bg-blue-500/10 text-blue-600' :
-              diff.type === 'removed' ? 'bg-red-500/10 text-red-600' :
-              'bg-violet-500/10 text-violet-600'
+              diff.type === 'added' ? 'bg-[rgb(var(--c-success)/0.1)] text-[rgb(var(--c-success))]' :
+              diff.type === 'removed' ? 'bg-[rgb(var(--c-danger)/0.1)] text-[rgb(var(--c-danger))]' :
+              'bg-[rgb(var(--c-primary)/0.1)] text-[rgb(var(--c-primary))]'
             }`}>
               {diff.type === 'added' ? '新增' : diff.type === 'removed' ? '删除' : '修改'}
             </span>

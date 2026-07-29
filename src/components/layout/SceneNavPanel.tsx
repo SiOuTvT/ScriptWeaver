@@ -150,7 +150,7 @@ export default function SceneNavPanel({ embedded = false }: { embedded?: boolean
         draggable
         onDragStart={(e) => handleDragStart(e, asset)}
         onDragEnd={handleDragEnd}
-        className="group flex cursor-grab items-center gap-2 rounded-md border border-edge/12 px-2 py-1.5 shadow-[0_1px_2px_rgba(28,24,18,0.06)] transition-all hover:border-edge/20 hover:shadow-[0_2px_4px_rgba(28,24,18,0.10)] hover:bg-surface-hover active:cursor-grabbing active:bg-surface-active"
+        className="group flex cursor-grab items-center gap-2 rounded-md border border-edge/12 px-2 py-1.5 shadow-1 transition-all hover:border-edge/20 hover:shadow-2 hover:bg-surface-hover active:cursor-grabbing active:bg-surface-active"
         title={`拖拽到舞台或时间轴使用`}
       >
         {/* 缩略图 */}
@@ -201,8 +201,8 @@ export default function SceneNavPanel({ embedded = false }: { embedded?: boolean
         onDragEnd={handleDragEnd}
         className={`group flex cursor-grab items-center gap-2.5 rounded-lg border px-2 py-2 transition-all active:cursor-grabbing ${
           playing
-            ? 'border-info/40 bg-info/[0.06] shadow-[0_2px_6px_rgba(28,24,18,0.10)]'
-            : 'border-edge/12 shadow-[0_1px_2px_rgba(28,24,18,0.06)] hover:border-edge/20 hover:bg-surface-hover hover:shadow-[0_2px_4px_rgba(28,24,18,0.10)]'
+            ? 'border-info/40 bg-info/[0.06] shadow-2'
+            : 'border-edge/12 shadow-1 hover:border-edge/20 hover:bg-surface-hover hover:shadow-2'
         }`}
         title="拖拽到时间轴使用 · 点左侧按钮试听"
       >

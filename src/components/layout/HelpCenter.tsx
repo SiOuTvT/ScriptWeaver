@@ -691,21 +691,21 @@ export default function HelpCenter() {
                   onClick={() => openExternal(GITHUB_LINKS.newBug)}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle shadow-1 hover:text-fg hover:border-primary/15 transition-all duration-200"
                 >
-                  <Bug size={15} className="text-rose-400" />
+                  <Bug size={15} className="text-[rgb(var(--c-danger))]" />
                   报告 Bug
                 </button>
                 <button
                   onClick={() => openExternal(GITHUB_LINKS.newFeature)}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle shadow-1 hover:text-fg hover:border-primary/15 transition-all duration-200"
                 >
-                  <Heart size={15} className="text-violet-400" />
+                  <Heart size={15} className="text-[rgb(var(--c-primary))]" />
                   功能建议
                 </button>
                 <button
                   onClick={() => openExternal(GITHUB_LINKS.issues)}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg-subtle shadow-1 hover:text-fg hover:border-primary/15 transition-all duration-200"
                 >
-                  <MessageCircle size={15} className="text-sky-400" />
+                  <MessageCircle size={15} className="text-[rgb(var(--c-info))]" />
                   反馈与建议
                 </button>
               </div>
