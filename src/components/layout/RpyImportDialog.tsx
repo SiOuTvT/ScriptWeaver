@@ -1,343 +1,715 @@
 /**
- * Ren'Py 工程导入对话框
- * 选择 .rpy 文件所在目录，解析后导入为 ScriptWeaver 项目。
+ * Ren'Py 工程导入对话框（重写版）
+ * 全宽响应式布局 | 真实浏览按钮 | 全量素材解析 | 完整统计面板
  */
 
-import { useState } from 'react'
-import { FolderOpen, Loader2, X, AlertTriangle, CheckCircle2, ChevronLeft, FileDown, Info, BookOpen, FileText, Users, Code, Image } from 'lucide-react'
+import { useState, useCallback } from 'react'
+import {
+  FolderOpen, Loader2, X, AlertTriangle, CheckCircle2, ChevronLeft,
+  FileDown, Info, BookOpen, FileText, Users, Code, Image, Music, BarChart3,
+  ExternalLink, FolderSearch, FileCheck, Upload, ShieldAlert,
+} from 'lucide-react'
 import { importRpyDirectory, type RpyImportResult } from '@/utils/rpyImporter'
 import { useAppStore } from '@/stores/appStore'
+import { createSnapshot } from '@/utils/cloudSync'
+import { serializeProject } from '@/utils/projectFile'
+import { toast } from '@/utils/toast'
+import type { CharacterConfig, AssetItem, LineDelta, GlobalVariable } from '@/core/types'
 
 interface Props {
-  onImport?: (result: RpyImportResult) => void
   onClose?: () => void
   embedded?: boolean
 }
 
-export default function RpyImportDialog({ onImport, onClose, embedded }: Props) {
+// ═══════════════════════════════════════════
+// Helpers
+// ═══════════════════════════════════════════
+
+function buildImportLabel(dirPath: string): string {
+  const name = dirPath.split(/[\\/]/).pop() || dirPath
+  const ts = new Date().toLocaleString('zh-CN', { hour12: false })
+  return `导入: ${name} (${ts})`
+}
+
+// ═══════════════════════════════════════════
+// Stats card component
+// ═══════════════════════════════════════════
+
+function StatCard({ icon: Icon, label, value, sub, color = 'primary' }: {
+  icon: React.ComponentType<any>
+  label: string
+  value: string | number
+  sub?: string
+  color?: 'primary' | 'success' | 'warning' | 'info' | 'muted'
+}) {
+  const colorMap: Record<string, string> = {
+    primary: 'bg-primary/[0.06] text-primary',
+    success: 'bg-emerald/[0.06] text-emerald',
+    warning: 'bg-amber/[0.06] text-amber',
+    info: 'bg-sky/[0.06] text-sky',
+    muted: 'bg-fg/[0.04] text-fg-muted',
+  }
+  return (
+    <div className="rounded-2xl border border-edge/10 bg-surface p-4 shadow-1">
+      <div className="flex items-center gap-2 mb-2">
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${colorMap[color] || colorMap.primary}`}>
+          <Icon size={16} strokeWidth={1.75} />
+        </div>
+        <span className="text-[12px] font-medium text-fg-muted">{label}</span>
+      </div>
+      <div className="text-[24px] font-semibold text-fg tabular-nums leading-none">{value}</div>
+      {sub && <div className="mt-1 text-[11px] text-fg-faint">{sub}</div>}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════
+// Main Component
+// ═══════════════════════════════════════════
+
+export default function RpyImportDialog({ onClose, embedded }: Props) {
   const setActiveNavItem = useAppStore((s) => s.setActiveNavItem)
 
-  const wrappedClose = () => {
+  const wrappedClose = useCallback(() => {
     if (onClose) onClose()
     if (embedded) setActiveNavItem('chapters')
-  }
+  }, [onClose, embedded, setActiveNavItem])
 
-  const wrappedImport = (result: RpyImportResult) => {
-    if (onImport) onImport(result)
-    if (embedded) setActiveNavItem('chapters')
-  }
+  // ═══ State ═══
   const [dirPath, setDirPath] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [phase, setPhase] = useState<'idle' | 'scanning' | 'preview' | 'importing' | 'done'>('idle')
   const [error, setError] = useState('')
   const [preview, setPreview] = useState<RpyImportResult | null>(null)
 
-  const handleBrowse = async () => {
+  // ═══ Browse ═══
+  const handleBrowse = useCallback(async () => {
     try {
-      const result = await window.electronAPI?.selectDirectory()
+      const result = await (window as any).electronAPI?.selectDirectory()
       if (result && result.path) {
         setDirPath(result.path)
         setError('')
         setPreview(null)
+        setPhase('idle')
       }
     } catch {
       // 用户取消或 API 不可用
     }
-  }
+  }, [])
 
-  const handlePreview = async () => {
-    if (!dirPath.trim()) { setError("请先选择 Ren'Py 工程目录"); return }
-    setLoading(true)
+  // ═══ Scan ═══
+  const handleScan = useCallback(async () => {
+    if (!dirPath.trim()) {
+      setError('请先选择 Ren\'Py 工程目录（通常是 game 目录）')
+      return
+    }
+    setPhase('scanning')
     setError('')
+    setPreview(null)
     try {
       const result = await importRpyDirectory(dirPath.trim())
       setPreview(result)
-      if (result.deltas.length === 0) {
-        setError('未在目录中找到可解析的 .rpy 文件')
+      setPhase('preview')
+
+      if (result.deltas.length === 0 && result.imageAssets.filter(a => a.fileName).length === 0 && result.audioAssets.filter(a => a.fileName).length === 0) {
+        setError('未在目录中找到可解析的 .rpy 文件或素材文件')
       }
     } catch (e: any) {
-      setError(e?.message ?? '导入失败')
-    } finally {
-      setLoading(false)
+      setError(e?.message ?? '扫描失败，请检查目录路径是否正确')
+      setPhase('idle')
     }
-  }
+  }, [dirPath])
 
-  // Page mode: full-screen layout with header
-  if (embedded) {
+  // ═══ Import ═══
+  const handleImport = useCallback(async () => {
+    if (!preview) return
+    const store = useAppStore.getState()
+
+    // 前置检查：项目未保存时，素材无法落盘（importFilesFromPaths 需要 activeProjectRoot）
+    if (!store.projectRoot) {
+      toast('请先保存当前项目（Ctrl+S），再导入 Ren\'Py 工程', 'warning')
+      return
+    }
+
+    setPhase('importing')
+
+    try {
+      const fsImport = (window as any).electronAPI?.importFilesFromPaths as
+        ((paths: string[], kind?: string) => Promise<{ success: boolean; files?: AssetItem[]; error?: string }>) | undefined
+
+      // ── Step 1: 导入素材文件 ──
+      const importedImageMap = new Map<string, AssetItem>()
+      const importedAudioMap = new Map<string, AssetItem>()
+
+      if (fsImport) {
+        const validImages = preview.imageAssets.filter(a => a.fileName)
+        if (validImages.length > 0) {
+          const imagePaths = validImages.map(a =>
+            dirPath + (dirPath.endsWith('\\') || dirPath.endsWith('/') ? '' : '\\') + a.relativePath)
+          try {
+            const r = await fsImport(imagePaths, 'background')
+            if (r.success && r.files) {
+              for (let i = 0; i < r.files.length && i < validImages.length; i++) {
+                importedImageMap.set(validImages[i].refName, r.files[i])
+              }
+            }
+          } catch { /* 部分图片导入失败，继续 */ }
+        }
+
+        const validAudio = preview.audioAssets.filter(a => a.fileName)
+        if (validAudio.length > 0) {
+          const audioPaths = validAudio.map(a =>
+            dirPath + (dirPath.endsWith('\\') || dirPath.endsWith('/') ? '' : '\\') + a.relativePath)
+          try {
+            const r = await fsImport(audioPaths, 'audio')
+            if (r.success && r.files) {
+              for (let i = 0; i < r.files.length && i < validAudio.length; i++) {
+                importedAudioMap.set(validAudio[i].refName, r.files[i])
+              }
+            }
+          } catch { /* 部分音频导入失败 */ }
+        }
+      }
+
+      // ── Step 2: 注册素材到 store ──
+      // 使用 store.setAssets() 一次性批量替换，避免每 addAsset 都 pushHistory
+      const currentAssets = [...useAppStore.getState().assets]
+      const newAssets: AssetItem[] = [...currentAssets]
+      for (const [, asset] of importedImageMap) {
+        if (!newAssets.find(a => a.id === asset.id)) newAssets.push(asset)
+      }
+      for (const [, asset] of importedAudioMap) {
+        if (!newAssets.find(a => a.id === asset.id)) newAssets.push(asset)
+      }
+      useAppStore.getState().setAssets(newAssets)
+
+      // ── Step 3: 注册角色 ──
+      const currentChars = [...useAppStore.getState().characterConfigs]
+      const newChars: CharacterConfig[] = [...currentChars]
+      for (const char of preview.characters) {
+        if (!newChars.find(c => c.charId === char.charId)) {
+          newChars.push({
+            charId: char.charId,
+            displayName: char.displayName || char.charId,
+            dialogueColor: '#61afef',
+            expressions: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+        }
+      }
+      useAppStore.getState().setCharacterConfigs(newChars)
+
+      // ── Step 4: 注册全局变量 ──
+      const currentVars = [...useAppStore.getState().variables]
+      for (const v of preview.variables) {
+        if (!currentVars.find(gv => gv.name === v.name)) {
+          currentVars.push({
+            name: v.name,
+            type: 'number' as const,
+            initial: Number(v.value) || 0,
+            note: `从 Ren'Py 导入 (原始: ${v.value})`,
+          })
+        }
+      }
+      useAppStore.getState().setVariables(currentVars)
+
+      // ── Step 5: 修正 deltas 中的素材引用 ──
+      const revisedDeltas: LineDelta[] = preview.deltas.map(d => {
+        const next = { ...d }
+        if (next.background?.asset_id) {
+          const asset = importedImageMap.get(next.background.asset_id)
+          if (asset) next.background = { ...next.background, asset_id: asset.id }
+        }
+        if (next.audio) {
+          const na = { ...next.audio }
+          const bgm = na.bgm
+          if (bgm && typeof bgm === 'object' && 'asset_id' in bgm) {
+            const audioAsset = importedAudioMap.get(bgm.asset_id.replace(/\.[^.]+$/, ''))
+            if (audioAsset) na.bgm = { ...bgm, asset_id: audioAsset.id }
+          }
+          if (na.se) {
+            na.se = na.se.map(ref => {
+              const audioAsset = importedAudioMap.get(ref.replace(/\.[^.]+$/, ''))
+              return audioAsset ? audioAsset.id : ref
+            })
+          }
+          next.audio = na
+        }
+        return next
+      })
+
+      // ── Step 6: 合并到剧本 ──
+      const currentDeltas = useAppStore.getState().draftDeltas
+      const merged = currentDeltas.length === 0
+        ? revisedDeltas
+        : [
+          ...currentDeltas,
+          {
+            line_id: `imp_sep_${Date.now()}`,
+            speaker: null,
+            dialogue: '',
+            background: null,
+            characters: {},
+            audio: { bgm: null, ambient: null, se: [], voice: null },
+            label: 'Imported',
+          } as LineDelta,
+          ...revisedDeltas,
+        ]
+
+      useAppStore.getState().setDraftDeltas(merged)
+
+      // ── Step 7: 创建自动快照 ──
+      const json = serializeProject(
+        useAppStore.getState().draftDeltas,
+        useAppStore.getState().characterConfigs,
+        useAppStore.getState().assets,
+      )
+      const snapshotLabel = buildImportLabel(dirPath)
+      await createSnapshot(json, snapshotLabel, false)
+
+      // ── Done ──
+      setPhase('done')
+      const assetCount = importedImageMap.size + importedAudioMap.size
+      toast(
+        `Ren'Py 导入完成：${revisedDeltas.length} 行剧本，${preview.charCount} 个角色，${assetCount} 个素材`,
+        'success',
+      )
+    } catch (e: any) {
+      setError(e?.message ?? '导入失败，请重试')
+      setPhase('preview')
+    }
+  }, [preview, dirPath])
+
+  // ═══ Derived stats ═══
+  const labelCount = preview ? new Set(preview.deltas.filter(d => d.label).map(d => d.label)).size : 0
+  const choiceCount = preview ? preview.deltas.filter(d => d.line_type === 'choice').length : 0
+  const matchedImages = preview ? preview.imageAssets.filter(a => a.fileName).length : 0
+  const unmatchedImages = preview ? preview.imageAssets.filter(a => !a.fileName).length : 0
+  const matchedAudio = preview ? preview.audioAssets.filter(a => a.fileName).length : 0
+  const unmatchedAudio = preview ? preview.audioAssets.filter(a => !a.fileName).length : 0
+  const hasPreview = !!(phase === 'preview' && preview)
+  const isScanning = phase === 'scanning'
+  const isImporting = phase === 'importing'
+  const isDone = phase === 'done'
+
+  // ═══ Modal mode ═══
+  if (!embedded) {
     return (
-      <div className="flex h-full min-w-0 flex-1 flex-col bg-canvas">
-        {/* ═══ Header ═══ */}
-        <div className="shrink-0 border-b border-edge/10 px-5 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="signal-dot" />
-                <span className="eyebrow">Import</span>
-                <button
-                  onClick={wrappedClose}
-                  className="inline-flex items-center gap-1 rounded-xl border border-edge/10 px-2 py-0.5 text-[11px] text-fg-muted hover:bg-surface-2 hover:text-fg transition-colors"
-                >
-                  <ChevronLeft size={12} />
-                  返回
-                </button>
-              </div>
-              <h2 className="t-h2 mt-1.5">导入 Ren'Py 工程</h2>
-              <p className="mt-0.5 t-subtitle">选择 .rpy 文件所在目录，自动解析角色、脚本与素材引用</p>
-            </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/[0.06] text-primary">
-              <FileDown size={18} strokeWidth={1.75} />
-            </div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="mx-4 w-full max-w-3xl rounded-2xl border border-edge/10 bg-surface shadow-2xl max-h-[90vh] flex flex-col">
+          <ImportHeader wrappedClose={wrappedClose} />
+          <div className="flex-1 overflow-y-auto p-5">
+            <ImportBody
+              dirPath={dirPath} setDirPath={setDirPath}
+              phase={phase} error={error} handleBrowse={handleBrowse}
+              handleScan={handleScan} preview={preview}
+              labelCount={labelCount} choiceCount={choiceCount}
+              matchedImages={matchedImages} unmatchedImages={unmatchedImages}
+              matchedAudio={matchedAudio} unmatchedAudio={unmatchedAudio}
+              handleImport={handleImport} wrappedClose={wrappedClose}
+              isScanning={isScanning} isImporting={isImporting}
+              isDone={isDone} hasPreview={hasPreview}
+            />
           </div>
         </div>
-
-        <div className="flex-1 overflow-y-auto px-5 py-5">
-          <div className="flex flex-col xl:flex-row gap-5">
-            {/* ═══ Left: Form + Error ═══ */}
-            <div className={`${preview ? 'xl:flex-1' : 'flex-1'} space-y-5`}>
-              <div className="rounded-2xl border border-edge/10 bg-surface p-5 shadow-1">
-                <div className="mb-3 text-[12px] font-medium text-fg-muted">Ren'Py 工程目录</div>
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <input
-                      className="w-full rounded-xl border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30 transition-colors"
-                      value={dirPath}
-                      onChange={(e) => { setDirPath(e.target.value); setPreview(null); setError('') }}
-                      placeholder="选择包含 .rpy 文件的目录..."
-                    />
-                  </div>
-                  <button onClick={handleBrowse} className="btn-ghost-sm shrink-0">
-                    <FolderOpen size={15} className="mr-1 inline" />浏览
-                  </button>
-                </div>
-                <div className="mt-3">
-                  <button
-                    onClick={handlePreview}
-                    disabled={loading || !dirPath.trim()}
-                    className="btn-primary-sm"
-                  >
-                    {loading ? <Loader2 size={14} className="mr-1 inline animate-spin" /> : null}
-                    预览解析结果
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="flex items-start gap-2 rounded-xl border border-danger/20 bg-danger/[0.04] p-3 text-[12px] text-danger">
-                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {/* ═══ No Preview: Tips sidebar ═══ */}
-              {!preview && !loading && (
-                <div className="rounded-2xl border border-edge/10 bg-surface p-5 shadow-1">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/[0.06]">
-                      <Info size={13} strokeWidth={1.75} className="text-primary" />
-                    </div>
-                    <span className="text-[12px] font-semibold text-fg">使用须知</span>
-                  </div>
-                  <div className="space-y-2.5">
-                    {[
-                      { icon: FileText, text: '选择包含 .rpy 脚本文件的 Ren\'Py 项目根目录' },
-                      { icon: Users, text: '自动识别 define 角色定义，导入为可管理角色' },
-                      { icon: Code, text: '标签(label)映射为剧本块（Block），菜单(menu)映射为选择支' },
-                      { icon: Image, text: '引用的素材路径记录在案，导入后可手动绑定' },
-                    ].map(({ icon: Icon, text }, i) => (
-                      <div key={i} className="flex items-start gap-2 text-[12px] text-fg-subtle">
-                        <Icon size={13} strokeWidth={1.5} className="mt-0.5 shrink-0 text-fg-muted" />
-                        <span>{text}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ═══ Right: Preview stats ═══ */}
-            {preview && (
-              <div className="xl:flex-1 space-y-5 animate-slide-up">
-                <div className="rounded-2xl border border-edge/10 bg-surface p-5 shadow-1">
-                  <div className="mb-4 flex items-center gap-2">
-                    <CheckCircle2 size={15} className="text-signal" />
-                    <span className="text-[13px] font-semibold text-fg">解析结果</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="rounded-xl bg-surface-2 p-4 shadow-1 transition-all hover:-translate-y-0.5">
-                      <div className="text-[26px] font-semibold text-signal tabular-nums">{preview.deltas.length}</div>
-                      <div className="text-[11px] text-fg-muted mt-0.5">剧本行</div>
-                    </div>
-                    <div className="rounded-xl bg-surface-2 p-4 shadow-1 transition-all hover:-translate-y-0.5">
-                      <div className="text-[26px] font-semibold text-fg tabular-nums">{preview.characters.length}</div>
-                      <div className="text-[11px] text-fg-muted mt-0.5">角色</div>
-                    </div>
-                    <div className="rounded-xl bg-surface-2 p-4 shadow-1 transition-all hover:-translate-y-0.5">
-                      <div className="text-[26px] font-semibold text-fg tabular-nums">{preview.variables.length}</div>
-                      <div className="text-[11px] text-fg-muted mt-0.5">变量</div>
-                    </div>
-                  </div>
-                  {preview.characters.length > 0 && (
-                    <div className="mt-4 border-t border-edge/10 pt-3">
-                      <div className="text-[11px] font-medium text-fg-muted mb-2">识别到的角色</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {preview.characters.slice(0, 20).map((c, i) => (
-                          <span key={i} className="rounded-full border border-edge/10 bg-surface-2 px-2.5 py-1 text-[11px] text-fg-subtle">
-                            {c.displayName || c.charId}
-                          </span>
-                        ))}
-                        {preview.characters.length > 20 && (
-                          <span className="rounded-full border border-edge/10 bg-surface-2 px-2 py-1 text-[11px] text-fg-muted">
-                            +{preview.characters.length - 20} 人
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {preview.variables.length > 0 && (
-                    <div className="mt-3 border-t border-edge/10 pt-3">
-                      <div className="text-[11px] font-medium text-fg-muted mb-2">识别到的变量</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {preview.variables.slice(0, 20).map((v, i) => (
-                          <code key={i} className="rounded-md border border-edge/10 bg-surface-2 px-2 py-0.5 text-[11px] text-primary font-mono">
-                            {v.name}{v.value ? ` = ${v.value}` : ''}
-                          </code>
-                        ))}
-                        {preview.variables.length > 20 && (
-                          <span className="text-[11px] text-fg-muted">+{preview.variables.length - 20} 个</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {preview.warnings.length > 0 && (
-                    <div className="mt-4 flex items-start gap-2 rounded-xl border border-warning/20 bg-warning/[0.04] p-3 text-[11px] text-fg-muted">
-                      <AlertTriangle size={12} className="mt-0.5 shrink-0 text-warning" />
-                      <span>{preview.warnings.length} 条警告（未识别行可能未被导入）</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* ═══ Quick actions ═══ */}
-                {preview.deltas.length > 0 && (
-                  <div className="rounded-2xl border border-edge/10 bg-surface p-5 shadow-1">
-                    <div className="text-[12px] font-medium text-fg-muted mb-3">导入后生成</div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-surface-2 p-3 text-center">
-                        <div className="text-[11px] text-fg-muted">Script 脚本行</div>
-                        <div className="text-[18px] font-semibold text-fg tabular-nums">{preview.deltas.length}</div>
-                      </div>
-                      <div className="rounded-xl bg-surface-2 p-3 text-center">
-                        <div className="text-[11px] text-fg-muted">Scenes 场景</div>
-                        <div className="text-[18px] font-semibold text-fg tabular-nums">
-                          {new Set(preview.deltas.map(d => (d as any).label).filter(Boolean)).size || '—'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-edge/10 bg-surface px-5 py-3">
-          <button onClick={wrappedClose} className="btn-ghost-sm">取消</button>
-          <button
-            onClick={() => preview && wrappedImport(preview)}
-            disabled={!preview || preview.deltas.length === 0}
-            className="btn-primary-sm"
-          >
-            导入到当前工程
-          </button>
-        </footer>
       </div>
     )
   }
 
-  // Dialog mode: centered modal (backward compat)
+  // ═══ Embedded mode (full-width) ═══
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="mx-4 w-full max-w-2xl rounded-2xl border border-edge/10 bg-surface shadow-2xl">
-        <div className="flex items-center justify-between border-b border-edge/10 px-5 py-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="signal-dot" />
-              <span className="eyebrow">Import</span>
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+      <ImportHeader wrappedClose={wrappedClose} />
+
+      <div className="flex gap-6 overflow-y-auto p-5">
+        {/* ─── 左侧：选择 & 扫描 ─── */}
+        <div
+          className="flex min-w-0 flex-col gap-4 transition-all duration-300"
+          style={{ flex: hasPreview || isDone || isImporting ? 1 : 3 }}
+        >
+          {/* 目录选择 */}
+          <div className="rounded-2xl border border-edge/10 bg-surface p-5 shadow-1">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/[0.06] text-primary">
+                <FolderSearch size={16} strokeWidth={1.75} />
+              </div>
+              <span className="text-[13px] font-semibold text-fg">步骤一：选择 Ren'Py 工程目录</span>
             </div>
-            <h2 className="t-h2 mt-1">导入 Ren'Py 工程</h2>
+            <p className="text-[12px] text-fg-muted mb-4">
+              请选择 Ren'Py 项目的 <b className="text-fg-subtle">game</b> 目录。<br />
+              导入器将自动解析剧本结构并扫描所有图片和音频素材文件。
+            </p>
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <input
+                  className="w-full rounded-xl border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30 transition-colors"
+                  value={dirPath} disabled={isScanning || isImporting}
+                  onChange={(e) => { setDirPath(e.target.value); setPreview(null); setError(''); setPhase('idle') }}
+                  placeholder="点击浏览选择 game 目录，或手动输入路径..."
+                  onKeyDown={(e) => e.key === 'Enter' && void handleScan()}
+                />
+              </div>
+              <button
+                onClick={handleBrowse}
+                disabled={isScanning || isImporting}
+                className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-edge/10 bg-surface-2 px-3 text-[12px] font-medium text-fg-subtle hover:bg-surface-hover hover:text-fg disabled:opacity-40 transition-colors"
+              >
+                <FolderOpen size={14} strokeWidth={1.75} />
+                浏览
+              </button>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-fg-faint">
+              <Info size={11} strokeWidth={1.5} />
+              例如：<code className="rounded border border-edge/10 bg-surface-2 px-1.5 py-px text-fg-muted text-[11px]">D:\mygame\game</code>
+            </div>
           </div>
-          <button onClick={wrappedClose} className="rounded-xl p-1 text-fg-muted hover:bg-surface-2 hover:text-fg transition-colors">
-            <X size={16} />
+
+          {/* 导入说明 */}
+          <div className="rounded-2xl border border-edge/10 bg-surface p-5 shadow-1">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky/[0.06] text-sky">
+                <Info size={16} strokeWidth={1.75} />
+              </div>
+              <span className="text-[13px] font-semibold text-fg">导入范围说明</span>
+            </div>
+            <ul className="space-y-2 text-[12px] text-fg-muted">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-emerald" />
+                label / 对话 / 选择支 / menu / jump
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-emerald" />
+                scene (背景) / show (立绘) / play music / play sound
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-emerald" />
+                define Character / default 变量
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-emerald" />
+                图片素材 (.png .jpg .webp .gif .bmp) 与音频素材 (.mp3 .ogg .wav .flac .aac)
+              </li>
+              <li className="flex items-start gap-2">
+                <AlertTriangle size={12} className="mt-0.5 shrink-0 text-amber" />
+                Python 代码块 / transform 动画 / screen 定义不会被导入
+              </li>
+            </ul>
+          </div>
+
+          {/* 前置条件提醒 */}
+          <div className="rounded-2xl border border-warning/15 bg-warning/[0.03] p-4">
+            <div className="flex items-start gap-2 text-[12px] text-fg-muted">
+              <ShieldAlert size={13} className="mt-0.5 shrink-0 text-warning" />
+              <span>
+                导入素材需要已保存的项目。请先 <b className="text-fg-subtle">Ctrl+S 保存当前工程</b>，素材文件才能正确落盘到项目目录。
+                未保存时你可以先扫描预览导入结果。
+              </span>
+            </div>
+          </div>
+
+          {/* 扫描按钮 */}
+          <button
+            onClick={() => void handleScan()}
+            disabled={isScanning || isImporting || !dirPath.trim()}
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-[14px] font-semibold text-white shadow-1 hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            {isScanning ? (
+              <>
+                <Loader2 size={16} strokeWidth={2} className="animate-spin" />
+                正在扫描目录...
+              </>
+            ) : (
+              <>
+                <FileCheck size={16} strokeWidth={1.75} />
+                扫描并预览
+              </>
+            )}
           </button>
-        </div>
-        <div className="space-y-4 p-5">
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <label className="text-[12px] font-medium text-fg-muted block mb-1.5">Ren'Py 工程目录</label>
-              <input
-                className="w-full rounded-xl border border-edge/10 bg-surface-2 px-3 py-2 text-[13px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30 transition-colors"
-                value={dirPath}
-                onChange={(e) => { setDirPath(e.target.value); setPreview(null); setError('') }}
-                placeholder="选择包含 .rpy 文件的目录..."
-              />
-            </div>
-            <button onClick={handleBrowse} className="btn-ghost-sm shrink-0">
-              <FolderOpen size={15} className="mr-1 inline" />浏览
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handlePreview}
-              disabled={loading || !dirPath.trim()}
-              className="btn-primary-sm"
-            >
-              {loading ? <Loader2 size={14} className="mr-1 inline animate-spin" /> : null}
-              预览解析结果
-            </button>
-          </div>
+
+          {/* 错误提示 */}
           {error && (
             <div className="flex items-start gap-2 rounded-xl border border-danger/20 bg-danger/[0.04] p-3 text-[12px] text-danger">
-              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-          {preview && (
-            <div className="rounded-2xl border border-edge/10 bg-surface p-4 shadow-1 animate-slide-up">
-              <div className="mb-3 flex items-center gap-2">
-                <CheckCircle2 size={14} className="text-signal" />
-                <span className="text-[13px] font-semibold text-fg">解析结果</span>
-              </div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="rounded-xl bg-surface-2 p-3 shadow-1">
-                  <div className="text-[22px] font-semibold text-signal tabular-nums">{preview.deltas.length}</div>
-                  <div className="text-[11px] text-fg-muted">剧本行</div>
-                </div>
-                <div className="rounded-xl bg-surface-2 p-3 shadow-1">
-                  <div className="text-[22px] font-semibold text-fg tabular-nums">{preview.characters.length}</div>
-                  <div className="text-[11px] text-fg-muted">角色</div>
-                </div>
-                <div className="rounded-xl bg-surface-2 p-3 shadow-1">
-                  <div className="text-[22px] font-semibold text-fg tabular-nums">{preview.variables.length}</div>
-                  <div className="text-[11px] text-fg-muted">变量</div>
-                </div>
-              </div>
-              {preview.warnings.length > 0 && (
-                <div className="mt-3 text-[11px] text-fg-muted">
-                  <AlertTriangle size={12} className="mr-1 inline text-warning" />
-                  {preview.warnings.length} 条警告（未识别行可能未被导入）
-                </div>
-              )}
+              <AlertTriangle size={12} className="mt-0.5 shrink-0" />
+              {error}
             </div>
           )}
         </div>
-        <div className="flex items-center justify-end gap-2 border-t border-edge/10 px-5 py-4">
-          <button onClick={wrappedClose} className="btn-ghost-sm">取消</button>
-          <button
-            onClick={() => preview && wrappedImport(preview)}
-            disabled={!preview || preview.deltas.length === 0}
-            className="btn-primary-sm"
-          >
-            导入到当前工程
+
+        {/* ─── 右侧：结果面板 ─── */}
+        {(hasPreview || isDone || isImporting) && preview && (
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            {/* 统计卡片 */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <StatCard icon={FileText} label="剧本行" value={preview.lineCount} color="primary" />
+              <StatCard icon={BookOpen} label="场景" value={labelCount || '—'} color="info" />
+              <StatCard icon={Code} label="选择支" value={choiceCount || '—'} color="warning" />
+              <StatCard icon={Users} label="角色" value={preview.charCount} color="success" />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <StatCard
+                icon={Image} label="图片素材" value={matchedImages}
+                sub={unmatchedImages > 0 ? `${unmatchedImages} 未匹配` : undefined}
+                color={matchedImages > 0 ? 'primary' : 'muted'}
+              />
+              <StatCard
+                icon={Music} label="音频素材" value={matchedAudio}
+                sub={unmatchedAudio > 0 ? `${unmatchedAudio} 未匹配` : undefined}
+                color={matchedAudio > 0 ? 'primary' : 'muted'}
+              />
+              <StatCard icon={Code} label="变量" value={preview.varCount} color="muted" />
+              <StatCard
+                icon={BarChart3} label="可导入素材" value={matchedImages + matchedAudio}
+                sub="已匹配到真实文件"
+                color={matchedImages + matchedAudio > 0 ? 'info' : 'muted'}
+              />
+            </div>
+
+            {/* 警告区域 */}
+            {preview.warnings.length > 0 && (
+              <details className="group rounded-xl border border-warning/20 bg-warning/[0.02]">
+                <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-[12px] font-medium text-warning">
+                  <AlertTriangle size={12} />
+                  {preview.warnings.length} 条解析警告（点击展开）
+                </summary>
+                <div className="max-h-40 overflow-y-auto border-t border-warning/10 px-4 py-3 space-y-1">
+                  {preview.warnings.map((w, i) => (
+                    <div key={i} className="text-[11px] text-fg-muted break-all">{w}</div>
+                  ))}
+                </div>
+              </details>
+            )}
+
+            {/* 素材未匹配提示 */}
+            {(unmatchedImages > 0 || unmatchedAudio > 0) && (
+              <div className="flex items-start gap-3 rounded-xl border border-warning/15 bg-warning/[0.03] p-4">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0 text-warning" />
+                <div className="text-[12px] text-fg-muted">
+                  有 {unmatchedImages + unmatchedAudio} 个素材引用未在目录中找到对应文件。
+                  这些引用不会导入素材，但剧本行本身会保留。
+                </div>
+              </div>
+            )}
+
+            {/* 完成提示 */}
+            {isDone && (
+              <div className="flex items-start gap-3 rounded-2xl border border-emerald/20 bg-emerald/[0.04] p-4">
+                <CheckCircle2 size={20} strokeWidth={1.75} className="mt-0.5 shrink-0 text-emerald" />
+                <div>
+                  <div className="text-[14px] font-semibold text-emerald mb-1">导入完成</div>
+                  <p className="text-[12px] text-fg-muted">
+                    已成功导入 {preview.lineCount} 行剧本、{preview.charCount} 个角色、
+                    {matchedImages} 张图片与 {matchedAudio} 个音频。
+                    系统已自动创建版本快照。
+                  </p>
+                  <button
+                    onClick={wrappedClose}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-medium text-white shadow-1 hover:bg-primary/90 transition-colors"
+                  >
+                    前往剧本流
+                    <ExternalLink size={13} strokeWidth={1.75} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 导入按钮 */}
+            {!isDone && (
+              <button
+                onClick={() => void handleImport()}
+                disabled={isImporting || preview.deltas.length === 0 || !useAppStore.getState().projectRoot}
+                className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-[14px] font-semibold text-white shadow-1 hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                title={!useAppStore.getState().projectRoot ? '需要先保存项目' : undefined}
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 size={16} strokeWidth={2} className="animate-spin" />
+                    正在导入素材与剧本...
+                  </>
+                ) : (
+                  <>
+                    <Upload size={16} strokeWidth={1.75} />
+                    {!useAppStore.getState().projectRoot ? '请先保存项目' : '导入到当前工程'}
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* .rpy 文件预览：列出已解析的关键场景 */}
+            {hasPreview && preview.deltas.length > 0 && (
+              <details className="group rounded-xl border border-edge/10 bg-surface-2">
+                <summary className="flex cursor-pointer items-center gap-2 px-4 py-2 text-[11px] text-fg-muted">
+                  <BookOpen size={11} />
+                  剧本预览（前 20 行）
+                </summary>
+                <div className="max-h-48 overflow-y-auto border-t border-edge/10 px-4 py-3 space-y-0.5 font-mono text-[11px]">
+                  {preview.deltas.slice(0, 20).map((d, i) => (
+                    <div key={i} className="text-fg-faint">
+                      {d.label && <span className="text-sky">{d.label} → </span>}
+                      {d.speaker && <span className="text-primary">{d.speaker}: </span>}
+                      {d.dialogue && <span className="text-fg-muted">{d.dialogue}</span>}
+                      {d.line_type === 'choice' && <span className="text-amber">[选择支: {(d.choices || []).map(c => c.text).join(' | ')}]</span>}
+                      {!d.label && !d.speaker && !d.dialogue && d.line_type !== 'choice' && <span className="text-fg-faint/50">—</span>}
+                    </div>
+                  ))}
+                  {preview.deltas.length > 20 && (
+                    <div className="text-fg-faint/40 pt-1">... 还有 {preview.deltas.length - 20} 行</div>
+                  )}
+                </div>
+              </details>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════
+// Shared header
+// ═══════════════════════════════════════════
+
+function ImportHeader({ wrappedClose }: { wrappedClose: () => void }) {
+  return (
+    <div className="shrink-0 border-b border-edge/10 px-5 py-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="signal-dot" />
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-fg-faint">Import</span>
+            <button
+              onClick={wrappedClose}
+              className="inline-flex items-center gap-1 rounded-xl border border-edge/10 px-2 py-0.5 text-[11px] text-fg-muted hover:bg-surface-2 hover:text-fg transition-colors"
+            >
+              <ChevronLeft size={12} />
+              返回剧本流
+            </button>
+          </div>
+          <h2 className="text-[15px] font-semibold text-fg mt-1.5">导入 Ren'Py 工程</h2>
+          <p className="mt-0.5 text-[12px] text-fg-muted">
+            选择 game 目录，自动解析剧本、角色、素材 — 全量导入而非仅解析变量
+          </p>
+        </div>
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/[0.06] text-primary">
+          <FileDown size={18} strokeWidth={1.75} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════
+// Shared body (used by modal mode)
+// ═══════════════════════════════════════════
+
+function ImportBody(props: {
+  dirPath: string; setDirPath: (v: string) => void
+  phase: string; error: string
+  handleBrowse: () => void; handleScan: () => void
+  preview: RpyImportResult | null
+  labelCount: number; choiceCount: number
+  matchedImages: number; unmatchedImages: number
+  matchedAudio: number; unmatchedAudio: number
+  handleImport: () => void; wrappedClose: () => void
+  isScanning: boolean; isImporting: boolean
+  isDone: boolean; hasPreview: boolean
+}) {
+  const {
+    dirPath, setDirPath, phase, error, handleBrowse, handleScan,
+    preview, labelCount, choiceCount,
+    matchedImages, unmatchedImages, matchedAudio, unmatchedAudio,
+    handleImport, wrappedClose, isScanning, isImporting, isDone, hasPreview,
+  } = props
+
+  return (
+    <div className="space-y-4">
+      {/* 目录选择 */}
+      <div className="rounded-xl border border-edge/10 bg-surface-2 p-4">
+        <label className="text-[12px] font-medium text-fg-muted block mb-2">Ren'Py 工程目录（game 目录）</label>
+        <div className="flex items-end gap-2">
+          <input
+            className="flex-1 rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30 transition-colors"
+            value={dirPath} disabled={isScanning || isImporting}
+            onChange={(e) => { setDirPath(e.target.value); /* parent reset via setDirPath */ }}
+            onKeyDown={(e) => e.key === 'Enter' && handleScan()}
+            placeholder="选择 .rpy 文件所在目录..."
+          />
+          <button onClick={handleBrowse} disabled={isScanning || isImporting} className="btn-ghost-sm">
+            <FolderOpen size={14} /> 浏览
           </button>
         </div>
       </div>
+
+      <button
+        onClick={handleScan}
+        disabled={isScanning || isImporting || !dirPath.trim()}
+        className="btn-primary-sm w-full justify-center"
+      >
+        {isScanning ? <><Loader2 size={14} className="animate-spin" /> 扫描中...</> : '扫描并预览'}
+      </button>
+
+      {error && (
+        <div className="flex items-start gap-2 rounded-xl border border-danger/20 bg-danger/[0.04] p-3 text-[12px] text-danger">
+          <AlertTriangle size={12} className="mt-0.5 shrink-0" />{error}
+        </div>
+      )}
+
+      {preview && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl bg-surface-2 p-3 text-center">
+              <div className="text-[11px] text-fg-muted">剧本行</div>
+              <div className="text-[18px] font-semibold text-fg">{preview.lineCount}</div>
+            </div>
+            <div className="rounded-xl bg-surface-2 p-3 text-center">
+              <div className="text-[11px] text-fg-muted">场景</div>
+              <div className="text-[18px] font-semibold text-fg">{labelCount || '—'}</div>
+            </div>
+            <div className="rounded-xl bg-surface-2 p-3 text-center">
+              <div className="text-[11px] text-fg-muted">角色</div>
+              <div className="text-[18px] font-semibold text-fg">{preview.charCount}</div>
+            </div>
+            <div className="rounded-xl bg-surface-2 p-3 text-center">
+              <div className="text-[11px] text-fg-muted">图片</div>
+              <div className="text-[18px] font-semibold text-fg">{matchedImages}</div>
+            </div>
+            <div className="rounded-xl bg-surface-2 p-3 text-center">
+              <div className="text-[11px] text-fg-muted">音频</div>
+              <div className="text-[18px] font-semibold text-fg">{matchedAudio}</div>
+            </div>
+            <div className="rounded-xl bg-surface-2 p-3 text-center">
+              <div className="text-[11px] text-fg-muted">变量</div>
+              <div className="text-[18px] font-semibold text-fg">{preview.varCount}</div>
+            </div>
+          </div>
+
+          {preview.warnings.length > 0 && (
+            <div className="flex items-start gap-2 rounded-xl border border-warning/20 bg-warning/[0.04] p-3 text-[11px] text-fg-muted">
+              <AlertTriangle size={12} className="mt-0.5 shrink-0 text-warning" />
+              <span>{preview.warnings.length} 条警告</span>
+            </div>
+          )}
+
+          {!isDone && (
+            <button
+              onClick={handleImport}
+              disabled={isImporting || preview.deltas.length === 0}
+              className="btn-primary-sm w-full justify-center"
+            >
+              {isImporting ? <><Loader2 size={14} className="animate-spin" /> 导入中...</> : '导入到当前工程'}
+            </button>
+          )}
+
+          {isDone && (
+            <div className="flex items-center gap-2 rounded-xl border border-emerald/20 bg-emerald/[0.04] p-3">
+              <CheckCircle2 size={16} className="text-emerald" />
+              <span className="text-[13px] font-medium text-emerald">导入完成</span>
+              <button onClick={wrappedClose} className="ml-auto text-[12px] text-primary hover:underline">
+                查看剧本
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

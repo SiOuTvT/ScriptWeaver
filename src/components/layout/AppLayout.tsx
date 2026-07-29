@@ -606,28 +606,7 @@ export default function AppLayout() {
           />
         )}
         {activeNavItem === 'import-rpy' && (
-          <RpyImportDialog
-            embedded
-            onImport={(result) => {
-              setActiveNavItem('chapters')
-              const st = useAppStore.getState()
-              const merged = [...st.draftDeltas, ...result.deltas]
-              st.setDraftDeltas(merged)
-              const existingChars = new Set(st.characterConfigs.map((c) => c.charId))
-              const newChars = result.characters.filter((c) => !existingChars.has(c.charId))
-              if (newChars.length > 0) st.setCharacterConfigs([...st.characterConfigs, ...newChars])
-              const existingVars = new Set(st.variables.map((v) => v.name))
-              const newVars = result.variables
-                .filter((v) => !existingVars.has(v.name))
-                .map((v) => ({ name: v.name, type: 'number' as const, initial: Number(v.value) || 0, note: `从 Ren'Py 导入 (原始: ${v.value})` }))
-              if (newVars.length > 0) st.setVariables([...st.variables, ...newVars])
-              if (result.warnings.length > 0) {
-                toast(`导入完成（${result.deltas.length} 行，${result.warnings.length} 条警告）`, 'warning')
-              } else {
-                toast(`已导入 ${result.deltas.length} 行剧本`, 'success')
-              }
-            }}
-          />
+          <RpyImportDialog embedded />
         )}
       </div>
 
