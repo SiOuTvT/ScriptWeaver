@@ -70,35 +70,35 @@ export default function DiagnosticsPanel() {
       <div className="shrink-0 border-b border-edge/10 px-5 py-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
-            { value: report.totalIssues, label: '总计', icon: ShieldCheck, color: 'text-fg', happy: false },
-            { value: report.errors, label: '错误', icon: Bug, color: 'text-danger', happy: true },
-            { value: report.warnings, label: '警告', icon: AlertTriangle, color: 'text-warning', happy: true },
-            { value: report.infos, label: '提示', icon: Info, color: 'text-info', happy: false },
+            { value: report.totalIssues, label: '总计', icon: ShieldCheck, toneColor: 'rgb(var(--c-fg))', iconBg: 'rgb(var(--c-fg) / 0.1)' },
+            { value: report.errors, label: '错误', icon: Bug, toneColor: 'rgb(var(--c-danger))', iconBg: 'rgb(var(--c-danger) / 0.12)' },
+            { value: report.warnings, label: '警告', icon: AlertTriangle, toneColor: 'rgb(var(--c-warning))', iconBg: 'rgb(var(--c-warning) / 0.12)' },
+            { value: report.infos, label: '提示', icon: Info, toneColor: 'rgb(var(--c-info))', iconBg: 'rgb(var(--c-info) / 0.12)' },
           ].map((s, i) => {
             const Icon = s.icon
-            const isHealthy = s.happy && s.value === 0
+            const isFg = s.toneColor === 'rgb(var(--c-fg))'
             return (
               <div
                 key={s.label}
-                className={`group relative flex animate-slide-up flex-col gap-2 overflow-hidden rounded-2xl border border-edge/10 bg-surface p-4 shadow-1 transition-all duration-300 hover:-translate-y-0.5 hover:border-edge/20 hover:shadow-2`}
-                style={{ animationDelay: `${i * 40}ms` }}
+                className="group relative flex animate-slide-up flex-col gap-2 overflow-hidden rounded-2xl border border-edge/10 bg-surface p-4 shadow-1 transition-all duration-300 hover:-translate-y-0.5 hover:border-edge/20 hover:shadow-2"
+                style={{ animationDelay: `${i * 55}ms` }}
               >
-                <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-primary/5 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
-                <div className="flex items-center gap-2.5">
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                    s.color === 'text-danger' ? 'bg-danger/10' :
-                    s.color === 'text-warning' ? 'bg-warning/10' :
-                    s.color === 'text-info' ? 'bg-info/10' : 'bg-fg-faint/10'
-                  } ${s.color}`}>
-                    <Icon size={16} />
-                  </div>
-                  <span className="t-label text-fg-muted">{s.label}</span>
+                <div
+                  className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+                  style={{ background: s.toneColor }}
+                />
+                <div
+                  className="flex h-8 w-8 items-center justify-center rounded-lg"
+                  style={{ background: isFg ? 'rgb(var(--c-fg-muted) / 0.08)' : s.iconBg, color: s.toneColor }}
+                >
+                  <Icon size={16} />
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-[22px] font-semibold leading-none tabular-nums ${isHealthy ? 'text-emerald-500' : 'text-fg'}`}>
+                  <span className="t-mono text-[22px] font-semibold leading-none tabular-nums" style={{ color: s.toneColor }}>
                     {s.value}
                   </span>
                 </div>
+                <span className="t-label">{s.label}</span>
               </div>
             )
           })}

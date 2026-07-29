@@ -123,16 +123,21 @@ function normalizeRef(raw: string): string {
 // ═══════════════════════════════════════════
 
 /**
- * 解析一段 Ren'Py 脚本，提取角色、变量、剧本行和素材引用。
+ * 两阶段解析 Ren'Py 脚本：
+ * 阶段 1 — 收集 define Character / define 单字符名 / image 声明 / default，建立变量名→显示名映射
+ * 阶段 2 — 解析 label / menu / scene / show / play / 对白，用映射修正角色名
+ *
+ * 对白语法兼容：
+ *   1. dialogue_var "文本"         — Ren'Py 最常用写法（无引号的变量名说话人）
+ *   2. "角色名" "文本"            — 带引号的说话人（直接使用显示名）
+ *   3. "文本"                     — 旁白
  */
 export function parseRpy(source: string): {
   deltas: LineDelta[]
   characters: CharacterConfig[]
   variables: { name: string; value: string }[]
   warnings: string[]
-  /** 脚本中引用的图片名（如 "bg_park", "eileen happy"） */
   referencedImages: string[]
-  /** 脚本中引用的音频文件名（保留原始路径） */
   referencedAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[]
 } {
   const lines = source.split(/\r?\n/)
@@ -144,15 +149,79 @@ export function parseRpy(source: string): {
   const refImages = new Set<string>()
   const refAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[] = []
 
-  let lineId = 0
-  const deltas: LineDelta[] = []
-  let inMenu = false
-  let menuChoices: ChoiceItem[] = []
+  /** 变量名 → { charId, displayName } 映射 */
+  const varToDisplayName = new Map<string, string>()
 
-  function addChar(name: string) {
-    if (!charSet.has(name)) {
-      charSet.add(name)
-      characters.push(createCharConfig(name))
+  // ═══ 阶段 1：收集角色定义 ═══
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line || line.startsWith('#') || line.startsWith('//')) continue
+
+    // define varName = Character("显示名", ...)
+    const defineChar = line.match(/^define\s+([a-zA-Z_]\w*)\s*=\s*Character\s*\(/)
+    if (defineChar) {
+      const varName = defineChar[1]
+      const displayNameM = line.match(/Character\s*\(\s*"([^"]*)"/)
+      const displayName = displayNameM ? displayNameM[1] : varName
+      varToDisplayName.set(varName, displayName)
+      if (!charSet.has(varName)) {
+        charSet.add(varName)
+        characters.push(createCharConfig(varName, displayName))
+      }
+      continue
+    }
+
+    // define varName = "Name" (短角色定义，简化写法——直接把字符串作为显示名)
+    const defineSimpleChar = line.match(/^define\s+([a-zA-Z_]\w*)\s*=\s*"([^"]*)"\s*$/)
+    if (defineSimpleChar) {
+      const varName = defineSimpleChar[1]
+      const displayName = defineSimpleChar[2]
+      varToDisplayName.set(varName, displayName)
+      if (!charSet.has(varName)) {
+        charSet.add(varName)
+        characters.push(createCharConfig(varName, displayName))
+      }
+    }
+
+    // define varName = DynamicCharacter(...)
+    const defineDynChar = line.match(/^define\s+([a-zA-Z_]\w*)\s*=\s*DynamicCharacter\s*\(/)
+    if (defineDynChar) {
+      const varName = defineDynChar[1]
+      const displayNameM = line.match(/DynamicCharacter\s*\(\s*"([^"]*)"/)
+      const displayName = displayNameM ? displayNameM[1] : varName
+      varToDisplayName.set(varName, displayName)
+      if (!charSet.has(varName)) {
+        charSet.add(varName)
+        characters.push(createCharConfig(varName, displayName))
+      }
+    }
+
+    // define varName = Character('单引号加号', ...)
+    const defineCharSQ = line.match(/^define\s+([a-zA-Z_]\w*)\s*=\s*Character\s*\(\s*'([^']*)'/)
+    if (defineCharSQ && !varToDisplayName.has(defineCharSQ[1])) {
+      varToDisplayName.set(defineCharSQ[1], defineCharSQ[2])
+      const existing = characters.find(c => c.charId === defineCharSQ[1])
+      if (existing) existing.displayName = defineCharSQ[2]
+    }
+
+    // image refName = "path/to/file.png"（收集引用）
+    const imageDef = line.match(/^image\s+(.+?)\s*=\s*"([^"]+)"/)
+    if (imageDef) {
+      refImages.add(imageDef[1].trim())
+      continue
+    }
+
+    // image refName = 'path/to/file.png'（单引号写法）
+    const imageDefSQ = line.match(/^image\s+(.+?)\s*=\s*'([^']+)'/)
+    if (imageDefSQ) {
+      refImages.add(imageDefSQ[1].trim())
+      continue
+    }
+
+    // default var = val
+    const defaultVar = line.match(/^default\s+(\w+)\s*=\s*(.+)/)
+    if (defaultVar) {
+      addVar(defaultVar[1], defaultVar[2].trim())
     }
   }
 
@@ -160,6 +229,59 @@ export function parseRpy(source: string): {
     if (!varSet.has(name)) {
       varSet.add(name)
       variableDefs.push({ name, value })
+    }
+  }
+
+  // ═══ 阶段 2：解析内容 ═══
+
+  let lineId = 0
+  const deltas: LineDelta[] = []
+  let inMenu = false
+  let menuChoices: ChoiceItem[] = []
+
+  /**
+   * 将「说话者标识」解析为 charId + displayName：
+   * 1. 如果标识匹配已知变量名 → 使用对应的 charId + displayName
+   * 2. 如果标识匹配已知角色的 displayName → 使用该角色的 charId + displayName
+   * 3. 如果标识是纯英文字 ⚡ 变量名 → 创建新角色（charId = 标识, displayName = 标识）
+   * 4. 其他 → 按 displayName 创建新角色
+   */
+  function resolveSpeaker(rawName: string): { charId: string; displayName: string } {
+    const name = rawName.trim()
+    if (!name) return { charId: '', displayName: '' }
+
+    // 规则1: 精确匹配已知变量名
+    if (varToDisplayName.has(name)) {
+      return { charId: name, displayName: varToDisplayName.get(name)! }
+    }
+
+    // 规则2: 匹配已知角色的 displayName
+    const byDisplay = characters.find(c => c.displayName === name)
+    if (byDisplay) {
+      return { charId: byDisplay.charId, displayName: byDisplay.displayName }
+    }
+
+    // 规则3: 纯英文/数字/下划线 → 视为变量名
+    if (/^[a-zA-Z_]\w*$/.test(name)) {
+      return { charId: name, displayName: name }
+    }
+
+    // 规则4: 带中文/其他字符 → 视为显示名
+    return { charId: name, displayName: name }
+  }
+
+  function ensureChar(charId: string, displayName: string) {
+    if (!charId) return
+    if (!charSet.has(charId)) {
+      charSet.add(charId)
+      characters.push(createCharConfig(charId, displayName))
+    }
+    // 如果已有该 charId 但 displayName 为空/不同，补齐显示名
+    const existing = characters.find(c => c.charId === charId)
+    if (existing && (!existing.displayName || existing.displayName.trim() === '' || existing.displayName === charId)) {
+      if (displayName && displayName !== charId) {
+        existing.displayName = displayName
+      }
     }
   }
 
@@ -171,25 +293,14 @@ export function parseRpy(source: string): {
     const line = raw.trim()
     if (!line || line.startsWith('#') || line.startsWith('//')) continue
 
-    // ---- define Character ----
-    const defineChar = line.match(/^define\s+(\w+)\s*=\s*Character\s*\(/)
-    if (defineChar) {
-      addChar(defineChar[1])
-      // 尝试提取 displayName: Character("名字", ...)
-      const displayNameM = line.match(/Character\s*\(\s*"([^"]*)"/)
-      if (displayNameM) {
-        const existing = characters.find(c => c.charId === defineChar[1])
-        if (existing) existing.displayName = displayNameM[1]
-      }
-      continue
-    }
+    // ---- define 声明已在阶段 1 处理，跳过 ----
+    if (line.startsWith('define ')) continue
 
-    // ---- default 变量 ----
-    const defaultVar = line.match(/^default\s+(\w+)\s*=\s*(.+)/)
-    if (defaultVar) {
-      addVar(defaultVar[1], defaultVar[2].trim())
-      continue
-    }
+    // ---- default 变量已收集，跳过 ----
+    if (line.startsWith('default ')) continue
+
+    // ---- image 声明已收集，跳过 ----
+    if (line.startsWith('image ')) continue
 
     // ---- label ----
     const labelM = line.match(/^label\s+(\S+)\s*:/)
@@ -202,21 +313,6 @@ export function parseRpy(source: string): {
         characters: noChars,
         audio: emptyAudio,
       })
-      continue
-    }
-
-    // ---- image 声明（收集引用，不生成 Delta）----
-    const imageDef = line.match(/^image\s+(\S.*?)\s*=\s*"([^"]+)"/)
-    if (imageDef) {
-      // image eileen happy = "eileen_happy.png" → ref: "eileen happy"
-      refImages.add(imageDef[1].trim())
-      continue
-    }
-
-    // ---- image bg  = "..." (Ren'Py 自动背景图片声明) ----
-    const imageBgDef = line.match(/^image\s+bg\s+(\S+)\s*=\s*"([^"]+)"/)
-    if (imageBgDef) {
-      refImages.add('bg_' + imageBgDef[1])
       continue
     }
 
@@ -238,7 +334,7 @@ export function parseRpy(source: string): {
 
     if (inMenu) {
       const choiceM = line.match(/^"([^"]*)"\s*:\s*$/)
-      const jumpM = line.match(/^jump\s+(\w+)/)
+      const jumpM = line.match(/^\s*jump\s+(\w+)/)
       if (choiceM) {
         const choice: ChoiceItem = {
           uid: `imp_choice_${lineId}_${menuChoices.length}`,
@@ -264,12 +360,30 @@ export function parseRpy(source: string): {
         continue
       }
       // menu 内的变量操作
-      const varOpM = line.match(/^\$\s*(\w+)\s*(\+|-|)\s*=\s*(\S+)/)
+      const varOpM = line.match(/^\$\s*(\w+)\s*([+\-])\s*=\s*(\S+)/)
       if (varOpM) {
         const op: VariableOperation = {
           varName: varOpM[1],
-          op: varOpM[2] === '+' ? 'add' : varOpM[2] === '-' ? 'subtract' : 'set',
+          op: varOpM[2] === '+' ? 'add' : 'subtract',
           value: Number(varOpM[3]) || 0,
+        }
+        if (menuChoices.length > 0) {
+          const idx = menuChoices.length - 1
+          menuChoices[idx].ops = [...(menuChoices[idx].ops || []), op]
+          const last = deltas[deltas.length - 1]
+          if (last && last.line_type === 'choice') {
+            last.choices = [...menuChoices]
+          }
+        }
+        continue
+      }
+      // menu 内 set var = value
+      const assignM = line.match(/^\$\s*(\w+)\s*=\s*(.+)/)
+      if (assignM) {
+        const op: VariableOperation = {
+          varName: assignM[1],
+          op: 'set',
+          value: Number(assignM[2]) || 0,
         }
         if (menuChoices.length > 0) {
           const idx = menuChoices.length - 1
@@ -285,14 +399,32 @@ export function parseRpy(source: string): {
     }
 
     // ---- $ python 变量操作 ----
-    const scriptVar = line.match(/^\$\s*(\w+)\s*(\+|-|)\s*=\s*(\S+)/)
+    const scriptVar = line.match(/^\$\s*(\w+)\s*([+\-])\s*=\s*(\S+)/)
     if (scriptVar) {
       const op: VariableOperation = {
         varName: scriptVar[1],
-        op: scriptVar[2] === '+' ? 'add' : scriptVar[2] === '-' ? 'subtract' : 'set',
+        op: scriptVar[2] === '+' ? 'add' : 'subtract',
         value: Number(scriptVar[3]) || 0,
       }
       addVar(scriptVar[1], scriptVar[3] || '0')
+      lineId++
+      emitDelta({
+        ...baseDelta(lineId),
+        variableOps: [op],
+        background: noBG,
+        characters: noChars,
+        audio: emptyAudio,
+      })
+      continue
+    }
+    const scriptAssign = line.match(/^\$\s*(\w+)\s*=\s*(.+)/)
+    if (scriptAssign) {
+      const op: VariableOperation = {
+        varName: scriptAssign[1],
+        op: 'set',
+        value: isNaN(Number(scriptAssign[2])) ? 0 : Number(scriptAssign[2]),
+      }
+      addVar(scriptAssign[1], scriptAssign[2].trim())
       lineId++
       emitDelta({
         ...baseDelta(lineId),
@@ -322,24 +454,40 @@ export function parseRpy(source: string): {
     // ---- show (显示立绘) ----
     const showM = line.match(/^show\s+(\S+)/)
     if (showM) {
-      const name = showM[1]
-      // Ren'Py show 后面的名字可能有空格，取完整的（如 "show eileen happy"）
       const fullExpr = showM[0].replace(/^show\s+/, '').trim()
       refImages.add(fullExpr)
-      addChar(name)
-      lineId++
-      emitDelta({
-        ...baseDelta(lineId),
-        characters: {
-          [name]: { sprite_id: name, char_id: name, position_slot: 'center', action: 'show' as const },
-        },
-        background: noBG,
-        audio: emptyAudio,
-      })
+      // show 指令的第一个词通常是角色变量名（也可是 expression name）
+      const firstWord = fullExpr.split(/\s+/)[0]
+      const resolved = resolveSpeaker(firstWord)
+      // 如果 firstWord 本身无法解析为角色（如纯图片），就用 fullExpr 的第一个词
+      if (resolved.charId) {
+        ensureChar(resolved.charId, resolved.displayName)
+        lineId++
+        emitDelta({
+          ...baseDelta(lineId),
+          characters: {
+            [resolved.charId]: { sprite_id: fullExpr, char_id: resolved.charId, position_slot: 'center', action: 'show' as const },
+          },
+          background: noBG,
+          audio: emptyAudio,
+        })
+      } else {
+        // 无法解析为已知角色，使用全名作为 sprite_id
+        ensureChar(firstWord, firstWord)
+        lineId++
+        emitDelta({
+          ...baseDelta(lineId),
+          characters: {
+            [firstWord]: { sprite_id: fullExpr, char_id: firstWord, position_slot: 'center', action: 'show' as const },
+          },
+          background: noBG,
+          audio: emptyAudio,
+        })
+      }
       continue
     }
 
-    // ---- hide — ScriptWeaver 模型不支持独立 hide 行，跳过 ----
+    // ---- hide — 跳过 ----
 
     // ---- play music ----
     const playM = line.match(/^play\s+music\s+"([^"]*)"/)
@@ -349,6 +497,20 @@ export function parseRpy(source: string): {
       emitDelta({
         ...baseDelta(lineId),
         audio: { bgm: { asset_id: playM[1], volume: 1, loop: true }, ambient: null, se: [], voice: null },
+        background: noBG,
+        characters: noChars,
+      })
+      continue
+    }
+
+    // ---- play music '单引号' ----
+    const playMSQ = line.match(/^play\s+music\s+'([^']*)'/)
+    if (playMSQ) {
+      refAudio.push({ path: playMSQ[1], type: 'bgm' })
+      lineId++
+      emitDelta({
+        ...baseDelta(lineId),
+        audio: { bgm: { asset_id: playMSQ[1], volume: 1, loop: true }, ambient: null, se: [], voice: null },
         background: noBG,
         characters: noChars,
       })
@@ -369,6 +531,20 @@ export function parseRpy(source: string): {
       continue
     }
 
+    // ---- play sound '单引号' ----
+    const playSfxSQ = line.match(/^play\s+sound\s+'([^']*)'/)
+    if (playSfxSQ) {
+      refAudio.push({ path: playSfxSQ[1], type: 'se' })
+      lineId++
+      emitDelta({
+        ...baseDelta(lineId),
+        audio: { bgm: null, ambient: null, se: [playSfxSQ[1]], voice: null },
+        background: noBG,
+        characters: noChars,
+      })
+      continue
+    }
+
     // ---- voice ----
     const voiceM = line.match(/^voice\s+"([^"]*)"/)
     if (voiceM) {
@@ -376,16 +552,19 @@ export function parseRpy(source: string): {
       continue
     }
 
-    // ---- 对白: "Speaker" "text" ----
-    const dialogueM = line.match(/^"([^"]*)"\s+"([^"]*)"\s*$/)
-    if (dialogueM && !inMenu) {
-      const speaker = dialogueM[1].trim()
-      const text = dialogueM[2]
-      if (speaker) addChar(speaker)
+    // ═══ 对白（三种模式） ═══
+
+    // ---- 模式 1: varName "文本"（无引号说话人，Ren'Py 最常用写法） ----
+    const dialogueVar = line.match(/^([a-zA-Z_]\w*)\s+"([^"]*)"\s*$/)
+    if (dialogueVar) {
+      const speakerVar = dialogueVar[1]
+      const text = dialogueVar[2]
+      const resolved = resolveSpeaker(speakerVar)
+      ensureChar(resolved.charId, resolved.displayName)
       lineId++
       emitDelta({
         ...baseDelta(lineId),
-        speaker: speaker || null,
+        speaker: resolved.displayName || speakerVar,
         dialogue: text,
         background: noBG,
         characters: noChars,
@@ -394,11 +573,78 @@ export function parseRpy(source: string): {
       continue
     }
 
-    // ---- 旁白/叙事（无引号的直接文本） ----
+    // ---- 模式 2: "角色名" "文本"（带引号的说话人）----
+    const dialogueQuoted = line.match(/^"([^"]*)"\s+"([^"]*)"\s*$/)
+    if (dialogueQuoted) {
+      const speakerName = dialogueQuoted[1].trim()
+      const text = dialogueQuoted[2]
+      if (speakerName) {
+        const resolved = resolveSpeaker(speakerName)
+        ensureChar(resolved.charId, resolved.displayName)
+        lineId++
+        emitDelta({
+          ...baseDelta(lineId),
+          speaker: speakerName,
+          dialogue: text,
+          background: noBG,
+          characters: noChars,
+          audio: emptyAudio,
+        })
+      } else {
+        // 纯对白（无说话人）→ 旁白
+        lineId++
+        emitDelta({
+          ...baseDelta(lineId),
+          dialogue: text,
+          background: noBG,
+          characters: noChars,
+          audio: emptyAudio,
+        })
+      }
+      continue
+    }
+
+    // ---- 模式 3: "文本"（旁白/叙事） ----
+    const narration = line.match(/^"([^"]*)"\s*$/)
+    if (narration) {
+      const text = narration[1]
+      lineId++
+      emitDelta({
+        ...baseDelta(lineId),
+        dialogue: text,
+        background: noBG,
+        characters: noChars,
+        audio: emptyAudio,
+      })
+      continue
+    }
+
+    // ---- 续行对白（extend "文本"） ----
+    const extendM = line.match(/^extend\s+"([^"]*)"\s*$/)
+    if (extendM) {
+      lineId++
+      emitDelta({
+        ...baseDelta(lineId),
+        dialogue: extendM[1],
+        background: noBG,
+        characters: noChars,
+        audio: emptyAudio,
+      })
+      continue
+    }
+
+    // ---- return / jump / call / stop / pause / with 等控制流（非内容行，跳过）----
+    if (/^(return|jump\s+\w+|call\s+\w+|stop\s+\w+|pause|with\s+\w+|hide\s+\w+|window\s+|init\s+|transform\s+|screen\s+|style\s+|layeredimage\s+|nvl\s+|queue\s+)/.test(line)) {
+      continue
+    }
+
+    // ---- 纯文本行（无标记的旁白/叙事） ----
     if (!line.startsWith('$') && !line.startsWith('label') && !line.startsWith('scene')
       && !line.startsWith('show') && !line.startsWith('hide') && !line.startsWith('play')
       && !line.startsWith('voice') && !line.startsWith('image') && !line.startsWith('call')
-      && !line.startsWith('jump') && !line.startsWith('return') && !line.startsWith('window')) {
+      && !line.startsWith('jump') && !line.startsWith('return') && !line.startsWith('window')
+      && !line.startsWith('define') && !line.startsWith('default') && !line.startsWith('init')
+      && !line.startsWith('transform') && !line.startsWith('screen') && !line.startsWith('style')) {
       lineId++
       emitDelta({
         ...baseDelta(lineId),
@@ -410,14 +656,14 @@ export function parseRpy(source: string): {
       continue
     }
 
-    if (line && !line.startsWith('$') && !line.startsWith('init') && !line.startsWith('image')
-      && !line.startsWith('transform') && !line.startsWith('return') && !line.startsWith('call')
-      && !line.startsWith('jump') && !line.startsWith('window')) {
+    // ---- 兜底：不可静默吞掉的行 → 警告 ----
+    if (line && !line.startsWith('init') && !line.startsWith('transform') && !line.startsWith('screen')
+      && !line.startsWith('style') && !line.startsWith('layeredimage')) {
       warnings.push(`未识别的行: ${line.slice(0, 60)}`)
     }
   }
 
-  // 确保所有已添加到 characters 中的角色都带有 displayName（而不是空字符串）
+  // 确保所有角色都有 displayName
   for (const c of characters) {
     if (!c.displayName || c.displayName.trim() === '') {
       c.displayName = c.charId

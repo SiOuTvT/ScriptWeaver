@@ -230,47 +230,57 @@ export default function RenPyEcosystemHub() {
         {activeTab === 'audit' && (
           <div className="space-y-5">
 
-            {/* Stats Dashboard */}
+            {/* Stats Dashboard — 1:1 对齐 ScriptOverview bento 卡片 */}
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {[{
-                label: '大类总数', value: auditStats.total, icon: Bookmark, color: 'text-fg',
-                bg: 'bg-surface-2', ring: 'ring-fg-muted/10',
+                label: '大类总数', value: auditStats.total, icon: Bookmark,
+                toneColor: 'rgb(var(--c-fg))', iconBg: 'rgb(var(--c-fg) / 0.1)',
               }, {
-                label: '已全覆盖', value: auditStats.covered, icon: CheckCircle2, color: 'text-signal',
-                bg: 'bg-signal/[0.06]', ring: 'ring-signal/20',
+                label: '已全覆盖', value: auditStats.covered, icon: CheckCircle2,
+                toneColor: 'rgb(var(--c-signal))', iconBg: 'rgb(var(--c-signal) / 0.12)',
               }, {
-                label: '补充覆盖', value: auditStats.supplement, icon: Puzzle, color: 'text-fg-muted',
-                bg: 'bg-surface-2', ring: 'ring-fg-muted/10',
+                label: '补充覆盖', value: auditStats.supplement, icon: Puzzle,
+                toneColor: 'rgb(var(--c-fg))', iconBg: 'rgb(var(--c-fg) / 0.1)',
               }, {
-                label: '特效大本营', value: null, icon: Sparkles, color: 'text-primary',
-                bg: 'bg-surface-2', ring: 'ring-primary/10',
-              }].map((stat, i) => (
-                <div
-                  key={stat.label}
-                  className={`group relative flex animate-slide-up flex-col gap-2 overflow-hidden rounded-2xl border border-edge/10 ${stat.bg} p-4 shadow-1 transition-all duration-300 hover:-translate-y-0.5 hover:border-edge/20 hover:shadow-2`}
-                  style={{ animationDelay: `${i * 40}ms` }}
-                >
-                  <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-primary/5 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
-                  <div className="flex items-center gap-2.5">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${stat.color === 'text-signal' ? 'bg-signal/10' : 'bg-fg-faint/10'} ${stat.color}`}>
-                      <stat.icon size={16} />
-                    </div>
-                    <span className="t-label text-fg-muted">{stat.label}</span>
-                  </div>
-                  {stat.value !== null ? (
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-[22px] font-semibold leading-none text-fg tabular-nums">{stat.value}</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setActiveNavItem('effects')}
-                      className="mt-1 inline-flex items-center gap-1.5 text-[12px] text-primary font-medium hover:underline"
+                label: '特效大本营', value: null, icon: Sparkles,
+                toneColor: 'rgb(var(--c-primary))', iconBg: 'rgb(var(--c-primary) / 0.12)',
+              }].map((stat, i) => {
+                const Icon = stat.icon
+                return (
+                  <div
+                    key={stat.label}
+                    className="group relative flex animate-slide-up flex-col gap-2 overflow-hidden rounded-2xl border border-edge/10 bg-surface p-4 shadow-1 transition-all duration-300 hover:-translate-y-0.5 hover:border-edge/20 hover:shadow-2"
+                    style={{ animationDelay: `${i * 55}ms` }}
+                  >
+                    <div
+                      className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+                      style={{ background: stat.toneColor }}
+                    />
+                    <div
+                      className="flex h-8 w-8 items-center justify-center rounded-lg"
+                      style={{ background: stat.toneColor === 'rgb(var(--c-fg))' ? 'rgb(var(--c-fg-muted) / 0.08)' : stat.iconBg, color: stat.toneColor }}
                     >
-                      打开特效大本营 <ExternalLink size={11} />
-                    </button>
-                  )}
-                </div>
-              ))}
+                      <Icon size={16} />
+                    </div>
+                    {stat.value !== null ? (
+                      <div className="flex items-baseline gap-1">
+                        <span className="t-mono text-[22px] font-semibold leading-none tabular-nums" style={{ color: stat.toneColor }}>
+                          {stat.value}
+                        </span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setActiveNavItem('effects')}
+                        className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors hover:underline"
+                        style={{ color: stat.toneColor }}
+                      >
+                        打开特效大本营 <ExternalLink size={11} />
+                      </button>
+                    )}
+                    <span className="t-label">{stat.label}</span>
+                  </div>
+                )
+              })}
             </div>
 
             {/* Coverage Grid */}
