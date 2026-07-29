@@ -92,25 +92,13 @@ export default function AppLayout() {
   const loadProjectData = useAppStore((s) => s.loadProjectData)
   const newProject = useAppStore((s) => s.newProject)
   const setProjectRoot = useAppStore((s) => s.setProjectRoot)
+  const setActiveNavItem = useAppStore((s) => s.setActiveNavItem)
   const debounceMsRef = useRef(settings.autoSaveIntervalMs)
   debounceMsRef.current = settings.autoSaveIntervalMs
 
   // ---- 对话框状态 ----
   const [showNewConfirm, setShowNewConfirm] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
-
-  // ---- 侧栏事件：模板/导入改为全屏页面走导航 ----
-  const setActiveNavItem = useAppStore((s) => s.setActiveNavItem)
-  useEffect(() => {
-    const openTemplates = () => setActiveNavItem('templates')
-    const openRpyImport = () => setActiveNavItem('import-rpy')
-    window.addEventListener('sw:open-templates', openTemplates)
-    window.addEventListener('sw:open-import-rpy', openRpyImport)
-    return () => {
-      window.removeEventListener('sw:open-templates', openTemplates)
-      window.removeEventListener('sw:open-import-rpy', openRpyImport)
-    }
-  }, [setActiveNavItem])
 
   // ---- 顶栏「测试运行」：组装工程并启动 Ren'Py 预览 ----
   const handleTestRun = useCallback(async () => {

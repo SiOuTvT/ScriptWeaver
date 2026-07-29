@@ -1520,11 +1520,13 @@ ipcMain.handle('fs:downloadAsset', async (_event, remoteUrl: string, relativePat
 ipcMain.handle('dialog:selectDirectory', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
     properties: ['openDirectory'],
-    title: '选择 Ren'Py 工程目录',
+    title: '选择 RenPy 工程目录',
   })
   if (canceled || filePaths.length === 0) return { cancelled: true }
   return { path: filePaths[0] }
 })
+
+// fs:readdir — list directory contents (trigger rebuild)
 
 ipcMain.handle('fs:readdir', async (_event, dirPath: string) => {
   try {

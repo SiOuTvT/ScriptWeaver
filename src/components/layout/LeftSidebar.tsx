@@ -11,7 +11,6 @@ interface NavItem {
   label: string
   icon: ReactNode
   code?: string
-  action?: () => void
 }
 
 interface NavGroup {
@@ -50,11 +49,9 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         id: 'templates', label: '从模板新建', code: '11', icon: <FilePlus2 size={18} strokeWidth={1.75} />,
-        action: () => window.dispatchEvent(new Event('sw:open-templates')),
       },
       {
         id: 'import-rpy', label: '导入 Ren\'Py 工程', code: '12', icon: <FolderOpen size={18} strokeWidth={1.75} />,
-        action: () => window.dispatchEvent(new Event('sw:open-import-rpy')),
       },
       { id: 'diagnostics', label: '工程体检', code: '13', icon: <Stethoscope size={18} strokeWidth={1.75} /> },
       { id: 'history', label: '版本历史', code: '14', icon: <History size={18} strokeWidth={1.75} /> },
@@ -89,10 +86,6 @@ export default function LeftSidebar() {
   const width = collapsed ? 'w-12' : 'w-52'
 
   const handleClick = (item: NavItem) => {
-    if (item.action) {
-      item.action()
-      return
-    }
     setActive(item.id as Parameters<typeof setActive>[0])
   }
 
