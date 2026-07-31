@@ -2,7 +2,6 @@
 > scriptweaver@1.0.0 dev
 > vite
 
-Re-optimizing dependencies because vite config has changed
 [36mvite v5.4.21 [32mbuilding for development...[36m[39m
 [36m
 watching for file changes...[39m
@@ -14,95 +13,179 @@ build started...[39m
 [36m
 build started...[39m
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m750[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m585[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
 [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
 [2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
 transforming...
 [32m✓[39m 1 modules transformed.
-rendering chunks...
 transforming...
+rendering chunks...
 computing gzip size...
 [2mdist-electron/[22m[36mpreload.js  [39m[1m[2m4.92 kB[22m[1m[22m[2m │ gzip: 2.31 kB[22m
-[36mbuilt in 1013ms.[39m
+[36mbuilt in 684ms.[39m
 [32m✓[39m 2 modules transformed.
 rendering chunks...
 computing gzip size...
 [2mdist-electron/[22m[36mmain.js  [39m[1m[2m47.46 kB[22m[1m[22m[2m │ gzip: 12.69 kB[22m
-[36mbuilt in 1133ms.[39m
+[36mbuilt in 792ms.[39m
 
-[312:0731/152258.889:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[312:0731/152258.889:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[sw-asset] request sw-asset://asset/assets/images/background/bj1.jpg | rel= assets/images/background/bj1.jpg | activeRoot= D:\meihuogu\siyu\game
-[sw-asset]  HIT D:\meihuogu\siyu\game\assets\images\background\bj1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/js1.png | rel= assets/images/background/js1.png | activeRoot= D:\meihuogu\siyu\game
-[sw-asset]  HIT D:\meihuogu\siyu\game\assets\images\background\js1.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/js2.png | rel= assets/images/background/js2.png | activeRoot= D:\meihuogu\siyu\game
-[sw-asset]  HIT D:\meihuogu\siyu\game\assets\images\background\js2.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/bj1_1.jpg | rel= assets/images/background/bj1_1.jpg | activeRoot= D:\meihuogu\siyu\game
-[sw-asset]  HIT D:\meihuogu\siyu\game\assets\images\background\bj1_1.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/js2_1.png | rel= assets/images/background/js2_1.png | activeRoot= D:\meihuogu\siyu\game
-[sw-asset]  HIT D:\meihuogu\siyu\game\assets\images\background\js2_1.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/x.png | rel= assets/images/background/x.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\x.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/z.png | rel= assets/images/background/z.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\z.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/hx.png | rel= assets/images/background/hx.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\hx.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/qz.png | rel= assets/images/background/qz.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\qz.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/kiss.png | rel= assets/images/background/kiss.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\kiss.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/fyss.png | rel= assets/images/background/fyss.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\fyss.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/fy.png | rel= assets/images/background/fy.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\fy.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/x-gc.png | rel= assets/images/background/x-gc.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\x-gc.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/z-gc.png | rel= assets/images/background/z-gc.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\z-gc.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/hx-gc.png | rel= assets/images/background/hx-gc.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\hx-gc.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/qz-gc.png | rel= assets/images/background/qz-gc.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\qz-gc.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/kiss-gc.png | rel= assets/images/background/kiss-gc.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\kiss-gc.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/fyss-gc.png | rel= assets/images/background/fyss-gc.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\fyss-gc.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/fy-gc.png | rel= assets/images/background/fy-gc.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\fy-gc.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/lyy.png | rel= assets/images/background/lyy.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\lyy.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/wg-z.png | rel= assets/images/background/wg-z.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\wg-z.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/wg-d.png | rel= assets/images/background/wg-d.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\wg-d.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/wg-fy.png | rel= assets/images/background/wg-fy.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\wg-fy.png image/png
+[6776:0731/155959.624:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[6776:0731/155959.624:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
 [sw-asset] request sw-asset://asset/assets/images/background/b.png | rel= assets/images/background/b.png | activeRoot= D:\新建文件夹
 [sw-asset]  HIT D:\新建文件夹\assets\images\background\b.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/bf.png | rel= assets/images/background/bf.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\bf.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/c.jpg | rel= assets/images/background/c.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\c.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/cd.jpg | rel= assets/images/background/cd.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\cd.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fy-gc.png | rel= assets/images/background/fy-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fy-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/fy.png | rel= assets/images/background/fy.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fy.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/fyss-gc.png | rel= assets/images/background/fyss-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fyss-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/fyss.png | rel= assets/images/background/fyss.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fyss.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/fz.jpg | rel= assets/images/background/fz.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fz.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/hx-gc.png | rel= assets/images/background/hx-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\hx-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/hx.png | rel= assets/images/background/hx.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\hx.png image/png
 [sw-asset] request sw-asset://asset/assets/images/background/jb.png | rel= assets/images/background/jb.png | activeRoot= D:\新建文件夹
 [sw-asset]  HIT D:\新建文件夹\assets\images\background\jb.png image/png
 [sw-asset] request sw-asset://asset/assets/images/background/jbf.png | rel= assets/images/background/jbf.png | activeRoot= D:\新建文件夹
 [sw-asset]  HIT D:\新建文件夹\assets\images\background\jbf.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/bf.png | rel= assets/images/background/bf.png | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\bf.png image/png
 [sw-asset] request sw-asset://asset/assets/images/background/jbz.png | rel= assets/images/background/jbz.png | activeRoot= D:\新建文件夹
 [sw-asset]  HIT D:\新建文件夹\assets\images\background\jbz.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/cd.jpg | rel= assets/images/background/cd.jpg | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\cd.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/fz.jpg | rel= assets/images/background/fz.jpg | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\fz.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/c.jpg | rel= assets/images/background/c.jpg | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\c.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/szj.jpg | rel= assets/images/background/szj.jpg | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\szj.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/jjy.jpg | rel= assets/images/background/jjy.jpg | activeRoot= D:\新建文件夹
-[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjy.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/jjr.jpg | rel= assets/images/background/jjr.jpg | activeRoot= D:\新建文件夹
 [sw-asset]  HIT D:\新建文件夹\assets\images\background\jjr.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/jjs.jpg | rel= assets/images/background/jjs.jpg | activeRoot= D:\新建文件夹
 [sw-asset]  HIT D:\新建文件夹\assets\images\background\jjs.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/jjtp.jpg | rel= assets/images/background/jjtp.jpg | activeRoot= D:\新建文件夹
 [sw-asset]  HIT D:\新建文件夹\assets\images\background\jjtp.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy.jpg | rel= assets/images/background/jjy.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjy.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/kiss-gc.png | rel= assets/images/background/kiss-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\kiss-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/kiss.png | rel= assets/images/background/kiss.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\kiss.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/lyy.png | rel= assets/images/background/lyy.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\lyy.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/qz-gc.png | rel= assets/images/background/qz-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\qz-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/qz.png | rel= assets/images/background/qz.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\qz.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/szj.jpg | rel= assets/images/background/szj.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\szj.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/wg-d.png | rel= assets/images/background/wg-d.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\wg-d.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/wg-fy.png | rel= assets/images/background/wg-fy.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\wg-fy.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/wg-z.png | rel= assets/images/background/wg-z.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\wg-z.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/x-gc.png | rel= assets/images/background/x-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\x-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/x.png | rel= assets/images/background/x.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\x.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/z-gc.png | rel= assets/images/background/z-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\z-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/z.png | rel= assets/images/background/z.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\z.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/cd_1.jpg | rel= assets/images/background/cd_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\cd_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fz_1.jpg | rel= assets/images/background/fz_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fz_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/c_1.jpg | rel= assets/images/background/c_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\c_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj_1.jpg | rel= assets/images/background/szj_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\szj_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy_1.jpg | rel= assets/images/background/jjy_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjy_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr_1.jpg | rel= assets/images/background/jjr_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjr_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs_1.jpg | rel= assets/images/background/jjs_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjs_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp_1.jpg | rel= assets/images/background/jjtp_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjtp_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/b.png | rel= assets/images/background/b.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\b.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/bf.png | rel= assets/images/background/bf.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\bf.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/c.jpg | rel= assets/images/background/c.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\c.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/cd.jpg | rel= assets/images/background/cd.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\cd.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fy-gc.png | rel= assets/images/background/fy-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fy-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/fy.png | rel= assets/images/background/fy.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fy.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/fyss-gc.png | rel= assets/images/background/fyss-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fyss-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/fyss.png | rel= assets/images/background/fyss.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fyss.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/fz.jpg | rel= assets/images/background/fz.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fz.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/hx-gc.png | rel= assets/images/background/hx-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\hx-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/hx.png | rel= assets/images/background/hx.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\hx.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/jb.png | rel= assets/images/background/jb.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jb.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/jbf.png | rel= assets/images/background/jbf.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jbf.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/jbz.png | rel= assets/images/background/jbz.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jbz.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/jjr.jpg | rel= assets/images/background/jjr.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjr.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs.jpg | rel= assets/images/background/jjs.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjs.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp.jpg | rel= assets/images/background/jjtp.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjtp.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy.jpg | rel= assets/images/background/jjy.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjy.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/kiss-gc.png | rel= assets/images/background/kiss-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\kiss-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/kiss.png | rel= assets/images/background/kiss.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\kiss.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/lyy.png | rel= assets/images/background/lyy.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\lyy.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/qz-gc.png | rel= assets/images/background/qz-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\qz-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/qz.png | rel= assets/images/background/qz.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\qz.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/szj.jpg | rel= assets/images/background/szj.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\szj.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/wg-d.png | rel= assets/images/background/wg-d.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\wg-d.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/wg-fy.png | rel= assets/images/background/wg-fy.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\wg-fy.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/wg-z.png | rel= assets/images/background/wg-z.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\wg-z.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/x-gc.png | rel= assets/images/background/x-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\x-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/x.png | rel= assets/images/background/x.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\x.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/z-gc.png | rel= assets/images/background/z-gc.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\z-gc.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/z.png | rel= assets/images/background/z.png | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\z.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/cd_1.jpg | rel= assets/images/background/cd_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\cd_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fz_1.jpg | rel= assets/images/background/fz_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\fz_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/c_1.jpg | rel= assets/images/background/c_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\c_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj_1.jpg | rel= assets/images/background/szj_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\szj_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy_1.jpg | rel= assets/images/background/jjy_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjy_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr_1.jpg | rel= assets/images/background/jjr_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjr_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs_1.jpg | rel= assets/images/background/jjs_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjs_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp_1.jpg | rel= assets/images/background/jjtp_1.jpg | activeRoot= D:\新建文件夹
+[sw-asset]  HIT D:\新建文件夹\assets\images\background\jjtp_1.jpg image/jpeg

@@ -188,6 +188,69 @@ describe('parseRpy：default 角色声明与真实项目语法', () => {
   })
 })
 
+describe('parseRpy：transform 位置/缩放落实到场景预览', () => {
+  it('show X at f 应用 transform 定义（xpos/ypos/zoom → pos_x/pos_y/scale）', () => {
+    const src = `transform f:\n    zoom 1.0\n    xalign 0.5\n    yalign 0.5\n    xpos 350\n    ypos 650\nlabel start:\n    show js1 at f`
+    const r = parseRpy(src)
+    const showDelta = r.deltas.find((d) => {
+      const c = Object.values(d.characters || {})[0]
+      return c?.action === 'show'
+    })
+    const entry = showDelta ? Object.values(showDelta.characters)[0] : null
+    expect(entry?.pos_x).toBeCloseTo(350 / 1920, 3)
+    expect(entry?.pos_y).toBeCloseTo(650 / 1080, 3)
+    expect(entry?.scale).toBe(1)
+  })
+
+  it('show X: 内联 ATL 属性（zoom/xpos/ypos）落实且不吞后续对白', () => {
+    const src = `label start:\n    show js2g:\n        zoom 1.0\n        yalign 0.5\n        xpos 950\n        ypos 600\n    "对白"`
+    const r = parseRpy(src)
+    const showDelta = r.deltas.find((d) => {
+      const c = Object.values(d.characters || {})[0]
+      return c?.action === 'show'
+    })
+    const entry = showDelta ? Object.values(showDelta.characters)[0] : null
+    expect(entry?.pos_x).toBeCloseTo(950 / 1920, 3)
+    expect(entry?.pos_y).toBeCloseTo(600 / 1080, 3)
+    expect(entry?.scale).toBe(1)
+    expect(r.deltas.find((d) => d.dialogue === '对白')).toBeTruthy()
+  })
+
+  it('gui.init(1280, 720) 分辨率参与换算', () => {
+    const src = `init python:\n    gui.init(1280, 720)\nlabel start:\n    show js1 at f\n\ninit offset = -2\n\ntransform f:\n    xpos 350\n    ypos 650`
+    const r = parseRpy(src)
+    expect(r.screen).toEqual({ width: 1280, height: 720 })
+    const showDelta = r.deltas.find((d) => {
+      const c = Object.values(d.characters || {})[0]
+      return c?.action === 'show'
+    })
+    const entry = showDelta ? Object.values(showDelta.characters)[0] : null
+    expect(entry?.pos_x).toBeCloseTo(350 / 1280, 3)
+    expect(entry?.pos_y).toBeCloseTo(650 / 720, 3)
+  })
+
+  it('transform 定义跨文件合并（importRpyDirectory 两阶段注入）', async () => {
+    installFs({
+      dirs: {
+        'game': ['transforms.rpy', 'script.rpy'],
+      },
+      files: {
+        'game/transforms.rpy': 'transform f:\n    zoom 0.8\n    xpos 1500\n    ypos 650',
+        'game/script.rpy': 'label start:\n    show js1 at f',
+      },
+    })
+    const res = await importRpyDirectory('game')
+    const showDelta = res.deltas.find((d) => {
+      const c = Object.values(d.characters || {})[0]
+      return c?.action === 'show'
+    })
+    const entry = showDelta ? Object.values(showDelta.characters)[0] : null
+    expect(entry?.pos_x).toBeCloseTo(1500 / 1920, 3)
+    expect(entry?.pos_y).toBeCloseTo(650 / 1080, 3)
+    expect(entry?.scale).toBe(0.8)
+  })
+})
+
 describe('matchAssets：音频控制标签与素材用途分类', () => {
   it('音频引用带 <from..> 标签仍能匹配真实文件', () => {
     const refs = [{ path: '<from 0.8 to 4.5>zoulu.wav', type: 'se' as const }]

@@ -4,7 +4,7 @@
  * 扫描 game 目录下真实图片与音频文件，与脚本引用做匹配。
  */
 
-import type { LineDelta, CharacterConfig, ChoiceItem, VariableOperation } from '@/core/types'
+import type { LineDelta, CharacterConfig, ChoiceItem, VariableOperation, CharacterDelta } from '@/core/types'
 
 // ═══════════════════════════════════════════
 // Types
@@ -613,38 +613,41 @@ export function parseRpy(
     // ---- show (显示立绘) ----
     const showM = line.match(/^show\s+([^\s:]+)(?:\s+at\s+(\S+))?/)
     if (showM) {
-      const fullExpr = showM[0].replace(/^show\s+/, '').trim()
+      const fullExpr = showM[1]
       const atName = showM[2]
       if (line.endsWith(':')) blockMode = 'atl' // show X: 内联 ATL 块
       upsertImageRef(fullExpr, { usage: 'sprite' })
       // show 指令的第一个词通常是角色变量名（也可是 expression name）
       const firstWord = fullExpr.split(/\s+/)[0]
       const resolved = resolveSpeaker(firstWord)
-      // 如果 firstWord 本身无法解析为角色（如纯图片），就用 fullExpr 的第一个词
-      if (resolved.charId) {
-        ensureChar(resolved.charId, resolved.displayName)
-        lineId++
-        emitDelta({
-          ...baseDelta(lineId),
-          characters: {
-            [resolved.charId]: { sprite_id: fullExpr, char_id: resolved.charId, position_slot: 'center', action: 'show' as const },
-          },
-          background: noBG,
-          audio: emptyAudio,
-        })
-      } else {
-        // 无法解析为已知角色，使用全名作为 sprite_id
-        ensureChar(firstWord, firstWord)
-        lineId++
-        emitDelta({
-          ...baseDelta(lineId),
-          characters: {
-            [firstWord]: { sprite_id: fullExpr, char_id: firstWord, position_slot: 'center', action: 'show' as const },
-          },
-          background: noBG,
-          audio: emptyAudio,
-        })
+      const charKey = resolved.charId || firstWord
+      ensureChar(charKey, resolved.displayName || firstWord)
+
+      // 构造立绘指令：脚本中的位置(xpos/ypos)与缩放(zoom)必须落实到场景预览
+      const entry: CharacterDelta = {
+        sprite_id: fullExpr,
+        char_id: charKey,
+        position_slot: 'center',
+        action: 'show',
       }
+      if (atName && transformDefs[atName]) {
+        // show X at transformName → 应用 transform 定义（跨文件预收集）
+        const a = transformDefs[atName]
+        if (a.xpos !== undefined) entry.pos_x = clamp(a.xpos / screenW, 0, 1)
+        if (a.ypos !== undefined) entry.pos_y = clamp(a.ypos / screenH, 0, 1)
+        if (a.zoom !== undefined) entry.scale = a.zoom
+      } else if (line.endsWith(':')) {
+        // show X: 内联 ATL → 由块状态机收集后续 zoom/xpos/ypos 属性
+        pendingShow = { idx: deltas.length, charId: charKey }
+      }
+
+      lineId++
+      emitDelta({
+        ...baseDelta(lineId),
+        characters: { [charKey]: entry },
+        background: noBG,
+        audio: emptyAudio,
+      })
       continue
     }
 
@@ -864,6 +867,8 @@ export function parseRpy(
     warnings,
     referencedImages: [...refImages.values()],
     referencedAudio: refAudio,
+    transforms: transformDefs,
+    screen: { width: screenW, height: screenH },
   }
 }
 
@@ -1107,6 +1112,8 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
   // 供阶段 B 注入到每个文件解析，确保「代码变量名 gs1」能正确显示为「阿五」。
   const parsedList: { file: string; content: string; result: ReturnType<typeof parseRpy> }[] = []
   const globalCharMap = new Map<string, string>()
+  const globalTransforms: RpyTransformDefs = {}
+  const screenSize: RpyScreenSize = { width: 1920, height: 1080 }
   for (const f of rpyFiles) {
     const fullPath = dirPath + (dirPath.endsWith('/') || dirPath.endsWith('\\') ? '' : '\\') + f.relativePath
     let content: string
@@ -1125,12 +1132,19 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
         globalCharMap.set(c.charId, c.displayName)
       }
     }
+    // 合并全局 transform 定义（show X at f 可能跨文件引用）
+    for (const [k, v] of Object.entries(result.transforms)) globalTransforms[k] = v
+    // 分辨率：gui.rpy 等文件定义 gui.init(W, H) 时以项目实际为准
+    if (result.screen.width !== 1920 || result.screen.height !== 1080) {
+      screenSize.width = result.screen.width
+      screenSize.height = result.screen.height
+    }
   }
 
-  // ═══ 阶段 B：注入全局映射重新解析（本文件局部 define 声明覆盖全局） ═══
-  if (globalCharMap.size > 0) {
+  // ═══ 阶段 B：注入全局角色映射 + transform 定义重新解析（本文件局部声明覆盖全局） ═══
+  if (globalCharMap.size > 0 || Object.keys(globalTransforms).length > 0) {
     for (const p of parsedList) {
-      p.result = parseRpy(p.content, globalCharMap)
+      p.result = parseRpy(p.content, globalCharMap, globalTransforms, screenSize)
     }
   }
 
