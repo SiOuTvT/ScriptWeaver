@@ -82,12 +82,15 @@ describe('parseRpy：跨文件集中声明的全局角色映射注入', () => {
 describe('parseRpy：image 声明采集变量名与真实路径', () => {
   it('image tp1 = "images/cg/tp1.png" 采集 refName 与 path', () => {
     const r = parseRpy(`image tp1 = "images/cg/tp1.png"\nlabel start:\n    scene tp1`)
-    expect(r.referencedImages).toContainEqual<RpyImageRef>({ refName: 'tp1', path: 'images/cg/tp1.png' })
+    const ref = r.referencedImages.find((x) => x.refName === 'tp1')
+    expect(ref?.path).toBe('images/cg/tp1.png')
+    expect(ref?.usage).toBe('background')
   })
 
   it('单引号 image 声明同样采集 path', () => {
     const r = parseRpy(`image bg_park = 'images/parks/green_park.png'\nlabel start:\n    scene bg_park`)
-    expect(r.referencedImages).toContainEqual<RpyImageRef>({ refName: 'bg_park', path: 'images/parks/green_park.png' })
+    const ref = r.referencedImages.find((x) => x.refName === 'bg_park')
+    expect(ref?.path).toBe('images/parks/green_park.png')
   })
 
   it('scene 引用不会覆盖 image 声明中的真实路径', () => {
@@ -137,6 +140,75 @@ describe('scanAssetFiles：递归扫描素材与脚本', () => {
       expect.arrayContaining(['images/bg.png', 'v1.2/extra.jpg']),
     )
     expect(res.audio.map((a) => a.relativePath)).toContain('images/sound.ogg')
+  })
+})
+
+describe('parseRpy：default 角色声明与真实项目语法', () => {
+  it('default js1 = Character("溪") 解耦为显示名「溪」', () => {
+    const r = parseRpy(`default js1 = Character("溪")\nlabel start:\n    js1 "你好"`)
+    expect(r.characters[0]).toMatchObject({ charId: 'js1', displayName: '溪' })
+    expect(r.deltas.find((d) => d.dialogue === '你好')?.speaker).toBe('溪')
+  })
+
+  it('scene bj1: 冒号不吞入素材名，ATL 属性行不产生垃圾对白', () => {
+    const src = `image bj1 = "cd.jpg"\nlabel start:\n    scene bj1:\n        zoom 2.0\n        xalign 0.5\n    "旁白"`
+    const r = parseRpy(src)
+    expect(r.deltas.find((d) => d.background?.asset_id)?.background?.asset_id).toBe('bj1')
+    expect(r.deltas.filter((d) => d.dialogue).map((d) => d.dialogue)).toEqual(['旁白'])
+    expect(r.referencedImages.find((x) => x.refName === 'bj1')?.usage).toBe('background')
+    expect(r.referencedImages.find((x) => x.refName === 'bj1')?.path).toBe('cd.jpg')
+  })
+
+  it('transform 块内容被跳过，不产生垃圾行', () => {
+    const src = `transform f:\n    zoom 1.0\n    xalign 0.5\n    yalign 0.5\nlabel start:\n    "正文"`
+    const r = parseRpy(src)
+    expect(r.deltas.filter((d) => d.dialogue).map((d) => d.dialogue)).toEqual(['正文'])
+  })
+
+  it('show X: 冒号剥离 + usage=sprite', () => {
+    const src = `image js2g = "z-gc.png"\nlabel start:\n    show js2g:\n        zoom 1.0\n        yalign 0.5\n    js2g "对白"`
+    const r = parseRpy(src)
+    expect(r.referencedImages.find((x) => x.refName === 'js2g')?.usage).toBe('sprite')
+    expect(r.deltas.find((d) => d.dialogue === '对白')?.speaker).toBe('js2g')
+  })
+
+  it('play sound "<from 0.8 to 4.5>zoulu.wav" 剥离控制标签', () => {
+    const r = parseRpy(`label start:\n    play sound "<from 0.8 to 4.5>zoulu.wav"`)
+    expect(r.referencedAudio).toEqual([{ path: 'zoulu.wav', type: 'se' }])
+    expect(r.deltas.find((d) => d.audio?.se?.length)?.audio?.se).toEqual(['zoulu.wav'])
+  })
+
+  it('hide 生成 hide 指令（立绘在场景预览中可正确退场）', () => {
+    const r = parseRpy(`default js1 = Character("溪")\nlabel start:\n    show js1 at f\n    hide js1 with dissolve`)
+    const hideDelta = r.deltas.find((d) => {
+      const first = Object.values(d.characters || {})[0]
+      return first && first.action === 'hide'
+    })
+    expect(hideDelta).toBeTruthy()
+  })
+})
+
+describe('matchAssets：音频控制标签与素材用途分类', () => {
+  it('音频引用带 <from..> 标签仍能匹配真实文件', () => {
+    const refs = [{ path: '<from 0.8 to 4.5>zoulu.wav', type: 'se' as const }]
+    const found = [{ fileName: 'zoulu.wav', relativePath: 'audio/zoulu.wav' }]
+    const { audioAssets, unmatchedAudio } = matchAssets([], refs, [], found)
+    expect(unmatchedAudio).toEqual([])
+    expect(audioAssets[0]).toMatchObject({ refName: 'zoulu', fileName: 'zoulu.wav', audioCategory: 'se' })
+  })
+
+  it('show 引用图片归类 sprite，scene 引用归类 background', () => {
+    const refs = [
+      { refName: 'js1', path: 'x.png', usage: 'sprite' as const },
+      { refName: 'bj1', path: 'cd.jpg', usage: 'background' as const },
+    ]
+    const found = [
+      { fileName: 'x.png', relativePath: 'x.png' },
+      { fileName: 'cd.jpg', relativePath: 'cd.jpg' },
+    ]
+    const { imageAssets } = matchAssets(refs, [], found, [])
+    expect(imageAssets.find((a) => a.refName === 'js1')?.usage).toBe('sprite')
+    expect(imageAssets.find((a) => a.refName === 'bj1')?.usage).toBe('background')
   })
 })
 

@@ -14,7 +14,7 @@ import { useAppStore } from '@/stores/appStore'
 import { createSnapshot } from '@/utils/cloudSync'
 import { serializeProject } from '@/utils/projectFile'
 import { toast } from '@/utils/toast'
-import type { CharacterConfig, AssetItem, LineDelta, GlobalVariable } from '@/core/types'
+import type { CharacterConfig, AssetItem, LineDelta, GlobalVariable, CharacterDelta } from '@/core/types'
 
 interface Props {
   onClose?: () => void
@@ -142,18 +142,26 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
 
       if (fsImport) {
         const validImages = preview.imageAssets.filter(a => a.fileName)
-        if (validImages.length > 0) {
-          const imagePaths = validImages.map(a =>
+        // 立绘(sprite)与背景(background)分组导入：保证素材管理分类正确、场景预览能正确渲染
+        const spriteImages = validImages.filter(a => a.usage === 'sprite')
+        const bgImages = validImages.filter(a => a.usage !== 'sprite')
+
+        const importImageGroup = async (group: typeof validImages, kind: string) => {
+          if (group.length === 0) return
+          const paths = group.map(a =>
             dirPath + (dirPath.endsWith('\\') || dirPath.endsWith('/') ? '' : '\\') + a.relativePath)
           try {
-            const r = await fsImport(imagePaths, 'background')
+            const r = await fsImport(paths, kind)
             if (r.success && r.files) {
-              for (let i = 0; i < r.files.length && i < validImages.length; i++) {
-                importedImageMap.set(validImages[i].refName, r.files[i])
+              for (let i = 0; i < r.files.length && i < group.length; i++) {
+                importedImageMap.set(group[i].refName, r.files[i])
               }
             }
           } catch { /* 部分图片导入失败，继续 */ }
         }
+
+        await importImageGroup(spriteImages, 'sprite')
+        await importImageGroup(bgImages, 'background')
 
         const validAudio = preview.audioAssets.filter(a => a.fileName)
         if (validAudio.length > 0) {
@@ -197,6 +205,17 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
           })
         }
       }
+      // Step 3.5: 为导入的立绘素材绑定角色默认表情（保证场景预览 / 角色管理能直接渲染立绘）
+      for (const [refName, asset] of importedImageMap) {
+        if (asset.type !== 'sprite') continue
+        const target = newChars.find(c => c.charId === refName)
+        if (target) {
+          const exprs = target.expressions || []
+          if (!exprs.some(e => e.id === 'default')) {
+            target.expressions = [...exprs, { id: 'default', label: '默认', assetId: asset.id }]
+          }
+        }
+      }
       useAppStore.getState().setCharacterConfigs(newChars)
 
       // ── Step 4: 注册全局变量 ──
@@ -219,6 +238,22 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
         if (next.background?.asset_id) {
           const asset = importedImageMap.get(next.background.asset_id)
           if (asset) next.background = { ...next.background, asset_id: asset.id }
+        }
+        // 修正立绘：sprite_id（变量名）→ 绑定导入素材 id + 默认表情（场景预览据此渲染）
+        if (next.characters) {
+          const nc: Record<string, CharacterDelta> = {}
+          for (const [key, cs] of Object.entries(next.characters)) {
+            const entry: CharacterDelta = { ...cs }
+            if (entry.sprite_id) {
+              const asset = importedImageMap.get(entry.sprite_id)
+              if (asset) {
+                entry.asset_id = asset.id
+                entry.sprite_id = 'default'
+              }
+            }
+            nc[key] = entry
+          }
+          next.characters = nc
         }
         if (next.audio) {
           const na = { ...next.audio }

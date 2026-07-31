@@ -21,6 +21,8 @@ export interface RpyImportAsset {
   relativePath: string
   /** 资产类型 */
   kind: 'image' | 'audio'
+  /** 图片用途（立绘 sprite / 背景 background） */
+  usage?: 'background' | 'sprite'
   /** 音频子分类 */
   audioCategory?: 'bgm' | 'ambient' | 'se' | 'voice'
   /** 文件大小（字节） */
@@ -57,6 +59,8 @@ interface FsApi {
 export interface RpyImageRef {
   refName: string
   path?: string
+  /** 素材用途：被 scene 引用 → background，被 show 引用 → sprite */
+  usage?: 'background' | 'sprite'
 }
 
 // ═══════════════════════════════════════════
@@ -124,6 +128,17 @@ function normalizeRef(raw: string): string {
   return s
 }
 
+/** 剥离 Ren'Py 音频控制标签，如 "<from 0.8 to 4.5>zoulu.wav" → "zoulu.wav" */
+function stripAudioCtl(raw: string): string {
+  let s = raw.trim()
+  const m = s.match(/^(?:<[^>]*>)+/)
+  if (m) s = s.slice(m[0].length)
+  return s
+}
+
+/** 数值夹取到 [a, b] */
+const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
+
 // ═══════════════════════════════════════════
 // Parser
 // ═══════════════════════════════════════════
@@ -138,20 +153,38 @@ function normalizeRef(raw: string): string {
  *   2. "角色名" "文本"            — 带引号的说话人（直接使用显示名）
  *   3. "文本"                     — 旁白
  */
+/** transform 定义：名称 → ATL 属性（zoom/xpos/ypos/xalign/yalign…） */
+export interface RpyTransformDefs {
+  [name: string]: Record<string, number>
+}
+
+/** 项目基准分辨率（Ren'Py gui.init(W, H)，默认 1920x1080） */
+export interface RpyScreenSize {
+  width: number
+  height: number
+}
+
 /**
  * 解析 Ren'Py 脚本源码。
- * @param source          .rpy 文件内容
- * @param globalCharMap   其他文件（通常是脚本顶部集中声明）收集到的「变量名 → 显示名」全局映射。
- *                        注入后本文件内的对白引用（如 gs1 "对白"）也能正确解析为显示名「阿五」。
- *                        本文件内的局部 define 声明优先级更高，会覆盖全局映射。
+ * @param source             .rpy 文件内容
+ * @param globalCharMap      其他文件收集到的「变量名 → 显示名」全局映射（集中声明跨文件引用）。
+ * @param globalTransforms   其他文件收集到的 transform 定义（show X at f 跨文件引用）。
+ * @param screen             项目基准分辨率（gui.init）。
  */
-export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
+export function parseRpy(
+  source: string,
+  globalCharMap?: Map<string, string>,
+  globalTransforms?: RpyTransformDefs,
+  screen?: RpyScreenSize,
+): {
   deltas: LineDelta[]
   characters: CharacterConfig[]
   variables: { name: string; value: string }[]
   warnings: string[]
   referencedImages: RpyImageRef[]
   referencedAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[]
+  transforms: RpyTransformDefs
+  screen: RpyScreenSize
 } {
   const lines = source.split(/\r?\n/)
   const warnings: string[] = []
@@ -161,6 +194,39 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
   const varSet = new Set<string>()
   const refImages = new Map<string, RpyImageRef>() // key = refName
   const refAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[] = []
+
+  /** 基准分辨率：gui.init(W, H)，默认 Ren'Py 1920x1080 */
+  let screenW = screen?.width ?? 1920
+  let screenH = screen?.height ?? 1080
+  /** 预扫描的 transform 定义（顶层 transform NAME: 块） */
+  const transformDefs: RpyTransformDefs = { ...(globalTransforms ?? {}) }
+
+  // ═══ 预扫描：gui.init 分辨率 + transform 定义（供 show X at f / show X: 应用位置缩放） ═══
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim()
+    if (!t || t.startsWith('#') || t.startsWith('//')) continue
+    const gi = t.match(/gui\.init\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/)
+    if (gi) {
+      screenW = Number(gi[1])
+      screenH = Number(gi[2])
+      continue
+    }
+    const tf = t.match(/^transform\s+(\S+)\s*:\s*$/)
+    if (tf) {
+      const name = tf[1]
+      const attrs: Record<string, number> = {}
+      let j = i + 1
+      while (j < lines.length) {
+        const al = lines[j].trim()
+        if (!al) { j++; continue }
+        if (!(lines[j].startsWith(' ') || lines[j].startsWith('\t'))) break
+        const m = al.match(/^(zoom|xpos|ypos|xalign|yalign|xanchor|yanchor)\s+([-\d.]+)/)
+        if (m) attrs[m[1]] = Number(m[2])
+        j++
+      }
+      transformDefs[name] = attrs
+    }
+  }
 
   /** 变量名 → { charId, displayName } 映射 */
   const varToDisplayName = new Map<string, string>()
@@ -209,18 +275,44 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
     // image refName = "path/to/file.png"（收集变量名 + 真实路径，便于按文件路径精准归类素材）
     const imageDef = line.match(/^image\s+(.+?)\s*=\s*"([^"]+)"/)
     if (imageDef) {
-      refImages.set(imageDef[1].trim(), { refName: imageDef[1].trim(), path: imageDef[2] })
+      upsertImageRef(imageDef[1].trim(), { path: imageDef[2] })
       continue
     }
 
     // image refName = 'path/to/file.png'（单引号写法）
     const imageDefSQ = line.match(/^image\s+(.+?)\s*=\s*'([^']+)'/)
     if (imageDefSQ) {
-      refImages.set(imageDefSQ[1].trim(), { refName: imageDefSQ[1].trim(), path: imageDefSQ[2] })
+      upsertImageRef(imageDefSQ[1].trim(), { path: imageDefSQ[2] })
       continue
     }
 
-    // default var = val
+    // default var = Character("显示名") / DynamicCharacter / '单引号'（Ren'Py 常用 default 定义角色）
+    const defaultChar = line.match(/^default\s+([a-zA-Z_]\w*)\s*=\s*(?:Character|DynamicCharacter)\s*\(\s*["']([^"']*)["']/)
+    if (defaultChar) {
+      const varName = defaultChar[1]
+      const displayName = defaultChar[2] || varName
+      varToDisplayName.set(varName, displayName)
+      if (!charSet.has(varName)) {
+        charSet.add(varName)
+        characters.push(createCharConfig(varName, displayName))
+      }
+      continue
+    }
+
+    // default var = "Name"（字符串变量，可视为角色显示名）
+    const defaultSimpleChar = line.match(/^default\s+([a-zA-Z_]\w*)\s*=\s*"([^"]*)"\s*$/)
+    if (defaultSimpleChar) {
+      const varName = defaultSimpleChar[1]
+      const displayName = defaultSimpleChar[2]
+      varToDisplayName.set(varName, displayName)
+      if (!charSet.has(varName)) {
+        charSet.add(varName)
+        characters.push(createCharConfig(varName, displayName))
+      }
+      continue
+    }
+
+    // default var = val（纯变量）
     const defaultVar = line.match(/^default\s+(\w+)\s*=\s*(.+)/)
     if (defaultVar) {
       addVar(defaultVar[1], defaultVar[2].trim())
@@ -231,6 +323,23 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
     if (!varSet.has(name)) {
       varSet.add(name)
       variableDefs.push({ name, value })
+    }
+  }
+
+  /**
+   * 合并图片引用：image 声明提供真实路径，scene/show 提供用途。
+   * 同一 refName 被多处引用时，保留已有 path、补全 usage。
+   */
+  function upsertImageRef(refName: string, patch: Partial<Pick<RpyImageRef, 'path' | 'usage'>>) {
+    const cur = refImages.get(refName)
+    if (!cur) {
+      refImages.set(refName, { refName, ...patch })
+    } else {
+      refImages.set(refName, {
+        refName,
+        path: cur.path || patch.path,
+        usage: cur.usage || patch.usage,
+      })
     }
   }
 
@@ -291,9 +400,48 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
     deltas.push(delta)
   }
 
+  /** ATL / transform 属性行关键字（scene X: / show X: / transform X: 块内的 zoom/xpos/alpha 等属性） */
+  const ATL_PROPS = /^(zoom|xzoom|yzoom|size|xpos|ypos|pos|xalign|yalign|align|anchor|xanchor|yanchor|truecenter|xoffset|yoffset|xcenter|ycenter|alpha|rotate|rotate_pad|transform_anchor|around|crop|additive|blend|ease|easein|easeout|linear|pause|time|repeat|block|parallel|choice|function|on|event|warp|matrixcolor|fit|matrixtransform|perspective|xrotate|yrotate|zrotate|gl_depth)\b/
+
+  /**
+   * 块状态机：
+   * - 'atl'：scene X: / show X: 的 ATL 属性块。只跳过 ATL 属性行，遇到对白/指令立即退出，
+   *          保证 label 块内同样缩进的对白（"    js1 \"你好\""）不被误吞；show 内联 ATL 同时收集位置缩放。
+   * - 'skip'：transform / init python / screen / style 等块定义体，缩进行整体跳过。
+   */
+  let blockMode: 'none' | 'atl' | 'skip' = 'none'
+  /** 等待应用内联 ATL 属性的 show 行（deltas 索引 + 角色 id） */
+  let pendingShow: { idx: number; charId: string } | null = null
+
   for (const raw of lines) {
     const line = raw.trim()
     if (!line || line.startsWith('#') || line.startsWith('//')) continue
+
+    // skip 块（transform / init python / screen / style 属性体）：缩进行整体跳过
+    if (blockMode === 'skip') {
+      if (raw.startsWith(' ') || raw.startsWith('\t')) continue
+      blockMode = 'none'
+    }
+
+    // atl 块（scene X: / show X:）：只跳过 ATL 属性行，show 内联 ATL 收集位置缩放
+    if (blockMode === 'atl') {
+      if (ATL_PROPS.test(line)) {
+        if (pendingShow) {
+          const m = line.match(/^(zoom|xpos|ypos|xalign|yalign)\s+([-\d.]+)/)
+          if (m) {
+            const ce = deltas[pendingShow.idx]?.characters?.[pendingShow.charId]
+            if (ce) {
+              if (m[1] === 'zoom') ce.scale = Number(m[2])
+              else if (m[1] === 'xpos') ce.pos_x = clamp(Number(m[2]) / screenW, 0, 1)
+              else if (m[1] === 'ypos') ce.pos_y = clamp(Number(m[2]) / screenH, 0, 1)
+            }
+          }
+        }
+        continue
+      }
+      pendingShow = null
+      blockMode = 'none'
+    }
 
     // ---- define 声明已在阶段 1 处理，跳过 ----
     if (line.startsWith('define ')) continue
@@ -438,12 +586,20 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
       continue
     }
 
+    // ---- 块定义（transform / screen / style / init python / layeredimage 等以冒号结尾的块）→ skip 整块 ----
+    if (line.endsWith(':') && !line.startsWith('label') && !line.startsWith('menu')
+      && !line.startsWith('scene') && !line.startsWith('show')
+      && !/^[a-zA-Z_]\w*\s+"[^"]*"\s*$/.test(line)) {
+      blockMode = 'skip'
+      continue
+    }
+
     // ---- scene (背景) ----
-    const sceneM = line.match(/^scene\s+(\S+)/)
+    const sceneM = line.match(/^scene\s+([^\s:]+)/)
     if (sceneM) {
       const bgName = sceneM[1]
-      // 保留 image 声明中的真实路径（若已有则不再覆盖）
-      if (!refImages.has(bgName)) refImages.set(bgName, { refName: bgName })
+      if (line.endsWith(':')) blockMode = 'atl' // scene X: 内联 ATL 块（仅跳过属性行）
+      upsertImageRef(bgName, { usage: 'background' })
       lineId++
       emitDelta({
         ...baseDelta(lineId),
@@ -455,11 +611,12 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
     }
 
     // ---- show (显示立绘) ----
-    const showM = line.match(/^show\s+(\S+)/)
+    const showM = line.match(/^show\s+([^\s:]+)(?:\s+at\s+(\S+))?/)
     if (showM) {
       const fullExpr = showM[0].replace(/^show\s+/, '').trim()
-      // 保留 image 声明中的真实路径（若已有则不再覆盖）
-      if (!refImages.has(fullExpr)) refImages.set(fullExpr, { refName: fullExpr })
+      const atName = showM[2]
+      if (line.endsWith(':')) blockMode = 'atl' // show X: 内联 ATL 块
+      upsertImageRef(fullExpr, { usage: 'sprite' })
       // show 指令的第一个词通常是角色变量名（也可是 expression name）
       const firstWord = fullExpr.split(/\s+/)[0]
       const resolved = resolveSpeaker(firstWord)
@@ -491,16 +648,39 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
       continue
     }
 
-    // ---- hide — 跳过 ----
+    // ---- hide (隐藏立绘) ----
+    const hideM = line.match(/^hide\s+(\S+)/)
+    if (hideM) {
+      const target = hideM[1].replace(/:$/, '')
+      const resolved = resolveSpeaker(target)
+      if (resolved.charId) {
+        lineId++
+        emitDelta({
+          ...baseDelta(lineId),
+          characters: {
+            [resolved.charId]: {
+              sprite_id: target,
+              char_id: resolved.charId,
+              position_slot: 'center',
+              action: 'hide' as const,
+            },
+          },
+          background: noBG,
+          audio: emptyAudio,
+        })
+      }
+      continue
+    }
 
-    // ---- play music ----
+    // ---- play music（剥离 <from..> <to..> <loop..> 等音频控制标签） ----
     const playM = line.match(/^play\s+music\s+"([^"]*)"/)
     if (playM) {
-      refAudio.push({ path: playM[1], type: 'bgm' })
+      const p = stripAudioCtl(playM[1])
+      refAudio.push({ path: p, type: 'bgm' })
       lineId++
       emitDelta({
         ...baseDelta(lineId),
-        audio: { bgm: { asset_id: playM[1], volume: 1, loop: true }, ambient: null, se: [], voice: null },
+        audio: { bgm: { asset_id: p, volume: 1, loop: true }, ambient: null, se: [], voice: null },
         background: noBG,
         characters: noChars,
       })
@@ -510,11 +690,12 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
     // ---- play music '单引号' ----
     const playMSQ = line.match(/^play\s+music\s+'([^']*)'/)
     if (playMSQ) {
-      refAudio.push({ path: playMSQ[1], type: 'bgm' })
+      const p = stripAudioCtl(playMSQ[1])
+      refAudio.push({ path: p, type: 'bgm' })
       lineId++
       emitDelta({
         ...baseDelta(lineId),
-        audio: { bgm: { asset_id: playMSQ[1], volume: 1, loop: true }, ambient: null, se: [], voice: null },
+        audio: { bgm: { asset_id: p, volume: 1, loop: true }, ambient: null, se: [], voice: null },
         background: noBG,
         characters: noChars,
       })
@@ -524,11 +705,12 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
     // ---- play sound ----
     const playSfx = line.match(/^play\s+sound\s+"([^"]*)"/)
     if (playSfx) {
-      refAudio.push({ path: playSfx[1], type: 'se' })
+      const p = stripAudioCtl(playSfx[1])
+      refAudio.push({ path: p, type: 'se' })
       lineId++
       emitDelta({
         ...baseDelta(lineId),
-        audio: { bgm: null, ambient: null, se: [playSfx[1]], voice: null },
+        audio: { bgm: null, ambient: null, se: [p], voice: null },
         background: noBG,
         characters: noChars,
       })
@@ -538,11 +720,12 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
     // ---- play sound '单引号' ----
     const playSfxSQ = line.match(/^play\s+sound\s+'([^']*)'/)
     if (playSfxSQ) {
-      refAudio.push({ path: playSfxSQ[1], type: 'se' })
+      const p = stripAudioCtl(playSfxSQ[1])
+      refAudio.push({ path: p, type: 'se' })
       lineId++
       emitDelta({
         ...baseDelta(lineId),
-        audio: { bgm: null, ambient: null, se: [playSfxSQ[1]], voice: null },
+        audio: { bgm: null, ambient: null, se: [p], voice: null },
         background: noBG,
         characters: noChars,
       })
@@ -552,7 +735,7 @@ export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
     // ---- voice ----
     const voiceM = line.match(/^voice\s+"([^"]*)"/)
     if (voiceM) {
-      refAudio.push({ path: voiceM[1], type: 'voice' })
+      refAudio.push({ path: stripAudioCtl(voiceM[1]), type: 'voice' })
       continue
     }
 
@@ -811,6 +994,7 @@ export function matchAssets(
         fileName: best.fileName,
         relativePath: best.relativePath,
         kind: 'image',
+        usage: ref.usage ?? 'background',
         sizeBytes: 0, // 由 main 进程后续填充
       })
     } else {
@@ -818,10 +1002,10 @@ export function matchAssets(
     }
   }
 
-  // 匹配音频
+  // 匹配音频（剥离 <from..> 等控制标签后再匹配）
   const usedAudioFiles = new Set<string>()
   for (const ref of referencedAudio) {
-    const refName = normalizeRef(ref.path)
+    const refName = normalizeRef(stripAudioCtl(ref.path))
     const refLow = refName.toLowerCase()
     let best: typeof foundAudio[0] | null = null
 
