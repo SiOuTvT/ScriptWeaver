@@ -117,6 +117,8 @@ const api = {
   fs: {
     readdir: (dirPath: string): Promise<string[]> => ipcRenderer.invoke('fs:readdir', dirPath),
     readFile: (filePath: string, encoding: string): Promise<string> => ipcRenderer.invoke('fs:readFile', filePath, encoding),
+    stat: (filePath: string): Promise<{ size: number; isDir: boolean } | null> =>
+      ipcRenderer.invoke('fs:stat', filePath),
   },
 
 

@@ -1537,6 +1537,16 @@ ipcMain.handle('fs:readdir', async (_event, dirPath: string) => {
   }
 })
 
+// fs:stat — 判断路径是文件还是目录（Ren'Py 导入素材递归扫描用）
+ipcMain.handle('fs:stat', async (_event, p: string) => {
+  try {
+    const st = await fs.promises.stat(p)
+    return { size: st.size, isDir: st.isDirectory() }
+  } catch {
+    return null
+  }
+})
+
 ipcMain.handle('fs:readFile', async (_event, filePath: string, encoding: string) => {
   const buf = await fs.promises.readFile(filePath)
   return buf.toString(encoding as BufferEncoding || 'utf-8')

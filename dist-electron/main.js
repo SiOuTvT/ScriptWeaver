@@ -1,42 +1,16 @@
 "use strict";
-var __create = Object.create;
 var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-
-// electron/main.ts
-var import_electron = require("electron");
-var import_path = __toESM(require("path"));
-var import_fs = __toESM(require("fs"));
-var import_os = __toESM(require("os"));
-var import_child_process = require("child_process");
-var import_zlib = __toESM(require("zlib"));
-var import_stream = require("stream");
-
-// src/utils/aiDirector.ts
-var PROVIDER_PRESETS = {
-  openai: { endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini" },
-  deepseek: { endpoint: "https://api.deepseek.com/v1/chat/completions", model: "deepseek-chat" },
-  // Claude 等通过 OpenRouter 的 OpenAI 兼容接口接入
-  openrouter: { endpoint: "https://openrouter.ai/api/v1/chat/completions", model: "anthropic/claude-3.5-sonnet" }
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+const electron = require("electron");
+const path = require("path");
+const fs = require("fs");
+const os = require("os");
+const child_process = require("child_process");
+const zlib = require("zlib");
+const stream = require("stream");
+const PROVIDER_PRESETS = {
+  openai: { endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini" }
 };
 function defaultAIConfig() {
   return {
@@ -49,48 +23,49 @@ function defaultAIConfig() {
     ttsModel: "tts-1"
   };
 }
-var AIRequestError = class extends Error {
-  status;
-  kind;
+class AIRequestError extends Error {
   constructor(message, status = 0, kind = "unknown") {
     super(message);
+    __publicField(this, "status");
+    __publicField(this, "kind");
     this.name = "AIRequestError";
     this.status = status;
     this.kind = kind;
   }
-};
+}
 function classifyHttpError(status, raw) {
+  var _a, _b;
   let detail = "";
   try {
     const j = JSON.parse(raw);
-    detail = j?.error?.message || j?.error?.type || "";
+    detail = ((_a = j == null ? void 0 : j.error) == null ? void 0 : _a.message) || ((_b = j == null ? void 0 : j.error) == null ? void 0 : _b.type) || "";
   } catch {
   }
-  const tail = detail ? `\uFF08${detail.slice(0, 160)}\uFF09` : raw ? `\uFF08${raw.slice(0, 160)}\uFF09` : "";
+  const tail = detail ? `（${detail.slice(0, 160)}）` : raw ? `（${raw.slice(0, 160)}）` : "";
   switch (status) {
     case 401:
-      return `API \u5BC6\u94A5\u65E0\u6548\u6216\u672A\u6388\u6743\uFF08401\uFF09\u3002\u8BF7\u5230 AI \u8BBE\u7F6E\u4E2D\u68C0\u67E5 Key \u662F\u5426\u6B63\u786E\u3001\u662F\u5426\u8FC7\u671F${tail}`;
+      return `API 密钥无效或未授权（401）。请到 AI 设置中检查 Key 是否正确、是否过期${tail}`;
     case 403:
-      return `\u5BC6\u94A5\u65E0\u6743\u8BBF\u95EE\u8BE5\u6A21\u578B\uFF08403\uFF09\u3002\u8BF7\u786E\u8BA4\u8D26\u6237\u6743\u9650\u6216\u6539\u7528\u53EF\u7528\u6A21\u578B${tail}`;
+      return `密钥无权访问该模型（403）。请确认账户权限或改用可用模型${tail}`;
     case 404:
-      return `\u8BF7\u6C42\u7684\u7AEF\u70B9\u6216\u6A21\u578B\u4E0D\u5B58\u5728\uFF08404\uFF09\u3002\u8BF7\u68C0\u67E5 API \u7AEF\u70B9\u4E0E\u6A21\u578B\u540D${tail}`;
+      return `请求的端点或模型不存在（404）。请检查 API 端点与模型名${tail}`;
     case 429:
-      return `\u89E6\u53D1\u9891\u7387\u9650\u5236\uFF08429\uFF09\u3002\u8BF7\u7A0D\u540E\u91CD\u8BD5\uFF0C\u6216\u964D\u4F4E\u5E76\u53D1 / \u8C03\u5C0F max_tokens${tail}`;
+      return `触发频率限制（429）。请稍后重试，或降低并发 / 调小 max_tokens${tail}`;
     default:
-      if (status >= 500) return `\u6A21\u578B\u670D\u52A1\u7AEF\u9519\u8BEF\uFF08${status}\uFF09\u3002\u4E0A\u6E38\u6682\u65F6\u4E0D\u53EF\u7528\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5${tail}`;
-      return `API \u8BF7\u6C42\u5931\u8D25\uFF08${status}\uFF09${tail}`;
+      if (status >= 500) return `模型服务端错误（${status}）。上游暂时不可用，请稍后重试${tail}`;
+      return `API 请求失败（${status}）${tail}`;
   }
 }
 function describeAIError(err) {
   const e = err;
-  if (e?.name === "TimeoutError") return e.message || "\u8BF7\u6C42\u8D85\u65F6";
+  if ((e == null ? void 0 : e.name) === "TimeoutError") return e.message || "请求超时";
   if (e instanceof AIRequestError) return e.message;
-  if (e?.name === "TypeError")
-    return "\u7F51\u7EDC\u8BF7\u6C42\u5931\u8D25\uFF1A\u65E0\u6CD5\u8FDE\u63A5\u5230\u8BE5\u7AEF\u70B9\u3002\u8BF7\u68C0\u67E5 API \u5730\u5740\u3001\u672C\u5730\u7F51\u7EDC\u6216\u4EE3\u7406\u8BBE\u7F6E\uFF08\u684C\u9762\u7AEF\u4E5F\u9700\u53EF\u8BBF\u95EE\u5916\u7F51\uFF09\u3002";
-  return e?.message || "\u672A\u77E5\u9519\u8BEF";
+  if ((e == null ? void 0 : e.name) === "TypeError")
+    return "网络请求失败：无法连接到该端点。请检查 API 地址、本地网络或代理设置（桌面端也需可访问外网）。";
+  return (e == null ? void 0 : e.message) || "未知错误";
 }
-var AI_REQUEST_TIMEOUT_MS = 18e4;
-var AI_STALL_TIMEOUT_MS = 3e4;
+const AI_REQUEST_TIMEOUT_MS = 18e4;
+const AI_STALL_TIMEOUT_MS = 3e4;
 async function readChunk(reader, ctrl, stallMs, markTimeout) {
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -99,7 +74,7 @@ async function readChunk(reader, ctrl, stallMs, markTimeout) {
       settled = true;
       markTimeout();
       ctrl.abort();
-      reject(new Error("\u6570\u636E\u6D41\u4E2D\u65AD"));
+      reject(new Error("数据流中断"));
     }, stallMs);
     reader.read().then((r) => {
       if (settled) return;
@@ -115,6 +90,7 @@ async function readChunk(reader, ctrl, stallMs, markTimeout) {
   });
 }
 async function streamChatCompletion(config, messages, onToken, signal, opts = {}) {
+  var _a, _b, _c, _d, _e, _f;
   const timeoutMs = opts.timeoutMs ?? AI_REQUEST_TIMEOUT_MS;
   const stallMs = opts.stallMs ?? AI_STALL_TIMEOUT_MS;
   const streaming = opts.streaming ?? true;
@@ -135,14 +111,10 @@ async function streamChatCompletion(config, messages, onToken, signal, opts = {}
     if (signal.aborted) ctrl.abort();
     else signal.addEventListener("abort", onUserAbort, { once: true });
   }
-  const overall = setTimeout(() => {
+  setTimeout(() => {
     markTimeout();
     ctrl.abort();
   }, timeoutMs);
-  const cleanup = () => {
-    clearTimeout(overall);
-    if (signal) signal.removeEventListener("abort", onUserAbort);
-  };
   try {
     const res = await fetch(config.endpoint, {
       method: "POST",
@@ -160,7 +132,7 @@ async function streamChatCompletion(config, messages, onToken, signal, opts = {}
     }
     if (!res.body) {
       const data = await res.json();
-      const content = data.choices?.[0]?.message?.content ?? "";
+      const content = ((_c = (_b = (_a = data.choices) == null ? void 0 : _a[0]) == null ? void 0 : _b.message) == null ? void 0 : _c.content) ?? "";
       if (content) onToken(content);
       return content;
     }
@@ -181,7 +153,7 @@ async function streamChatCompletion(config, messages, onToken, signal, opts = {}
         if (payload === "[DONE]") continue;
         try {
           const json = JSON.parse(payload);
-          const token = json.choices?.[0]?.delta?.content;
+          const token = (_f = (_e = (_d = json.choices) == null ? void 0 : _d[0]) == null ? void 0 : _e.delta) == null ? void 0 : _f.content;
           if (token) {
             full += token;
             onToken(token);
@@ -194,32 +166,30 @@ async function streamChatCompletion(config, messages, onToken, signal, opts = {}
   } catch (err) {
     if (timedOut) {
       throw new AIRequestError(
-        `\u8BF7\u6C42\u8D85\u65F6\uFF08>${Math.round(timeoutMs / 1e3)}s \u65E0\u54CD\u5E94 / \u6570\u636E\u6D41\u4E2D\u65AD\uFF09\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u8FDE\u901A\u6027\u6216\u7AEF\u70B9\u662F\u5426\u6B63\u786E`,
+        `请求超时（>${Math.round(timeoutMs / 1e3)}s 无响应 / 数据流中断），请检查网络连通性或端点是否正确`,
         0,
         "timeout"
       );
     }
     if (err instanceof AIRequestError) throw err;
     const e = err;
-    if (e?.name === "AbortError") throw err;
-    if (e?.name === "TypeError") {
+    if ((e == null ? void 0 : e.name) === "AbortError") throw err;
+    if ((e == null ? void 0 : e.name) === "TypeError") {
       throw new AIRequestError(
-        "\u7F51\u7EDC\u8BF7\u6C42\u5931\u8D25\uFF1A\u65E0\u6CD5\u8FDE\u63A5\u5230\u8BE5\u7AEF\u70B9\uFF0C\u8BF7\u68C0\u67E5 API \u5730\u5740\u3001\u672C\u5730\u7F51\u7EDC\u6216\u4EE3\u7406\u8BBE\u7F6E",
+        "网络请求失败：无法连接到该端点，请检查 API 地址、本地网络或代理设置",
         0,
         "network"
       );
     }
-    throw new AIRequestError(err.message || "\u672A\u77E5\u9519\u8BEF", 0, "unknown");
+    throw new AIRequestError(err.message || "未知错误", 0, "unknown");
   }
 }
-
-// electron/main.ts
-var mainWindow = null;
-var tray = null;
-var isQuiting = false;
-var IMG_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
-var AUDIO_EXTS = [".mp3", ".ogg", ".wav", ".flac"];
-var MIME_MAP = {
+let mainWindow = null;
+let tray = null;
+let isQuiting = false;
+const IMG_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
+const AUDIO_EXTS = [".mp3", ".ogg", ".wav", ".flac"];
+const MIME_MAP = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -230,11 +200,11 @@ var MIME_MAP = {
   ".wav": "audio/wav",
   ".flac": "audio/flac"
 };
-var SUBDIR_BACKGROUND = import_path.default.join("images", "background");
-var SUBDIR_SPRITE = import_path.default.join("images", "sprite");
-var SUBDIR_AUDIO = "audio";
-var activeProjectRoot = null;
-import_electron.protocol.registerSchemesAsPrivileged([
+const SUBDIR_BACKGROUND = path.join("images", "background");
+const SUBDIR_SPRITE = path.join("images", "sprite");
+const SUBDIR_AUDIO = "audio";
+let activeProjectRoot = null;
+electron.protocol.registerSchemesAsPrivileged([
   {
     scheme: "sw-asset",
     privileges: {
@@ -247,21 +217,21 @@ import_electron.protocol.registerSchemesAsPrivileged([
   }
 ]);
 function createWindow() {
-  mainWindow = new import_electron.BrowserWindow({
+  mainWindow = new electron.BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 680,
     title: "ScriptWeaver",
     webPreferences: {
-      preload: import_path.default.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true
     }
   });
   const devUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
-  const isDev = !!process.env.VITE_DEV_SERVER_URL || !import_electron.app.isPackaged;
+  const isDev = !!process.env.VITE_DEV_SERVER_URL || !electron.app.isPackaged;
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     const csp = isDev ? [
       "default-src 'self' http://localhost:* ws://localhost:*;",
@@ -293,19 +263,19 @@ function createWindow() {
         if (retries < 10) {
           setTimeout(() => tryLoad(retries + 1), 1500);
         } else {
-          mainWindow.loadFile(import_path.default.join(__dirname, "../dist/index.html"));
+          mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
         }
       });
     };
     tryLoad();
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(import_path.default.join(__dirname, "../dist/index.html"));
+    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
   mainWindow.on("close", (e) => {
     if (!isQuiting) {
       e.preventDefault();
-      mainWindow?.hide();
+      mainWindow == null ? void 0 : mainWindow.hide();
     }
   });
   mainWindow.on("closed", () => {
@@ -323,19 +293,19 @@ function showMainWindow() {
 }
 function createTray() {
   if (tray) return;
-  const iconPath = import_path.default.join(__dirname, "../assets/tray.png");
-  let icon = import_fs.default.existsSync(iconPath) ? import_electron.nativeImage.createFromPath(iconPath) : makeFallbackTrayIcon();
+  const iconPath = path.join(__dirname, "../assets/tray.png");
+  let icon = fs.existsSync(iconPath) ? electron.nativeImage.createFromPath(iconPath) : makeFallbackTrayIcon();
   if (icon.isEmpty()) icon = makeFallbackTrayIcon();
   icon = icon.resize({ width: 32, height: 32 });
-  tray = new import_electron.Tray(icon);
+  tray = new electron.Tray(icon);
   tray.setToolTip("ScriptWeaver");
   tray.setContextMenu(
-    import_electron.Menu.buildFromTemplate([
-      { label: "\u663E\u793A\u7A97\u53E3", click: () => showMainWindow() },
+    electron.Menu.buildFromTemplate([
+      { label: "显示窗口", click: () => showMainWindow() },
       { type: "separator" },
-      { label: "\u9000\u51FA", click: () => {
+      { label: "退出", click: () => {
         isQuiting = true;
-        import_electron.app.quit();
+        electron.app.quit();
       } }
     ])
   );
@@ -354,14 +324,14 @@ function makeFallbackTrayIcon() {
   ihdr.writeUInt32BE(size, 4);
   ihdr[8] = 8;
   ihdr[9] = 6;
-  const idat = import_zlib.default.deflateSync(Buffer.from(raw));
+  const idat = zlib.deflateSync(Buffer.from(raw));
   const buf = Buffer.concat([
     Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
     pngChunk("IHDR", ihdr),
     pngChunk("IDAT", idat),
     pngChunk("IEND", Buffer.alloc(0))
   ]);
-  return import_electron.nativeImage.createFromBuffer(buf);
+  return electron.nativeImage.createFromBuffer(buf);
 }
 function pngChunk(type, data) {
   const len = Buffer.alloc(4);
@@ -372,42 +342,42 @@ function pngChunk(type, data) {
   return Buffer.concat([len, typeBuf, data, crc]);
 }
 function crc32(buf) {
-  let c = ~0;
+  let c = -1;
   for (let i = 0; i < buf.length; i++) {
     c ^= buf[i];
     for (let k = 0; k < 8; k++) c = c >>> 1 ^ 3988292384 & -(c & 1);
   }
   return ~c >>> 0;
 }
-import_electron.app.whenReady().then(() => {
+electron.app.whenReady().then(() => {
   registerAssetProtocol();
   createWindow();
   createTray();
-  import_electron.app.on("activate", () => {
-    if (import_electron.BrowserWindow.getAllWindows().length === 0) {
+  electron.app.on("activate", () => {
+    if (electron.BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
 });
-import_electron.app.on("window-all-closed", () => {
+electron.app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     if (isQuiting) {
-      import_electron.app.quit();
+      electron.app.quit();
     } else if (process.env.VITE_DEV_SERVER_URL) {
       if (!mainWindow) createWindow();
     } else {
-      import_electron.app.quit();
+      electron.app.quit();
     }
   }
 });
 function ensureDir(dir) {
-  if (!import_fs.default.existsSync(dir)) {
-    import_fs.default.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 function copyFile(src, dest) {
-  ensureDir(import_path.default.dirname(dest));
-  import_fs.default.copyFileSync(src, dest);
+  ensureDir(path.dirname(dest));
+  fs.copyFileSync(src, dest);
 }
 function uuid() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -421,7 +391,7 @@ function resolveSubdir(ext, kind) {
   return { subdir: SUBDIR_SPRITE, type: "sprite" };
 }
 function classifyAsset(abs) {
-  const ext = import_path.default.extname(abs).toLowerCase();
+  const ext = path.extname(abs).toLowerCase();
   if (AUDIO_EXTS.includes(ext)) return "audio";
   if (IMG_EXTS.includes(ext)) {
     const normalized = abs.replace(/\\/g, "/");
@@ -430,16 +400,16 @@ function classifyAsset(abs) {
   return null;
 }
 function getWebTemplateDir() {
-  if (import_electron.app.isPackaged) {
-    return import_path.default.join(process.resourcesPath, "web-player");
+  if (electron.app.isPackaged) {
+    return path.join(process.resourcesPath, "web-player");
   }
-  return import_path.default.join(__dirname, "..", "web-player");
+  return path.join(__dirname, "..", "web-player");
 }
-import_electron.app.on("before-quit", () => {
+electron.app.on("before-quit", () => {
   stopAssetWatch();
 });
 function registerAssetProtocol() {
-  import_electron.protocol.handle("sw-asset", (request) => {
+  electron.protocol.handle("sw-asset", (request) => {
     try {
       const url = new URL(request.url);
       let rel;
@@ -454,21 +424,21 @@ function registerAssetProtocol() {
       const roots = [];
       if (activeProjectRoot) roots.push(activeProjectRoot);
       for (const root of roots) {
-        const assetsDir = import_path.default.resolve(root, "assets");
+        const assetsDir = path.resolve(root, "assets");
         const candidates = [
-          import_path.default.resolve(root, rel),
-          import_path.default.resolve(root, "assets", rel)
+          path.resolve(root, rel),
+          path.resolve(root, "assets", rel)
         ];
         for (const abs of candidates) {
-          const inTree = abs === assetsDir || abs.startsWith(assetsDir + import_path.default.sep);
-          const ext = import_path.default.extname(abs).toLowerCase();
+          const inTree = abs === assetsDir || abs.startsWith(assetsDir + path.sep);
+          const ext = path.extname(abs).toLowerCase();
           const extOk = IMG_EXTS.includes(ext) || AUDIO_EXTS.includes(ext);
-          const exists = import_fs.default.existsSync(abs);
+          const exists = fs.existsSync(abs);
           if (!inTree) continue;
           if (!extOk) continue;
           if (!exists) continue;
           const mime = MIME_MAP[ext] ?? "application/octet-stream";
-          const total = import_fs.default.statSync(abs).size;
+          const total = fs.statSync(abs).size;
           const range = request.headers.get("range");
           if (range) {
             const m = /bytes=(\d+)-(\d*)/.exec(range);
@@ -479,7 +449,7 @@ function registerAssetProtocol() {
               end = total - 1;
             }
             const sliceLen = end - start + 1;
-            const slice = import_fs.default.readFileSync(abs, { start, end: end + 1 });
+            const slice = fs.readFileSync(abs, { start, end: end + 1 });
             console.log("[sw-asset]  HIT(range)", abs, start, "-", end, "/", total);
             return new Response(new Uint8Array(slice), {
               status: 206,
@@ -492,9 +462,9 @@ function registerAssetProtocol() {
               }
             });
           }
-          const stream = import_stream.Readable.toWeb(import_fs.default.createReadStream(abs));
+          const stream$1 = stream.Readable.toWeb(fs.createReadStream(abs));
           console.log("[sw-asset]  HIT", abs, mime);
-          return new Response(stream, {
+          return new Response(stream$1, {
             headers: { "Content-Type": mime, "Cache-Control": "no-cache" }
           });
         }
@@ -506,9 +476,9 @@ function registerAssetProtocol() {
     }
   });
 }
-var watcher = null;
-var watchedRoot = null;
-var watchDebounce = /* @__PURE__ */ new Map();
+let watcher = null;
+let watchedRoot = null;
+const watchDebounce = /* @__PURE__ */ new Map();
 function stopAssetWatch() {
   if (watcher) {
     try {
@@ -524,13 +494,13 @@ function stopAssetWatch() {
 function startAssetWatch(projectRoot) {
   if (watchedRoot === projectRoot && watcher) return;
   stopAssetWatch();
-  const assetsDir = import_path.default.join(projectRoot, "assets");
+  const assetsDir = path.join(projectRoot, "assets");
   ensureDir(assetsDir);
   try {
-    watcher = import_fs.default.watch(assetsDir, { recursive: true }, (_event, filename) => {
+    watcher = fs.watch(assetsDir, { recursive: true }, (_event, filename) => {
       if (!filename) return;
       const relFile = filename.toString();
-      const abs = import_path.default.join(assetsDir, relFile);
+      const abs = path.join(assetsDir, relFile);
       const type = classifyAsset(abs);
       if (!type) return;
       const key = abs;
@@ -540,9 +510,9 @@ function startAssetWatch(projectRoot) {
         key,
         setTimeout(() => {
           watchDebounce.delete(key);
-          const relativePath = ("assets/" + import_path.default.relative(assetsDir, abs).replace(/\\/g, "/")).replace(/\/+/g, "/");
-          const exists = import_fs.default.existsSync(abs);
-          mainWindow?.webContents.send("asset:changed", {
+          const relativePath = ("assets/" + path.relative(assetsDir, abs).replace(/\\/g, "/")).replace(/\/+/g, "/");
+          const exists = fs.existsSync(abs);
+          mainWindow == null ? void 0 : mainWindow.webContents.send("asset:changed", {
             relativePath,
             type,
             exists
@@ -556,11 +526,11 @@ function startAssetWatch(projectRoot) {
     watchedRoot = null;
   }
 }
-var AI_CONFIG_PATH = import_path.default.join(import_electron.app.getPath("userData"), "ai-config.json");
+const AI_CONFIG_PATH = path.join(electron.app.getPath("userData"), "ai-config.json");
 function readAIConfig() {
   try {
-    if (import_fs.default.existsSync(AI_CONFIG_PATH)) {
-      const p = JSON.parse(import_fs.default.readFileSync(AI_CONFIG_PATH, "utf-8"));
+    if (fs.existsSync(AI_CONFIG_PATH)) {
+      const p = JSON.parse(fs.readFileSync(AI_CONFIG_PATH, "utf-8"));
       return {
         provider: p.provider ?? "openai",
         endpoint: p.endpoint ?? defaultAIConfig().endpoint,
@@ -580,23 +550,23 @@ function writeAIConfig(incoming) {
   const merged = { ...existing, ...incoming };
   if (!incoming.apiKey) merged.apiKey = existing.apiKey;
   try {
-    import_fs.default.writeFileSync(AI_CONFIG_PATH, JSON.stringify(merged), "utf-8");
+    fs.writeFileSync(AI_CONFIG_PATH, JSON.stringify(merged), "utf-8");
   } catch {
   }
 }
-import_electron.ipcMain.handle("ai:getConfig", () => {
+electron.ipcMain.handle("ai:getConfig", () => {
   const c = readAIConfig();
   return { ...c, apiKey: "", hasApiKey: !!c.apiKey };
 });
-import_electron.ipcMain.handle("ai:setConfig", (_event, cfg) => {
+electron.ipcMain.handle("ai:setConfig", (_event, cfg) => {
   writeAIConfig(cfg);
   return { ok: true };
 });
-var activeChat = null;
-import_electron.ipcMain.on("ai:chat", async (event, payload) => {
+let activeChat = null;
+electron.ipcMain.on("ai:chat", async (event, payload) => {
   const cfg = readAIConfig();
   if (!cfg.apiKey) {
-    event.sender.send("ai:error", "\u672A\u914D\u7F6E API Key\uFF08\u8BF7\u5728 AI \u8BBE\u7F6E\u4E2D\u586B\u5199\uFF0C\u5BC6\u94A5\u4EC5\u5B58\u4E8E\u672C\u5730\u5B89\u5168\u533A\uFF09");
+    event.sender.send("ai:error", "未配置 API Key（请在 AI 设置中填写，密钥仅存于本地安全区）");
     return;
   }
   const controller = new AbortController();
@@ -611,7 +581,7 @@ import_electron.ipcMain.on("ai:chat", async (event, payload) => {
     event.sender.send("ai:done", { full });
   } catch (err) {
     const e = err;
-    if (e?.name === "AbortError") {
+    if ((e == null ? void 0 : e.name) === "AbortError") {
       event.sender.send("ai:aborted");
       return;
     }
@@ -620,14 +590,14 @@ import_electron.ipcMain.on("ai:chat", async (event, payload) => {
     activeChat = null;
   }
 });
-import_electron.ipcMain.on("ai:abort", () => {
-  activeChat?.abort();
+electron.ipcMain.on("ai:abort", () => {
+  activeChat == null ? void 0 : activeChat.abort();
 });
-import_electron.ipcMain.handle("tts:synthesize", async (_event, payload) => {
-  if (!activeProjectRoot) return { success: false, error: "\u8BF7\u5148\u4FDD\u5B58\u9879\u76EE\uFF0C\u518D\u4F7F\u7528 TTS \u914D\u97F3" };
+electron.ipcMain.handle("tts:synthesize", async (_event, payload) => {
+  if (!activeProjectRoot) return { success: false, error: "请先保存项目，再使用 TTS 配音" };
   const cfg = readAIConfig();
   if (!cfg.apiKey) {
-    return { success: false, error: "\u672A\u914D\u7F6E AI API \u5BC6\u94A5\uFF08\u8BF7\u5148\u5728 AI \u8BBE\u7F6E\u4E2D\u586B\u5199\u5BC6\u94A5\uFF09" };
+    return { success: false, error: "未配置 AI API 密钥（请先在 AI 设置中填写密钥）" };
   }
   try {
     const ttsEndpoint = cfg.endpoint.replace(/\/chat\/completions\/?$/, "/audio/speech");
@@ -657,46 +627,46 @@ import_electron.ipcMain.handle("tts:synthesize", async (_event, payload) => {
     }
     if (!resp.ok) {
       const errText = await resp.text().catch(() => "");
-      return { success: false, error: `TTS API \u8FD4\u56DE ${resp.status}${errText ? ": " + errText.slice(0, 200) : ""}` };
+      return { success: false, error: `TTS API 返回 ${resp.status}${errText ? ": " + errText.slice(0, 200) : ""}` };
     }
     const buf = Buffer.from(await resp.arrayBuffer());
     const safeChar = (payload.charId || "unknown").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32);
     const safeLine = (payload.lineTag || "L0").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 16);
     const id = uuid();
     const fileName = `tts_${safeChar}_${safeLine}_${id.slice(0, 8)}.${fmt}`;
-    const destDir = import_path.default.join(activeProjectRoot, "assets", "audio");
+    const destDir = path.join(activeProjectRoot, "assets", "audio");
     ensureDir(destDir);
-    const dest = import_path.default.join(destDir, fileName);
-    import_fs.default.writeFileSync(dest, buf);
-    const relativePath = import_path.default.join("assets", "audio", fileName).replace(/\\/g, "/");
+    const dest = path.join(destDir, fileName);
+    fs.writeFileSync(dest, buf);
+    const relativePath = path.join("assets", "audio", fileName).replace(/\\/g, "/");
     return {
       success: true,
       asset: { id, fileName, relativePath }
     };
   } catch (err) {
     const msg = err.message || String(err);
-    return { success: false, error: `TTS \u5408\u6210\u5931\u8D25: ${msg}` };
+    return { success: false, error: `TTS 合成失败: ${msg}` };
   }
 });
-import_electron.ipcMain.handle("shell:openExternal", (_event, url) => {
+electron.ipcMain.handle("shell:openExternal", (_event, url) => {
   if (typeof url === "string" && (url.startsWith("https://") || url.startsWith("http://"))) {
-    import_electron.shell.openExternal(url);
+    electron.shell.openExternal(url);
   }
 });
-import_electron.ipcMain.handle("app:getVersion", () => {
-  return import_electron.app.getVersion();
+electron.ipcMain.handle("app:getVersion", () => {
+  return electron.app.getVersion();
 });
-import_electron.ipcMain.handle("app:getPath", (_event, name) => {
-  return import_electron.app.getPath(name);
+electron.ipcMain.handle("app:getPath", (_event, name) => {
+  return electron.app.getPath(name);
 });
-import_electron.ipcMain.handle("app:clearLocalCache", () => {
+electron.ipcMain.handle("app:clearLocalCache", () => {
   try {
-    const userData = import_electron.app.getPath("userData");
-    const targets = [import_path.default.join(userData, "snapshots")];
+    const userData = electron.app.getPath("userData");
+    const targets = [path.join(userData, "snapshots")];
     let removedDirs = 0;
     for (const dir of targets) {
-      if (import_fs.default.existsSync(dir)) {
-        import_fs.default.rmSync(dir, { recursive: true, force: true });
+      if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true });
         removedDirs++;
       }
     }
@@ -705,10 +675,10 @@ import_electron.ipcMain.handle("app:clearLocalCache", () => {
     return { success: false, error: err.message };
   }
 });
-import_electron.ipcMain.on("app:setNativeTheme", (_event, theme) => {
-  import_electron.nativeTheme.themeSource = theme;
+electron.ipcMain.on("app:setNativeTheme", (_event, theme) => {
+  electron.nativeTheme.themeSource = theme;
 });
-import_electron.ipcMain.handle("fs:setActiveProjectRoot", (_event, root) => {
+electron.ipcMain.handle("fs:setActiveProjectRoot", (_event, root) => {
   activeProjectRoot = root && typeof root === "string" ? root : null;
   if (activeProjectRoot) {
     startAssetWatch(activeProjectRoot);
@@ -717,28 +687,28 @@ import_electron.ipcMain.handle("fs:setActiveProjectRoot", (_event, root) => {
   }
   return { success: true };
 });
-import_electron.ipcMain.handle("fs:scanProjectAssets", (_event, projectRoot) => {
+electron.ipcMain.handle("fs:scanProjectAssets", (_event, projectRoot) => {
   try {
     if (!projectRoot || typeof projectRoot !== "string") {
-      return { success: false, error: "\u7F3A\u5C11 projectRoot" };
+      return { success: false, error: "缺少 projectRoot" };
     }
-    const assetsDir = import_path.default.join(projectRoot, "assets");
+    const assetsDir = path.join(projectRoot, "assets");
     const out = [];
     const walk = (dir) => {
-      if (!import_fs.default.existsSync(dir)) return;
-      for (const entry of import_fs.default.readdirSync(dir, { withFileTypes: true })) {
-        const abs = import_path.default.join(dir, entry.name);
+      if (!fs.existsSync(dir)) return;
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const abs = path.join(dir, entry.name);
         if (entry.isDirectory()) {
           walk(abs);
         } else {
           const type = classifyAsset(abs);
           if (!type) continue;
-          const relativePath = "assets/" + import_path.default.relative(assetsDir, abs).replace(/\\/g, "/");
+          const relativePath = "assets/" + path.relative(assetsDir, abs).replace(/\\/g, "/");
           out.push({
             id: uuid(),
             type,
-            name: import_path.default.parse(abs).name,
-            fileName: import_path.default.basename(abs),
+            name: path.parse(abs).name,
+            fileName: path.basename(abs),
             relativePath,
             importedAt: (/* @__PURE__ */ new Date()).toISOString()
           });
@@ -752,18 +722,18 @@ import_electron.ipcMain.handle("fs:scanProjectAssets", (_event, projectRoot) => 
   }
 });
 function writeProjectToDir(projectDir, projectJson, projectName) {
-  const assetsDir = import_path.default.join(projectDir, "assets");
-  ensureDir(import_path.default.join(assetsDir, SUBDIR_BACKGROUND));
-  ensureDir(import_path.default.join(assetsDir, SUBDIR_SPRITE));
-  ensureDir(import_path.default.join(assetsDir, SUBDIR_AUDIO));
-  ensureDir(import_path.default.join(assetsDir, "scripts"));
-  const projPath = import_path.default.join(projectDir, `${projectName || "untitled"}.swproj`);
-  import_fs.default.writeFileSync(projPath, projectJson, "utf-8");
+  const assetsDir = path.join(projectDir, "assets");
+  ensureDir(path.join(assetsDir, SUBDIR_BACKGROUND));
+  ensureDir(path.join(assetsDir, SUBDIR_SPRITE));
+  ensureDir(path.join(assetsDir, SUBDIR_AUDIO));
+  ensureDir(path.join(assetsDir, "scripts"));
+  const projPath = path.join(projectDir, `${projectName || "untitled"}.swproj`);
+  fs.writeFileSync(projPath, projectJson, "utf-8");
 }
-import_electron.ipcMain.handle("dialog:saveProject", async (_event, data) => {
+electron.ipcMain.handle("dialog:saveProject", async (_event, data) => {
   if (!mainWindow) return { success: false, error: "No active window" };
-  const result = await import_electron.dialog.showOpenDialog(mainWindow, {
-    title: "\u9009\u62E9\u9879\u76EE\u4FDD\u5B58\u76EE\u5F55",
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "选择项目保存目录",
     properties: ["openDirectory", "createDirectory"]
   });
   if (result.canceled || result.filePaths.length === 0) return { success: false };
@@ -777,7 +747,7 @@ import_electron.ipcMain.handle("dialog:saveProject", async (_event, data) => {
     return { success: false, error: err.message };
   }
 });
-import_electron.ipcMain.handle("dialog:saveProjectToPath", async (_event, data) => {
+electron.ipcMain.handle("dialog:saveProjectToPath", async (_event, data) => {
   try {
     writeProjectToDir(data.projectDir, data.projectJson, data.projectName);
     return { success: true };
@@ -785,20 +755,20 @@ import_electron.ipcMain.handle("dialog:saveProjectToPath", async (_event, data) 
     return { success: false, error: err.message };
   }
 });
-import_electron.ipcMain.handle("dialog:openProject", async () => {
+electron.ipcMain.handle("dialog:openProject", async () => {
   if (!mainWindow) return { success: false, error: "No active window" };
-  const result = await import_electron.dialog.showOpenDialog(mainWindow, {
-    title: "\u6253\u5F00\u9879\u76EE",
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "打开项目",
     filters: [
-      { name: "ScriptWeaver \u9879\u76EE", extensions: ["swproj"] }
+      { name: "ScriptWeaver 项目", extensions: ["swproj"] }
     ],
     properties: ["openFile"]
   });
   if (result.canceled || result.filePaths.length === 0) return { success: false };
   try {
     const filePath = result.filePaths[0];
-    const content = import_fs.default.readFileSync(filePath, "utf-8");
-    const projectDir = import_path.default.dirname(filePath);
+    const content = fs.readFileSync(filePath, "utf-8");
+    const projectDir = path.dirname(filePath);
     activeProjectRoot = projectDir;
     startAssetWatch(projectDir);
     return { success: true, content, projectDir };
@@ -806,40 +776,40 @@ import_electron.ipcMain.handle("dialog:openProject", async () => {
     return { success: false, error: err.message };
   }
 });
-import_electron.ipcMain.handle("dialog:pickAssetFiles", async (_event, options) => {
+electron.ipcMain.handle("dialog:pickAssetFiles", async (_event, options) => {
   if (!mainWindow) return { success: false, error: "No active window" };
-  const filters = options?.filters || [
-    { name: "\u56FE\u7247\u6587\u4EF6", extensions: ["png", "jpg", "jpeg", "webp"] },
-    { name: "\u97F3\u9891\u6587\u4EF6", extensions: ["mp3", "ogg", "wav"] },
-    { name: "\u6240\u6709\u6587\u4EF6", extensions: ["*"] }
+  const filters = (options == null ? void 0 : options.filters) || [
+    { name: "图片文件", extensions: ["png", "jpg", "jpeg", "webp"] },
+    { name: "音频文件", extensions: ["mp3", "ogg", "wav"] },
+    { name: "所有文件", extensions: ["*"] }
   ];
-  const result = await import_electron.dialog.showOpenDialog(mainWindow, {
-    title: "\u5BFC\u5165\u7D20\u6750",
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "导入素材",
     filters,
     properties: ["openFile", "multiSelections"]
   });
   if (result.canceled || result.filePaths.length === 0) return { success: false };
   try {
-    if (!activeProjectRoot) return { success: false, error: "\u8BF7\u5148\u4FDD\u5B58\u9879\u76EE\uFF0C\u518D\u5BFC\u5165\u7D20\u6750" };
+    if (!activeProjectRoot) return { success: false, error: "请先保存项目，再导入素材" };
     const files = [];
     for (const srcPath of result.filePaths) {
-      const ext = import_path.default.extname(srcPath).toLowerCase();
-      const baseName = import_path.default.basename(srcPath);
-      const { subdir, type } = resolveSubdir(ext, options?.kind);
-      const destDir = import_path.default.join(activeProjectRoot, "assets", subdir);
+      const ext = path.extname(srcPath).toLowerCase();
+      const baseName = path.basename(srcPath);
+      const { subdir, type } = resolveSubdir(ext, options == null ? void 0 : options.kind);
+      const destDir = path.join(activeProjectRoot, "assets", subdir);
       ensureDir(destDir);
-      let fileDest = import_path.default.join(destDir, baseName);
+      let fileDest = path.join(destDir, baseName);
       let counter = 1;
-      while (import_fs.default.existsSync(fileDest)) {
-        const parsed = import_path.default.parse(baseName);
-        fileDest = import_path.default.join(destDir, `${parsed.name}_${counter}${parsed.ext}`);
+      while (fs.existsSync(fileDest)) {
+        const parsed = path.parse(baseName);
+        fileDest = path.join(destDir, `${parsed.name}_${counter}${parsed.ext}`);
         counter++;
       }
       copyFile(srcPath, fileDest);
-      const relativePath = import_path.default.join("assets", subdir, import_path.default.basename(fileDest)).replace(/\\/g, "/");
+      const relativePath = path.join("assets", subdir, path.basename(fileDest)).replace(/\\/g, "/");
       files.push({
         id: uuid(),
-        fileName: import_path.default.basename(fileDest),
+        fileName: path.basename(fileDest),
         relativePath,
         type
       });
@@ -849,30 +819,30 @@ import_electron.ipcMain.handle("dialog:pickAssetFiles", async (_event, options) 
     return { success: false, error: err.message };
   }
 });
-import_electron.ipcMain.handle("fs:importFilesFromPaths", async (_event, srcPaths, kind) => {
-  if (!Array.isArray(srcPaths) || srcPaths.length === 0) return { success: false, error: "\u672A\u63D0\u4F9B\u6587\u4EF6" };
-  if (!activeProjectRoot) return { success: false, error: "\u8BF7\u5148\u4FDD\u5B58\u9879\u76EE\uFF0C\u518D\u5BFC\u5165\u7D20\u6750" };
+electron.ipcMain.handle("fs:importFilesFromPaths", async (_event, srcPaths, kind) => {
+  if (!Array.isArray(srcPaths) || srcPaths.length === 0) return { success: false, error: "未提供文件" };
+  if (!activeProjectRoot) return { success: false, error: "请先保存项目，再导入素材" };
   try {
     const files = [];
     for (const srcPath of srcPaths) {
-      if (typeof srcPath !== "string" || !import_fs.default.existsSync(srcPath)) continue;
-      const ext = import_path.default.extname(srcPath).toLowerCase();
-      const baseName = import_path.default.basename(srcPath);
+      if (typeof srcPath !== "string" || !fs.existsSync(srcPath)) continue;
+      const ext = path.extname(srcPath).toLowerCase();
+      const baseName = path.basename(srcPath);
       const { subdir, type } = resolveSubdir(ext, kind);
-      const destDir = import_path.default.join(activeProjectRoot, "assets", subdir);
+      const destDir = path.join(activeProjectRoot, "assets", subdir);
       ensureDir(destDir);
-      let fileDest = import_path.default.join(destDir, baseName);
+      let fileDest = path.join(destDir, baseName);
       let counter = 1;
-      while (import_fs.default.existsSync(fileDest)) {
-        const parsed = import_path.default.parse(baseName);
-        fileDest = import_path.default.join(destDir, `${parsed.name}_${counter}${parsed.ext}`);
+      while (fs.existsSync(fileDest)) {
+        const parsed = path.parse(baseName);
+        fileDest = path.join(destDir, `${parsed.name}_${counter}${parsed.ext}`);
         counter++;
       }
       copyFile(srcPath, fileDest);
-      const relativePath = import_path.default.join("assets", subdir, import_path.default.basename(fileDest)).replace(/\\/g, "/");
+      const relativePath = path.join("assets", subdir, path.basename(fileDest)).replace(/\\/g, "/");
       files.push({
         id: uuid(),
-        fileName: import_path.default.basename(fileDest),
+        fileName: path.basename(fileDest),
         relativePath,
         type
       });
@@ -882,30 +852,30 @@ import_electron.ipcMain.handle("fs:importFilesFromPaths", async (_event, srcPath
     return { success: false, error: err.message };
   }
 });
-import_electron.ipcMain.handle("fs:exportRenpy", async (_event, bundle) => {
+electron.ipcMain.handle("fs:exportRenpy", async (_event, bundle) => {
   if (!mainWindow) return { success: false, error: "No active window" };
-  const result = await import_electron.dialog.showOpenDialog(mainWindow, {
-    title: "\u9009\u62E9 Ren'Py \u5BFC\u51FA\u76EE\u5F55",
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "选择 Ren'Py 导出目录",
     properties: ["openDirectory", "createDirectory"]
   });
   if (result.canceled || result.filePaths.length === 0) return { success: false };
   const root = result.filePaths[0];
-  const gameDir = import_path.default.join(root, "game");
-  const imgBg = import_path.default.join(gameDir, "images", "background");
-  const imgSpr = import_path.default.join(gameDir, "images", "sprite");
-  const audDir = import_path.default.join(gameDir, "audio");
+  const gameDir = path.join(root, "game");
+  const imgBg = path.join(gameDir, "images", "background");
+  const imgSpr = path.join(gameDir, "images", "sprite");
+  const audDir = path.join(gameDir, "audio");
   ensureDir(imgBg);
   ensureDir(imgSpr);
   ensureDir(audDir);
-  if (!activeProjectRoot) return { success: false, error: "\u8BF7\u5148\u4FDD\u5B58\u9879\u76EE" };
+  if (!activeProjectRoot) return { success: false, error: "请先保存项目" };
   const srcRoot = activeProjectRoot;
-  const resolvedSrcRoot = import_path.default.resolve(srcRoot);
+  const resolvedSrcRoot = path.resolve(srcRoot);
   let copied = 0;
   for (const a of bundle.assets ?? []) {
-    const src = import_path.default.resolve(resolvedSrcRoot, a.sourceRelativePath);
-    if (src !== resolvedSrcRoot && !src.startsWith(resolvedSrcRoot + import_path.default.sep)) continue;
-    if (!import_fs.default.existsSync(src)) continue;
-    const dest = import_path.default.resolve(gameDir, a.exportRelPath);
+    const src = path.resolve(resolvedSrcRoot, a.sourceRelativePath);
+    if (src !== resolvedSrcRoot && !src.startsWith(resolvedSrcRoot + path.sep)) continue;
+    if (!fs.existsSync(src)) continue;
+    const dest = path.resolve(gameDir, a.exportRelPath);
     try {
       copyFile(src, dest);
       copied++;
@@ -913,22 +883,22 @@ import_electron.ipcMain.handle("fs:exportRenpy", async (_event, bundle) => {
     }
   }
   try {
-    import_fs.default.writeFileSync(import_path.default.join(gameDir, "script.rpy"), bundle.script ?? "", "utf-8");
-    import_fs.default.writeFileSync(import_path.default.join(gameDir, "definitions.rpy"), bundle.definitions ?? "", "utf-8");
+    fs.writeFileSync(path.join(gameDir, "script.rpy"), bundle.script ?? "", "utf-8");
+    fs.writeFileSync(path.join(gameDir, "definitions.rpy"), bundle.definitions ?? "", "utf-8");
     if (bundle.transforms && bundle.transforms.trim()) {
-      import_fs.default.writeFileSync(import_path.default.join(gameDir, "transforms.rpy"), bundle.transforms, "utf-8");
+      fs.writeFileSync(path.join(gameDir, "transforms.rpy"), bundle.transforms, "utf-8");
     }
     if (bundle.options && bundle.options.trim()) {
-      import_fs.default.writeFileSync(import_path.default.join(gameDir, "options.rpy"), bundle.options, "utf-8");
+      fs.writeFileSync(path.join(gameDir, "options.rpy"), bundle.options, "utf-8");
     }
     if (bundle.ui && bundle.ui.trim()) {
-      import_fs.default.writeFileSync(import_path.default.join(gameDir, "ui.rpy"), bundle.ui, "utf-8");
+      fs.writeFileSync(path.join(gameDir, "ui.rpy"), bundle.ui, "utf-8");
     }
     if (bundle.iconSourceRelativePath) {
-      const iconSrc = import_path.default.resolve(resolvedSrcRoot, bundle.iconSourceRelativePath);
-      if (iconSrc !== resolvedSrcRoot && iconSrc.startsWith(resolvedSrcRoot + import_path.default.sep) && import_fs.default.existsSync(iconSrc)) {
+      const iconSrc = path.resolve(resolvedSrcRoot, bundle.iconSourceRelativePath);
+      if (iconSrc !== resolvedSrcRoot && iconSrc.startsWith(resolvedSrcRoot + path.sep) && fs.existsSync(iconSrc)) {
         try {
-          copyFile(iconSrc, import_path.default.join(root, "icon.ico"));
+          copyFile(iconSrc, path.join(root, "icon.ico"));
         } catch {
         }
       }
@@ -939,17 +909,17 @@ import_electron.ipcMain.handle("fs:exportRenpy", async (_event, bundle) => {
   return { success: true, gameDir, copied };
 });
 function isRenpyLauncher(p) {
-  const base = import_path.default.basename(p).toLowerCase();
+  const base = path.basename(p).toLowerCase();
   return base === "renpy.exe" || base === "renpy.sh" || base === "renpy";
 }
 function readRenpyVersion(sdkPath) {
   const candidates = [
-    import_path.default.join(sdkPath, "renpy", "__init__.py"),
-    import_path.default.join(sdkPath, "renpy.py")
+    path.join(sdkPath, "renpy", "__init__.py"),
+    path.join(sdkPath, "renpy.py")
   ];
   for (const f of candidates) {
     try {
-      const text = import_fs.default.readFileSync(f, "utf-8");
+      const text = fs.readFileSync(f, "utf-8");
       const m = text.match(/version\s*=\s*['"]([\d.]+)['"]/);
       if (m) return m[1];
     } catch {
@@ -960,21 +930,21 @@ function readRenpyVersion(sdkPath) {
 function findRenpySdk() {
   const bases = [];
   if (process.env.RENPY_SDK) bases.push(process.env.RENPY_SDK);
-  const home = import_os.default.homedir();
+  const home = os.homedir();
   if (process.platform === "win32") {
-    bases.push("C:\\Program Files\\RenPy", "C:\\RenPy", import_path.default.join(home, "renpy"), import_path.default.join(home, "RenPy"));
+    bases.push("C:\\Program Files\\RenPy", "C:\\RenPy", path.join(home, "renpy"), path.join(home, "RenPy"));
   } else if (process.platform === "darwin") {
-    bases.push(import_path.default.join(home, "renpy"), "/Applications/RenPy", "/Applications/renpy");
+    bases.push(path.join(home, "renpy"), "/Applications/RenPy", "/Applications/renpy");
   } else {
-    bases.push(import_path.default.join(home, "renpy"), "/opt/renpy", "/usr/local/renpy");
+    bases.push(path.join(home, "renpy"), "/opt/renpy", "/usr/local/renpy");
   }
   try {
-    const dl = import_path.default.join(home, "Downloads");
-    for (const name of import_fs.default.readdirSync(dl)) {
+    const dl = path.join(home, "Downloads");
+    for (const name of fs.readdirSync(dl)) {
       if (/^renpy/i.test(name)) {
-        const full = import_path.default.join(dl, name);
+        const full = path.join(dl, name);
         try {
-          if (import_fs.default.statSync(full).isDirectory()) bases.push(full);
+          if (fs.statSync(full).isDirectory()) bases.push(full);
         } catch {
         }
       }
@@ -984,17 +954,17 @@ function findRenpySdk() {
   const scan = (base) => {
     let st = null;
     try {
-      st = import_fs.default.statSync(base);
+      st = fs.statSync(base);
     } catch {
       return null;
     }
     if (st.isFile()) return isRenpyLauncher(base) ? base : null;
     if (!st.isDirectory()) return null;
     try {
-      for (const name of import_fs.default.readdirSync(base)) {
-        const full = import_path.default.join(base, name);
+      for (const name of fs.readdirSync(base)) {
+        const full = path.join(base, name);
         try {
-          const s2 = import_fs.default.statSync(full);
+          const s2 = fs.statSync(full);
           if (s2.isFile() && isRenpyLauncher(full)) return full;
         } catch {
         }
@@ -1002,12 +972,12 @@ function findRenpySdk() {
     } catch {
     }
     try {
-      for (const name of import_fs.default.readdirSync(base)) {
-        const full = import_path.default.join(base, name);
+      for (const name of fs.readdirSync(base)) {
+        const full = path.join(base, name);
         try {
-          if (import_fs.default.statSync(full).isDirectory()) {
-            for (const n2 of import_fs.default.readdirSync(full)) {
-              if (isRenpyLauncher(import_path.default.join(full, n2))) return import_path.default.join(full, n2);
+          if (fs.statSync(full).isDirectory()) {
+            for (const n2 of fs.readdirSync(full)) {
+              if (isRenpyLauncher(path.join(full, n2))) return path.join(full, n2);
             }
           }
         } catch {
@@ -1020,7 +990,7 @@ function findRenpySdk() {
   for (const b of bases) {
     const launcher = scan(b);
     if (launcher) {
-      const sdkPath = import_path.default.dirname(launcher);
+      const sdkPath = path.dirname(launcher);
       return { sdkPath, launcher, version: readRenpyVersion(sdkPath) };
     }
   }
@@ -1037,60 +1007,60 @@ function buildMinimalOptions(title) {
     ""
   ].join("\n");
 }
-import_electron.ipcMain.handle("renpy:detectSdk", async () => {
+electron.ipcMain.handle("renpy:detectSdk", async () => {
   const info = findRenpySdk();
   if (!info) {
     return {
       detected: false,
-      hint: "\u672A\u68C0\u6D4B\u5230 Ren'Py SDK\u3002\u8BF7\u5B89\u88C5 Ren'Py\uFF08https://www.renpy.org\uFF09\u5E76\u8BBE\u7F6E\u73AF\u5883\u53D8\u91CF RENPY_SDK \u6307\u5411 SDK \u6839\u76EE\u5F55\uFF0C\u6216\u5728\u5E38\u89C1\u76EE\u5F55\u653E\u7F6E SDK\u3002"
+      hint: "未检测到 Ren'Py SDK。请安装 Ren'Py（https://www.renpy.org）并设置环境变量 RENPY_SDK 指向 SDK 根目录，或在常见目录放置 SDK。"
     };
   }
   return { detected: true, sdkPath: info.sdkPath, launcher: info.launcher, version: info.version };
 });
-import_electron.ipcMain.handle("renpy:stageProject", async (_event, payload) => {
+electron.ipcMain.handle("renpy:stageProject", async (_event, payload) => {
   if (!mainWindow) return { success: false, error: "No active window" };
   const { bundle, title } = payload;
   const safeTitle = (title || "scriptweaver_project").replace(/[^\w一-龥-]/g, "_").slice(0, 60);
-  const stageRoot = import_path.default.join(import_electron.app.getPath("userData"), "renpy-staging", safeTitle);
-  const gameDir = import_path.default.join(stageRoot, "game");
+  const stageRoot = path.join(electron.app.getPath("userData"), "renpy-staging", safeTitle);
+  const gameDir = path.join(stageRoot, "game");
   try {
-    import_fs.default.rmSync(gameDir, { recursive: true, force: true });
+    fs.rmSync(gameDir, { recursive: true, force: true });
   } catch {
   }
-  ensureDir(import_path.default.join(gameDir, "images", "background"));
-  ensureDir(import_path.default.join(gameDir, "images", "sprite"));
-  ensureDir(import_path.default.join(gameDir, "audio"));
+  ensureDir(path.join(gameDir, "images", "background"));
+  ensureDir(path.join(gameDir, "images", "sprite"));
+  ensureDir(path.join(gameDir, "audio"));
   try {
-    import_fs.default.writeFileSync(import_path.default.join(gameDir, "script.rpy"), bundle.script ?? "", "utf-8");
-    import_fs.default.writeFileSync(import_path.default.join(gameDir, "definitions.rpy"), bundle.definitions ?? "", "utf-8");
+    fs.writeFileSync(path.join(gameDir, "script.rpy"), bundle.script ?? "", "utf-8");
+    fs.writeFileSync(path.join(gameDir, "definitions.rpy"), bundle.definitions ?? "", "utf-8");
     if (bundle.transforms && bundle.transforms.trim()) {
-      import_fs.default.writeFileSync(import_path.default.join(gameDir, "transforms.rpy"), bundle.transforms, "utf-8");
+      fs.writeFileSync(path.join(gameDir, "transforms.rpy"), bundle.transforms, "utf-8");
     }
-    import_fs.default.writeFileSync(import_path.default.join(gameDir, "options.rpy"), bundle.options && bundle.options.trim() ? bundle.options : buildMinimalOptions(safeTitle), "utf-8");
+    fs.writeFileSync(path.join(gameDir, "options.rpy"), bundle.options && bundle.options.trim() ? bundle.options : buildMinimalOptions(safeTitle), "utf-8");
     if (bundle.ui && bundle.ui.trim()) {
-      import_fs.default.writeFileSync(import_path.default.join(gameDir, "ui.rpy"), bundle.ui, "utf-8");
+      fs.writeFileSync(path.join(gameDir, "ui.rpy"), bundle.ui, "utf-8");
     }
   } catch (err) {
     return { success: false, error: err.message };
   }
   let copied = 0;
   const missing = [];
-  const srcRoot = activeProjectRoot ? import_path.default.resolve(activeProjectRoot) : null;
+  const srcRoot = activeProjectRoot ? path.resolve(activeProjectRoot) : null;
   for (const a of bundle.assets ?? []) {
     if (!srcRoot) {
       missing.push(a.exportRelPath);
       continue;
     }
-    const src = import_path.default.resolve(srcRoot, a.sourceRelativePath);
-    if (src !== srcRoot && !src.startsWith(srcRoot + import_path.default.sep)) {
+    const src = path.resolve(srcRoot, a.sourceRelativePath);
+    if (src !== srcRoot && !src.startsWith(srcRoot + path.sep)) {
       missing.push(a.exportRelPath);
       continue;
     }
-    if (!import_fs.default.existsSync(src)) {
+    if (!fs.existsSync(src)) {
       missing.push(a.exportRelPath);
       continue;
     }
-    const dest = import_path.default.resolve(gameDir, a.exportRelPath);
+    const dest = path.resolve(gameDir, a.exportRelPath);
     try {
       copyFile(src, dest);
       copied++;
@@ -1100,18 +1070,19 @@ import_electron.ipcMain.handle("renpy:stageProject", async (_event, payload) => 
   }
   return { success: true, projectDir: stageRoot, gameDir, copied, missingCount: missing.length };
 });
-import_electron.ipcMain.handle(
+electron.ipcMain.handle(
   "renpy:runEngine",
   async (_event, payload) => {
+    var _a, _b;
     let info = null;
     if (payload.sdkPath) {
       const launcher = [
-        import_path.default.join(payload.sdkPath, "renpy.exe"),
-        import_path.default.join(payload.sdkPath, "renpy.sh"),
-        import_path.default.join(payload.sdkPath, "renpy")
+        path.join(payload.sdkPath, "renpy.exe"),
+        path.join(payload.sdkPath, "renpy.sh"),
+        path.join(payload.sdkPath, "renpy")
       ].find((p) => {
         try {
-          return import_fs.default.existsSync(p);
+          return fs.existsSync(p);
         } catch {
           return false;
         }
@@ -1123,13 +1094,13 @@ import_electron.ipcMain.handle(
     if (!info) {
       return {
         success: false,
-        error: "\u672A\u68C0\u6D4B\u5230 Ren'Py SDK\u3002\u8BF7\u5B89\u88C5 SDK \u5E76\u8BBE\u7F6E\u73AF\u5883\u53D8\u91CF RENPY_SDK\uFF0C\u6216\u5728\u300C\u5BFC\u51FA\u8BBE\u7F6E \xB7 Ren'Py \u5F15\u64CE\u300D\u4E2D\u624B\u52A8\u6307\u5B9A\u8DEF\u5F84\u3002"
+        error: "未检测到 Ren'Py SDK。请安装 SDK 并设置环境变量 RENPY_SDK，或在「导出设置 · Ren'Py 引擎」中手动指定路径。"
       };
     }
     const projectDir = payload.projectDir;
     if (payload.action === "run") {
       try {
-        const child = (0, import_child_process.spawn)(info.launcher, [projectDir], { detached: true, stdio: "ignore", windowsHide: false });
+        const child = child_process.spawn(info.launcher, [projectDir], { detached: true, stdio: "ignore", windowsHide: false });
         child.unref();
         return { success: true, action: "run", pid: child.pid, projectDir };
       } catch (err) {
@@ -1139,18 +1110,19 @@ import_electron.ipcMain.handle(
     if (payload.action === "lint") {
       return await new Promise(
         (resolve) => {
+          var _a2, _b2;
           let out = "";
           let settled = false;
           const timer = setTimeout(() => {
             if (!settled) {
               settled = true;
-              resolve({ success: false, action: "lint", error: "Lint \u6267\u884C\u8D85\u65F6\uFF0860s\uFF09\uFF0C\u8BF7\u68C0\u67E5\u5DE5\u7A0B\u662F\u5426\u53EF\u88AB Ren'Py \u6253\u5F00\u3002" });
+              resolve({ success: false, action: "lint", error: "Lint 执行超时（60s），请检查工程是否可被 Ren'Py 打开。" });
             }
           }, 6e4);
           try {
-            const child = (0, import_child_process.spawn)(info.launcher, [projectDir, "lint"], { windowsHide: false });
-            child.stdout?.on("data", (d) => out += d.toString());
-            child.stderr?.on("data", (d) => out += d.toString());
+            const child = child_process.spawn(info.launcher, [projectDir, "lint"], { windowsHide: false });
+            (_a2 = child.stdout) == null ? void 0 : _a2.on("data", (d) => out += d.toString());
+            (_b2 = child.stderr) == null ? void 0 : _b2.on("data", (d) => out += d.toString());
             child.on("error", (e) => {
               if (!settled) {
                 settled = true;
@@ -1162,7 +1134,7 @@ import_electron.ipcMain.handle(
               if (!settled) {
                 settled = true;
                 clearTimeout(timer);
-                resolve({ success: code === 0, action: "lint", exitCode: code ?? -1, output: out || "(\u65E0\u8F93\u51FA)" });
+                resolve({ success: code === 0, action: "lint", exitCode: code ?? -1, output: out || "(无输出)" });
               }
             });
           } catch (err) {
@@ -1175,18 +1147,18 @@ import_electron.ipcMain.handle(
         }
       );
     }
-    const logDir = import_path.default.join(import_electron.app.getPath("userData"), "renpy-build-logs");
+    const logDir = path.join(electron.app.getPath("userData"), "renpy-build-logs");
     ensureDir(logDir);
-    const logFile = import_path.default.join(logDir, `${import_path.default.basename(projectDir)}-${Date.now()}.log`);
+    const logFile = path.join(logDir, `${path.basename(projectDir)}-${Date.now()}.log`);
     try {
-      const out = import_fs.default.createWriteStream(logFile);
-      const child = (0, import_child_process.spawn)(info.launcher, [projectDir, "distribute"], {
+      const out = fs.createWriteStream(logFile);
+      const child = child_process.spawn(info.launcher, [projectDir, "distribute"], {
         detached: true,
         stdio: ["ignore", "pipe", "pipe"],
         windowsHide: false
       });
-      child.stdout?.pipe(out);
-      child.stderr?.pipe(out);
+      (_a = child.stdout) == null ? void 0 : _a.pipe(out);
+      (_b = child.stderr) == null ? void 0 : _b.pipe(out);
       child.on("exit", () => out.end());
       child.unref();
       return {
@@ -1194,7 +1166,7 @@ import_electron.ipcMain.handle(
         action: "build",
         started: true,
         logFile,
-        distDir: import_path.default.join(projectDir, "dist"),
+        distDir: path.join(projectDir, "dist"),
         projectDir
       };
     } catch (err) {
@@ -1202,36 +1174,36 @@ import_electron.ipcMain.handle(
     }
   }
 );
-import_electron.ipcMain.handle("fs:exportWeb", async (_event, bundle) => {
+electron.ipcMain.handle("fs:exportWeb", async (_event, bundle) => {
   if (!mainWindow) return { success: false, error: "No active window" };
-  const result = await import_electron.dialog.showOpenDialog(mainWindow, {
-    title: "\u9009\u62E9 Web \u5BFC\u51FA\u76EE\u5F55",
+  const result = await electron.dialog.showOpenDialog(mainWindow, {
+    title: "选择 Web 导出目录",
     properties: ["openDirectory", "createDirectory"]
   });
   if (result.canceled || result.filePaths.length === 0) return { success: false };
   const root = result.filePaths[0];
   const tpl = getWebTemplateDir();
-  if (!activeProjectRoot) return { success: false, error: "\u8BF7\u5148\u4FDD\u5B58\u9879\u76EE" };
+  if (!activeProjectRoot) return { success: false, error: "请先保存项目" };
   const srcRoot = activeProjectRoot;
-  const resolvedSrcRoot = import_path.default.resolve(srcRoot);
+  const resolvedSrcRoot = path.resolve(srcRoot);
   try {
     for (const f of ["index.html", "style.css", "player.js"]) {
-      const src = import_path.default.join(tpl, f);
-      if (import_fs.default.existsSync(src)) copyFile(src, import_path.default.join(root, f));
+      const src = path.join(tpl, f);
+      if (fs.existsSync(src)) copyFile(src, path.join(root, f));
     }
     let copied = 0;
     for (const a of bundle.assetRefs ?? []) {
-      const src = import_path.default.resolve(resolvedSrcRoot, a.sourceRelativePath);
-      if (src !== resolvedSrcRoot && !src.startsWith(resolvedSrcRoot + import_path.default.sep)) continue;
-      if (!import_fs.default.existsSync(src)) continue;
-      const dest = import_path.default.resolve(root, a.exportRelPath);
+      const src = path.resolve(resolvedSrcRoot, a.sourceRelativePath);
+      if (src !== resolvedSrcRoot && !src.startsWith(resolvedSrcRoot + path.sep)) continue;
+      if (!fs.existsSync(src)) continue;
+      const dest = path.resolve(root, a.exportRelPath);
       try {
         copyFile(src, dest);
         copied++;
       } catch {
       }
     }
-    import_fs.default.writeFileSync(import_path.default.join(root, "game.json"), bundle.gameJson, "utf-8");
+    fs.writeFileSync(path.join(root, "game.json"), bundle.gameJson, "utf-8");
     return { success: true, outDir: root, copied };
   } catch (err) {
     return { success: false, error: err.message };
@@ -1239,10 +1211,10 @@ import_electron.ipcMain.handle("fs:exportWeb", async (_event, bundle) => {
 });
 function getSnapshotsDir(projectId) {
   const safe = (projectId || "unsaved").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
-  return import_path.default.join(import_electron.app.getPath("userData"), "snapshots", safe);
+  return path.join(electron.app.getPath("userData"), "snapshots", safe);
 }
-var MAX_SNAPSHOTS = 60;
-import_electron.ipcMain.handle(
+const MAX_SNAPSHOTS = 60;
+electron.ipcMain.handle(
   "fs:snapshotProject",
   async (_event, payload) => {
     try {
@@ -1259,7 +1231,7 @@ import_electron.ipcMain.handle(
       const meta = {
         id,
         createdAt: now.toISOString(),
-        label: payload.label || (payload.auto ? "\u81EA\u52A8\u5907\u4EFD" : "\u624B\u52A8\u5FEB\u7167"),
+        label: payload.label || (payload.auto ? "自动备份" : "手动快照"),
         lineCount: Array.isArray(parsed.draftDeltas) ? parsed.draftDeltas.length : 0,
         assetCount: Array.isArray(parsed.assets) ? parsed.assets.length : 0,
         charCount: Array.isArray(parsed.characterConfigs) ? parsed.characterConfigs.length : 0,
@@ -1267,11 +1239,11 @@ import_electron.ipcMain.handle(
         auto: !!payload.auto,
         projectJson: payload.projectJson
       };
-      import_fs.default.writeFileSync(import_path.default.join(dir, `${id}.json`), JSON.stringify(meta, null, 2), "utf-8");
-      const files = import_fs.default.readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => ({ f, t: import_fs.default.statSync(import_path.default.join(dir, f)).mtimeMs })).sort((a, b) => a.t - b.t);
+      fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(meta, null, 2), "utf-8");
+      const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs })).sort((a, b) => a.t - b.t);
       while (files.length > MAX_SNAPSHOTS) {
         const victim = files.shift();
-        import_fs.default.rmSync(import_path.default.join(dir, victim.f), { force: true });
+        fs.rmSync(path.join(dir, victim.f), { force: true });
       }
       return { success: true, id };
     } catch (err) {
@@ -1279,13 +1251,13 @@ import_electron.ipcMain.handle(
     }
   }
 );
-import_electron.ipcMain.handle("fs:listSnapshots", (_event, projectId) => {
+electron.ipcMain.handle("fs:listSnapshots", (_event, projectId) => {
   try {
     const dir = getSnapshotsDir(projectId);
-    if (!import_fs.default.existsSync(dir)) return { success: true, snapshots: [] };
-    const list = import_fs.default.readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => {
+    if (!fs.existsSync(dir)) return { success: true, snapshots: [] };
+    const list = fs.readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => {
       try {
-        const m = JSON.parse(import_fs.default.readFileSync(import_path.default.join(dir, f), "utf-8"));
+        const m = JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8"));
         const { projectJson: _p, ...meta } = m;
         return meta;
       } catch {
@@ -1297,39 +1269,39 @@ import_electron.ipcMain.handle("fs:listSnapshots", (_event, projectId) => {
     return { success: false, error: err.message, snapshots: [] };
   }
 });
-import_electron.ipcMain.handle("fs:restoreSnapshot", (_event, projectId, id) => {
+electron.ipcMain.handle("fs:restoreSnapshot", (_event, projectId, id) => {
   try {
     const dir = getSnapshotsDir(projectId);
-    const fp = import_path.default.join(dir, `${id}.json`);
-    if (!import_fs.default.existsSync(fp)) return { success: false, error: "\u5FEB\u7167\u4E0D\u5B58\u5728" };
-    const m = JSON.parse(import_fs.default.readFileSync(fp, "utf-8"));
+    const fp = path.join(dir, `${id}.json`);
+    if (!fs.existsSync(fp)) return { success: false, error: "快照不存在" };
+    const m = JSON.parse(fs.readFileSync(fp, "utf-8"));
     return { success: true, projectJson: m.projectJson };
   } catch (err) {
     return { success: false, error: err.message };
   }
 });
-import_electron.ipcMain.handle("fs:deleteSnapshot", (_event, projectId, id) => {
+electron.ipcMain.handle("fs:deleteSnapshot", (_event, projectId, id) => {
   try {
     const dir = getSnapshotsDir(projectId);
-    const fp = import_path.default.join(dir, `${id}.json`);
-    if (import_fs.default.existsSync(fp)) import_fs.default.rmSync(fp, { force: true });
+    const fp = path.join(dir, `${id}.json`);
+    if (fs.existsSync(fp)) fs.rmSync(fp, { force: true });
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
   }
 });
-import_electron.ipcMain.handle("fs:evictAssetCache", async (_event, relativePath) => {
+electron.ipcMain.handle("fs:evictAssetCache", async (_event, relativePath) => {
   try {
     const rel = (relativePath || "").replace(/\\/g, "/").replace(/^\/+/, "");
-    if (!rel || rel.includes("..")) return { success: false, error: "\u975E\u6CD5\u8DEF\u5F84" };
-    if (!activeProjectRoot) return { success: false, error: "\u8BF7\u5148\u4FDD\u5B58\u9879\u76EE" };
+    if (!rel || rel.includes("..")) return { success: false, error: "非法路径" };
+    if (!activeProjectRoot) return { success: false, error: "请先保存项目" };
     const roots = [activeProjectRoot];
     let removed = false;
     for (const root of roots) {
-      const fp = import_path.default.resolve(root, rel);
-      if (!fp.startsWith(import_path.default.resolve(root) + import_path.default.sep)) continue;
-      if (import_fs.default.existsSync(fp)) {
-        import_fs.default.rmSync(fp, { force: true });
+      const fp = path.resolve(root, rel);
+      if (!fp.startsWith(path.resolve(root) + path.sep)) continue;
+      if (fs.existsSync(fp)) {
+        fs.rmSync(fp, { force: true });
         removed = true;
       }
     }
@@ -1338,17 +1310,17 @@ import_electron.ipcMain.handle("fs:evictAssetCache", async (_event, relativePath
     return { success: false, error: err.message };
   }
 });
-import_electron.ipcMain.handle("fs:downloadAsset", async (_event, remoteUrl, relativePath) => {
+electron.ipcMain.handle("fs:downloadAsset", async (_event, remoteUrl, relativePath) => {
   try {
     if (!remoteUrl || !/^https?:\/\//i.test(remoteUrl)) {
-      return { success: false, error: "\u672A\u914D\u7F6E\u6709\u6548\u7684\u4E91\u7AEF\u5730\u5740\uFF08remoteUrl\uFF09" };
+      return { success: false, error: "未配置有效的云端地址（remoteUrl）" };
     }
-    if (!activeProjectRoot) return { success: false, error: "\u8BF7\u5148\u4FDD\u5B58\u9879\u76EE" };
+    if (!activeProjectRoot) return { success: false, error: "请先保存项目" };
     const rel = (relativePath || "").replace(/\\/g, "/").replace(/^\/+/, "");
-    if (!rel || rel.includes("..")) return { success: false, error: "\u975E\u6CD5\u8DEF\u5F84" };
-    const dir = import_path.default.join(activeProjectRoot, import_path.default.dirname(rel));
+    if (!rel || rel.includes("..")) return { success: false, error: "非法路径" };
+    const dir = path.join(activeProjectRoot, path.dirname(rel));
     ensureDir(dir);
-    const dest = import_path.default.join(activeProjectRoot, rel);
+    const dest = path.join(activeProjectRoot, rel);
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 12e4);
     let resp;
@@ -1356,34 +1328,42 @@ import_electron.ipcMain.handle("fs:downloadAsset", async (_event, remoteUrl, rel
       resp = await fetch(remoteUrl, { signal: ctrl.signal });
     } catch (e) {
       clearTimeout(timer);
-      return { success: false, error: `\u4E0B\u8F7D\u5931\u8D25\uFF1A${e.message}` };
+      return { success: false, error: `下载失败：${e.message}` };
     }
     clearTimeout(timer);
-    if (!resp.ok) return { success: false, error: `\u4E91\u7AEF\u8FD4\u56DE ${resp.status}` };
+    if (!resp.ok) return { success: false, error: `云端返回 ${resp.status}` };
     const buf = Buffer.from(await resp.arrayBuffer());
-    import_fs.default.writeFileSync(dest, buf);
+    fs.writeFileSync(dest, buf);
     return { success: true, bytes: buf.length };
   } catch (err) {
     return { success: false, error: err.message };
   }
 });
-import_electron.ipcMain.handle("dialog:selectDirectory", async () => {
-  const { canceled, filePaths } = await import_electron.dialog.showOpenDialog({
+electron.ipcMain.handle("dialog:selectDirectory", async () => {
+  const { canceled, filePaths } = await electron.dialog.showOpenDialog({
     properties: ["openDirectory"],
-    title: "\u9009\u62E9 RenPy \u5DE5\u7A0B\u76EE\u5F55"
+    title: "选择 RenPy 工程目录"
   });
   if (canceled || filePaths.length === 0) return { cancelled: true };
   return { path: filePaths[0] };
 });
-import_electron.ipcMain.handle("fs:readdir", async (_event, dirPath) => {
+electron.ipcMain.handle("fs:readdir", async (_event, dirPath) => {
   try {
-    const files = await import_fs.default.promises.readdir(dirPath);
+    const files = await fs.promises.readdir(dirPath);
     return files;
   } catch {
     return [];
   }
 });
-import_electron.ipcMain.handle("fs:readFile", async (_event, filePath, encoding) => {
-  const buf = await import_fs.default.promises.readFile(filePath);
+electron.ipcMain.handle("fs:stat", async (_event, p) => {
+  try {
+    const st = await fs.promises.stat(p);
+    return { size: st.size, isDir: st.isDirectory() };
+  } catch {
+    return null;
+  }
+});
+electron.ipcMain.handle("fs:readFile", async (_event, filePath, encoding) => {
+  const buf = await fs.promises.readFile(filePath);
   return buf.toString(encoding || "utf-8");
 });

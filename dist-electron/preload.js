@@ -57,7 +57,8 @@ const api = {
   /** 文件系统基础操作（用于导入 Ren'Py 工程） */
   fs: {
     readdir: (dirPath) => electron.ipcRenderer.invoke("fs:readdir", dirPath),
-    readFile: (filePath, encoding) => electron.ipcRenderer.invoke("fs:readFile", filePath, encoding)
+    readFile: (filePath, encoding) => electron.ipcRenderer.invoke("fs:readFile", filePath, encoding),
+    stat: (filePath) => electron.ipcRenderer.invoke("fs:stat", filePath)
   },
   /** 保存项目：选目录 → 复制素材 → 写 .swproj */
   saveProject: (data) => electron.ipcRenderer.invoke("dialog:saveProject", data),

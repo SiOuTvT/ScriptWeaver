@@ -84,14 +84,10 @@ export default function DiagnosticsPanel() {
                 style={{ animationDelay: `${i * 55}ms` }}
               >
                 <div
-                  className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
-                  style={{ background: s.toneColor }}
-                />
-                <div
                   className="flex h-8 w-8 items-center justify-center rounded-lg"
                   style={{ background: isFg ? 'rgb(var(--c-fg-muted) / 0.08)' : s.iconBg, color: s.toneColor }}
                 >
-                  <Icon size={16} />
+                  <Icon size={16} strokeWidth={1.75} />
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="t-mono text-[22px] font-semibold leading-none tabular-nums" style={{ color: s.toneColor }}>
@@ -99,6 +95,10 @@ export default function DiagnosticsPanel() {
                   </span>
                 </div>
                 <span className="t-label">{s.label}</span>
+                <div
+                  className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+                  style={{ background: s.toneColor }}
+                />
               </div>
             )
           })}

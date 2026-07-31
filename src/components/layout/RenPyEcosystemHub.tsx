@@ -253,14 +253,10 @@ export default function RenPyEcosystemHub() {
                     style={{ animationDelay: `${i * 55}ms` }}
                   >
                     <div
-                      className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
-                      style={{ background: stat.toneColor }}
-                    />
-                    <div
                       className="flex h-8 w-8 items-center justify-center rounded-lg"
                       style={{ background: stat.toneColor === 'rgb(var(--c-fg))' ? 'rgb(var(--c-fg-muted) / 0.08)' : stat.iconBg, color: stat.toneColor }}
                     >
-                      <Icon size={16} />
+                      <Icon size={16} strokeWidth={1.75} />
                     </div>
                     {stat.value !== null ? (
                       <div className="flex items-baseline gap-1">
@@ -278,6 +274,10 @@ export default function RenPyEcosystemHub() {
                       </button>
                     )}
                     <span className="t-label">{stat.label}</span>
+                    <div
+                      className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+                      style={{ background: stat.toneColor }}
+                    />
                   </div>
                 )
               })}

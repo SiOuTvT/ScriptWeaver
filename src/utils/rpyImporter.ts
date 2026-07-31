@@ -50,7 +50,13 @@ export interface RpyImportResult {
 interface FsApi {
   readdir(path: string): Promise<string[]>
   readFile(path: string, encoding?: string): Promise<string>
-  stat(path: string): Promise<{ size: number } | null>
+  stat(path: string): Promise<{ size: number; isDir: boolean } | null>
+}
+
+/** 脚本中引用的图片：refName 是脚本内变量名（如 tp1），path 是 image 声明中的真实路径（如 images/cg/tp1.png） */
+export interface RpyImageRef {
+  refName: string
+  path?: string
 }
 
 // ═══════════════════════════════════════════
@@ -132,12 +138,19 @@ function normalizeRef(raw: string): string {
  *   2. "角色名" "文本"            — 带引号的说话人（直接使用显示名）
  *   3. "文本"                     — 旁白
  */
-export function parseRpy(source: string): {
+/**
+ * 解析 Ren'Py 脚本源码。
+ * @param source          .rpy 文件内容
+ * @param globalCharMap   其他文件（通常是脚本顶部集中声明）收集到的「变量名 → 显示名」全局映射。
+ *                        注入后本文件内的对白引用（如 gs1 "对白"）也能正确解析为显示名「阿五」。
+ *                        本文件内的局部 define 声明优先级更高，会覆盖全局映射。
+ */
+export function parseRpy(source: string, globalCharMap?: Map<string, string>): {
   deltas: LineDelta[]
   characters: CharacterConfig[]
   variables: { name: string; value: string }[]
   warnings: string[]
-  referencedImages: string[]
+  referencedImages: RpyImageRef[]
   referencedAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[]
 } {
   const lines = source.split(/\r?\n/)
@@ -146,23 +159,33 @@ export function parseRpy(source: string): {
   const variableDefs: { name: string; value: string }[] = []
   const charSet = new Set<string>()
   const varSet = new Set<string>()
-  const refImages = new Set<string>()
+  const refImages = new Map<string, RpyImageRef>() // key = refName
   const refAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[] = []
 
   /** 变量名 → { charId, displayName } 映射 */
   const varToDisplayName = new Map<string, string>()
+  // 先铺入全局映射（来自其他文件的集中声明），保证跨文件引用可解析
+  if (globalCharMap) {
+    for (const [k, v] of globalCharMap) {
+      varToDisplayName.set(k, v)
+      if (!charSet.has(k)) {
+        charSet.add(k)
+        characters.push(createCharConfig(k, v))
+      }
+    }
+  }
 
   // ═══ 阶段 1：收集角色定义 ═══
   for (const raw of lines) {
     const line = raw.trim()
     if (!line || line.startsWith('#') || line.startsWith('//')) continue
 
-    // define varName = Character("显示名", ...)
-    const defineChar = line.match(/^define\s+([a-zA-Z_]\w*)\s*=\s*Character\s*\(/)
+    // define varName = Character("显示名", ...) / Character('显示名', ...) / DynamicCharacter("显示名", ...)
+    // 双引号与单引号统一处理：变量名与显示名彻底解耦
+    const defineChar = line.match(/^define\s+([a-zA-Z_]\w*)\s*=\s*(?:Character|DynamicCharacter)\s*\(\s*["']([^"']*)["']/)
     if (defineChar) {
       const varName = defineChar[1]
-      const displayNameM = line.match(/Character\s*\(\s*"([^"]*)"/)
-      const displayName = displayNameM ? displayNameM[1] : varName
+      const displayName = defineChar[2] || varName
       varToDisplayName.set(varName, displayName)
       if (!charSet.has(varName)) {
         charSet.add(varName)
@@ -183,38 +206,17 @@ export function parseRpy(source: string): {
       }
     }
 
-    // define varName = DynamicCharacter(...)
-    const defineDynChar = line.match(/^define\s+([a-zA-Z_]\w*)\s*=\s*DynamicCharacter\s*\(/)
-    if (defineDynChar) {
-      const varName = defineDynChar[1]
-      const displayNameM = line.match(/DynamicCharacter\s*\(\s*"([^"]*)"/)
-      const displayName = displayNameM ? displayNameM[1] : varName
-      varToDisplayName.set(varName, displayName)
-      if (!charSet.has(varName)) {
-        charSet.add(varName)
-        characters.push(createCharConfig(varName, displayName))
-      }
-    }
-
-    // define varName = Character('单引号加号', ...)
-    const defineCharSQ = line.match(/^define\s+([a-zA-Z_]\w*)\s*=\s*Character\s*\(\s*'([^']*)'/)
-    if (defineCharSQ && !varToDisplayName.has(defineCharSQ[1])) {
-      varToDisplayName.set(defineCharSQ[1], defineCharSQ[2])
-      const existing = characters.find(c => c.charId === defineCharSQ[1])
-      if (existing) existing.displayName = defineCharSQ[2]
-    }
-
-    // image refName = "path/to/file.png"（收集引用）
+    // image refName = "path/to/file.png"（收集变量名 + 真实路径，便于按文件路径精准归类素材）
     const imageDef = line.match(/^image\s+(.+?)\s*=\s*"([^"]+)"/)
     if (imageDef) {
-      refImages.add(imageDef[1].trim())
+      refImages.set(imageDef[1].trim(), { refName: imageDef[1].trim(), path: imageDef[2] })
       continue
     }
 
     // image refName = 'path/to/file.png'（单引号写法）
     const imageDefSQ = line.match(/^image\s+(.+?)\s*=\s*'([^']+)'/)
     if (imageDefSQ) {
-      refImages.add(imageDefSQ[1].trim())
+      refImages.set(imageDefSQ[1].trim(), { refName: imageDefSQ[1].trim(), path: imageDefSQ[2] })
       continue
     }
 
@@ -440,7 +442,8 @@ export function parseRpy(source: string): {
     const sceneM = line.match(/^scene\s+(\S+)/)
     if (sceneM) {
       const bgName = sceneM[1]
-      refImages.add(bgName)
+      // 保留 image 声明中的真实路径（若已有则不再覆盖）
+      if (!refImages.has(bgName)) refImages.set(bgName, { refName: bgName })
       lineId++
       emitDelta({
         ...baseDelta(lineId),
@@ -455,7 +458,8 @@ export function parseRpy(source: string): {
     const showM = line.match(/^show\s+(\S+)/)
     if (showM) {
       const fullExpr = showM[0].replace(/^show\s+/, '').trim()
-      refImages.add(fullExpr)
+      // 保留 image 声明中的真实路径（若已有则不再覆盖）
+      if (!refImages.has(fullExpr)) refImages.set(fullExpr, { refName: fullExpr })
       // show 指令的第一个词通常是角色变量名（也可是 expression name）
       const firstWord = fullExpr.split(/\s+/)[0]
       const resolved = resolveSpeaker(firstWord)
@@ -675,7 +679,7 @@ export function parseRpy(source: string): {
     characters,
     variables: variableDefs,
     warnings,
-    referencedImages: [...refImages],
+    referencedImages: [...refImages.values()],
     referencedAudio: refAudio,
   }
 }
@@ -685,18 +689,21 @@ export function parseRpy(source: string): {
 // ═══════════════════════════════════════════
 
 /**
- * 扫描目录下的所有图片和音频文件（递归）。
+ * 扫描目录下的所有图片、音频与 .rpy 脚本文件（递归）。
+ * 优先用 fs:stat 判断文件/目录（对含点目录名如 v1.2 也能正确递归）。
  */
 export async function scanAssetFiles(dirPath: string): Promise<{
   images: { fileName: string; relativePath: string }[]
   audio: { fileName: string; relativePath: string }[]
+  rpyFiles: { fileName: string; relativePath: string }[]
 }> {
   const fsApi = (window as any).electronAPI?.fs as FsApi | undefined
-  if (!fsApi) return { images: [], audio: [] }
+  if (!fsApi) return { images: [], audio: [], rpyFiles: [] }
   const api = fsApi // narrowed for closure
 
   const images: { fileName: string; relativePath: string }[] = []
   const audio: { fileName: string; relativePath: string }[] = []
+  const rpyFiles: { fileName: string; relativePath: string }[] = []
 
   async function walk(currentDir: string, relBase: string) {
     try {
@@ -704,14 +711,31 @@ export async function scanAssetFiles(dirPath: string): Promise<{
       for (const entry of entries) {
         const full = currentDir + (currentDir.endsWith('/') || currentDir.endsWith('\\') ? '' : '\\') + entry
         const rel = relBase ? (relBase + '/' + entry) : entry
-        // 用后缀判断是文件还是目录
-        if (entry.includes('.')) {
-          const lower = entry.toLowerCase()
-          if (IMAGE_EXTENSIONS.has('.' + (lower.split('.').pop() || ''))) {
-            images.push({ fileName: entry, relativePath: rel })
-          } else if (AUDIO_EXTENSIONS.has('.' + (lower.split('.').pop() || ''))) {
-            audio.push({ fileName: entry, relativePath: rel })
+        const lower = entry.toLowerCase()
+
+        // 优先用 stat 精准判断（目录名含点也能正确递归）
+        let st: { size: number; isDir: boolean } | null = null
+        if (api.stat) {
+          try { st = await api.stat(full) } catch { /* 无权限 */ }
+        }
+        if (st) {
+          if (st.isDir) {
+            await walk(full, rel).catch(() => { /* 无权限则跳过 */ })
+            continue
           }
+          const ext = '.' + (lower.split('.').pop() || '')
+          if (IMAGE_EXTENSIONS.has(ext)) images.push({ fileName: entry, relativePath: rel })
+          else if (AUDIO_EXTENSIONS.has(ext)) audio.push({ fileName: entry, relativePath: rel })
+          else if (ext === '.rpy' || ext === '.rpym') rpyFiles.push({ fileName: entry, relativePath: rel })
+          continue
+        }
+
+        // 无 stat 能力时降级为后缀启发式
+        if (entry.includes('.')) {
+          const ext = '.' + (lower.split('.').pop() || '')
+          if (IMAGE_EXTENSIONS.has(ext)) images.push({ fileName: entry, relativePath: rel })
+          else if (AUDIO_EXTENSIONS.has(ext)) audio.push({ fileName: entry, relativePath: rel })
+          else if (ext === '.rpy' || ext === '.rpym') rpyFiles.push({ fileName: entry, relativePath: rel })
         } else {
           // 可能是子目录，尝试递归
           await walk(full, rel).catch(() => { /* 无权限则跳过 */ })
@@ -721,14 +745,14 @@ export async function scanAssetFiles(dirPath: string): Promise<{
   }
 
   await walk(dirPath, '')
-  return { images, audio }
+  return { images, audio, rpyFiles }
 }
 
 /**
  * 将脚本中的素材引用与文件系统中找到的真实文件进行匹配。
  */
 export function matchAssets(
-  referencedImages: string[],
+  referencedImages: RpyImageRef[],
   referencedAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[],
   foundImages: { fileName: string; relativePath: string }[],
   foundAudio: { fileName: string; relativePath: string }[],
@@ -743,37 +767,54 @@ export function matchAssets(
   const unmatchedImages: string[] = []
   const unmatchedAudio: string[] = []
 
-  // 匹配图片：尝试 refName 与文件名（不含扩展名）匹配，或 refName 里的小写部分匹配
+  // 匹配图片：优先按 image 声明里的真实路径（如 images/cg/tp1.png）匹配，
+  // 即使变量名简写（如 tp1），也能通过文件路径与后缀精准归类。
   const usedImageFiles = new Set<string>()
   for (const ref of referencedImages) {
-    const refLow = ref.toLowerCase().replace(/\s+/g, '_')
+    const refName = ref.refName
+    const refLow = refName.toLowerCase().replace(/\s+/g, '_')
     let best: typeof foundImages[0] | null = null
 
-    for (const fi of foundImages) {
-      if (usedImageFiles.has(fi.relativePath)) continue
-      const stemLow = stem(fi.fileName).toLowerCase()
-      // 精确匹配
-      if (stemLow === refLow) { best = fi; break }
-      // 部分匹配：文件名包含 ref 或 ref 包含文件名
-      if (!best && (stemLow.includes(refLow) || refLow.includes(stemLow))) {
-        best = fi
+    // ① 真实路径最后一段文件名精确匹配（路径优先，最可靠）
+    if (ref.path) {
+      const pathStem = stem(ref.path.replace(/\\/g, '/')).toLowerCase()
+      for (const fi of foundImages) {
+        if (usedImageFiles.has(fi.relativePath)) continue
+        if (stem(fi.fileName).toLowerCase() === pathStem) { best = fi; break }
       }
-      // Ren'Py 里 "eileen happy" → 文件名可能是 "eileen_happy.png"
-      if (!best && stemLow === refLow.replace(/\s/g, '_')) { best = fi }
+      // ② 路径 stem 与文件名互相包含（容忍 images/cg/tp1_v2.png 等变体）
+      if (!best) {
+        for (const fi of foundImages) {
+          if (usedImageFiles.has(fi.relativePath)) continue
+          const stemLow = stem(fi.fileName).toLowerCase()
+          if (stemLow.includes(pathStem) || pathStem.includes(stemLow)) { best = fi; break }
+        }
+      }
+    }
+    // ③ 变量名 refName 匹配（Ren'Py 惯例：eileen happy → eileen_happy.png）
+    if (!best) {
+      for (const fi of foundImages) {
+        if (usedImageFiles.has(fi.relativePath)) continue
+        const stemLow = stem(fi.fileName).toLowerCase()
+        if (stemLow === refLow) { best = fi; break }
+        if (!best && (stemLow.includes(refLow) || refLow.includes(stemLow))) {
+          best = fi
+        }
+      }
     }
 
     if (best) {
       usedImageFiles.add(best.relativePath)
       imageAssets.push({
         id: `rpy_img_${imageAssets.length}_${stem(best.fileName)}`,
-        refName: ref,
+        refName: refName,
         fileName: best.fileName,
         relativePath: best.relativePath,
         kind: 'image',
         sizeBytes: 0, // 由 main 进程后续填充
       })
     } else {
-      unmatchedImages.push(ref)
+      unmatchedImages.push(refName)
     }
   }
 
@@ -846,17 +887,14 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
   if (!fsApi) throw new Error('文件系统 API 不可用，请在 Electron 中打开')
   const api = fsApi // narrowed
 
-  const files = await api.readdir(dirPath)
-  const rpyFiles = files.filter((f) => f.endsWith('.rpy') || f.endsWith('.rpym'))
-
-  // 扫描素材文件
-  const { images: foundImages, audio: foundAudio } = await scanAssetFiles(dirPath)
+  // 递归扫描：素材文件 + 所有 .rpy/.rpym 脚本（含子目录）
+  const { images: foundImages, audio: foundAudio, rpyFiles } = await scanAssetFiles(dirPath)
 
   const allDeltas: LineDelta[] = []
   const allChars: CharacterConfig[] = []
   const allVars: { name: string; value: string }[] = []
   const allWarnings: string[] = []
-  const allRefImages = new Set<string>()
+  const allRefImages = new Map<string, RpyImageRef>() // key = refName
   const allRefAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[] = []
   const charSeen = new Set<string>()
   const varSeen = new Set<string>()
@@ -879,17 +917,42 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
     }
   }
 
-  for (const file of rpyFiles) {
-    const fullPath = dirPath + (dirPath.endsWith('/') || dirPath.endsWith('\\') ? '' : '\\') + file
+  // ═══ 阶段 A：全量解析，同时收集全局角色映射 ═══
+  // 真实工程习惯把 define Character 集中写在脚本顶部（如 define gs1 = Character("阿五")），
+  // 而使用处散落在其他 .rpy 文件。此处先收集所有文件的角色定义，
+  // 供阶段 B 注入到每个文件解析，确保「代码变量名 gs1」能正确显示为「阿五」。
+  const parsedList: { file: string; content: string; result: ReturnType<typeof parseRpy> }[] = []
+  const globalCharMap = new Map<string, string>()
+  for (const f of rpyFiles) {
+    const fullPath = dirPath + (dirPath.endsWith('/') || dirPath.endsWith('\\') ? '' : '\\') + f.relativePath
     let content: string
     try {
       content = await fsApi.readFile(fullPath, 'utf-8')
     } catch {
-      allWarnings.push(`[${file}] 无法读取文件`)
+      allWarnings.push(`[${f.relativePath}] 无法读取文件`)
       continue
     }
     const result = parseRpy(content)
+    parsedList.push({ file: f.relativePath, content, result })
+    for (const c of result.characters) {
+      const existing = globalCharMap.get(c.charId)
+      // 优先保留「真实显示名」：若已有同名占位（显示名=变量名），用真实显示名覆盖
+      if (!existing || (existing === c.charId && c.displayName !== c.charId)) {
+        globalCharMap.set(c.charId, c.displayName)
+      }
+    }
+  }
 
+  // ═══ 阶段 B：注入全局映射重新解析（本文件局部 define 声明覆盖全局） ═══
+  if (globalCharMap.size > 0) {
+    for (const p of parsedList) {
+      p.result = parseRpy(p.content, globalCharMap)
+    }
+  }
+
+  for (const p of parsedList) {
+    const file = p.file
+    const result = p.result
     for (const d of result.deltas) allDeltas.push(d)
     for (const c of result.characters) {
       if (!charSeen.has(c.charId)) {
@@ -904,7 +967,9 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
       }
     }
     for (const w of result.warnings) allWarnings.push(`[${file}] ${w}`)
-    for (const img of result.referencedImages) allRefImages.add(img)
+    for (const img of result.referencedImages) {
+      if (!allRefImages.has(img.refName)) allRefImages.set(img.refName, img)
+    }
     allRefAudio.push(...result.referencedAudio)
   }
 
@@ -920,7 +985,7 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
   }
 
   const { imageAssets, audioAssets, unmatchedImages, unmatchedAudio } = matchAssets(
-    [...allRefImages],
+    [...allRefImages.values()],
     dedupedAudio,
     foundImages,
     foundAudio,
