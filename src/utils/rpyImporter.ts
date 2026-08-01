@@ -5,6 +5,15 @@
  */
 
 import type { LineDelta, CharacterConfig, ChoiceItem, VariableOperation, CharacterDelta } from '@/core/types'
+import {
+  type AtlState,
+  parseAtlLine,
+  atlToPlacement,
+  alignToSlot,
+  applyBuiltinPosition,
+  parseTransformCall,
+  RENPY_BUILTIN_POSITIONS,
+} from './renpyAtl'
 
 // ═══════════════════════════════════════════
 // Types
@@ -153,44 +162,9 @@ const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
  *   2. "角色名" "文本"            — 带引号的说话人（直接使用显示名）
  *   3. "文本"                     — 旁白
  */
-/** transform 定义：名称 → ATL 属性（zoom/xpos/ypos/xalign/yalign…） */
+/** transform 定义：名称 → 解析后的 ATL 属性状态（保留 Ren'Py 原生语义，含像素/比例之分） */
 export interface RpyTransformDefs {
-  [name: string]: Record<string, number>
-}
-
-/**
- * Ren'Py 官方内建位置（renpy/common/00definitions.rpy 中以 Position 定义）。
- * 这些名字不会出现在工程自己的 transform 块里，但脚本中被大量使用
- * （show eileen at left），因此必须内置，否则立绘站位全部退化成居中。
- * 取值为官方的 xalign / yalign：x 轴 0=左 1=右，y 轴 0=上 1=下。
- */
-const RENPY_BUILTIN_POSITIONS: Record<string, { xalign: number; yalign: number }> = {
-  left: { xalign: 0.0, yalign: 1.0 },
-  center: { xalign: 0.5, yalign: 1.0 },
-  right: { xalign: 1.0, yalign: 1.0 },
-  truecenter: { xalign: 0.5, yalign: 0.5 },
-  top: { xalign: 0.5, yalign: 0.0 },
-  topleft: { xalign: 0.0, yalign: 0.0 },
-  topright: { xalign: 1.0, yalign: 0.0 },
-  bottom: { xalign: 0.5, yalign: 1.0 },
-  bottomleft: { xalign: 0.0, yalign: 1.0 },
-  bottomright: { xalign: 1.0, yalign: 1.0 },
-  offscreenleft: { xalign: -0.25, yalign: 1.0 },
-  offscreenright: { xalign: 1.25, yalign: 1.0 },
-  default: { xalign: 0.5, yalign: 1.0 },
-}
-
-/**
- * 把 Ren'Py 的 xalign（0=左 1=右）折算到编辑器的五档预设站位。
- * Ren'Py 的 left 表示立绘左缘贴屏幕左侧，编辑器的「左」站位（0.22）
- * 是视觉上等价的落点，比原先一律 center 忠实得多。
- */
-function alignToSlot(xalign: number): string {
-  if (xalign <= 0.15) return 'left'
-  if (xalign < 0.42) return 'left-center'
-  if (xalign <= 0.58) return 'center'
-  if (xalign < 0.85) return 'right-center'
-  return 'right'
+  [name: string]: AtlState
 }
 
 /**
@@ -235,41 +209,64 @@ export interface RpyDisplayStatement {
  */
 export function parseDisplayStatement(body: string): RpyDisplayStatement {
   const out: RpyDisplayStatement = { name: [], at: [], behind: [] }
-  let rest = body.trim()
-
-  // with 子句可能带括号参数（with Dissolve(0.5)），先整体切出，避免被空格拆碎
-  const withIdx = rest.search(/\swith\s/)
-  if (withIdx >= 0) {
-    out.transition = normalizeTransitionName(rest.slice(withIdx).replace(/^\s*with\s+/, ''))
-    rest = rest.slice(0, withIdx)
-  }
 
   // done：as / onlayer / zorder 的取值已读完，在遇到下一个关键字前丢弃多余词
-  type Section = 'name' | 'alias' | 'at' | 'behind' | 'onlayer' | 'zorder' | 'done'
+  type Section = 'name' | 'alias' | 'at' | 'behind' | 'onlayer' | 'zorder' | 'with' | 'done'
   let section: Section = 'name'
-  for (const token of rest.trim().split(/\s+/).filter(Boolean)) {
-    switch (token) {
-      case 'as': section = 'alias'; continue
-      case 'at': section = 'at'; continue
-      case 'behind': section = 'behind'; continue
-      case 'onlayer': section = 'onlayer'; continue
-      case 'zorder': section = 'zorder'; continue
-      default: break
+  const withParts: string[] = []
+  for (const token of tokenizeStatement(body)) {
+    if (section !== 'with') {
+      switch (token) {
+        case 'as': section = 'alias'; continue
+        case 'at': section = 'at'; continue
+        case 'behind': section = 'behind'; continue
+        case 'onlayer': section = 'onlayer'; continue
+        case 'zorder': section = 'zorder'; continue
+        case 'with': section = 'with'; continue
+        default: break
+      }
     }
-    // at / behind 支持逗号分隔的多项，逐项剥掉尾逗号
-    const value = token.replace(/,$/, '')
-    if (!value) continue
     switch (section) {
-      case 'name': out.name.push(value); break
+      case 'name': out.name.push(token); break
       // as / onlayer / zorder 各只取紧随其后的一个词，之后不再吸收 image name
-      case 'alias': out.alias = value; section = 'done'; break
-      case 'onlayer': out.onlayer = value; section = 'done'; break
-      case 'zorder': out.zorder = Number(value); section = 'done'; break
-      case 'at': out.at.push(value); break
-      case 'behind': out.behind.push(value); break
+      case 'alias': out.alias = token; section = 'done'; break
+      case 'onlayer': out.onlayer = token; section = 'done'; break
+      case 'zorder': out.zorder = Number(token); section = 'done'; break
+      case 'at': out.at.push(token); break
+      case 'behind': out.behind.push(token); break
+      // 多个过渡可用逗号并列（with dissolve, vpunch），取第一个作为主过渡
+      case 'with': withParts.push(token); break
       case 'done': break
     }
   }
+  if (withParts.length) out.transition = normalizeTransitionName(withParts[0])
+  return out
+}
+
+/**
+ * 语句分词：以空白与顶层逗号切分，但保持括号与引号内的内容完整。
+ * 必须如此才能正确处理 `at Position(xpos=0.5, ypos=1.0)`、`with Dissolve(0.5)`
+ * 这类调用式——按空格硬切会把它们拆成互不相干的碎片。
+ */
+function tokenizeStatement(input: string): string[] {
+  const out: string[] = []
+  let cur = ''
+  let depth = 0
+  let quote: string | null = null
+  const push = () => { if (cur) { out.push(cur); cur = '' } }
+  for (const ch of input.trim()) {
+    if (quote) {
+      cur += ch
+      if (ch === quote) quote = null
+      continue
+    }
+    if (ch === '"' || ch === "'") { quote = ch; cur += ch; continue }
+    if (ch === '(' || ch === '[') depth++
+    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1)
+    if (depth === 0 && (/\s/.test(ch) || ch === ',')) { push(); continue }
+    cur += ch
+  }
+  push()
   return out
 }
 
@@ -326,17 +323,21 @@ export function parseRpy(
       screenH = Number(gi[2])
       continue
     }
-    const tf = t.match(/^transform\s+(\S+)\s*:\s*$/)
+    // transform 定义。支持带形参的写法（transform slide(dx=100):），形参默认值不参与静态求值，
+    // 取块内可识别的属性即可；名称需剥掉参数表，否则 show X at slide 会查不到定义。
+    const tf = t.match(/^transform\s+([A-Za-z_]\w*)\s*(?:\([^)]*\))?\s*:\s*$/)
     if (tf) {
       const name = tf[1]
-      const attrs: Record<string, number> = {}
+      const attrs: AtlState = {}
       let j = i + 1
       while (j < lines.length) {
         const al = lines[j].trim()
         if (!al) { j++; continue }
+        if (al.startsWith('#')) { j++; continue }
         if (!(lines[j].startsWith(' ') || lines[j].startsWith('\t'))) break
-        const m = al.match(/^(zoom|xpos|ypos|xalign|yalign|xanchor|yanchor)\s+([-\d.]+)/)
-        if (m) attrs[m[1]] = Number(m[2])
+        // 逐行按 Ren'Py 语义累加：后写的属性覆盖先写的，
+        // 这正是 `xalign 0.5` 之后再 `xpos 350` 只改位置、锚点保持 0.5 的关键
+        parseAtlLine(al, attrs)
         j++
       }
       transformDefs[name] = attrs
@@ -521,7 +522,8 @@ export function parseRpy(
    * 而且背景/音频只在空白行上生效、到了真正的对白行就丢失。
    * 正确做法：把指令累积进 acc，遇到下一条「对白/选择支/变量操作」时合并成一个 beat。
    */
-  let accBackground: { asset_id: string; transition?: string } | null = null
+  type BgAcc = { asset_id: string; transition?: string; scale?: number; focus_x?: number; focus_y?: number }
+  let accBackground: BgAcc | null = null
   let accCharacters: Record<string, CharacterDelta> = {}
   /**
    * 本 beat 内刚被 show 出来的立绘键。
@@ -529,7 +531,66 @@ export function parseRpy(
    * 该 with 作用于此前累积的全部舞台变更，需要回填给这些条目。
    */
   let recentShowKeys: string[] = []
-  let accAudio: { bgm: { asset_id: string; volume: number; loop: boolean } | null; ambient: null; se: string[]; voice: string | null } = {
+  /**
+   * 本 beat 内被 hide / scene 移除的立绘键 → 其退场过渡。
+   *
+   * 这是「立绘退不下去」这个致命问题的修复核心：舞台状态是继承式归约的，
+   * 每个 beat 只声明变化量，未提及的立绘会自动延续。因此仅仅从累积器里删掉
+   * 是不够的——必须显式发出一条移除指令，否则被 hide 的立绘会永远留在台上，
+   * 随剧情推进越堆越多，与引擎实际表现完全相反。
+   */
+  const pendingHides = new Map<string, string | undefined>()
+  /** 上一个 beat 实际发出的在场立绘，供退场时取回它的位置与尺寸用于播放退场动画 */
+  let lastEmitted: Record<string, CharacterDelta> = {}
+
+  /** 记录一个立绘的退场（transition 为空表示瞬间移除） */
+  function markHidden(key: string, transition?: string) {
+    // 同一 beat 内 show 后又 hide：该立绘从未真正呈现过，无需退场帧
+    if (recentShowKeys.includes(key) && !(key in lastEmitted)) return
+    pendingHides.set(key, transition ?? pendingHides.get(key))
+  }
+
+  /** 汇总 at 子句里的全部变换，按书写顺序叠加（后者覆盖前者） */
+  function collectAtl(names: string[]): AtlState {
+    const atl: AtlState = {}
+    for (const raw of names) {
+      const name = raw.trim()
+      if (!name) continue
+      // 内建位置常量（left / truecenter / offscreenright …）
+      if (applyBuiltinPosition(name, atl)) continue
+      // 工程自定义 transform（已在预扫描阶段跨文件收集）
+      const def = transformDefs[name]
+      if (def) { Object.assign(atl, def); continue }
+      // 调用式：Position(xpos=0.5) / Transform(zoom=0.8) / 自定义带参 transform
+      if (parseTransformCall(name, atl)) continue
+      // 其余（如定义在未随工程导入的文件里）静默忽略，不影响其它属性
+    }
+    return atl
+  }
+
+  /** 把 ATL 状态换算并写入立绘条目 */
+  function applyCharacterAtl(entry: CharacterDelta, atl: AtlState) {
+    const p = atlToPlacement(atl, screenW, screenH)
+    // 允许略微超出画面：offscreenleft / offscreenright 等屏外站位本就在 0-1 之外
+    if (p.pos_x !== undefined) {
+      entry.pos_x = clamp(p.pos_x, -0.5, 1.5)
+      entry.position_slot = alignToSlot(p.pos_x)
+    }
+    if (p.pos_y !== undefined) entry.pos_y = clamp(p.pos_y, -0.5, 1.5)
+    if (p.anchor_x !== undefined) entry.anchor_x = p.anchor_x
+    if (p.anchor_y !== undefined) entry.anchor_y = p.anchor_y
+    // zoom 记为 Ren'Py 原生语义（相对原图像素），由渲染层按真实图片尺寸还原占屏比
+    if (p.zoom !== undefined) entry.renpy_zoom = p.zoom
+  }
+
+  /** 把 ATL 状态换算并写入背景（推近画面 / 平移取景） */
+  function applyBackgroundAtl(bg: BgAcc, atl: AtlState) {
+    const p = atlToPlacement(atl, screenW, screenH)
+    if (p.zoom !== undefined) bg.scale = p.zoom
+    if (p.pos_x !== undefined) bg.focus_x = clamp(p.pos_x, 0, 1)
+    if (p.pos_y !== undefined) bg.focus_y = clamp(p.pos_y, 0, 1)
+  }
+  let accAudio: { bgm: TrackValue; ambient: TrackValue; se: string[]; voice: string | null } = {
     bgm: null, ambient: null, se: [], voice: null,
   }
   let accLabel: string | null = null
@@ -540,14 +601,41 @@ export function parseRpy(
    * 而标签/音效(se)/语音(voice)是「瞬态」，仅附着到紧随其后的那条对白 beat，消费后即清空。
    */
   function flushAcc(t: LineDelta) {
-    if (accBackground) t.background = accBackground
-    if (Object.keys(accCharacters).length) t.characters = { ...accCharacters }
+    if (accBackground) t.background = { ...accBackground }
+
+    // 在场立绘 + 本 beat 的退场指令。
+    // 退场必须显式发出：舞台按「继承 + 变化量」归约，只从累积器删掉不会让立绘消失。
+    const chars: Record<string, CharacterDelta> = { ...accCharacters }
+    for (const [key, tr] of pendingHides) {
+      // 同一 beat 内先 hide 又 show（换装写法），以在场状态为准
+      if (key in accCharacters) continue
+      const prev = lastEmitted[key]
+      chars[key] = tr
+        ? {
+            // 带过渡的退场需要保留原有立绘信息，舞台才能把这张图的退场动画播完
+            ...(prev ?? { sprite_id: key, position_slot: 'center' }),
+            action: 'hide',
+            transition: tr,
+          }
+        : {
+            sprite_id: prev?.sprite_id ?? key,
+            char_id: prev?.char_id,
+            position_slot: prev?.position_slot ?? 'center',
+            action: '__CLEAR__',
+          }
+    }
+    pendingHides.clear()
+    if (Object.keys(chars).length) t.characters = chars
+    lastEmitted = { ...accCharacters }
 
     // 过渡（with）是「瞬时事件」：只在发生切换的那一 beat 播放一次。
     // 背景与立绘本身是持续态、会延续到后续 beat，若不在此摘掉过渡标记，
     // 同一个 dissolve 会在之后每一行反复播放，比不播过渡更难受。
     // 已并入 t 的对象保持原样（含过渡），只重建累积器中的副本。
-    if (accBackground?.transition) accBackground = { asset_id: accBackground.asset_id }
+    if (accBackground?.transition) {
+      const { transition: _bgConsumed, ...bgRest } = accBackground
+      accBackground = bgRest
+    }
     for (const key of Object.keys(accCharacters)) {
       if (accCharacters[key].transition) {
         const { transition: _consumed, ...rest } = accCharacters[key]
@@ -555,14 +643,92 @@ export function parseRpy(
       }
     }
     if (accLabel) t.label = accLabel
-    if (accAudio.bgm || accAudio.se.length || accAudio.voice) {
-      t.audio = { bgm: accAudio.bgm, ambient: null, se: accAudio.se, voice: accAudio.voice }
+    if (accAudio.bgm || accAudio.ambient || accAudio.se.length || accAudio.voice) {
+      t.audio = { bgm: accAudio.bgm, ambient: accAudio.ambient, se: accAudio.se, voice: accAudio.voice }
     }
     // 仅清空瞬态状态；持续态（背景/立绘/bgm）保留到被显式改变
     accLabel = null
     accAudio.se = []
     accAudio.voice = null
+    // 「停止」是一次性指令：发出后转为静默态，否则会在后续每一行重复下达停止命令
+    if (accAudio.bgm === '__CLEAR__') accAudio.bgm = null
+    if (accAudio.ambient === '__CLEAR__') accAudio.ambient = null
     recentShowKeys = []
+  }
+
+  /**
+   * 声音通道 → 编辑器音轨。
+   * Ren'Py 内建 music / sound / voice 三个通道，工程可自行注册额外通道
+   * （register_channel("ambient")），环境音类通道按名称归入环境音轨。
+   */
+  function channelToTrack(ch: string): 'bgm' | 'ambient' | 'se' | 'voice' | null {
+    if (ch === 'music') return 'bgm'
+    if (ch === 'sound' || ch === 'audio' || ch === 'sfx') return 'se'
+    if (ch === 'voice') return 'voice'
+    if (/ambient|atmo|env|bgs/i.test(ch)) return 'ambient'
+    return null // movie 等非音频通道
+  }
+
+  /**
+   * 解析音频语句的修饰参数（官方语法）：
+   *   play music "x.ogg" fadein 1.0 fadeout 2.0 volume 0.5 noloop
+   * 时长单位为秒，编辑器内部统一用毫秒。
+   */
+  function parseAudioOptions(s: string) {
+    const fadeIn = s.match(/\bfadein\s+([\d.]+)/)
+    const fadeOut = s.match(/\bfadeout\s+([\d.]+)/)
+    const volume = s.match(/\bvolume\s+([\d.]+)/)
+    const noloop = /\bnoloop\b/.test(s)
+    return {
+      fade_in_ms: fadeIn ? Math.round(Number(fadeIn[1]) * 1000) : undefined,
+      fade_out_ms: fadeOut ? Math.round(Number(fadeOut[1]) * 1000) : undefined,
+      volume: volume ? Number(volume[1]) : 1,
+      loop: /\bloop\b/.test(s) ? true : noloop ? false : undefined,
+    }
+  }
+
+  /**
+   * 处理 play / queue / stop 三类音频语句。
+   * 此前只认 `play music "…"` 与 `play sound "…"` 两种写法，
+   * 导致 play voice、停止音乐、淡入淡出与音量参数全部丢失。
+   */
+  function handleAudioStatement(verb: string, channel: string, argsRaw: string) {
+    const track = channelToTrack(channel)
+    if (!track) return
+    if (verb === 'stop') {
+      // 停止是明确的舞台事件，必须还原，否则该静下来的地方音乐会一直响
+      if (track === 'bgm') accAudio.bgm = '__CLEAR__'
+      else if (track === 'ambient') accAudio.ambient = '__CLEAR__'
+      return
+    }
+    // 文件参数支持单引号、双引号与列表写法 play music [ "a.ogg", "b.ogg" ]
+    const files = [...argsRaw.matchAll(/"([^"]*)"|'([^']*)'/g)]
+      .map((m) => stripAudioCtl(m[1] ?? m[2] ?? ''))
+      .filter(Boolean)
+    if (!files.length) return
+    const opts = parseAudioOptions(argsRaw)
+
+    if (track === 'se' || track === 'voice') {
+      for (const p of files) refAudio.push({ path: p, type: track === 'se' ? 'se' : 'voice' })
+      if (track === 'se') accAudio.se = [...accAudio.se, ...files]
+      else accAudio.voice = files[0]
+      return
+    }
+    // 常驻音轨：queue 是「排在当前曲目之后」，当前有曲目时不应抢占
+    const existing = track === 'bgm' ? accAudio.bgm : accAudio.ambient
+    if (verb === 'queue' && existing && existing !== '__CLEAR__') return
+    const first = files[0]
+    refAudio.push({ path: first, type: track === 'bgm' ? 'bgm' : 'ambient' })
+    const instruction = {
+      asset_id: first,
+      volume: opts.volume,
+      // 音乐默认循环，与 Ren'Py 一致；显式 noloop 则单次播放
+      loop: opts.loop ?? true,
+      ...(opts.fade_in_ms !== undefined ? { fade_in_ms: opts.fade_in_ms } : {}),
+      ...(opts.fade_out_ms !== undefined ? { fade_out_ms: opts.fade_out_ms } : {}),
+    }
+    if (track === 'bgm') accAudio.bgm = instruction
+    else accAudio.ambient = instruction
   }
 
   /** ATL / transform 属性行关键字（scene X: / show X: / transform X: 块内的 zoom/xpos/alpha 等属性） */
@@ -575,8 +741,11 @@ export function parseRpy(
    * - 'skip'：transform / init python / screen / style 等块定义体，缩进行整体跳过。
    */
   let blockMode: 'none' | 'atl' | 'skip' = 'none'
-  /** 等待应用内联 ATL 属性的 show 立绘条目（指向累积器中的 CharacterDelta） */
-  let pendingShow: CharacterDelta | null = null
+  /**
+   * 等待接收内联 ATL 属性的目标（show X: 的立绘条目 / scene X: 的背景）。
+   * 块内属性与 at 子句共享同一份 ATL 状态，保证覆盖顺序与 Ren'Py 一致。
+   */
+  let pendingAtl: { state: AtlState; entry?: CharacterDelta; background?: BgAcc } | null = null
   /** 三引号多行字符串（_p("""…""") / define x = """…"""）状态 */
   let inTriple = false
 
@@ -604,17 +773,13 @@ export function parseRpy(
     // atl 块（scene X: / show X:）：只跳过 ATL 属性行，show 内联 ATL 收集位置缩放
     if (blockMode === 'atl') {
       if (ATL_PROPS.test(line)) {
-        if (pendingShow) {
-          const m = line.match(/^(zoom|xpos|ypos|xalign|yalign)\s+([-\d.]+)/)
-          if (m) {
-            if (m[1] === 'zoom') pendingShow.scale = Number(m[2])
-            else if (m[1] === 'xpos') pendingShow.pos_x = clamp(Number(m[2]) / screenW, 0, 1)
-            else if (m[1] === 'ypos') pendingShow.pos_y = clamp(Number(m[2]) / screenH, 0, 1)
-          }
+        if (pendingAtl && parseAtlLine(line, pendingAtl.state)) {
+          if (pendingAtl.entry) applyCharacterAtl(pendingAtl.entry, pendingAtl.state)
+          if (pendingAtl.background) applyBackgroundAtl(pendingAtl.background, pendingAtl.state)
         }
         continue
       }
-      pendingShow = null
+      pendingAtl = null
       blockMode = 'none'
     }
 
@@ -775,8 +940,9 @@ export function parseRpy(
     if (/^scene(\s|:|$)/.test(line)) {
       const isBlock = line.endsWith(':')
       const st = parseDisplayStatement(line.replace(/^scene\b\s*/, '').replace(/:\s*$/, ''))
-      if (isBlock) blockMode = 'atl' // scene X: 内联 ATL 块（仅跳过属性行）
-      // scene 会清掉当前所有立绘（Ren'Py 语义）
+      // scene 清空当前图层的全部立绘（Ren'Py 语义）。
+      // 若 scene 自带过渡，被清掉的立绘应随整屏一起过渡消失，而非瞬间抹掉。
+      for (const key of Object.keys(accCharacters)) markHidden(key, st.transition)
       accCharacters = {}
       recentShowKeys = []
       // 背景图片名同样可由「标签 + 属性」构成（scene bg room），需完整保留才能匹配到素材
@@ -786,6 +952,15 @@ export function parseRpy(
         accBackground = { asset_id: bgName }
         // scene bg room with fade：过渡此前被正则整段丢弃，导致导入后所有转场消失
         if (st.transition) accBackground.transition = st.transition
+        // scene 同样支持 at 与内联 ATL（推近画面：scene bg: zoom 2.0）
+        const atl = collectAtl(st.at)
+        applyBackgroundAtl(accBackground, atl)
+        if (isBlock) {
+          blockMode = 'atl'
+          pendingAtl = { state: atl, background: accBackground }
+        }
+      } else if (isBlock) {
+        blockMode = 'atl'
       }
       continue
     }
@@ -811,7 +986,7 @@ export function parseRpy(
       const charKey = st.alias || charId
       ensureChar(charId, resolved.displayName || tag)
 
-      // 构造立绘指令：脚本中的位置(xpos/ypos)与缩放(zoom)必须落实到场景预览
+      // 同标签重复 show 属于「换表情/换姿势」，是替换而非新增，不产生退场
       const entry: CharacterDelta = {
         sprite_id: fullName,
         char_id: charId,
@@ -820,54 +995,50 @@ export function parseRpy(
       }
       if (st.transition) entry.transition = st.transition
 
-      // at 子句：Ren'Py 内建位置（left/right/truecenter…）与工程自定义 transform 都要还原。
+      // at 子句：内建位置（left/right/truecenter…）、工程自定义 transform、
+      // 以及 Position(...)/Transform(...) 调用式，都要还原。
       // 支持 at a, b 链式，后者覆盖前者，与 Ren'Py 的 transform 叠加顺序一致。
-      const atAttrs: Record<string, number> = {}
-      for (const name of st.at) {
-        const builtin = RENPY_BUILTIN_POSITIONS[name]
-        if (builtin) {
-          Object.assign(atAttrs, builtin)
-          continue
-        }
-        if (transformDefs[name]) Object.assign(atAttrs, transformDefs[name])
+      const atl = collectAtl(st.at)
+      // 同一角色换装时若本次未给出新位置，沿用它当前的站位，
+      // 避免「show a at left」之后一句「show a happy」把人瞬移回画面中央
+      const prevEntry = accCharacters[charKey]
+      if (prevEntry) {
+        entry.pos_x = prevEntry.pos_x
+        entry.pos_y = prevEntry.pos_y
+        entry.anchor_x = prevEntry.anchor_x
+        entry.anchor_y = prevEntry.anchor_y
+        entry.renpy_zoom = prevEntry.renpy_zoom
+        entry.scale = prevEntry.scale
+        entry.position_slot = prevEntry.position_slot
       }
-      // 绝对坐标优先于对齐比例（Ren'Py 中 xpos 会覆盖 xalign 的定位效果）。
-      // 取值 >1 视为像素、需按分辨率归一；<=1 本身即比例，直接使用。
-      if (atAttrs.xpos !== undefined) {
-        entry.pos_x = clamp(atAttrs.xpos > 1 ? atAttrs.xpos / screenW : atAttrs.xpos, 0, 1)
-      } else if (atAttrs.xcenter !== undefined) {
-        entry.pos_x = clamp(atAttrs.xcenter > 1 ? atAttrs.xcenter / screenW : atAttrs.xcenter, 0, 1)
-      } else if (atAttrs.xalign !== undefined) {
-        // 纵向沿用舞台的脚底基准，只折算横向站位——这正是 at left / at right 的核心语义
-        entry.position_slot = alignToSlot(atAttrs.xalign)
-      }
-      if (atAttrs.ypos !== undefined) {
-        entry.pos_y = clamp(atAttrs.ypos > 1 ? atAttrs.ypos / screenH : atAttrs.ypos, 0, 1)
-      }
-      if (atAttrs.zoom !== undefined) entry.scale = atAttrs.zoom
+      applyCharacterAtl(entry, atl)
 
       if (isBlock) {
         blockMode = 'atl'
-        // show X: 内联 ATL → 由块状态机收集后续 zoom/xpos/ypos 属性（指向累积器条目）；
-        // 若 at 已给出属性，则以 at 为准，不再被内联块覆盖
-        if (Object.keys(atAttrs).length === 0) pendingShow = entry
+        // show X: 内联 ATL → 块内属性继续写入同一份 ATL 状态并即时生效，
+        // 与 at 子句共享覆盖顺序（后写的赢），完全对齐 Ren'Py
+        pendingAtl = { state: atl, entry }
       }
       accCharacters[charKey] = entry
-      recentShowKeys.push(charKey)
+      if (!recentShowKeys.includes(charKey)) recentShowKeys.push(charKey)
       continue
     }
 
-    // ---- hide (隐藏立绘)：从累积立绘集中移除（落到下一条对白 beat）----
+    // ---- hide (隐藏立绘) ----
     if (/^hide(\s|:|$)/.test(line)) {
       const st = parseDisplayStatement(line.replace(/^hide\b\s*/, '').replace(/:\s*$/, ''))
       const tag = st.name[0]
       if (tag) {
+        if (tag === 'screen' || tag === 'layer') continue
         const resolved = resolveSpeaker(tag)
         // 按 show 时使用的键移除：别名实例优先，其次角色 ID，最后回退到标签本身。
-        // 旧实现仅在解析出角色 ID 时才删除，未登记为角色的立绘（如道具图）永远隐藏不掉。
-        delete accCharacters[st.alias || resolved.charId || tag]
-        if (!st.alias) delete accCharacters[tag]
-        recentShowKeys = recentShowKeys.filter((k) => k !== (st.alias || resolved.charId || tag) && k !== tag)
+        // 未登记为角色的立绘（道具图、特写图）同样必须能隐藏。
+        for (const key of [st.alias, resolved.charId, tag]) {
+          if (!key || !(key in accCharacters)) continue
+          markHidden(key, st.transition)
+          delete accCharacters[key]
+          recentShowKeys = recentShowKeys.filter((k) => k !== key)
+        }
       }
       continue
     }
@@ -877,58 +1048,30 @@ export function parseRpy(
     if (withM) {
       const transition = normalizeTransitionName(withM[1])
       if (transition) {
-        // Ren'Py 中 scene/show 之后单独一行 with，等价于给这些变更整体加过渡
+        // Ren'Py 中 scene/show/hide 之后单独一行 with，等价于给这批变更整体加过渡
         if (accBackground && !accBackground.transition) accBackground.transition = transition
         for (const key of recentShowKeys) {
           const entry = accCharacters[key]
           if (entry && !entry.transition) entry.transition = transition
         }
+        for (const [key, tr] of pendingHides) {
+          if (!tr) pendingHides.set(key, transition)
+        }
       }
       continue
     }
 
-    // ---- play music（剥离 <from..> <to..> <loop..> 等音频控制标签）----
-    const playM = line.match(/^play\s+music\s+"([^"]*)"/)
-    if (playM) {
-      const p = stripAudioCtl(playM[1])
-      refAudio.push({ path: p, type: 'bgm' })
-      accAudio.bgm = { asset_id: p, volume: 1, loop: true }
+    // ---- 音频语句：play / queue / stop <channel> …（覆盖官方全部通道与修饰参数）----
+    const audioM = line.match(/^(play|queue|stop)\s+([A-Za-z_]\w*)\b\s*(.*)$/)
+    if (audioM) {
+      handleAudioStatement(audioM[1], audioM[2], audioM[3])
       continue
     }
 
-    // ---- play music '单引号' ----
-    const playMSQ = line.match(/^play\s+music\s+'([^']*)'/)
-    if (playMSQ) {
-      const p = stripAudioCtl(playMSQ[1])
-      refAudio.push({ path: p, type: 'bgm' })
-      accAudio.bgm = { asset_id: p, volume: 1, loop: true }
-      continue
-    }
-
-    // ---- play sound ----
-    const playSfx = line.match(/^play\s+sound\s+"([^"]*)"/)
-    if (playSfx) {
-      const p = stripAudioCtl(playSfx[1])
-      refAudio.push({ path: p, type: 'se' })
-      accAudio.se = [...accAudio.se, p]
-      continue
-    }
-
-    // ---- play sound '单引号' ----
-    const playSfxSQ = line.match(/^play\s+sound\s+'([^']*)'/)
-    if (playSfxSQ) {
-      const p = stripAudioCtl(playSfxSQ[1])
-      refAudio.push({ path: p, type: 'se' })
-      accAudio.se = [...accAudio.se, p]
-      continue
-    }
-
-    // ---- voice（累积到当前 beat 的语音轨）----
-    const voiceM = line.match(/^voice\s+"([^"]*)"/)
+    // ---- voice "x"（对白配音的简写，等价于 play voice）----
+    const voiceM = line.match(/^voice\s+(.+)$/)
     if (voiceM) {
-      const p = stripAudioCtl(voiceM[1])
-      refAudio.push({ path: p, type: 'voice' })
-      accAudio.voice = p
+      handleAudioStatement('play', 'voice', voiceM[1])
       continue
     }
 
