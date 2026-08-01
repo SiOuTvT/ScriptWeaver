@@ -249,6 +249,22 @@ export interface CharacterDelta {
    * 渲染层以「底部中心」为缩放原点，确保放大/缩小时立绘脚底锚定、位置零漂移。
    */
   scale?: number
+  /**
+   * 锚点（Ren'Py 的 xanchor / yanchor，0=左/上，1=右/下）。
+   * pos_x / pos_y 定位的是「立绘上的锚点」落在舞台的哪个位置，
+   * 这正是 Ren'Py 的定位模型：xalign 0.5 等价于 xanchor 0.5 + xpos 0.5。
+   * 缺省为 0.5 / 0.5（几何中心），与编辑器原有渲染一致。
+   */
+  anchor_x?: number
+  anchor_y?: number
+  /**
+   * Ren'Py 原生 zoom：相对「图片原始像素」的倍率。
+   * 编辑器自身的 scale 是相对统一基准高度的倍率（便于手工排版），
+   * 二者语义不同，故分开存放：从 .rpy 导入时记录此值，渲染层按
+   * 「原图高 × zoom ÷ 项目基准分辨率高」还原真实占屏比例，
+   * 使预览与 Ren'Py 引擎实际运行的大小完全一致。
+   */
+  renpy_zoom?: number
   /** 过渡效果 */
   transition?: string
   /**
@@ -283,6 +299,17 @@ export interface LineDelta {
   background: {
     asset_id: string
     transition?: string
+    /**
+     * 背景缩放（Ren'Py 中 scene bg: zoom 2.0 的 ATL 写法，用于推近画面 / 强调局部）。
+     * 缺省 1 表示按原比例完整铺放。
+     */
+    scale?: number
+    /**
+     * 缩放后的取景中心（归一化 0-1，缺省居中 0.5 / 0.5）。
+     * 对应 ATL 里 xpos / ypos 对背景的偏移，决定放大后看到画面的哪一块。
+     */
+    focus_x?: number
+    focus_y?: number
     /** 挂载到背景的特效（淡入 / 擦除 / 闪烁…），导出为 `with` 或 `scene ... at <transform>` */
     effects?: MountedEffect[]
   } | null
@@ -454,7 +481,18 @@ export interface ResolvedCharacterState {
   pos_y?: number
   /** 缩放比例（独立变量，默认 1）；与位置解耦 */
   scale?: number
+  /** 锚点（同 CharacterDelta.anchor_x / anchor_y）；缺省 0.5 / 0.5 */
+  anchor_x?: number
+  anchor_y?: number
+  /** Ren'Py 原生 zoom（同 CharacterDelta.renpy_zoom） */
+  renpy_zoom?: number
   transition?: string
+  /**
+   * 退场中：该立绘在本行被 hide 掉，且声明了过渡。
+   * 舞台需要多渲染这一帧来播放退场动画（渐隐 / 滑出），播完即消失；
+   * 它不属于「在场立绘」，不可拖动、不参与导出、不计入立绘数量。
+   */
+  exiting?: boolean
   /** 挂载到本立绘的特效实例（透传自 CharacterDelta） */
   effects?: MountedEffect[]
 }
@@ -479,6 +517,11 @@ export interface ResolvedLineState {
   background: {
     asset_id: string
     transition?: string
+    /** 背景缩放（同 LineDelta.background.scale） */
+    scale?: number
+    /** 缩放取景中心（同 LineDelta.background.focus_x / focus_y） */
+    focus_x?: number
+    focus_y?: number
     effects?: MountedEffect[]
   } | null
   characters: Record<string, ResolvedCharacterState>

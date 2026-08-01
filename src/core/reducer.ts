@@ -60,6 +60,12 @@ export function applyDelta(
     ? { ...prev.characters }
     : {}
 
+  // 上一行处于退场动画中的立绘：动画已在那一行播放完毕，不再延续到本行。
+  // 不清理的话「退场帧」会被继承成常驻立绘，反而永远消不掉。
+  for (const key of Object.keys(characters)) {
+    if (characters[key].exiting) delete characters[key]
+  }
+
   // 2. 应用本行 Delta 角色指令
   for (const [charId, charDelta] of Object.entries(delta.characters ?? {})) {
     switch (charDelta.action) {
@@ -71,13 +77,41 @@ export function applyDelta(
           pos_x: charDelta.pos_x,
           pos_y: charDelta.pos_y,
           scale: charDelta.scale,
+          anchor_x: charDelta.anchor_x,
+          anchor_y: charDelta.anchor_y,
+          renpy_zoom: charDelta.renpy_zoom,
           transition: charDelta.transition,
           asset_id: charDelta.asset_id,
           effects: charDelta.effects,
         }
         break
       }
-      case 'hide':
+      case 'hide': {
+        // 带过渡的退场（Ren'Py 的 hide X with dissolve）：本行仍需渲染这张立绘，
+        // 让它把退场动画播完；下一行归约时由上面的 exiting 清理逻辑移除。
+        const cur = characters[charId]
+        if (charDelta.transition) {
+          characters[charId] = {
+            ...(cur ?? {
+              sprite_id: charDelta.sprite_id,
+              position_slot: charDelta.position_slot,
+              char_id: charDelta.char_id,
+              pos_x: charDelta.pos_x,
+              pos_y: charDelta.pos_y,
+              scale: charDelta.scale,
+              anchor_x: charDelta.anchor_x,
+              anchor_y: charDelta.anchor_y,
+              renpy_zoom: charDelta.renpy_zoom,
+              asset_id: charDelta.asset_id,
+            }),
+            transition: charDelta.transition,
+            exiting: true,
+          }
+        } else {
+          delete characters[charId]
+        }
+        break
+      }
       case CLEAR: {
         delete characters[charId]
         break
