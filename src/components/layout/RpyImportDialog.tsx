@@ -273,25 +273,11 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
         return next
       })
 
-      // ── Step 6: 合并到剧本 ──
-      const currentDeltas = useAppStore.getState().draftDeltas
-      const merged = currentDeltas.length === 0
-        ? revisedDeltas
-        : [
-          ...currentDeltas,
-          {
-            line_id: `imp_sep_${Date.now()}`,
-            speaker: null,
-            dialogue: '',
-            background: null,
-            characters: {},
-            audio: { bgm: null, ambient: null, se: [], voice: null },
-            label: 'Imported',
-          } as LineDelta,
-          ...revisedDeltas,
-        ]
-
-      useAppStore.getState().setDraftDeltas(merged)
+      // ── Step 6: 写入剧本 ──
+      // 导入 Ren'Py 工程即「整本替换」：避免把上一次（可能不干净）的剧本
+      // 追加到顶部，造成顶部一堆空白隔断、背景/音频看起来「丢失」的错觉。
+      // 直接以本次解析出的干净 beats 覆盖当前剧本。
+      useAppStore.getState().setDraftDeltas(revisedDeltas)
 
       // ── Step 7: 创建自动快照 ──
       const json = serializeProject(
