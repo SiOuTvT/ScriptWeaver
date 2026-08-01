@@ -158,6 +158,121 @@ export interface RpyTransformDefs {
   [name: string]: Record<string, number>
 }
 
+/**
+ * Ren'Py 官方内建位置（renpy/common/00definitions.rpy 中以 Position 定义）。
+ * 这些名字不会出现在工程自己的 transform 块里，但脚本中被大量使用
+ * （show eileen at left），因此必须内置，否则立绘站位全部退化成居中。
+ * 取值为官方的 xalign / yalign：x 轴 0=左 1=右，y 轴 0=上 1=下。
+ */
+const RENPY_BUILTIN_POSITIONS: Record<string, { xalign: number; yalign: number }> = {
+  left: { xalign: 0.0, yalign: 1.0 },
+  center: { xalign: 0.5, yalign: 1.0 },
+  right: { xalign: 1.0, yalign: 1.0 },
+  truecenter: { xalign: 0.5, yalign: 0.5 },
+  top: { xalign: 0.5, yalign: 0.0 },
+  topleft: { xalign: 0.0, yalign: 0.0 },
+  topright: { xalign: 1.0, yalign: 0.0 },
+  bottom: { xalign: 0.5, yalign: 1.0 },
+  bottomleft: { xalign: 0.0, yalign: 1.0 },
+  bottomright: { xalign: 1.0, yalign: 1.0 },
+  offscreenleft: { xalign: -0.25, yalign: 1.0 },
+  offscreenright: { xalign: 1.25, yalign: 1.0 },
+  default: { xalign: 0.5, yalign: 1.0 },
+}
+
+/**
+ * 把 Ren'Py 的 xalign（0=左 1=右）折算到编辑器的五档预设站位。
+ * Ren'Py 的 left 表示立绘左缘贴屏幕左侧，编辑器的「左」站位（0.22）
+ * 是视觉上等价的落点，比原先一律 center 忠实得多。
+ */
+function alignToSlot(xalign: number): string {
+  if (xalign <= 0.15) return 'left'
+  if (xalign < 0.42) return 'left-center'
+  if (xalign <= 0.58) return 'center'
+  if (xalign < 0.85) return 'right-center'
+  return 'right'
+}
+
+/**
+ * 归一化 with 子句的过渡名。
+ * Ren'Py 允许 `with dissolve`（内建实例）与 `with Dissolve(0.5)`（工厂调用）两种写法，
+ * 统一取基名小写（Dissolve(0.5) → dissolve），使预览与导出都能识别；
+ * `with None` 表示显式不使用过渡，返回空。
+ */
+function normalizeTransitionName(raw: string | undefined): string | undefined {
+  if (!raw) return undefined
+  const base = raw.trim().replace(/\(.*$/, '').trim()
+  if (!base || base === 'None') return undefined
+  return base.toLowerCase()
+}
+
+/** scene / show 语句解析结果（对齐 Ren'Py 官方语法各子句） */
+export interface RpyDisplayStatement {
+  /** 图片名：首元素为标签(tag)，其余为属性(attributes)，如 ['eileen','happy'] */
+  name: string[]
+  /** as 子句指定的实例别名，用于同角色多立绘并存 */
+  alias?: string
+  /** at 子句的 transform 列表（支持 at a, b 链式） */
+  at: string[]
+  /** behind 子句的标签列表 */
+  behind: string[]
+  /** onlayer 子句指定的图层 */
+  onlayer?: string
+  /** zorder 子句的层叠序号 */
+  zorder?: number
+  /** with 子句的过渡（已归一化） */
+  transition?: string
+}
+
+/**
+ * 解析 scene / show 语句的完整子句结构，严格对齐 Ren'Py 官方语法：
+ *
+ *   show <image name…> [as <alias>] [at <transform>[, <transform>…]]
+ *        [onlayer <layer>] [behind <tag>[, <tag>…]] [zorder <n>] [with <transition>]
+ *
+ * 其中 <image name> 由「标签 + 若干属性」构成（show eileen happy → 标签 eileen、属性 happy），
+ * 这是过去按空格截断只取首词、导致表情与站位全部丢失的根源。
+ */
+export function parseDisplayStatement(body: string): RpyDisplayStatement {
+  const out: RpyDisplayStatement = { name: [], at: [], behind: [] }
+  let rest = body.trim()
+
+  // with 子句可能带括号参数（with Dissolve(0.5)），先整体切出，避免被空格拆碎
+  const withIdx = rest.search(/\swith\s/)
+  if (withIdx >= 0) {
+    out.transition = normalizeTransitionName(rest.slice(withIdx).replace(/^\s*with\s+/, ''))
+    rest = rest.slice(0, withIdx)
+  }
+
+  // done：as / onlayer / zorder 的取值已读完，在遇到下一个关键字前丢弃多余词
+  type Section = 'name' | 'alias' | 'at' | 'behind' | 'onlayer' | 'zorder' | 'done'
+  let section: Section = 'name'
+  for (const token of rest.trim().split(/\s+/).filter(Boolean)) {
+    switch (token) {
+      case 'as': section = 'alias'; continue
+      case 'at': section = 'at'; continue
+      case 'behind': section = 'behind'; continue
+      case 'onlayer': section = 'onlayer'; continue
+      case 'zorder': section = 'zorder'; continue
+      default: break
+    }
+    // at / behind 支持逗号分隔的多项，逐项剥掉尾逗号
+    const value = token.replace(/,$/, '')
+    if (!value) continue
+    switch (section) {
+      case 'name': out.name.push(value); break
+      // as / onlayer / zorder 各只取紧随其后的一个词，之后不再吸收 image name
+      case 'alias': out.alias = value; section = 'done'; break
+      case 'onlayer': out.onlayer = value; section = 'done'; break
+      case 'zorder': out.zorder = Number(value); section = 'done'; break
+      case 'at': out.at.push(value); break
+      case 'behind': out.behind.push(value); break
+      case 'done': break
+    }
+  }
+  return out
+}
+
 /** 项目基准分辨率（Ren'Py gui.init(W, H)，默认 1920x1080） */
 export interface RpyScreenSize {
   width: number
