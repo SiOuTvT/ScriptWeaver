@@ -19,6 +19,7 @@ import EffectMountPanel from '@/components/effects/EffectMountPanel'
 import { PRESET_SLOTS, getPresetSlot } from '@/core/positionSlots'
 import { playAudioPreview, stopBgm, stopAmbient, stopOneShots } from '@/utils/audioManager'
 import { estimateLineDurationMs } from '@/utils/playback'
+import { getAudioDuration } from '@/utils/tts'
 import { evalCondition, findLabelIndex } from '@/utils/varRuntime'
 import { stripRenpyMarkup, validateRenpyText } from '@/utils/renpyText'
 
@@ -214,17 +215,35 @@ function useImageLoaded(url?: string): boolean {
 // ===================== 组件 =====================
 
 /**
- * 计算一行在自动/交互播放中的停留时长（毫秒）。
- * 若该行走绑定了语音且素材已知真实时长，则以语音时长为准（时长智能吸附），
- * 否则回退到按台词字数估算。
+ * 计算一行在自动播放中的停留时长（毫秒）。
+ *
+ * 关键原则：音频分两类 ——
+ *  · 常驻循环通道（bgm / ambient）：跨画面延续，不阻塞推进；
+ *  · 一次性通道（voice 语音 / se 音效）：只属于「当前这一画面」，必须在播完之后再切下一幕。
+ *
+ * 因此停留时长取「台词字数估算」与「该行所有一次性音频（语音 + 全部音效）中最长者」
+ * 的较大值，并加缓冲，确保自动播放时场景限定的语音 / 音效不会被下一幕硬切掉。
+ * 若音频真实时长读不到，则回退到字数估算（不退化、不挂起）。
  */
-function getLineStayMs(state: ResolvedLineState | null, assets: AssetItem[]): number {
-  if (state?.audio.voice) {
-    const a = assets.find((x) => x.id === state.audio.voice)
-    if (a?.duration && a.duration > 0) return Math.max(900, Math.round(a.duration * 1000) + 250)
-  }
+async function getLineStayMs(state: ResolvedLineState | null, assets: AssetItem[]): Promise<number> {
   // 按「玩家实际看到的字符」估时：{b}{w=0.5} 等标记与 [变量] 语法字符不计入
-  return estimateLineDurationMs(state?.dialogue ? stripRenpyMarkup(state.dialogue) : state?.dialogue)
+  const base = estimateLineDurationMs(state?.dialogue ? stripRenpyMarkup(state.dialogue) : state?.dialogue)
+
+  // 收集该行所有「一次性」音频（语音 + 音效），它们必须播完才切幕
+  const oneShotIds: string[] = []
+  if (state?.audio.voice) oneShotIds.push(state.audio.voice)
+  for (const seId of state?.audio.se ?? []) oneShotIds.push(seId)
+  if (oneShotIds.length === 0) return base
+
+  const durs = await Promise.all(
+    oneShotIds.map((id) => {
+      const a = assets.find((x) => x.id === id)
+      return a ? getAudioDuration(a) : Promise.resolve(0)
+    }),
+  )
+  const audioMs = Math.max(0, ...durs) * 1000
+  // 以最长的一次性音频时长为准（智能吸附），加缓冲避免被下一幕硬切
+  return Math.max(base, Math.round(audioMs) + 300)
 }
 
 export default function StagePreview() {
@@ -934,7 +953,7 @@ export default function StagePreview() {
   }, [clearAutoTimers, clearSpeaking])
 
   const runAutoFrom = useCallback(
-    (index: number) => {
+    async (index: number) => {
       if (!autoRunningRef.current) return
       if (index >= resolvedStates.length) {
         stopAuto()
@@ -945,8 +964,11 @@ export default function StagePreview() {
       const prev = index > 0 ? resolvedStates[index - 1] : null
       playLineAudio(state, prev)
       setSpeaking(state)
-      const dur = getLineStayMs(state, assets)
-      autoTimerRef.current = setTimeout(() => runAutoFrom(index + 1), dur)
+      // 等待该行一次性音频（语音 / 音效）的真实时长解析完成，
+      // 以决定何时切下一幕——确保场景限定音频播完再推进。
+      const dur = await getLineStayMs(state, assets)
+      if (!autoRunningRef.current) return
+      autoTimerRef.current = setTimeout(() => void runAutoFrom(index + 1), dur)
     },
     [resolvedStates, selectedIndex, selectLine, playLineAudio, setSpeaking, stopAuto],
   )

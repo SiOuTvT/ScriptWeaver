@@ -47,9 +47,14 @@ export async function synthesizeVoice(payload: TtsSynthesizePayload): Promise<Tt
 
 /**
  * 读取音频真实时长（秒）。用于时间轴吸附与播放停留时长计算。
- * 通过 sw-asset:// 协议加载元数据（不整段下载），失败返回 0。
+ * 通过 sw-asset:// 协议仅加载元数据（不整段下载），失败返回 0。
+ * 结果按素材 ID 缓存，避免自动播放逐行重复请求元数据。
  */
+const durationCache = new Map<string, number>()
+
 export function getAudioDuration(asset: AssetItem): Promise<number> {
+  const cached = durationCache.get(asset.id)
+  if (cached !== undefined) return Promise.resolve(cached)
   return new Promise((resolve) => {
     const src = resolveAssetSrc(asset)
     if (!src) {
@@ -59,7 +64,18 @@ export function getAudioDuration(asset: AssetItem): Promise<number> {
     const el = document.createElement('audio')
     el.preload = 'metadata'
     el.src = src
-    el.onloadedmetadata = () => resolve(el.duration || 0)
-    el.onerror = () => resolve(0)
+    let done = false
+    const finish = (v: number): void => {
+      if (done) return
+      done = true
+      if (v > 0) durationCache.set(asset.id, v)
+      resolve(v)
+    }
+    // 元数据加载成功
+    el.onloadedmetadata = () => finish(el.duration || 0)
+    // 协议 / 解码异常：降级为 0，交回调用方按字数估算兜底，避免自动播放挂起
+    el.onerror = () => finish(0)
+    // 极端情况下 onloadedmetadata / onerror 都不触发，硬超时兜底
+    setTimeout(() => finish(0), 800)
   })
 }
