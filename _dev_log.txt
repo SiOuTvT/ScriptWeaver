@@ -13,7 +13,7 @@ build started...[39m
 [36m
 build started...[39m
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m591[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m683[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
 [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
@@ -23,15 +23,15 @@ transforming...
 rendering chunks...
 transforming...
 computing gzip size...
-[2mdist-electron/[22m[36mpreload.js  [39m[1m[2m4.92 kB[22m[1m[22m[2m │ gzip: 2.31 kB[22m
-[36mbuilt in 742ms.[39m
 [32m✓[39m 2 modules transformed.
+[2mdist-electron/[22m[36mpreload.js  [39m[1m[2m4.92 kB[22m[1m[22m[2m │ gzip: 2.31 kB[22m
+[36mbuilt in 825ms.[39m
 rendering chunks...
 computing gzip size...
 [2mdist-electron/[22m[36mmain.js  [39m[1m[2m47.46 kB[22m[1m[22m[2m │ gzip: 12.69 kB[22m
-[36mbuilt in 862ms.[39m
+[36mbuilt in 834ms.[39m
 
-[26308:0801/235045.126:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[26308:0801/235045.126:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[27284:0802/002024.593:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[27284:0802/002024.594:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
 [sw-asset] request sw-asset://asset/assets/images/background/cd_2.jpg | rel= assets/images/background/cd_2.jpg | activeRoot= D:\meihuogu\hlzz\game
 [sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_2.jpg image/jpeg
