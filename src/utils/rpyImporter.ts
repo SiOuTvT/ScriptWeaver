@@ -413,20 +413,22 @@ export function parseRpy(
   }
   let accLabel: string | null = null
 
-  function resetAcc() {
-    accBackground = null
-    accCharacters = {}
-    accAudio = { bgm: null, ambient: null, se: [], voice: null }
-    accLabel = null
-  }
-
-  /** 把累积的舞台状态并入目标 delta（对白/选择支等），并清空累积器 */
+  /**
+   * 把累积的舞台状态并入目标 delta（对白/选择支等）。
+   * Ren'Py 语义：背景/立绘/bgm 是「持续态」，会保留到被显式改变（scene 清除立绘、hide 移除、下一次 play music）；
+   * 而标签/音效(se)/语音(voice)是「瞬态」，仅附着到紧随其后的那条对白 beat，消费后即清空。
+   */
   function flushAcc(t: LineDelta) {
     if (accBackground) t.background = accBackground
     if (Object.keys(accCharacters).length) t.characters = { ...accCharacters }
     if (accLabel) t.label = accLabel
-    if (accAudio.bgm || accAudio.se.length || accAudio.voice) t.audio = accAudio
-    resetAcc()
+    if (accAudio.bgm || accAudio.se.length || accAudio.voice) {
+      t.audio = { bgm: accAudio.bgm, ambient: null, se: accAudio.se, voice: accAudio.voice }
+    }
+    // 仅清空瞬态状态；持续态（背景/立绘/bgm）保留到被显式改变
+    accLabel = null
+    accAudio.se = []
+    accAudio.voice = null
   }
 
   /** ATL / transform 属性行关键字（scene X: / show X: / transform X: 块内的 zoom/xpos/alpha 等属性） */

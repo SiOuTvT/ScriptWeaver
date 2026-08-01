@@ -192,6 +192,17 @@ describe('parseRpy：default 角色声明与真实项目语法', () => {
     expect(beat?.characters?.js2).toBeTruthy()
     expect(beat?.characters?.js1).toBeFalsy()
   })
+
+  it('连续对白保持立绘与背景（持久态，非每次清空）', () => {
+    const src = `label start:\n    scene bj1\n    show js1 at f\n    js1 "你好"\n    js1 "再见"`
+    const r = parseRpy(src)
+    const beats = r.deltas.filter((d) => d.dialogue)
+    expect(beats.length).toBe(2)
+    expect(beats[0].background?.asset_id).toBe('bj1')
+    expect(beats[0].characters?.js1).toBeTruthy()
+    expect(beats[1].background?.asset_id).toBe('bj1') // 背景持续保留
+    expect(beats[1].characters?.js1).toBeTruthy() // 立绘持续保留
+  })
 })
 
 describe('parseRpy：transform 位置/缩放落实到场景预览', () => {
