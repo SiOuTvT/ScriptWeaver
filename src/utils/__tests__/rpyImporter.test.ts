@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { parseRpy, matchAssets, scanAssetFiles, importRpyDirectory, type RpyImageRef } from '../rpyImporter'
+import { parseRpy, matchAssets, scanAssetFiles, importRpyDirectory, parseDisplayStatement, type RpyImageRef } from '../rpyImporter'
 
 /** 构造内存文件树 mock：dirs 用归一化路径（/）做 key，files 同。 */
 function mockFs(tree: { dirs: Record<string, string[]>; files: Record<string, string> }) {
@@ -265,6 +265,102 @@ describe('parseRpy：transform 位置/缩放落实到场景预览', () => {
     expect(entry?.pos_x).toBeCloseTo(1500 / 1920, 3)
     expect(entry?.pos_y).toBeCloseTo(650 / 1080, 3)
     expect(entry?.scale).toBe(0.8)
+  })
+})
+
+describe('parseDisplayStatement：对齐 Ren-Py 官方 show/scene 语法的子句解析', () => {
+  it('拆分图片名（标签 + 属性）而非按空格截断只取首词', () => {
+    const st = parseDisplayStatement('eileen happy vhappy')
+    expect(st.name).toEqual(['eileen', 'happy', 'vhappy'])
+  })
+
+  it('同时解析 at / with，且不把属性误当图片名', () => {
+    const st = parseDisplayStatement('eileen happy at right with dissolve')
+    expect(st.name).toEqual(['eileen', 'happy'])
+    expect(st.at).toEqual(['right'])
+    expect(st.transition).toBe('dissolve')
+  })
+
+  it('支持 at 链式（at a, b）', () => {
+    const st = parseDisplayStatement('eileen at left, flip')
+    expect(st.at).toEqual(['left', 'flip'])
+  })
+
+  it('解析 as / behind / zorder / onlayer 子句', () => {
+    const st = parseDisplayStatement('eileen as e2 behind lucy, mary zorder 3 onlayer master')
+    expect(st.name).toEqual(['eileen'])
+    expect(st.alias).toBe('e2')
+    expect(st.behind).toEqual(['lucy', 'mary'])
+    expect(st.zorder).toBe(3)
+    expect(st.onlayer).toBe('master')
+  })
+
+  it('工厂式过渡取基名，with None 视为无过渡', () => {
+    expect(parseDisplayStatement('bg room with Dissolve(0.5)').transition).toBe('dissolve')
+    expect(parseDisplayStatement('bg room with None').transition).toBeUndefined()
+  })
+})
+
+describe('parseRpy：with 过渡与 at 站位严格还原脚本定义', () => {
+  it('scene X with fade 的过渡不再被丢弃', () => {
+    const r = parseRpy('label start:\n    scene bj1 with fade\n    "台词"')
+    const d = r.deltas.find((x) => x.background)
+    expect(d?.background?.asset_id).toBe('bj1')
+    expect(d?.background?.transition).toBe('fade')
+  })
+
+  it('show X 属性（表情）保留进 sprite_id，不再只取首词', () => {
+    const r = parseRpy('label start:\n    show eileen happy\n    "台词"')
+    const d = r.deltas.find((x) => Object.keys(x.characters || {}).length > 0)
+    const entry = d ? Object.values(d.characters)[0] : null
+    expect(entry?.sprite_id).toBe('eileen happy')
+    // 素材引用同样按完整图片名登记，才能匹配到 eileen_happy.png
+    expect(r.referencedImages.some((ref) => ref.refName === 'eileen happy')).toBe(true)
+  })
+
+  it('at 内建位置 left / right 落实为站位，而非一律居中', () => {
+    const r = parseRpy('label start:\n    show a at left\n    "台词1"\n    show b at right\n    "台词2"')
+    const d1 = r.deltas.find((x) => x.dialogue === '台词1')
+    const d2 = r.deltas.find((x) => x.dialogue === '台词2')
+    expect(Object.values(d1!.characters)[0].position_slot).toBe('left')
+    expect(Object.values(d2!.characters).find((c) => c.sprite_id === 'b')?.position_slot).toBe('right')
+  })
+
+  it('show ... with 的过渡落到该立绘上', () => {
+    const r = parseRpy('label start:\n    show eileen happy at right with dissolve\n    "台词"')
+    const d = r.deltas.find((x) => Object.keys(x.characters || {}).length > 0)
+    const entry = d ? Object.values(d.characters)[0] : null
+    expect(entry?.transition).toBe('dissolve')
+    expect(entry?.position_slot).toBe('right')
+  })
+
+  it('独立成行的 with 回填给此前累积的背景与立绘', () => {
+    const r = parseRpy('label start:\n    scene bj1\n    show eileen\n    with dissolve\n    "台词"')
+    const d = r.deltas.find((x) => x.dialogue === '台词')
+    expect(d?.background?.transition).toBe('dissolve')
+    expect(Object.values(d!.characters)[0].transition).toBe('dissolve')
+  })
+
+  it('过渡只在切换那一 beat 生效，不会在后续行重复播放', () => {
+    const r = parseRpy('label start:\n    scene bj1 with fade\n    "第一句"\n    "第二句"')
+    const d1 = r.deltas.find((x) => x.dialogue === '第一句')
+    const d2 = r.deltas.find((x) => x.dialogue === '第二句')
+    expect(d1?.background?.transition).toBe('fade')
+    // 背景本身延续，但过渡不再重复
+    expect(d2?.background?.asset_id).toBe('bj1')
+    expect(d2?.background?.transition).toBeUndefined()
+  })
+
+  it('hide 能移除未登记为角色的立绘（旧实现会永远隐藏不掉）', () => {
+    const r = parseRpy('label start:\n    show prop1\n    "第一句"\n    hide prop1\n    "第二句"')
+    const d2 = r.deltas.find((x) => x.dialogue === '第二句')
+    expect(Object.keys(d2?.characters ?? {})).toHaveLength(0)
+  })
+
+  it('show screen 不被误当作立绘角色', () => {
+    const r = parseRpy('label start:\n    show screen hud\n    "台词"')
+    const d = r.deltas.find((x) => x.dialogue === '台词')
+    expect(Object.keys(d?.characters ?? {})).toHaveLength(0)
   })
 })
 

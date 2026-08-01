@@ -20,6 +20,7 @@ import { PRESET_SLOTS, getPresetSlot } from '@/core/positionSlots'
 import { playAudioPreview, stopBgm, stopAmbient, stopOneShots } from '@/utils/audioManager'
 import { estimateLineDurationMs } from '@/utils/playback'
 import { getAudioDuration } from '@/utils/tts'
+import { getTransitionClass } from '@/utils/renpyTransitions'
 import { evalCondition, findLabelIndex } from '@/utils/varRuntime'
 import { stripRenpyMarkup, validateRenpyText } from '@/utils/renpyText'
 
@@ -1012,7 +1013,7 @@ export default function StagePreview() {
   }, [stopOneShots, clearSpeaking])
 
   const advanceTo = useCallback(
-    (index: number) => {
+    async (index: number) => {
       if (!playRunningRef.current) return
       if (index >= draftDeltas.length) {
         stopPlayback()
@@ -1035,8 +1036,11 @@ export default function StagePreview() {
         playLineAudio(st, index > 0 ? resolvedStates[index - 1] : null)
         setSpeaking(st)
       }
-      const dur = getLineStayMs(st ?? null, assets)
-      playTimerRef.current = setTimeout(() => advanceTo(index + 1), dur)
+      // 与自动播放一致：等待该行一次性音频（语音 / 音效）的真实时长解析完成，
+      // 确保场景限定音频播完再推进；等待期间若已停止播放则中止
+      const dur = await getLineStayMs(st ?? null, assets)
+      if (!playRunningRef.current) return
+      playTimerRef.current = setTimeout(() => void advanceTo(index + 1), dur)
     },
     [draftDeltas, resolvedStates, selectLine, applyRuntimeOps, playLineAudio, setSpeaking, stopPlayback],
   )
@@ -1264,6 +1268,8 @@ export default function StagePreview() {
   // 舞台核心区锁定 16:9，背景图以 contain 完整显示、绝不截断；
   // 比例留白由外层纯黑视口（Letterboxing）填充，无需模糊层或底色。
   const hasBgImage = !!bgDataUrl
+  // 还原脚本里 scene ... with <transition> 声明的转场；无声明时沿用默认淡入
+  const bgTransitionClass = getTransitionClass(state.background?.transition)
 
   return (
     <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm overflow-hidden">
@@ -1411,10 +1417,15 @@ export default function StagePreview() {
         <div className="absolute inset-0 bg-canvas">
           {hasBgImage && (
             <img
+              // key 绑定「图源 + 过渡」：仅在背景真正更换、或该行显式声明了转场时重新挂载并播放动画，
+              // 同一背景延续的行不会重复播放，避免逐行闪动
+              key={`${bgDataUrl}|${state.background?.transition ?? ''}`}
               src={bgDataUrl}
               alt=""
               draggable={false}
-              className="pointer-events-none absolute inset-0 h-full w-full animate-fade-in object-contain object-center"
+              className={`pointer-events-none absolute inset-0 h-full w-full object-contain object-center ${
+                bgTransitionClass || 'animate-fade-in'
+              }`}
             />
           )}
           {bgDataUrl && !bgLoaded && (
@@ -1520,10 +1531,14 @@ export default function StagePreview() {
               >
                 {spriteDataUrl && !spriteFailed ? (
                   <img
+                    // 还原脚本里 show ... with <transition> 声明的立绘入场动画。
+                    // key 含过渡名：声明了转场的那一行必定重放一次，其余行不重复播放。
+                    // 动画挂在 img 而非外层 div —— 后者的 transform 承担定位与缩放，不能被覆盖。
+                    key={`${spriteDataUrl}|${char.transition ?? ''}`}
                     src={spriteDataUrl}
                     alt={getDisplayName(char.char_id ?? charId)}
                     draggable={false}
-                    className="w-auto select-none object-contain drop-shadow-lg"
+                    className={`w-auto select-none object-contain drop-shadow-lg ${getTransitionClass(char.transition)}`}
                     style={{ height: SPRITE_BASE_HEIGHT, width: 'auto' }}
                     onError={() => markSpriteError(spriteKey)}
                     onLoad={() => {
