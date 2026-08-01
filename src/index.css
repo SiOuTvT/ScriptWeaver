@@ -439,6 +439,81 @@
   transform-origin: center 72%;
 }
 
+/* ===== Ren'Py 过渡还原（with <transition>） =====
+   导入工程时 scene / show 语句上的 with 子句会被解析出来，并在此处还原成真实动画，
+   使编辑器预览与 Ren'Py 引擎实际运行的观感一致（此前 with 被丢弃、预览只显示名称文字）。
+   语义与时长对齐官方内建过渡：dissolve / fade 约 0.5 秒，punch 类为短促震动。 */
+
+/* 溶解：新画面直接淡入（官方 dissolve） */
+@keyframes sw-tr-dissolve { from { opacity: 0; } to { opacity: 1; } }
+/* 淡入淡出：先停留在底色（黑场）再浮现，还原官方 fade 的过黑感 */
+@keyframes sw-tr-fade { 0% { opacity: 0; } 45% { opacity: 0; } 100% { opacity: 1; } }
+/* 像素化：官方 pixellate 的近似还原（模糊 + 轻微放大收敛） */
+@keyframes sw-tr-pixellate {
+  0% { opacity: 0; filter: blur(20px); transform: scale(1.05); }
+  55% { opacity: 1; }
+  100% { opacity: 1; filter: blur(0); transform: scale(1); }
+}
+/* 位移入场：官方 moveinleft / moveinright / moveintop / moveinbottom 与 push / slide 系列 */
+@keyframes sw-tr-in-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes sw-tr-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes sw-tr-in-top { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+@keyframes sw-tr-in-bottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
+/* 擦除：官方 wipe 系列，按方向逐步揭开新画面 */
+@keyframes sw-tr-wipe-right { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes sw-tr-wipe-left { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
+@keyframes sw-tr-wipe-down { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes sw-tr-wipe-up { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+/* 光圈：官方 irisin / irisout，由中心圆形张开 */
+@keyframes sw-tr-iris { from { clip-path: circle(0% at 50% 50%); } to { clip-path: circle(75% at 50% 50%); } }
+/* 震动：官方 hpunch / vpunch */
+@keyframes sw-tr-hpunch {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-2.2%); }
+  40% { transform: translateX(1.8%); }
+  60% { transform: translateX(-1.2%); }
+  80% { transform: translateX(0.6%); }
+}
+@keyframes sw-tr-vpunch {
+  0%, 100% { transform: translateY(0); }
+  20% { transform: translateY(-2.2%); }
+  40% { transform: translateY(1.8%); }
+  60% { transform: translateY(-1.2%); }
+  80% { transform: translateY(0.6%); }
+}
+/* 百叶窗：官方 blinds，8 条横向条带同步展开。
+   遮罩的渐变停止点本身不可动画，故注册自定义属性驱动条带宽度，
+   动画终点条带铺满整个周期，确保结束后画面完全可见、不残留条纹。 */
+@property --sw-blind {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+@keyframes sw-tr-blinds {
+  from { --sw-blind: 0%; }
+  to { --sw-blind: 12.5%; }
+}
+
+.sw-tr-dissolve { animation: sw-tr-dissolve 500ms ease-out both; }
+.sw-tr-fade { animation: sw-tr-fade 700ms ease-in-out both; }
+.sw-tr-pixellate { animation: sw-tr-pixellate 500ms ease-out both; }
+.sw-tr-in-left { animation: sw-tr-in-left 500ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.sw-tr-in-right { animation: sw-tr-in-right 500ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.sw-tr-in-top { animation: sw-tr-in-top 500ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.sw-tr-in-bottom { animation: sw-tr-in-bottom 500ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.sw-tr-wipe-right { animation: sw-tr-wipe-right 500ms ease-in-out both; }
+.sw-tr-wipe-left { animation: sw-tr-wipe-left 500ms ease-in-out both; }
+.sw-tr-wipe-down { animation: sw-tr-wipe-down 500ms ease-in-out both; }
+.sw-tr-wipe-up { animation: sw-tr-wipe-up 500ms ease-in-out both; }
+.sw-tr-iris { animation: sw-tr-iris 500ms ease-out both; }
+.sw-tr-hpunch { animation: sw-tr-hpunch 250ms ease-in-out both; }
+.sw-tr-vpunch { animation: sw-tr-vpunch 250ms ease-in-out both; }
+.sw-tr-blinds {
+  mask-image: repeating-linear-gradient(to bottom, #000 0 var(--sw-blind), transparent var(--sw-blind) 12.5%);
+  -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 var(--sw-blind), transparent var(--sw-blind) 12.5%);
+  animation: sw-tr-blinds 500ms ease-in-out both;
+}
+
 /* ===== 帮助中心 / Markdown 文档排版（prose-content） =====
    工业极简文档风格：字号收敛 12-18，字重≤600，间距宽松呼吸感 */
 .prose-content {

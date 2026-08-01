@@ -521,8 +521,14 @@ export function parseRpy(
    * 而且背景/音频只在空白行上生效、到了真正的对白行就丢失。
    * 正确做法：把指令累积进 acc，遇到下一条「对白/选择支/变量操作」时合并成一个 beat。
    */
-  let accBackground: { asset_id: string } | null = null
+  let accBackground: { asset_id: string; transition?: string } | null = null
   let accCharacters: Record<string, CharacterDelta> = {}
+  /**
+   * 本 beat 内刚被 show 出来的立绘键。
+   * Ren'Py 允许过渡独立成行（show a / show b / with dissolve），
+   * 该 with 作用于此前累积的全部舞台变更，需要回填给这些条目。
+   */
+  let recentShowKeys: string[] = []
   let accAudio: { bgm: { asset_id: string; volume: number; loop: boolean } | null; ambient: null; se: string[]; voice: string | null } = {
     bgm: null, ambient: null, se: [], voice: null,
   }
@@ -536,6 +542,18 @@ export function parseRpy(
   function flushAcc(t: LineDelta) {
     if (accBackground) t.background = accBackground
     if (Object.keys(accCharacters).length) t.characters = { ...accCharacters }
+
+    // 过渡（with）是「瞬时事件」：只在发生切换的那一 beat 播放一次。
+    // 背景与立绘本身是持续态、会延续到后续 beat，若不在此摘掉过渡标记，
+    // 同一个 dissolve 会在之后每一行反复播放，比不播过渡更难受。
+    // 已并入 t 的对象保持原样（含过渡），只重建累积器中的副本。
+    if (accBackground?.transition) accBackground = { asset_id: accBackground.asset_id }
+    for (const key of Object.keys(accCharacters)) {
+      if (accCharacters[key].transition) {
+        const { transition: _consumed, ...rest } = accCharacters[key]
+        accCharacters[key] = rest
+      }
+    }
     if (accLabel) t.label = accLabel
     if (accAudio.bgm || accAudio.se.length || accAudio.voice) {
       t.audio = { bgm: accAudio.bgm, ambient: null, se: accAudio.se, voice: accAudio.voice }
@@ -544,6 +562,7 @@ export function parseRpy(
     accLabel = null
     accAudio.se = []
     accAudio.voice = null
+    recentShowKeys = []
   }
 
   /** ATL / transform 属性行关键字（scene X: / show X: / transform X: 块内的 zoom/xpos/alpha 等属性） */
@@ -753,57 +772,118 @@ export function parseRpy(
     }
 
     // ---- scene (背景) ----
-    const sceneM = line.match(/^scene\s+([^\s:]+)/)
-    if (sceneM) {
-      const bgName = sceneM[1]
-      if (line.endsWith(':')) blockMode = 'atl' // scene X: 内联 ATL 块（仅跳过属性行）
-      upsertImageRef(bgName, { usage: 'background' })
-      // scene 会清掉当前所有立绘（Ren'Py 语义），并设置新背景
-      accBackground = { asset_id: bgName }
+    if (/^scene(\s|:|$)/.test(line)) {
+      const isBlock = line.endsWith(':')
+      const st = parseDisplayStatement(line.replace(/^scene\b\s*/, '').replace(/:\s*$/, ''))
+      if (isBlock) blockMode = 'atl' // scene X: 内联 ATL 块（仅跳过属性行）
+      // scene 会清掉当前所有立绘（Ren'Py 语义）
       accCharacters = {}
+      recentShowKeys = []
+      // 背景图片名同样可由「标签 + 属性」构成（scene bg room），需完整保留才能匹配到素材
+      const bgName = st.name.join(' ')
+      if (bgName) {
+        upsertImageRef(bgName, { usage: 'background' })
+        accBackground = { asset_id: bgName }
+        // scene bg room with fade：过渡此前被正则整段丢弃，导致导入后所有转场消失
+        if (st.transition) accBackground.transition = st.transition
+      }
       continue
     }
 
     // ---- show (显示立绘) ----
-    const showM = line.match(/^show\s+([^\s:]+)(?:\s+at\s+(\S+))?/)
-    if (showM) {
-      const fullExpr = showM[1]
-      const atName = showM[2]
-      if (line.endsWith(':')) blockMode = 'atl' // show X: 内联 ATL 块
-      upsertImageRef(fullExpr, { usage: 'sprite' })
-      // show 指令的第一个词通常是角色变量名（也可是 expression name）
-      const firstWord = fullExpr.split(/\s+/)[0]
-      const resolved = resolveSpeaker(firstWord)
-      const charKey = resolved.charId || firstWord
-      ensureChar(charKey, resolved.displayName || firstWord)
+    if (/^show(\s|:|$)/.test(line)) {
+      const isBlock = line.endsWith(':')
+      const st = parseDisplayStatement(line.replace(/^show\b\s*/, '').replace(/:\s*$/, ''))
+      const tag = st.name[0]
+      // show screen / show layer / show expression 不是立绘语句，不能当角色处理
+      if (!tag || tag === 'screen' || tag === 'layer' || tag === 'expression') {
+        if (isBlock) blockMode = 'skip'
+        continue
+      }
+      // 完整图片名（标签 + 属性）既是素材匹配键，也承载表情信息：
+      // show eileen happy → "eileen happy" → 匹配 eileen_happy.png / eileen happy.png
+      const fullName = st.name.join(' ')
+      upsertImageRef(fullName, { usage: 'sprite' })
+      const resolved = resolveSpeaker(tag)
+      const charId = resolved.charId || tag
+      // Ren'Py 以标签(tag)标识在场立绘，同标签再次 show 即替换；
+      // as 别名则让同一角色的多个实例并存
+      const charKey = st.alias || charId
+      ensureChar(charId, resolved.displayName || tag)
 
       // 构造立绘指令：脚本中的位置(xpos/ypos)与缩放(zoom)必须落实到场景预览
       const entry: CharacterDelta = {
-        sprite_id: fullExpr,
-        char_id: charKey,
+        sprite_id: fullName,
+        char_id: charId,
         position_slot: 'center',
         action: 'show',
       }
-      if (atName && transformDefs[atName]) {
-        // show X at transformName → 应用 transform 定义（跨文件预收集）
-        const a = transformDefs[atName]
-        if (a.xpos !== undefined) entry.pos_x = clamp(a.xpos / screenW, 0, 1)
-        if (a.ypos !== undefined) entry.pos_y = clamp(a.ypos / screenH, 0, 1)
-        if (a.zoom !== undefined) entry.scale = a.zoom
-      } else if (line.endsWith(':')) {
-        // show X: 内联 ATL → 由块状态机收集后续 zoom/xpos/ypos 属性（指向累积器条目）
-        pendingShow = entry
+      if (st.transition) entry.transition = st.transition
+
+      // at 子句：Ren'Py 内建位置（left/right/truecenter…）与工程自定义 transform 都要还原。
+      // 支持 at a, b 链式，后者覆盖前者，与 Ren'Py 的 transform 叠加顺序一致。
+      const atAttrs: Record<string, number> = {}
+      for (const name of st.at) {
+        const builtin = RENPY_BUILTIN_POSITIONS[name]
+        if (builtin) {
+          Object.assign(atAttrs, builtin)
+          continue
+        }
+        if (transformDefs[name]) Object.assign(atAttrs, transformDefs[name])
+      }
+      // 绝对坐标优先于对齐比例（Ren'Py 中 xpos 会覆盖 xalign 的定位效果）。
+      // 取值 >1 视为像素、需按分辨率归一；<=1 本身即比例，直接使用。
+      if (atAttrs.xpos !== undefined) {
+        entry.pos_x = clamp(atAttrs.xpos > 1 ? atAttrs.xpos / screenW : atAttrs.xpos, 0, 1)
+      } else if (atAttrs.xcenter !== undefined) {
+        entry.pos_x = clamp(atAttrs.xcenter > 1 ? atAttrs.xcenter / screenW : atAttrs.xcenter, 0, 1)
+      } else if (atAttrs.xalign !== undefined) {
+        // 纵向沿用舞台的脚底基准，只折算横向站位——这正是 at left / at right 的核心语义
+        entry.position_slot = alignToSlot(atAttrs.xalign)
+      }
+      if (atAttrs.ypos !== undefined) {
+        entry.pos_y = clamp(atAttrs.ypos > 1 ? atAttrs.ypos / screenH : atAttrs.ypos, 0, 1)
+      }
+      if (atAttrs.zoom !== undefined) entry.scale = atAttrs.zoom
+
+      if (isBlock) {
+        blockMode = 'atl'
+        // show X: 内联 ATL → 由块状态机收集后续 zoom/xpos/ypos 属性（指向累积器条目）；
+        // 若 at 已给出属性，则以 at 为准，不再被内联块覆盖
+        if (Object.keys(atAttrs).length === 0) pendingShow = entry
       }
       accCharacters[charKey] = entry
+      recentShowKeys.push(charKey)
       continue
     }
 
     // ---- hide (隐藏立绘)：从累积立绘集中移除（落到下一条对白 beat）----
-    const hideM = line.match(/^hide\s+(\S+)/)
-    if (hideM) {
-      const target = hideM[1].replace(/:$/, '')
-      const resolved = resolveSpeaker(target)
-      if (resolved.charId) delete accCharacters[resolved.charId]
+    if (/^hide(\s|:|$)/.test(line)) {
+      const st = parseDisplayStatement(line.replace(/^hide\b\s*/, '').replace(/:\s*$/, ''))
+      const tag = st.name[0]
+      if (tag) {
+        const resolved = resolveSpeaker(tag)
+        // 按 show 时使用的键移除：别名实例优先，其次角色 ID，最后回退到标签本身。
+        // 旧实现仅在解析出角色 ID 时才删除，未登记为角色的立绘（如道具图）永远隐藏不掉。
+        delete accCharacters[st.alias || resolved.charId || tag]
+        if (!st.alias) delete accCharacters[tag]
+        recentShowKeys = recentShowKeys.filter((k) => k !== (st.alias || resolved.charId || tag) && k !== tag)
+      }
+      continue
+    }
+
+    // ---- with (独立成行的过渡)：作用于此前累积、尚未并入 beat 的舞台变更 ----
+    const withM = line.match(/^with\s+(.+)$/)
+    if (withM) {
+      const transition = normalizeTransitionName(withM[1])
+      if (transition) {
+        // Ren'Py 中 scene/show 之后单独一行 with，等价于给这些变更整体加过渡
+        if (accBackground && !accBackground.transition) accBackground.transition = transition
+        for (const key of recentShowKeys) {
+          const entry = accCharacters[key]
+          if (entry && !entry.transition) entry.transition = transition
+        }
+      }
       continue
     }
 
