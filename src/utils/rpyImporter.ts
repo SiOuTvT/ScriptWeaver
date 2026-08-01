@@ -1222,33 +1222,12 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
     allWarnings.push(`以下音频引用未在目录中找到对应文件: ${unmatchedAudio.join(', ')}`)
   }
 
-  // 将素材引用映射回 deltas（修正 asset_id 为实际文件名）
-  const imageMap = new Map<string, string>() // refName → actual relativePath
-  for (const a of imageAssets) {
-    if (a.fileName) imageMap.set(a.refName, a.relativePath)
-  }
-  const audioMap = new Map<string, string>()
-  for (const a of audioAssets) {
-    if (a.fileName) audioMap.set(a.refName, a.relativePath)
-  }
-
-  for (const d of allDeltas) {
-    // 修正背景引用
-    if (d.background?.asset_id && imageMap.has(d.background.asset_id)) {
-      d.background.asset_id = imageMap.get(d.background.asset_id)!
-    }
-    // 修正音频引用（bgm 是 AudioTrackInstruction | null | '__CLEAR__'，需窄化类型）
-    const bgm = d.audio?.bgm
-    if (bgm && typeof bgm === 'object' && 'asset_id' in bgm) {
-      const aid = bgm.asset_id
-      if (aid && audioMap.has(normalizeRef(aid))) {
-        bgm.asset_id = audioMap.get(normalizeRef(aid))!
-      }
-    }
-    if (d.audio?.se) {
-      d.audio.se = d.audio.se.map(s => audioMap.get(normalizeRef(s)) || s)
-    }
-  }
+  // 注意：此处不要对 asset_id 做任何预映射（历史上曾把引用名重映射成 relativePath）。
+  // deltas 的 background / audio 只保留「引用名」（如 bj1 / jy），
+  // 由导入对话框在真正落盘素材后，统一把引用名重映射为素材库的真实 id（uuid）。
+  // 若在此预映射成 relativePath，对话框按引用名查 importedImageMap 会查不到，
+  // 导致背景 / 音频的 asset_id 卡在无效值、渲染与导出都找不到素材；
+  // 而立绘因不在此处预映射，反而一直正常——这正是「背景音频丢失、立绘完好」的根因。
 
   return {
     deltas: allDeltas,
