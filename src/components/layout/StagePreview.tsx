@@ -94,6 +94,43 @@ const SNAP_Y = 0.045
  */
 const SPRITE_BASE_HEIGHT = 256
 
+/**
+ * 图片原始像素尺寸缓存（按 URL）。
+ * Ren'Py 的 zoom 是相对原图像素的倍率，一张 2000px 高的道具图写 zoom 0.2 只占 400px。
+ * 要把这种写法还原准，就必须知道图片真实尺寸，因此在这里集中缓存，跨行复用不重复解码。
+ */
+const naturalSizeCache = new Map<string, { w: number; h: number }>()
+
+/** 预载一批图片的原始尺寸，全部就位后返回一个自增版本号触发重绘 */
+function useNaturalSizes(urls: string[]): number {
+  const [version, setVersion] = useState(0)
+  const key = urls.join('|')
+  useEffect(() => {
+    const pending = urls.filter((u) => u && !naturalSizeCache.has(u))
+    if (pending.length === 0) return
+    let alive = true
+    let done = 0
+    for (const u of pending) {
+      const img = new window.Image()
+      const finish = () => {
+        done += 1
+        if (alive && done === pending.length) setVersion((v) => v + 1)
+      }
+      img.onload = () => {
+        naturalSizeCache.set(u, { w: img.naturalWidth, h: img.naturalHeight })
+        finish()
+      }
+      img.onerror = finish
+      img.src = u
+    }
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+  return version
+}
+
 const SLOT_POSITIONS: Record<string, { x: string; y: string }> = Object.fromEntries(
   Object.entries(SLOT_ANCHORS).map(([k, v]) => [k, { x: `${v.x * 100}%`, y: `${v.y * 100}%` }]),
 )
@@ -292,6 +329,19 @@ export default function StagePreview() {
   const currentDelta = draftDeltas[selectedIndex] ?? null
   const state: ResolvedLineState | null = resolvedStates[selectedIndex] ?? null
 
+  // 工程基准分辨率：换算 Ren'Py zoom → 舞台占屏比的分母
+  const baseResolution = useAppStore((s) => s.baseResolution)
+  // 本行所有立绘的图片地址，先集中预载原始尺寸，避免挂载后再跳一次大小
+  const spriteUrls = useMemo(() => {
+    const out: string[] = []
+    for (const c of Object.values(state?.characters ?? {})) {
+      const u = resolveSpriteImage(c.asset_id ?? c.sprite_id, assets, characterConfigs).dataUrl
+      if (u) out.push(u)
+    }
+    return out
+  }, [state?.characters, assets, characterConfigs])
+  useNaturalSizes(spriteUrls)
+
   // 快捷台词编辑本地状态
   const [localSpeaker, setLocalSpeaker] = useState(currentDelta?.speaker ?? '')
   const [localDialogue, setLocalDialogue] = useState(currentDelta?.dialogue ?? '')
@@ -455,6 +505,8 @@ export default function StagePreview() {
   // 避免「拖上去却什么都不显示」且没有任何提示的静默失败（铁律 1 下 sw-asset 404 时
   // resolveSpriteImage 仍返回非空 dataUrl，原色块兜底不会触发，故需显式 onError 兜底）。
   const [spriteErrors, setSpriteErrors] = useState<Set<string>>(() => new Set())
+  // 图片原始尺寸就位后触发一次重绘，让按 zoom 换算的高度立刻生效
+  const [, setSpriteMeasureTick] = useState(0)
   const markSpriteError = useCallback((key: string) => {
     setSpriteErrors((prev) => {
       if (prev.has(key)) return prev
@@ -1270,6 +1322,10 @@ export default function StagePreview() {
   const hasBgImage = !!bgDataUrl
   // 还原脚本里 scene ... with <transition> 声明的转场；无声明时沿用默认淡入
   const bgTransitionClass = getTransitionClass(state.background?.transition)
+  // scene 上的 ATL 缩放与取景焦点（zoom / xalign / yalign），无声明即铺满不位移
+  const bgZoom = state.background?.scale ?? 1
+  const bgFocusX = state.background?.focus_x ?? 0.5
+  const bgFocusY = state.background?.focus_y ?? 0.5
 
   return (
     <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm overflow-hidden">
@@ -1426,6 +1482,15 @@ export default function StagePreview() {
               className={`pointer-events-none absolute inset-0 h-full w-full object-contain object-center ${
                 bgTransitionClass || 'animate-fade-in'
               }`}
+              // scene bg: zoom 2.0 / xalign 0.3 这类推近取景，按脚本声明的倍率与焦点还原
+              style={
+                bgZoom !== 1
+                  ? {
+                      transform: `scale(${bgZoom})`,
+                      transformOrigin: `${bgFocusX * 100}% ${bgFocusY * 100}%`,
+                    }
+                  : undefined
+              }
             />
           )}
           {bgDataUrl && !bgLoaded && (
@@ -1502,17 +1567,38 @@ export default function StagePreview() {
             const selected = selectedCharId === charId
             const slotLabel = getPresetSlot(char.position_slot)?.label ?? char.position_slot
 
+            // ── Ren'Py 原生放置模型 ──
+            // 脚本里的 zoom 相对原图像素、锚点由 xanchor/yanchor 决定，两者都与编辑器
+            // 自己那套「统一 256px 高 + 中心锚点」不同。带 renpy_zoom 的立绘（来自导入）
+            // 一律按引擎口径算：占屏高 = 原图高 × zoom ÷ 基准分辨率高 × 舞台高。
+            const natural = spriteDataUrl ? naturalSizeCache.get(spriteDataUrl) : undefined
+            const useRenpyBox =
+              char.renpy_zoom != null && !!natural && stageSize.h > 0 && baseResolution.height > 0
+            const renderHeight = useRenpyBox
+              ? (natural!.h * char.renpy_zoom!) / baseResolution.height * stageSize.h
+              : SPRITE_BASE_HEIGHT
+            // 锚点：Ren'Py 的 xanchor/yanchor 是「图片上哪一点对准 pos」，缺省按引擎默认底部居中；
+            // 编辑器原生立绘沿用中心锚点，保持既有拖拽手感不变
+            const anchorX = char.anchor_x ?? (useRenpyBox ? 0.5 : 0.5)
+            const anchorY = char.anchor_y ?? (useRenpyBox ? 1 : 0.5)
+            // 走原生模型时高度已经算进去了，外层不再叠编辑器 scale，避免二次缩放
+            const boxScale = useRenpyBox ? 1 : scale
+            // 退场帧：hide/scene 带过渡时保留一帧播放淡出，播完由下一行自然移除
+            const leaving = char.exiting === true
+
             return (
               <div
                 key={charId}
                 data-char={charId}
-                onMouseDown={handleCharMouseDown(charId)}
+                onMouseDown={leaving ? undefined : handleCharMouseDown(charId)}
                 onClick={(e) => e.stopPropagation()}
-                onDoubleClick={(e) => { e.stopPropagation(); setSelectedCharId(charId) }}
+                onDoubleClick={(e) => { e.stopPropagation(); if (!leaving) setSelectedCharId(charId) }}
                 onDragStart={(e) => e.preventDefault()}
-                className={`group pointer-events-auto absolute flex w-max select-none cursor-grab flex-col items-center active:cursor-grabbing ${
-                  dragging ? '' : 'transition-[left,top,transform] duration-200'
-                } ${selected ? 'rounded-lg ring-2 ring-signal' : ''} ${isTalking ? 'sw-talking' : ''}`}
+                className={`group absolute flex w-max select-none flex-col items-center ${
+                  leaving ? 'pointer-events-none' : 'pointer-events-auto cursor-grab active:cursor-grabbing'
+                } ${dragging ? '' : 'transition-[left,top,transform] duration-200'} ${
+                  selected && !leaving ? 'rounded-lg ring-2 ring-signal' : ''
+                } ${isTalking ? 'sw-talking' : ''}`}
                 // left/top 百分比相对舞台（父容器）定位立绘中心点；transform 仅做居中 translate(-50%,-50%)
                 // + 缩放 scale，围绕中心点 origin。
                 // 【关键·真凶修复】此 div 是 absolute 且宽度 auto，浏览器对它用 shrink-to-fit：
@@ -1523,8 +1609,8 @@ export default function StagePreview() {
                   left: `${px * 100}%`,
                   top: `${py * 100}%`,
                   width: 'max-content',
-                  transform: `translate(-50%, -50%) scale(${scale})`,
-                  transformOrigin: 'center center',
+                  transform: `translate(${-anchorX * 100}%, ${-anchorY * 100}%) scale(${boxScale})`,
+                  transformOrigin: `${anchorX * 100}% ${anchorY * 100}%`,
                   zIndex: dragging ? 1000 : Math.round((char.pos_x ?? SLOT_ANCHORS[char.position_slot]?.x ?? 0.5) * 10) + 10,
                 }}
                 title="拖动可移动位置；靠近站位的虚线会自动吸附，拉离即自由微调。双击打开右侧编辑面板（定点 / 缩放 / 锁定）。"
@@ -1534,14 +1620,19 @@ export default function StagePreview() {
                     // 还原脚本里 show ... with <transition> 声明的立绘入场动画。
                     // key 含过渡名：声明了转场的那一行必定重放一次，其余行不重复播放。
                     // 动画挂在 img 而非外层 div —— 后者的 transform 承担定位与缩放，不能被覆盖。
-                    key={`${spriteDataUrl}|${char.transition ?? ''}`}
+                    key={`${spriteDataUrl}|${leaving ? 'out' : 'in'}|${char.transition ?? ''}`}
                     src={spriteDataUrl}
                     alt={getDisplayName(char.char_id ?? charId)}
                     draggable={false}
-                    className={`w-auto select-none object-contain drop-shadow-lg ${getTransitionClass(char.transition)}`}
-                    style={{ height: SPRITE_BASE_HEIGHT, width: 'auto' }}
+                    className={`w-auto select-none object-contain drop-shadow-lg ${getTransitionClass(char.transition, leaving ? 'out' : 'in')}`}
+                    style={{ height: renderHeight, width: 'auto' }}
                     onError={() => markSpriteError(spriteKey)}
-                    onLoad={() => {
+                    onLoad={(e) => {
+                      const el = e.currentTarget
+                      if (spriteDataUrl && !naturalSizeCache.has(spriteDataUrl) && el.naturalHeight > 0) {
+                        naturalSizeCache.set(spriteDataUrl, { w: el.naturalWidth, h: el.naturalHeight })
+                        setSpriteMeasureTick((t) => t + 1)
+                      }
                       if (spriteErrors.has(spriteKey)) {
                         setSpriteErrors((prev) => {
                           const next = new Set(prev)

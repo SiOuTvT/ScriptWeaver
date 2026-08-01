@@ -84,18 +84,93 @@ const TRANSITION_CLASS: Record<string, string> = {
   blinds: 'sw-tr-blinds',
 }
 
+/**
+ * 退场方向的过渡类。
+ * hide X with dissolve 在引擎里是「淡出后才消失」，预览若直接抹掉画面就与引擎不符，
+ * 因此每个过渡都配一条时间反演的退场动画；出场方向的位移取「离开的方向」。
+ */
+const TRANSITION_OUT_CLASS: Record<string, string> = {
+  dissolve: 'sw-tro-dissolve',
+  fade: 'sw-tro-fade',
+  ease: 'sw-tro-dissolve',
+  easein: 'sw-tro-dissolve',
+  easeout: 'sw-tro-dissolve',
+
+  pixellate: 'sw-tro-pixellate',
+  squares: 'sw-tro-pixellate',
+
+  // 入场类过渡用于退场时，反向退出画面
+  moveinleft: 'sw-tro-out-left',
+  moveinright: 'sw-tro-out-right',
+  moveintop: 'sw-tro-out-top',
+  moveinbottom: 'sw-tro-out-bottom',
+  easeinleft: 'sw-tro-out-left',
+  easeinright: 'sw-tro-out-right',
+  easeintop: 'sw-tro-out-top',
+  easeinbottom: 'sw-tro-out-bottom',
+
+  // 出场类过渡本就描述「旧画面往哪走」，退场时可以逐字还原
+  move: 'sw-tro-dissolve',
+  moveoutleft: 'sw-tro-out-left',
+  moveoutright: 'sw-tro-out-right',
+  moveouttop: 'sw-tro-out-top',
+  moveoutbottom: 'sw-tro-out-bottom',
+  easeoutleft: 'sw-tro-out-left',
+  easeoutright: 'sw-tro-out-right',
+  easeouttop: 'sw-tro-out-top',
+  easeoutbottom: 'sw-tro-out-bottom',
+  zoomin: 'sw-tro-pixellate',
+  zoomout: 'sw-tro-pixellate',
+  zoominout: 'sw-tro-pixellate',
+
+  wipeleft: 'sw-tro-wipe-left',
+  wiperight: 'sw-tro-wipe-right',
+  wipeup: 'sw-tro-wipe-up',
+  wipedown: 'sw-tro-wipe-down',
+
+  pushleft: 'sw-tro-out-left',
+  pushright: 'sw-tro-out-right',
+  pushup: 'sw-tro-out-top',
+  pushdown: 'sw-tro-out-bottom',
+  slideleft: 'sw-tro-out-left',
+  slideright: 'sw-tro-out-right',
+  slideup: 'sw-tro-out-top',
+  slidedown: 'sw-tro-out-bottom',
+  slideawayleft: 'sw-tro-out-left',
+  slideawayright: 'sw-tro-out-right',
+  slideawayup: 'sw-tro-out-top',
+  slideawaydown: 'sw-tro-out-bottom',
+
+  irisin: 'sw-tro-iris',
+  irisout: 'sw-tro-iris',
+  circleirisin: 'sw-tro-iris',
+  circleirisout: 'sw-tro-iris',
+
+  hpunch: 'sw-tr-hpunch',
+  vpunch: 'sw-tr-vpunch',
+
+  blinds: 'sw-tro-blinds',
+}
+
 /** 未识别的过渡统一退化为溶解：写了 with 就说明期望有过渡，不应静默无动画 */
 const FALLBACK_CLASS = 'sw-tr-dissolve'
+const FALLBACK_OUT_CLASS = 'sw-tro-dissolve'
 
 /**
  * 取过渡对应的预览动画类。
  * 兼容 `Dissolve(0.5)` 这类工厂写法（取基名），无过渡时返回空串。
+ * dir 为 'out' 时返回退场方向的动画（hide / 清场用）。
  */
-export function getTransitionClass(name: string | undefined | null): string {
-  if (!name) return ''
+export function getTransitionClass(
+  name: string | undefined | null,
+  dir: 'in' | 'out' = 'in',
+): string {
+  if (!name) return dir === 'out' ? FALLBACK_OUT_CLASS : ''
   const base = name.trim().replace(/\(.*$/, '').trim().toLowerCase()
-  if (!base || base === 'none') return ''
-  return TRANSITION_CLASS[base] ?? FALLBACK_CLASS
+  if (!base || base === 'none') return dir === 'out' ? FALLBACK_OUT_CLASS : ''
+  return dir === 'out'
+    ? TRANSITION_OUT_CLASS[base] ?? FALLBACK_OUT_CLASS
+    : TRANSITION_CLASS[base] ?? FALLBACK_CLASS
 }
 
 /** 该过渡名是否为 Ren'Py 官方内建（用于区分工程自定义过渡） */

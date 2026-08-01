@@ -168,6 +168,14 @@ interface AppState {
   canvasRatio: { w: number; h: number }
   setCanvasRatio: (r: { w: number; h: number }) => void
 
+  /**
+   * 工程基准分辨率（对应 Ren'Py 的 gui.init）。
+   * 立绘 zoom 相对原图像素，只有知道基准分辨率才能换算它在舞台上占多大，
+   * 导入 Ren'Py 工程时会按脚本声明写入。
+   */
+  baseResolution: { width: number; height: number }
+  setBaseResolution: (r: { width: number; height: number }) => void
+
   // ---- 游戏元信息：标题 / 封面 / 图标（导出 Ren'Py 时使用） ----
   projectMeta: ProjectMeta
   setProjectMeta: (patch: Partial<ProjectMeta>) => void
@@ -292,6 +300,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ---- 场景画布比例（默认 16:9） ----
   canvasRatio: { w: 16, h: 9 },
+
+  // ---- 工程基准分辨率（默认 1920x1080，与 Ren'Py 新工程一致） ----
+  baseResolution: { width: 1920, height: 1080 },
 
   // ---- 游戏元信息（默认标题，封面/图标可选，结局画面默认开启） ----
   projectMeta: { title: 'My Visual Novel', endingEnabled: true, endingText: 'The End', textSpeed: 30, autoForwardDelay: 15, musicVolume: 100, soundVolume: 100, voiceVolume: 100, skipUnseen: true, skipAfterChoices: true, saveSlots: 20, galleryEnabled: false, galleryItems: [] },
@@ -691,6 +702,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ---- 场景画布比例 ----
   setCanvasRatio: (r) => set({ canvasRatio: r }),
+
+  // ---- 工程基准分辨率 ----
+  setBaseResolution: (r) =>
+    set({ baseResolution: { width: Math.max(1, r.width), height: Math.max(1, r.height) } }),
 
   // ---- 游戏元信息 ----
   setProjectMeta: (patch) => set((s) => ({ projectMeta: { ...s.projectMeta, ...patch } })),

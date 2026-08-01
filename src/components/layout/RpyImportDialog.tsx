@@ -279,6 +279,18 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
       // 直接以本次解析出的干净 beats 覆盖当前剧本。
       useAppStore.getState().setDraftDeltas(revisedDeltas)
 
+      // ── Step 6.5: 对齐工程基准分辨率与画布比例 ──
+      // 立绘 zoom 是相对原图像素的，舞台必须知道脚本的基准分辨率才能算对占屏比
+      if (preview.screen?.width > 0 && preview.screen?.height > 0) {
+        useAppStore.getState().setBaseResolution(preview.screen)
+        const g = (a: number, b: number): number => (b === 0 ? a : g(b, a % b))
+        const d = g(preview.screen.width, preview.screen.height)
+        useAppStore.getState().setCanvasRatio({
+          w: preview.screen.width / d,
+          h: preview.screen.height / d,
+        })
+      }
+
       // ── Step 7: 创建自动快照 ──
       const json = serializeProject(
         useAppStore.getState().draftDeltas,

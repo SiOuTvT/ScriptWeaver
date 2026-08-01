@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { parseRpy, matchAssets, scanAssetFiles, importRpyDirectory, parseDisplayStatement, type RpyImageRef } from '../rpyImporter'
+import { reduceLines } from '../../core/reducer'
 
 /** 构造内存文件树 mock：dirs 用归一化路径（/）做 key，files 同。 */
 function mockFs(tree: { dirs: Record<string, string[]>; files: Record<string, string> }) {
@@ -206,7 +207,7 @@ describe('parseRpy：default 角色声明与真实项目语法', () => {
 })
 
 describe('parseRpy：transform 位置/缩放落实到场景预览', () => {
-  it('show X at f 应用 transform 定义（xpos/ypos/zoom → pos_x/pos_y/scale）', () => {
+  it('show X at f 应用 transform 定义（xalign 后被 xpos 覆盖，锚点保持 0.5）', () => {
     const src = `transform f:\n    zoom 1.0\n    xalign 0.5\n    yalign 0.5\n    xpos 350\n    ypos 650\nlabel start:\n    show js1 at f`
     const r = parseRpy(src)
     const showDelta = r.deltas.find((d) => {
@@ -216,7 +217,10 @@ describe('parseRpy：transform 位置/缩放落实到场景预览', () => {
     const entry = showDelta ? Object.values(showDelta.characters)[0] : null
     expect(entry?.pos_x).toBeCloseTo(350 / 1920, 3)
     expect(entry?.pos_y).toBeCloseTo(650 / 1080, 3)
-    expect(entry?.scale).toBe(1)
+    // xalign 0.5 先设了锚点，之后的 xpos 只覆盖位置不动锚点（Ren'Py 顺序覆盖语义）
+    expect(entry?.anchor_x).toBe(0.5)
+    expect(entry?.anchor_y).toBe(0.5)
+    expect(entry?.renpy_zoom).toBe(1)
   })
 
   it('show X: 内联 ATL 属性（zoom/xpos/ypos）落实且不吞后续对白', () => {
@@ -229,7 +233,8 @@ describe('parseRpy：transform 位置/缩放落实到场景预览', () => {
     const entry = showDelta ? Object.values(showDelta.characters)[0] : null
     expect(entry?.pos_x).toBeCloseTo(950 / 1920, 3)
     expect(entry?.pos_y).toBeCloseTo(600 / 1080, 3)
-    expect(entry?.scale).toBe(1)
+    expect(entry?.anchor_y).toBe(0.5)
+    expect(entry?.renpy_zoom).toBe(1)
     expect(r.deltas.find((d) => d.dialogue === '对白')).toBeTruthy()
   })
 
@@ -264,7 +269,7 @@ describe('parseRpy：transform 位置/缩放落实到场景预览', () => {
     const entry = showDelta ? Object.values(showDelta.characters)[0] : null
     expect(entry?.pos_x).toBeCloseTo(1500 / 1920, 3)
     expect(entry?.pos_y).toBeCloseTo(650 / 1080, 3)
-    expect(entry?.scale).toBe(0.8)
+    expect(entry?.renpy_zoom).toBe(0.8)
   })
 })
 
@@ -351,10 +356,40 @@ describe('parseRpy：with 过渡与 at 站位严格还原脚本定义', () => {
     expect(d2?.background?.transition).toBeUndefined()
   })
 
-  it('hide 能移除未登记为角色的立绘（旧实现会永远隐藏不掉）', () => {
+  it('hide 能移除未登记为角色的立绘（必须显式下达移除指令）', () => {
     const r = parseRpy('label start:\n    show prop1\n    "第一句"\n    hide prop1\n    "第二句"')
     const d2 = r.deltas.find((x) => x.dialogue === '第二句')
-    expect(Object.keys(d2?.characters ?? {})).toHaveLength(0)
+    // 舞台按「继承 + 变化量」归约，只从累积器删掉不够，必须显式发出移除指令
+    expect(Object.values(d2?.characters ?? {})[0]?.action).toBe('__CLEAR__')
+    // 归约后立绘确实不在场
+    const states = reduceLines(r.deltas)
+    const idx = r.deltas.findIndex((x) => x.dialogue === '第二句')
+    expect(Object.keys(states[idx].characters)).toHaveLength(0)
+  })
+
+  it('hide X with dissolve 保留退场帧，动画播完下一行才真正消失', () => {
+    const r = parseRpy(
+      'label start:\n    show prop1\n    "第一句"\n    hide prop1 with dissolve\n    "第二句"\n    "第三句"',
+    )
+    const states = reduceLines(r.deltas)
+    const i2 = r.deltas.findIndex((x) => x.dialogue === '第二句')
+    const i3 = r.deltas.findIndex((x) => x.dialogue === '第三句')
+    const exit = Object.values(states[i2].characters)[0]
+    expect(exit?.exiting).toBe(true)
+    expect(exit?.transition).toBe('dissolve')
+    expect(Object.keys(states[i3].characters)).toHaveLength(0)
+  })
+
+  it('scene 清场时同批立绘随整屏过渡一起退场', () => {
+    const r = parseRpy(
+      'label start:\n    show prop1\n    "第一句"\n    scene bg2 with fade\n    "第二句"',
+    )
+    const states = reduceLines(r.deltas)
+    const i2 = r.deltas.findIndex((x) => x.dialogue === '第二句')
+    const exit = Object.values(states[i2].characters)[0]
+    expect(exit?.exiting).toBe(true)
+    expect(exit?.transition).toBe('fade')
+    expect(states[i2].background?.asset_id).toBe('bg2')
   })
 
   it('show screen 不被误当作立绘角色', () => {

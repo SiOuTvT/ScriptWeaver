@@ -514,6 +514,48 @@
   animation: sw-tr-blinds 500ms ease-in-out both;
 }
 
+/* ===== 退场过渡（hide X with <transition> / scene 清场） =====
+   Ren'Py 里 hide 带过渡时立绘是「演完动画才消失」，不是瞬间抹掉。
+   下面这组是入场动画的时间反演，保证同一个过渡名进出观感对称。 */
+@keyframes sw-tro-dissolve { from { opacity: 1; } to { opacity: 0; } }
+@keyframes sw-tro-fade { 0% { opacity: 1; } 55% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes sw-tro-pixellate {
+  0% { opacity: 1; filter: blur(0); transform: scale(1); }
+  45% { opacity: 1; }
+  100% { opacity: 0; filter: blur(20px); transform: scale(1.05); }
+}
+@keyframes sw-tro-out-left { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-100%); opacity: 0; } }
+@keyframes sw-tro-out-right { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+@keyframes sw-tro-out-top { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-100%); opacity: 0; } }
+@keyframes sw-tro-out-bottom { from { transform: translateY(0); opacity: 1; } to { transform: translateY(100%); opacity: 0; } }
+@keyframes sw-tro-wipe-right { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
+@keyframes sw-tro-wipe-left { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 100% 0 0); } }
+@keyframes sw-tro-wipe-down { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(100% 0 0 0); } }
+@keyframes sw-tro-wipe-up { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 100% 0); } }
+@keyframes sw-tro-iris { from { clip-path: circle(75% at 50% 50%); } to { clip-path: circle(0% at 50% 50%); } }
+@keyframes sw-tro-blinds {
+  from { --sw-blind: 12.5%; }
+  to { --sw-blind: 0%; }
+}
+
+.sw-tro-dissolve { animation: sw-tro-dissolve 500ms ease-in both; }
+.sw-tro-fade { animation: sw-tro-fade 700ms ease-in-out both; }
+.sw-tro-pixellate { animation: sw-tro-pixellate 500ms ease-in both; }
+.sw-tro-out-left { animation: sw-tro-out-left 500ms cubic-bezier(0.55, 0, 0.68, 0.53) both; }
+.sw-tro-out-right { animation: sw-tro-out-right 500ms cubic-bezier(0.55, 0, 0.68, 0.53) both; }
+.sw-tro-out-top { animation: sw-tro-out-top 500ms cubic-bezier(0.55, 0, 0.68, 0.53) both; }
+.sw-tro-out-bottom { animation: sw-tro-out-bottom 500ms cubic-bezier(0.55, 0, 0.68, 0.53) both; }
+.sw-tro-wipe-left { animation: sw-tro-wipe-left 500ms ease-in both; }
+.sw-tro-wipe-right { animation: sw-tro-wipe-right 500ms ease-in both; }
+.sw-tro-wipe-up { animation: sw-tro-wipe-up 500ms ease-in both; }
+.sw-tro-wipe-down { animation: sw-tro-wipe-down 500ms ease-in both; }
+.sw-tro-iris { animation: sw-tro-iris 500ms ease-in both; }
+.sw-tro-blinds {
+  mask-image: repeating-linear-gradient(to bottom, #000 0 var(--sw-blind), transparent var(--sw-blind) 12.5%);
+  -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 var(--sw-blind), transparent var(--sw-blind) 12.5%);
+  animation: sw-tro-blinds 500ms ease-in-out both;
+}
+
 /* ===== 帮助中心 / Markdown 文档排版（prose-content） =====
    工业极简文档风格：字号收敛 12-18，字重≤600，间距宽松呼吸感 */
 .prose-content {

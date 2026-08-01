@@ -4,7 +4,7 @@
  * 扫描 game 目录下真实图片与音频文件，与脚本引用做匹配。
  */
 
-import type { LineDelta, CharacterConfig, ChoiceItem, VariableOperation, CharacterDelta } from '@/core/types'
+import type { LineDelta, CharacterConfig, ChoiceItem, VariableOperation, CharacterDelta, TrackValue } from '@/core/types'
 import {
   type AtlState,
   parseAtlLine,
@@ -55,6 +55,12 @@ export interface RpyImportResult {
   audioAssets: RpyImportAsset[]
   imageCount: number
   audioCount: number
+  /**
+   * 工程基准分辨率（gui.init 声明，缺省 1920x1080）。
+   * 立绘的 zoom 相对原图像素，必须结合基准分辨率才能算出它在舞台上的占屏比，
+   * 因此这个值要一路带到渲染层，否则 zoom 0.2 的小道具会被画成满屏。
+   */
+  screen: RpyScreenSize
 }
 
 /** 文件系统 API 暴露的接口 */
@@ -465,6 +471,12 @@ export function parseRpy(
   const deltas: LineDelta[] = []
   let inMenu = false
   let menuChoices: ChoiceItem[] = []
+  /** menu 语句自身的缩进层级，用于判定菜单块何时结束 */
+  let menuIndent = -1
+  /** 当前菜单对应的选择支行，选项解析出来后回写到它 */
+  let menuDelta: LineDelta | null = null
+  let warnedMenuBody = false
+  let warnedCondBranch = false
 
   /**
    * 将「说话者标识」解析为 charId + displayName：
@@ -746,6 +758,8 @@ export function parseRpy(
    * 块内属性与 at 子句共享同一份 ATL 状态，保证覆盖顺序与 Ren'Py 一致。
    */
   let pendingAtl: { state: AtlState; entry?: CharacterDelta; background?: BgAcc } | null = null
+  /** 进入 skip 块时块首行的缩进层级 */
+  let skipIndent = 0
   /** 三引号多行字符串（_p("""…""") / define x = """…"""）状态 */
   let inTriple = false
 
@@ -764,9 +778,11 @@ export function parseRpy(
       continue
     }
 
-    // skip 块（transform / init python / screen / style 属性体）：缩进行整体跳过
+    // skip 块（transform / init python / screen / style 属性体）：块内整体跳过。
+    // 退出条件按「缩进回到块首同级」判定：label 内部的所有行本身就带缩进，
+    // 若仅以「是否缩进」判断，label 里内嵌一个 python: 块就会把后续剧情全部吞掉。
     if (blockMode === 'skip') {
-      if (raw.startsWith(' ') || raw.startsWith('\t')) continue
+      if (raw.trim() && raw.length - raw.trimStart().length > skipIndent) continue
       blockMode = 'none'
     }
 
@@ -785,7 +801,7 @@ export function parseRpy(
 
     // ---- define 声明已在阶段 1 处理，跳过；define xxx = { 多行 dict 内容 → skip 整块 ----
     if (line.startsWith('define ')) {
-      if (line.trimEnd().endsWith('{')) blockMode = 'skip'
+      if (line.trimEnd().endsWith('{')) { blockMode = 'skip'; skipIndent = raw.length - raw.trimStart().length }
       continue
     }
 
@@ -802,9 +818,13 @@ export function parseRpy(
       continue
     }
 
-    // ---- menu: 选择支块（携带当前舞台状态）----
-    if (line === 'menu:') {
+    // ---- menu 选择支块：支持 menu: / menu 名称: / menu 名称(参数): ----
+    const menuM = line.match(/^menu\b\s*([A-Za-z_]\w*)?\s*(?:\([^)]*\))?\s*:\s*$/)
+    if (menuM) {
       inMenu = true
+      // 记录 menu 自身的缩进，缩进回到同级即视为菜单结束。
+      // 旧实现遇到第一个 jump 就退出菜单，导致第二个选项之后的内容全部漏解析。
+      menuIndent = raw.length - raw.trimStart().length
       menuChoices = []
       lineId++
       const d: LineDelta = {
@@ -816,72 +836,79 @@ export function parseRpy(
         audio: emptyAudio,
       }
       flushAcc(d)
+      // 带名 menu 可作为跳转目标；已有 label 语句时以 label 为准
+      if (menuM[1] && !d.label) d.label = menuM[1]
       emitDelta(d)
+      menuDelta = d
       continue
     }
 
+    // 菜单块结束判定：缩进退回到 menu 同级或更外层
+    if (inMenu && raw.length - raw.trimStart().length <= menuIndent) {
+      inMenu = false
+      menuDelta = null
+    }
+
     if (inMenu) {
-      const choiceM = line.match(/^"([^"]*)"\s*:\s*$/)
-      const jumpM = line.match(/^\s*jump\s+(\w+)/)
+      /** 把最新的选项集合同步回该菜单行 */
+      const syncChoices = () => { if (menuDelta) menuDelta.choices = [...menuChoices] }
+      // 选项：`"文本":` 或带显示条件的 `"文本" if 条件:`
+      const choiceM = line.match(/^"([^"]*)"\s*(?:if\s+(.+?))?\s*:\s*$/)
       if (choiceM) {
-        const choice: ChoiceItem = {
+        menuChoices.push({
           uid: `imp_choice_${lineId}_${menuChoices.length}`,
           text: choiceM[1],
           target_label: '',
-        }
-        menuChoices.push(choice)
-        const last = deltas[deltas.length - 1]
-        if (last && last.line_type === 'choice') {
-          last.choices = [...menuChoices]
-        }
+        })
+        syncChoices()
         continue
       }
+      // 菜单提示语：选项出现之前的裸字符串（menu 的 caption）
+      const captionM = line.match(/^"([^"]*)"\s*$/)
+      if (captionM && menuChoices.length === 0) {
+        if (menuDelta) menuDelta.prompt = captionM[1]
+        continue
+      }
+      // 选项分支内的跳转：jump / call 都指向后续剧情块
+      const jumpM = line.match(/^(?:jump|call)\s+(\w+)/)
       if (jumpM) {
         if (menuChoices.length > 0) {
           menuChoices[menuChoices.length - 1].target_label = jumpM[1]
-          const last = deltas[deltas.length - 1]
-          if (last && last.line_type === 'choice') {
-            last.choices = [...menuChoices]
-          }
+          syncChoices()
         }
-        inMenu = false
         continue
       }
-      // menu 内的变量操作
+      // 选项分支内的变量增减
       const varOpM = line.match(/^\$\s*(\w+)\s*([+\-])\s*=\s*(\S+)/)
-      if (varOpM) {
-        const op: VariableOperation = {
+      if (varOpM && menuChoices.length > 0) {
+        const idx = menuChoices.length - 1
+        menuChoices[idx].ops = [...(menuChoices[idx].ops || []), {
           varName: varOpM[1],
           op: varOpM[2] === '+' ? 'add' : 'subtract',
           value: Number(varOpM[3]) || 0,
-        }
-        if (menuChoices.length > 0) {
-          const idx = menuChoices.length - 1
-          menuChoices[idx].ops = [...(menuChoices[idx].ops || []), op]
-          const last = deltas[deltas.length - 1]
-          if (last && last.line_type === 'choice') {
-            last.choices = [...menuChoices]
-          }
-        }
+        }]
+        addVar(varOpM[1], varOpM[3] || '0')
+        syncChoices()
         continue
       }
-      // menu 内 set var = value
+      // 选项分支内的赋值
       const assignM = line.match(/^\$\s*(\w+)\s*=\s*(.+)/)
-      if (assignM) {
-        const op: VariableOperation = {
+      if (assignM && menuChoices.length > 0) {
+        const idx = menuChoices.length - 1
+        menuChoices[idx].ops = [...(menuChoices[idx].ops || []), {
           varName: assignM[1],
           op: 'set',
           value: Number(assignM[2]) || 0,
-        }
-        if (menuChoices.length > 0) {
-          const idx = menuChoices.length - 1
-          menuChoices[idx].ops = [...(menuChoices[idx].ops || []), op]
-          const last = deltas[deltas.length - 1]
-          if (last && last.line_type === 'choice') {
-            last.choices = [...menuChoices]
-          }
-        }
+        }]
+        addVar(assignM[1], assignM[2].trim())
+        syncChoices()
         continue
+      }
+      // 选项分支内还写了台词或舞台指令：选择支目前只承载「文本 + 跳转 + 变量」，
+      // 这类内容无法原样保留，提示作者手动补到目标剧情块里
+      if (!warnedMenuBody) {
+        warnings.push('选项分支内直接写了台词或舞台指令，导入时未展开；建议在 Ren\'Py 里改为跳转到独立剧情块')
+        warnedMenuBody = true
       }
       continue
     }
@@ -928,11 +955,24 @@ export function parseRpy(
       continue
     }
 
+    // ---- 条件分支 if / elif / else / while ----
+    // 这些块里装的是真正的剧情，绝不能整块跳过（此前正是被下面的通用块规则吞掉，
+    // 条件分支中的台词、立绘、音乐一句不剩）。编辑器的剧本流是线性的，无法表达
+    // 运行时分支，因此把各分支内容按书写顺序展开，先保证内容完整。
+    if (/^(if|elif|else|while)\b[^\n]*:\s*$/.test(line)) {
+      if (!warnedCondBranch) {
+        warnings.push('脚本包含条件分支（if / elif / else），各分支内容已按书写顺序展开为线性剧情，请按需调整顺序')
+        warnedCondBranch = true
+      }
+      continue
+    }
+
     // ---- 块定义（transform / screen / style / init python / layeredimage 等以冒号结尾的块）→ skip 整块 ----
     if (line.endsWith(':') && !line.startsWith('label') && !line.startsWith('menu')
       && !line.startsWith('scene') && !line.startsWith('show')
       && !/^[a-zA-Z_]\w*\s+"[^"]*"\s*$/.test(line)) {
       blockMode = 'skip'
+      skipIndent = raw.length - raw.trimStart().length
       continue
     }
 
@@ -972,7 +1012,7 @@ export function parseRpy(
       const tag = st.name[0]
       // show screen / show layer / show expression 不是立绘语句，不能当角色处理
       if (!tag || tag === 'screen' || tag === 'layer' || tag === 'expression') {
-        if (isBlock) blockMode = 'skip'
+        if (isBlock) { blockMode = 'skip'; skipIndent = raw.length - raw.trimStart().length }
         continue
       }
       // 完整图片名（标签 + 属性）既是素材匹配键，也承载表情信息：
@@ -1012,6 +1052,14 @@ export function parseRpy(
         entry.position_slot = prevEntry.position_slot
       }
       applyCharacterAtl(entry, atl)
+      // Ren'Py 默认放置：底部居中、原图 1:1（config.default_transform 为 center，
+      // 配合图片放置样式的 ypos/yanchor 1.0）。没写 at 的 show 必须落到这个基准，
+      // 否则会退化成编辑器自己的统一高度，与引擎观感对不上。
+      entry.renpy_zoom ??= 1
+      entry.pos_x ??= 0.5
+      entry.pos_y ??= 1.0
+      entry.anchor_x ??= 0.5
+      entry.anchor_y ??= 1.0
 
       if (isBlock) {
         blockMode = 'atl'
@@ -1579,5 +1627,6 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
     audioAssets,
     imageCount: imageAssets.filter(a => a.fileName).length,
     audioCount: audioAssets.filter(a => a.fileName).length,
+    screen: { ...screenSize },
   }
 }
