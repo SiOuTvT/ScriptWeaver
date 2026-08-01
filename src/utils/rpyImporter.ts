@@ -412,10 +412,23 @@ export function parseRpy(
   let blockMode: 'none' | 'atl' | 'skip' = 'none'
   /** 等待应用内联 ATL 属性的 show 行（deltas 索引 + 角色 id） */
   let pendingShow: { idx: number; charId: string } | null = null
+  /** 三引号多行字符串（_p("""…""") / define x = """…"""）状态 */
+  let inTriple = false
 
   for (const raw of lines) {
     const line = raw.trim()
     if (!line || line.startsWith('#') || line.startsWith('//')) continue
+
+    // 三引号多行字符串：跳过直到闭合
+    const tripleCount = (line.match(/"""|'''/g) || []).length
+    if (inTriple) {
+      if (tripleCount % 2 === 1) inTriple = false
+      continue
+    }
+    if (tripleCount % 2 === 1) {
+      inTriple = true
+      continue
+    }
 
     // skip 块（transform / init python / screen / style 属性体）：缩进行整体跳过
     if (blockMode === 'skip') {
@@ -443,8 +456,11 @@ export function parseRpy(
       blockMode = 'none'
     }
 
-    // ---- define 声明已在阶段 1 处理，跳过 ----
-    if (line.startsWith('define ')) continue
+    // ---- define 声明已在阶段 1 处理，跳过；define xxx = { 多行 dict 内容 → skip 整块 ----
+    if (line.startsWith('define ')) {
+      if (line.trimEnd().endsWith('{')) blockMode = 'skip'
+      continue
+    }
 
     // ---- default 变量已收集，跳过 ----
     if (line.startsWith('default ')) continue
@@ -820,6 +836,11 @@ export function parseRpy(
         characters: noChars,
         audio: emptyAudio,
       })
+      continue
+    }
+
+    // ---- python dict 闭合括号（} / }, 单独成行）→ 跳过 ----
+    if (line === '}' || line === '},' || line === '} )') {
       continue
     }
 
