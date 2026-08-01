@@ -178,13 +178,19 @@ describe('parseRpy：default 角色声明与真实项目语法', () => {
     expect(r.deltas.find((d) => d.audio?.se?.length)?.audio?.se).toEqual(['zoulu.wav'])
   })
 
-  it('hide 生成 hide 指令（立绘在场景预览中可正确退场）', () => {
-    const r = parseRpy(`default js1 = Character("溪")\nlabel start:\n    show js1 at f\n    hide js1 with dissolve`)
-    const hideDelta = r.deltas.find((d) => {
-      const first = Object.values(d.characters || {})[0]
-      return first && first.action === 'hide'
-    })
-    expect(hideDelta).toBeTruthy()
+  it('hide 从累积舞台中移除立绘（下一条对白 beat 不应再含该立绘）', () => {
+    const r = parseRpy(`default js1 = Character("溪")\nlabel start:\n    show js1 at f\n    hide js1 with dissolve\n    "旁白"`)
+    // hide 不应再出现在合并后的对白 beat 中
+    const beat = r.deltas.find((d) => d.dialogue === '旁白')
+    expect(beat).toBeTruthy()
+    expect(Object.keys(beat!.characters || {}).length).toBe(0)
+  })
+
+  it('hide 后又有 show 则新立绘落到后续对白 beat', () => {
+    const r = parseRpy(`default js1 = Character("溪")\ndefault js2 = Character("罪")\nlabel start:\n    show js1 at f\n    hide js1 with dissolve\n    show js2 at f\n    js2 "对白"`)
+    const beat = r.deltas.find((d) => d.dialogue === '对白')
+    expect(beat?.characters?.js2).toBeTruthy()
+    expect(beat?.characters?.js1).toBeFalsy()
   })
 })
 

@@ -33,21 +33,30 @@ describe('DIAG real', () => {
     }
 
     let total = 0
-    const issues: string[] = []
+    let blankRows = 0
+    let codeRows = 0
+    const codeSamples: string[] = []
     for (const { f, result } of parsed) {
       const short = f.replace(GAME, '')
       for (const d of result.deltas) {
         total++
         const dialogue = d.dialogue ?? ''
-        const isBlank = dialogue.trim() === ''
-        const isCode =
-          /^(zoom|xpos|ypos|text |style |config\.|gui\.|window_|\"bottom|\"top|\"thought|define |transform |screen |init |image |play |scene |show |hide |label |menu|^\}|\\s)/.test(dialogue)
-        if (isBlank || isCode) {
-          issues.push(`[${short}] ${d.dialogue === undefined ? 'NO-DIALOGUE' : JSON.stringify(dialogue.slice(0, 60))} | bg=${d.background?.asset_id ?? '-'} | audio=${JSON.stringify(d.audio ?? null)}`)
+        const hasStage =
+          !!d.background ||
+          (d.characters && Object.keys(d.characters).length) ||
+          (d.audio && (d.audio.bgm || (d.audio.se && d.audio.se.length) || d.audio.voice))
+        if (dialogue.trim() === '' && !hasStage && !d.label) {
+          blankRows++
+        }
+        const isCode = /^(zoom|xpos|ypos|text |style |config\.|gui\.|window_|"bottom|"top|"thought|define |transform |screen |init |image |play |scene |show |hide |label |menu|^\}|\s|\w+\s*=)/.test(dialogue)
+        if (isCode) {
+          codeRows++
+          if (codeSamples.length < 30) codeSamples.push(`[${short}] ${JSON.stringify(dialogue.slice(0, 60))}`)
         }
       }
     }
-    console.log(`TOTAL DELTAS=${total}, ISSUE COUNT=${issues.length}`)
-    issues.slice(0, 60).forEach((s) => console.log('  ISSUE:', s))
+    console.log(`TOTAL DELTAS=${total}, BLANK ROWS=${blankRows}, CODE ROWS=${codeRows}`)
+    console.log('CODE SAMPLES:')
+    codeSamples.forEach((s) => console.log('  ', s))
   })
 })

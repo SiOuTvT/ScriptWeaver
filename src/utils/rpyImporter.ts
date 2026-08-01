@@ -400,6 +400,35 @@ export function parseRpy(
     deltas.push(delta)
   }
 
+  /**
+   * 舞台状态累积器：Ren'Py 的 scene/show/hide/play/label 是「瞬时舞台指令」，
+   * 本身没有对白。若每条指令各自生成空对白 delta，剧本流会变成一堆空白隔断，
+   * 而且背景/音频只在空白行上生效、到了真正的对白行就丢失。
+   * 正确做法：把指令累积进 acc，遇到下一条「对白/选择支/变量操作」时合并成一个 beat。
+   */
+  let accBackground: { asset_id: string } | null = null
+  let accCharacters: Record<string, CharacterDelta> = {}
+  let accAudio: { bgm: { asset_id: string; volume: number; loop: boolean } | null; ambient: null; se: string[]; voice: string | null } = {
+    bgm: null, ambient: null, se: [], voice: null,
+  }
+  let accLabel: string | null = null
+
+  function resetAcc() {
+    accBackground = null
+    accCharacters = {}
+    accAudio = { bgm: null, ambient: null, se: [], voice: null }
+    accLabel = null
+  }
+
+  /** 把累积的舞台状态并入目标 delta（对白/选择支等），并清空累积器 */
+  function flushAcc(t: LineDelta) {
+    if (accBackground) t.background = accBackground
+    if (Object.keys(accCharacters).length) t.characters = { ...accCharacters }
+    if (accLabel) t.label = accLabel
+    if (accAudio.bgm || accAudio.se.length || accAudio.voice) t.audio = accAudio
+    resetAcc()
+  }
+
   /** ATL / transform 属性行关键字（scene X: / show X: / transform X: 块内的 zoom/xpos/alpha 等属性） */
   const ATL_PROPS = /^(zoom|xzoom|yzoom|size|xpos|ypos|pos|xalign|yalign|align|anchor|xanchor|yanchor|truecenter|xoffset|yoffset|xcenter|ycenter|alpha|rotate|rotate_pad|transform_anchor|around|crop|additive|blend|ease|easein|easeout|linear|pause|time|repeat|block|parallel|choice|function|on|event|warp|matrixcolor|fit|matrixtransform|perspective|xrotate|yrotate|zrotate|gl_depth)\b/
 
@@ -410,8 +439,8 @@ export function parseRpy(
    * - 'skip'：transform / init python / screen / style 等块定义体，缩进行整体跳过。
    */
   let blockMode: 'none' | 'atl' | 'skip' = 'none'
-  /** 等待应用内联 ATL 属性的 show 行（deltas 索引 + 角色 id） */
-  let pendingShow: { idx: number; charId: string } | null = null
+  /** 等待应用内联 ATL 属性的 show 立绘条目（指向累积器中的 CharacterDelta） */
+  let pendingShow: CharacterDelta | null = null
   /** 三引号多行字符串（_p("""…""") / define x = """…"""）状态 */
   let inTriple = false
 
@@ -442,12 +471,9 @@ export function parseRpy(
         if (pendingShow) {
           const m = line.match(/^(zoom|xpos|ypos|xalign|yalign)\s+([-\d.]+)/)
           if (m) {
-            const ce = deltas[pendingShow.idx]?.characters?.[pendingShow.charId]
-            if (ce) {
-              if (m[1] === 'zoom') ce.scale = Number(m[2])
-              else if (m[1] === 'xpos') ce.pos_x = clamp(Number(m[2]) / screenW, 0, 1)
-              else if (m[1] === 'ypos') ce.pos_y = clamp(Number(m[2]) / screenH, 0, 1)
-            }
+            if (m[1] === 'zoom') pendingShow.scale = Number(m[2])
+            else if (m[1] === 'xpos') pendingShow.pos_x = clamp(Number(m[2]) / screenW, 0, 1)
+            else if (m[1] === 'ypos') pendingShow.pos_y = clamp(Number(m[2]) / screenH, 0, 1)
           }
         }
         continue
@@ -468,33 +494,28 @@ export function parseRpy(
     // ---- image 声明已收集，跳过 ----
     if (line.startsWith('image ')) continue
 
-    // ---- label ----
+    // ---- label（仅记录标签，并入下一条对白 beat；避免空标签行）----
     const labelM = line.match(/^label\s+(\S+)\s*:/)
     if (labelM) {
-      lineId++
-      emitDelta({
-        ...baseDelta(lineId),
-        label: labelM[1],
-        background: noBG,
-        characters: noChars,
-        audio: emptyAudio,
-      })
+      accLabel = labelM[1]
       continue
     }
 
-    // ---- menu: 选择支块 ----
+    // ---- menu: 选择支块（携带当前舞台状态）----
     if (line === 'menu:') {
       inMenu = true
       menuChoices = []
       lineId++
-      emitDelta({
+      const d: LineDelta = {
         ...baseDelta(lineId),
         line_type: 'choice',
         choices: [],
         background: noBG,
         characters: noChars,
         audio: emptyAudio,
-      })
+      }
+      flushAcc(d)
+      emitDelta(d)
       continue
     }
 
@@ -574,13 +595,15 @@ export function parseRpy(
       }
       addVar(scriptVar[1], scriptVar[3] || '0')
       lineId++
-      emitDelta({
+      const d: LineDelta = {
         ...baseDelta(lineId),
         variableOps: [op],
         background: noBG,
         characters: noChars,
         audio: emptyAudio,
-      })
+      }
+      flushAcc(d)
+      emitDelta(d)
       continue
     }
     const scriptAssign = line.match(/^\$\s*(\w+)\s*=\s*(.+)/)
@@ -592,13 +615,15 @@ export function parseRpy(
       }
       addVar(scriptAssign[1], scriptAssign[2].trim())
       lineId++
-      emitDelta({
+      const d: LineDelta = {
         ...baseDelta(lineId),
         variableOps: [op],
         background: noBG,
         characters: noChars,
         audio: emptyAudio,
-      })
+      }
+      flushAcc(d)
+      emitDelta(d)
       continue
     }
 
@@ -616,13 +641,9 @@ export function parseRpy(
       const bgName = sceneM[1]
       if (line.endsWith(':')) blockMode = 'atl' // scene X: 内联 ATL 块（仅跳过属性行）
       upsertImageRef(bgName, { usage: 'background' })
-      lineId++
-      emitDelta({
-        ...baseDelta(lineId),
-        background: { asset_id: bgName },
-        characters: noChars,
-        audio: emptyAudio,
-      })
+      // scene 会清掉当前所有立绘（Ren'Py 语义），并设置新背景
+      accBackground = { asset_id: bgName }
+      accCharacters = {}
       continue
     }
 
@@ -653,56 +674,28 @@ export function parseRpy(
         if (a.ypos !== undefined) entry.pos_y = clamp(a.ypos / screenH, 0, 1)
         if (a.zoom !== undefined) entry.scale = a.zoom
       } else if (line.endsWith(':')) {
-        // show X: 内联 ATL → 由块状态机收集后续 zoom/xpos/ypos 属性
-        pendingShow = { idx: deltas.length, charId: charKey }
+        // show X: 内联 ATL → 由块状态机收集后续 zoom/xpos/ypos 属性（指向累积器条目）
+        pendingShow = entry
       }
-
-      lineId++
-      emitDelta({
-        ...baseDelta(lineId),
-        characters: { [charKey]: entry },
-        background: noBG,
-        audio: emptyAudio,
-      })
+      accCharacters[charKey] = entry
       continue
     }
 
-    // ---- hide (隐藏立绘) ----
+    // ---- hide (隐藏立绘)：从累积立绘集中移除（落到下一条对白 beat）----
     const hideM = line.match(/^hide\s+(\S+)/)
     if (hideM) {
       const target = hideM[1].replace(/:$/, '')
       const resolved = resolveSpeaker(target)
-      if (resolved.charId) {
-        lineId++
-        emitDelta({
-          ...baseDelta(lineId),
-          characters: {
-            [resolved.charId]: {
-              sprite_id: target,
-              char_id: resolved.charId,
-              position_slot: 'center',
-              action: 'hide' as const,
-            },
-          },
-          background: noBG,
-          audio: emptyAudio,
-        })
-      }
+      if (resolved.charId) delete accCharacters[resolved.charId]
       continue
     }
 
-    // ---- play music（剥离 <from..> <to..> <loop..> 等音频控制标签） ----
+    // ---- play music（剥离 <from..> <to..> <loop..> 等音频控制标签）----
     const playM = line.match(/^play\s+music\s+"([^"]*)"/)
     if (playM) {
       const p = stripAudioCtl(playM[1])
       refAudio.push({ path: p, type: 'bgm' })
-      lineId++
-      emitDelta({
-        ...baseDelta(lineId),
-        audio: { bgm: { asset_id: p, volume: 1, loop: true }, ambient: null, se: [], voice: null },
-        background: noBG,
-        characters: noChars,
-      })
+      accAudio.bgm = { asset_id: p, volume: 1, loop: true }
       continue
     }
 
@@ -711,13 +704,7 @@ export function parseRpy(
     if (playMSQ) {
       const p = stripAudioCtl(playMSQ[1])
       refAudio.push({ path: p, type: 'bgm' })
-      lineId++
-      emitDelta({
-        ...baseDelta(lineId),
-        audio: { bgm: { asset_id: p, volume: 1, loop: true }, ambient: null, se: [], voice: null },
-        background: noBG,
-        characters: noChars,
-      })
+      accAudio.bgm = { asset_id: p, volume: 1, loop: true }
       continue
     }
 
@@ -726,13 +713,7 @@ export function parseRpy(
     if (playSfx) {
       const p = stripAudioCtl(playSfx[1])
       refAudio.push({ path: p, type: 'se' })
-      lineId++
-      emitDelta({
-        ...baseDelta(lineId),
-        audio: { bgm: null, ambient: null, se: [p], voice: null },
-        background: noBG,
-        characters: noChars,
-      })
+      accAudio.se = [...accAudio.se, p]
       continue
     }
 
@@ -741,20 +722,16 @@ export function parseRpy(
     if (playSfxSQ) {
       const p = stripAudioCtl(playSfxSQ[1])
       refAudio.push({ path: p, type: 'se' })
-      lineId++
-      emitDelta({
-        ...baseDelta(lineId),
-        audio: { bgm: null, ambient: null, se: [p], voice: null },
-        background: noBG,
-        characters: noChars,
-      })
+      accAudio.se = [...accAudio.se, p]
       continue
     }
 
-    // ---- voice ----
+    // ---- voice（累积到当前 beat 的语音轨）----
     const voiceM = line.match(/^voice\s+"([^"]*)"/)
     if (voiceM) {
-      refAudio.push({ path: stripAudioCtl(voiceM[1]), type: 'voice' })
+      const p = stripAudioCtl(voiceM[1])
+      refAudio.push({ path: p, type: 'voice' })
+      accAudio.voice = p
       continue
     }
 
@@ -768,14 +745,16 @@ export function parseRpy(
       const resolved = resolveSpeaker(speakerVar)
       ensureChar(resolved.charId, resolved.displayName)
       lineId++
-      emitDelta({
+      const d: LineDelta = {
         ...baseDelta(lineId),
         speaker: resolved.displayName || speakerVar,
         dialogue: text,
         background: noBG,
         characters: noChars,
         audio: emptyAudio,
-      })
+      }
+      flushAcc(d)
+      emitDelta(d)
       continue
     }
 
@@ -788,24 +767,28 @@ export function parseRpy(
         const resolved = resolveSpeaker(speakerName)
         ensureChar(resolved.charId, resolved.displayName)
         lineId++
-        emitDelta({
+        const d: LineDelta = {
           ...baseDelta(lineId),
           speaker: speakerName,
           dialogue: text,
           background: noBG,
           characters: noChars,
           audio: emptyAudio,
-        })
+        }
+        flushAcc(d)
+        emitDelta(d)
       } else {
         // 纯对白（无说话人）→ 旁白
         lineId++
-        emitDelta({
+        const d2: LineDelta = {
           ...baseDelta(lineId),
           dialogue: text,
           background: noBG,
           characters: noChars,
           audio: emptyAudio,
-        })
+        }
+        flushAcc(d2)
+        emitDelta(d2)
       }
       continue
     }
@@ -815,13 +798,15 @@ export function parseRpy(
     if (narration) {
       const text = narration[1]
       lineId++
-      emitDelta({
+      const d: LineDelta = {
         ...baseDelta(lineId),
         dialogue: text,
         background: noBG,
         characters: noChars,
         audio: emptyAudio,
-      })
+      }
+      flushAcc(d)
+      emitDelta(d)
       continue
     }
 
@@ -829,13 +814,15 @@ export function parseRpy(
     const extendM = line.match(/^extend\s+"([^"]*)"\s*$/)
     if (extendM) {
       lineId++
-      emitDelta({
+      const d: LineDelta = {
         ...baseDelta(lineId),
         dialogue: extendM[1],
         background: noBG,
         characters: noChars,
         audio: emptyAudio,
-      })
+      }
+      flushAcc(d)
+      emitDelta(d)
       continue
     }
 
@@ -857,13 +844,15 @@ export function parseRpy(
       && !line.startsWith('define') && !line.startsWith('default') && !line.startsWith('init')
       && !line.startsWith('transform') && !line.startsWith('screen') && !line.startsWith('style')) {
       lineId++
-      emitDelta({
+      const d: LineDelta = {
         ...baseDelta(lineId),
         dialogue: line,
         background: noBG,
         characters: noChars,
         audio: emptyAudio,
-      })
+      }
+      flushAcc(d)
+      emitDelta(d)
       continue
     }
 
@@ -872,6 +861,19 @@ export function parseRpy(
       && !line.startsWith('style') && !line.startsWith('layeredimage')) {
       warnings.push(`未识别的行: ${line.slice(0, 60)}`)
     }
+  }
+
+  // 收尾：文件末尾仍有未落地的舞台状态（如结尾的 scene/show/play 没有后续对白）→ 生成末尾 beat
+  if (accBackground || Object.keys(accCharacters).length || accAudio.bgm || accAudio.se.length || accAudio.voice) {
+    lineId++
+    const tail: LineDelta = {
+      ...baseDelta(lineId),
+      background: noBG,
+      characters: noChars,
+      audio: emptyAudio,
+    }
+    flushAcc(tail)
+    emitDelta(tail)
   }
 
   // 确保所有角色都有 displayName
