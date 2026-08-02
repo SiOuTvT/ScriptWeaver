@@ -1473,14 +1473,21 @@ export function matchAssets(
       }
     }
     // ③ 变量名 refName 匹配（Ren'Py 惯例：eileen happy → eileen_happy.png）
+    // 采用带分制取最佳匹配，而不是取「最后一个包含 refName 的文件」，
+    // 避免多个文件名都包含 refName 时结果依赖遍历顺序、不稳定。
     if (!best) {
+      let bestScore = -1
       for (const fi of foundImages) {
         if (usedImageFiles.has(fi.relativePath)) continue
         const stemLow = stem(fi.fileName).toLowerCase()
-        if (stemLow === refLow) { best = fi; break }
-        if (!best && (stemLow.includes(refLow) || refLow.includes(stemLow))) {
-          best = fi
-        }
+        let s = 0
+        if (stemLow === refLow) s = 100
+        else if (stemLow.startsWith(refLow + '_') || stemLow.endsWith('_' + refLow)) s = 60
+        else if (stemLow.includes('_' + refLow + '_')) s = 50
+        else if (stemLow.startsWith(refLow) || stemLow.endsWith(refLow)) s = 40
+        else if (stemLow.includes(refLow)) s = 20
+        else if (refLow.includes(stemLow)) s = 10
+        if (s > bestScore) { bestScore = s; best = fi }
       }
     }
 

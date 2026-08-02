@@ -126,6 +126,40 @@ describe('matchAssets：按真实路径精准归类素材', () => {
   })
 })
 
+describe('matchAssets：refName 模糊匹配取最佳而非遍历最后一个', () => {
+  it('存在精确文件名时，优先于其它包含 refName 的文件', () => {
+    const refs: RpyImageRef[] = [{ refName: 'js1' }]
+    // 故意把非精确项排在前面，验证结果不依赖遍历顺序
+    const found = [
+      { fileName: 'js1_happy.png', relativePath: 'js1_happy.png' },
+      { fileName: 'js1.png', relativePath: 'js1.png' },
+      { fileName: 'js1_gc.png', relativePath: 'js1_gc.png' },
+    ]
+    const { imageAssets } = matchAssets(refs, [], found, [])
+    expect(imageAssets[0].fileName).toBe('js1.png')
+  })
+
+  it('无精确文件名时，取以 refName 加分隔符开头的文件，而非仅包含 refName 的文件', () => {
+    const refs: RpyImageRef[] = [{ refName: 'eileen' }]
+    const found = [
+      { fileName: 'myeileen.png', relativePath: 'myeileen.png' }, // 仅包含 -> 低分
+      { fileName: 'eileen_happy.png', relativePath: 'eileen_happy.png' }, // 分隔符前缀 -> 高分
+    ]
+    const { imageAssets } = matchAssets(refs, [], found, [])
+    expect(imageAssets[0].fileName).toBe('eileen_happy.png')
+  })
+
+  it('分隔符前缀匹配高于「refName 包含文件名片段」的弱匹配', () => {
+    const refs: RpyImageRef[] = [{ refName: 'eileen_happy' }]
+    const found = [
+      { fileName: 'eileen.png', relativePath: 'eileen.png' }, // 'eileen_happy'.includes('eileen') -> 10
+      { fileName: 'eileen_happy.png', relativePath: 'eileen_happy.png' }, // 精确 -> 100
+    ]
+    const { imageAssets } = matchAssets(refs, [], found, [])
+    expect(imageAssets[0].fileName).toBe('eileen_happy.png')
+  })
+})
+
 describe('scanAssetFiles：递归扫描素材与脚本', () => {
   it('用 stat 递归含点目录（v1.2）并收集 .rpy / 图片 / 音频', async () => {
     installFs({
