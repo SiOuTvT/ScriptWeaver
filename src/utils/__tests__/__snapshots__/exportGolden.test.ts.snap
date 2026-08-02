@@ -11,15 +11,20 @@ init python:
     renpy.music.register_channel("ambient", "sfx", loop=True, stop_on_mute=False)
 
 # ---- 位置/缩放通用 Transform ----
-transform sw_pos(xpos, ypos, zoom=1.0):
+transform sw_pos(xpos, ypos, zoom=1.0, xanchor=0.5, yanchor=1.0):
     xpos xpos
     ypos ypos
-    xanchor 0.5
-    yanchor 1.0
+    xanchor xanchor
+    yanchor yanchor
     zoom zoom
 
 transform sw_zoom(z):
     zoom z
+
+transform sw_bg(zoom=1.0, xalign=0.5, yalign=0.5):
+    zoom zoom
+    xalign xalign
+    yalign yalign
 
 # ---- 自定义特效 Transform 库 ----
 transform push:
@@ -93,6 +98,10 @@ exports[`导出层黄金快照 · Web 导出 gameJson > gameJson 整文件对拍
   "canvasRatio": {
     "w": 16,
     "h": 9
+  },
+  "baseResolution": {
+    "width": 1920,
+    "height": 1080
   },
   "assetMap": {
     "bg_room": {
@@ -184,7 +193,8 @@ exports[`导出层黄金快照 · Web 导出 gameJson > gameJson 整文件对拍
         },
         "c2": {
           "asset_id": "b_smile",
-          "position_slot": "right"
+          "position_slot": "right",
+          "transition": "push"
         }
       },
       "audio": {
@@ -216,7 +226,8 @@ exports[`导出层黄金快照 · Web 导出 gameJson > gameJson 整文件对拍
         },
         "c2": {
           "asset_id": "b_smile",
-          "position_slot": "right"
+          "position_slot": "right",
+          "transition": "push"
         }
       },
       "audio": {
@@ -249,7 +260,8 @@ exports[`导出层黄金快照 · Web 导出 gameJson > gameJson 整文件对拍
         },
         "c2": {
           "asset_id": "b_smile",
-          "position_slot": "right"
+          "position_slot": "right",
+          "transition": "push"
         }
       },
       "audio": {

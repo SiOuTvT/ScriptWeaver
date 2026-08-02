@@ -64,6 +64,9 @@ html, body {
   pointer-events: none;
 }
 .char.show { opacity: 1; }
+/* 退场帧：hide 带过渡时先淡出，不做瞬间抹除 */
+.char.leaving { animation: char-leave 0.45s ease forwards; }
+@keyframes char-leave { from { opacity: 1; } to { opacity: 0; } }
 .char img {
   display: block;
   height: auto;

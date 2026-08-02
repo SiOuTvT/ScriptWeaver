@@ -38,7 +38,21 @@ interface WebLine {
   background: { asset_id: string; transition?: string } | null
   characters: Record<
     string,
-    { asset_id: string; position_slot: string; pos_x?: number; pos_y?: number; scale?: number }
+    {
+      asset_id: string
+      position_slot: string
+      pos_x?: number
+      pos_y?: number
+      scale?: number
+      /** Ren'Py 锚点：图片上哪一点对准 pos，缺省即引擎默认的底部居中 */
+      anchor_x?: number
+      anchor_y?: number
+      /** Ren'Py zoom：相对原图像素的倍率，与编辑器的 scale 不是一回事 */
+      renpy_zoom?: number
+      /** 退场帧：本行正在播 hide 动画，播完即离场 */
+      exiting?: boolean
+      transition?: string
+    }
   >
   audio: {
     voice: string | null
@@ -63,9 +77,11 @@ export function buildWebProject(params: {
   assets: AssetItem[]
   variables: GlobalVariable[]
   canvasRatio?: { w: number; h: number }
+  /** 工程基准分辨率，播放器据此把 Ren'Py 的 zoom 折算成占屏比 */
+  baseResolution?: { width: number; height: number }
   title: string
 }): WebProjectBundle {
-  const { deltas, characterConfigs, assets, variables, canvasRatio, title } = params
+  const { deltas, characterConfigs, assets, variables, canvasRatio, baseResolution, title } = params
 
   const resolved: ResolvedLineState[] = reduceLines(deltas)
   const charById = new Map(characterConfigs.map((c) => [c.charId, c]))
@@ -93,6 +109,11 @@ export function buildWebProject(params: {
         pos_x: ch.pos_x,
         pos_y: ch.pos_y,
         scale: ch.scale,
+        anchor_x: ch.anchor_x,
+        anchor_y: ch.anchor_y,
+        renpy_zoom: ch.renpy_zoom,
+        exiting: ch.exiting,
+        transition: ch.transition,
       }
     })
 
@@ -171,6 +192,7 @@ export function buildWebProject(params: {
     version: 1,
     title: title || 'ScriptWeaver',
     canvasRatio: canvasRatio ?? { w: 16, h: 9 },
+    baseResolution: baseResolution ?? { width: 1920, height: 1080 },
     assetMap,
     variables,
     charactersMeta,

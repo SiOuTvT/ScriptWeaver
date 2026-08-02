@@ -423,6 +423,96 @@ describe('matchAssets：音频控制标签与素材用途分类', () => {
   })
 })
 
+describe('parseRpy：真实工程常见写法整段回归', () => {
+  // 摘自实际在跑的 Ren'Py 工程：内联 ATL、逐帧 hide、语音带文件标签、视频过场、停顿
+  const REAL = [
+    'default js1 = Character("溪")',
+    'image js1 = "x.png"',
+    'image js7 = "y.png"',
+    'image bj2 = "bj2.jpg"',
+    'transform f:',
+    '    zoom 1.0',
+    '    xalign 0.5',
+    '    yalign 0.5',
+    '    xpos 350',
+    '    ypos 650',
+    'label start:',
+    '    stop music',
+    '    scene bj2 with dissolve',
+    '    play music "bgm.mp3" fadein 2.0',
+    '    show js1 at f',
+    '    js1 "我回来了"',
+    '    hide js1 with dissolve',
+    '    show js7:',
+    '        zoom 0.2',
+    '        xalign 0.5',
+    '        yalign 0.5',
+    '        xpos 1500',
+    '        ypos 850',
+    '    voice "<from 2.6>ofy.ogg"',
+    '    "旁白一句"',
+    '    play sound "zoulu.wav"',
+    '    $ renpy.pause(0.5)',
+    '    $ renpy.movie_cutscene("szjxz.webm")',
+    '    scene black with fade',
+    '    "结束"',
+  ].join('\n')
+
+  it('整段解析无残留未识别语句', () => {
+    const r = parseRpy(REAL)
+    expect(r.warnings.filter((w) => w.includes('未识别'))).toEqual([])
+    expect(r.warnings.some((w) => w.includes('szjxz.webm'))).toBe(true)
+    expect(r.warnings.some((w) => w.includes('停顿'))).toBe(true)
+  })
+
+  it('立绘按引擎口径记录 zoom 与锚点，不塞进编辑器的 scale', () => {
+    const r = parseRpy(REAL)
+    const states = reduceLines(r.deltas)
+    const i = r.deltas.findIndex((d) => d.dialogue === '旁白一句')
+    const js7 = states[i].characters['js7']
+    expect(js7?.renpy_zoom).toBe(0.2)
+    expect(js7?.anchor_x).toBe(0.5)
+    expect(js7?.anchor_y).toBe(0.5)
+    expect(js7?.pos_x).toBeCloseTo(1500 / 1920, 3)
+    expect(js7?.scale).toBeUndefined()
+  })
+
+  it('hide 后的立绘只保留一帧淡出，随后彻底离场', () => {
+    const r = parseRpy(REAL)
+    const states = reduceLines(r.deltas)
+    const i = r.deltas.findIndex((d) => d.dialogue === '旁白一句')
+    // 这一行正在播淡出，再往后就不该出现在台上
+    expect(states[i].characters['js1']?.exiting).toBe(true)
+    const j = r.deltas.findIndex((d) => d.dialogue === '结束')
+    expect(states[j].characters['js1']).toBeUndefined()
+  })
+
+  it('音频分轨与语音文件标签均按脚本还原', () => {
+    const r = parseRpy(REAL)
+    const states = reduceLines(r.deltas)
+    const i = r.deltas.findIndex((d) => d.dialogue === '旁白一句')
+    expect(states[i].audio.bgm?.asset_id).toBe('bgm.mp3')
+    expect(states[i].audio.voice).toBe('ofy.ogg')
+    const j = r.deltas.findIndex((d) => d.dialogue === '结束')
+    expect(states[j].audio.se).toContain('zoulu.wav')
+  })
+
+  it('scene 清场时残留立绘随整屏过渡一起退场', () => {
+    const r = parseRpy(REAL)
+    const states = reduceLines(r.deltas)
+    const j = r.deltas.findIndex((d) => d.dialogue === '结束')
+    expect(states[j].background?.asset_id).toBe('black')
+    expect(states[j].background?.transition).toBe('fade')
+    expect(Object.values(states[j].characters).every((c) => c.exiting)).toBe(true)
+  })
+
+  it('基准分辨率随 gui.init 声明，未声明按 1920x1080', () => {
+    expect(parseRpy(REAL).screen).toEqual({ width: 1920, height: 1080 })
+    const r = parseRpy('init python:\n    gui.init(1280, 720)\nlabel start:\n    "x"')
+    expect(r.screen).toEqual({ width: 1280, height: 720 })
+  })
+})
+
 describe('importRpyDirectory：全局两阶段解析', () => {
   it('define.rpy 集中声明 + script.rpy 使用，跨文件显示名正确合并', async () => {
     installFs({

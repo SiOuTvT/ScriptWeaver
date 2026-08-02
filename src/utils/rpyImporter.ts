@@ -477,6 +477,10 @@ export function parseRpy(
   let menuDelta: LineDelta | null = null
   let warnedMenuBody = false
   let warnedCondBranch = false
+  /** 已提示过的视频过场文件，避免同一段素材反复刷警告 */
+  const cutsceneSeen = new Set<string>()
+  /** 遇到的停顿语句总数，收尾时汇总提示 */
+  let pauseCount = 0
 
   /**
    * 将「说话者标识」解析为 charId + displayName：
@@ -913,6 +917,25 @@ export function parseRpy(
       continue
     }
 
+    // ---- 视频过场（renpy.movie_cutscene / renpy.movie_start_displayable）----
+    // 编辑器暂无视频轨，静默跳过等于让作者以为素材丢了，必须点名告知。
+    const cutscene = line.match(/renpy\.movie_(?:cutscene|start_displayable)\s*\(\s*(['"])(.+?)\1/)
+    if (cutscene) {
+      const clip = cutscene[2]
+      if (!cutsceneSeen.has(clip)) {
+        cutsceneSeen.add(clip)
+        warnings.push(`视频过场 ${clip} 暂不支持，导入后该处为空；正片仍需回 Ren'Py 播放`)
+      }
+      continue
+    }
+
+    // ---- 停顿（pause 1.5 / $ renpy.pause(0.5)）----
+    // 停顿只影响节奏、不改变画面状态，不生成剧情行，但要汇总告知以免作者以为被吞了。
+    if (/^\$\s*renpy\.pause\s*\(/.test(line) || /^pause\b/.test(line)) {
+      pauseCount++
+      continue
+    }
+
     // ---- $ python 变量操作 ----
     const scriptVar = line.match(/^\$\s*(\w+)\s*([+\-])\s*=\s*(\S+)/)
     if (scriptVar) {
@@ -1264,6 +1287,11 @@ export function parseRpy(
     emitDelta(tail)
   }
 
+  // 停顿只调节节奏、不改变画面，不生成剧情行；汇总一条提示避免作者以为丢内容
+  if (pauseCount > 0) {
+    warnings.push(`已跳过 ${pauseCount} 处停顿语句，它们只影响节奏，不改变画面内容`)
+  }
+
   // 确保所有角色都有 displayName
   for (const c of characters) {
     if (!c.displayName || c.displayName.trim() === '') {
@@ -1514,6 +1542,7 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
       audioAssets,
       imageCount: imageAssets.filter(a => a.fileName).length,
       audioCount: audioAssets.filter(a => a.fileName).length,
+      screen: { width: 1920, height: 1080 },
     }
   }
 

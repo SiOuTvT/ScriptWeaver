@@ -205,6 +205,24 @@
     img.src = src
   }
 
+  /**
+   * 按 Ren'Py 口径给立绘定尺寸。
+   * 引擎里的 zoom 是相对原图像素的倍率，一张 2000px 高的道具图写 zoom 0.2 只占 400px，
+   * 所以必须拿到原图真实高度再折算成舞台百分比，不能用固定高度顶替。
+   */
+  function applyRenpyBox(wrap, img, zoom) {
+    var baseH = (game && game.baseResolution && game.baseResolution.height) || 1080
+    function size() {
+      if (!img.naturalHeight) return
+      // 高度挂在外层 wrap 上（它相对舞台层绝对定位，百分比才解析得出来）
+      wrap.style.height = ((img.naturalHeight * zoom) / baseH * 100) + '%'
+      img.style.height = '100%'
+      img.style.width = 'auto'
+    }
+    if (img.complete && img.naturalHeight) size()
+    else img.addEventListener('load', size, { once: true })
+  }
+
   function renderCharacters(state) {
     charLayer.innerHTML = ''
     var chars = state.characters || {}
@@ -217,14 +235,28 @@
       var x = (ch.pos_x != null) ? ch.pos_x : slot.x
       var y = (ch.pos_y != null) ? ch.pos_y : slot.y
       var scale = (ch.scale != null && ch.scale > 0) ? ch.scale : 1
+      // Ren'Py 锚点：图片上哪一点对准 (x, y)，缺省为底部居中
+      var ax = (ch.anchor_x != null) ? ch.anchor_x : 0.5
+      var ay = (ch.anchor_y != null) ? ch.anchor_y : 1
       var wrap = document.createElement('div')
-      wrap.className = 'char show'
+      wrap.className = 'char show' + (ch.exiting ? ' leaving' : '')
       wrap.style.left = (x * 100) + '%'
-      wrap.style.bottom = ((1 - y) * 100) + '%'
-      wrap.style.transform = 'translateX(-50%) scale(' + scale + ')'
+      wrap.style.top = (y * 100) + '%'
+      wrap.style.bottom = 'auto'
+      wrap.style.transformOrigin = (ax * 100) + '% ' + (ay * 100) + '%'
       var img = document.createElement('img')
       img.src = am.src
       img.alt = ''
+      if (ch.renpy_zoom != null) {
+        // 导入自 Ren'Py：占屏高 = 原图高 × zoom ÷ 基准分辨率高，与引擎口径一致
+        img.style.maxHeight = 'none'
+        img.style.maxWidth = 'none'
+        applyRenpyBox(wrap, img, ch.renpy_zoom)
+        wrap.style.transform = 'translate(' + (-ax * 100) + '%, ' + (-ay * 100) + '%)'
+      } else {
+        wrap.style.transform =
+          'translate(' + (-ax * 100) + '%, ' + (-ay * 100) + '%) scale(' + scale + ')'
+      }
       wrap.appendChild(img)
       charLayer.appendChild(wrap)
     })

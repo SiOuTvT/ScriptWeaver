@@ -742,14 +742,18 @@ export function formatValidationErrors(errors: ValidationError[]): string {
 
 // ======================= Pass 2：差分舞台编译 =======================
 
-function resolveAt(c: { position_slot: string; pos_x?: number; pos_y?: number }, st: SymbolTable): AtClause {
-  if (c.pos_x != null || c.pos_y != null) {
+function resolveAt(
+  c: { position_slot: string; pos_x?: number; pos_y?: number; anchor_x?: number; anchor_y?: number },
+  st: SymbolTable,
+): AtClause {
+  if (c.pos_x != null || c.pos_y != null || c.anchor_x != null || c.anchor_y != null) {
     return {
       kind: 'transform',
       xpos: round3(c.pos_x ?? 0.5),
       ypos: round3(c.pos_y ?? 0.65),
-      xanchor: 0.5,
-      yanchor: 1.0,
+      // 锚点优先沿用脚本声明（xanchor/yanchor），没有才回落到编辑器的脚底居中习惯
+      xanchor: round3(c.anchor_x ?? 0.5),
+      yanchor: round3(c.anchor_y ?? 1.0),
     }
   }
   return { kind: 'slot', slotId: c.position_slot }
@@ -781,6 +785,10 @@ function serializeAt(at: AtClause, zoom?: number): string {
   if (at.kind === 'slot') {
     if (zoom != null && zoom !== 1) return `${at.slotId}, sw_zoom(${zoom})`
     return at.slotId
+  }
+  // 锚点非默认（脚底居中）时补上，保证导入脚本里的 xanchor/yanchor 能原样回到导出结果
+  if (at.xanchor !== 0.5 || at.yanchor !== 1) {
+    return `sw_pos(${at.xpos}, ${at.ypos}, ${zoom ?? 1}, ${at.xanchor}, ${at.yanchor})`
   }
   return `sw_pos(${at.xpos}, ${at.ypos}, ${zoom ?? 1})`
 }
@@ -850,14 +858,31 @@ function compileToNodes(
 
     // ---- 背景（资产变化 或 挂载特效变化 均重发 scene）----
     const newBg = state.background?.asset_id ?? null
-    const newBgKey = newBg ? `${newBg}|${effectsSig(state.background?.effects)}` : null
+    // 背景的取景（zoom / 焦点）也算画面状态，改了同样要重发 scene
+    const bgZoom = state.background?.scale ?? 1
+    const bgFocusX = state.background?.focus_x ?? 0.5
+    const bgFocusY = state.background?.focus_y ?? 0.5
+    const newBgKey = newBg
+      ? `${newBg}|${effectsSig(state.background?.effects)}|${bgZoom}|${bgFocusX}|${bgFocusY}`
+      : null
     if (newBgKey !== currentBgKey) {
       currentBgKey = newBgKey
       if (newBg) {
         const transition = resolveTransition(state.background?.transition, customTransitions)
         const bgFx = mountEffects(state.background?.effects)
         if (st.bgDefs.get(newBg)) {
-          block.push({ kind: 'scene', image: newBg, transition, effectAt: bgFx.at, effectWith: bgFx.withCall })
+          // 推近取景走参数化 transform，不能把 zoom 当 transform 直接调用
+          const framing =
+            bgZoom !== 1 || bgFocusX !== 0.5 || bgFocusY !== 0.5
+              ? [`sw_bg(${round3(bgZoom)}, ${round3(bgFocusX)}, ${round3(bgFocusY)})`]
+              : []
+          block.push({
+            kind: 'scene',
+            image: newBg,
+            transition,
+            effectAt: [...framing, ...(bgFx.at ?? [])],
+            effectWith: bgFx.withCall,
+          })
         } else {
           block.push({ kind: 'comment', text: `[缺失背景] ${newBg}` })
         }
@@ -875,13 +900,24 @@ function compileToNodes(
     // ---- 角色：先收集本行完整状态 ----
     const newChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string; effectsSig: string; effects?: MountedEffect[] }>()
     for (const [charId, c] of Object.entries(state.characters)) {
+      // 退场帧只是预览用来播完淡出动画的残影，脚本里这一行其实已经 hide 了，不能再发 show
+      if (c.exiting) continue
       // 同一角色身份（char_id）在 Ren'Py 中对应同一标签；多实例退化为单标签（Ren'Py 同 tag 不可同屏多份）
       const role = c.char_id ?? charId
       newChars.set(role, {
         exprId: c.sprite_id,
         at: resolveAt(c, st),
         zorder: computeZorder(c, st),
-        zoom: c.scale != null && c.scale !== 1 ? round3(c.scale) : undefined,
+        // 导入自 Ren'Py 的立绘以 renpy_zoom 为准（相对原图像素），
+        // 编辑器原生立绘才用 scale，避免两套缩放语义互相污染
+        zoom:
+          c.renpy_zoom != null
+            ? c.renpy_zoom !== 1
+              ? round3(c.renpy_zoom)
+              : undefined
+            : c.scale != null && c.scale !== 1
+              ? round3(c.scale)
+              : undefined,
         transition: resolveTransition(c.transition, customTransitions),
         effectsSig: effectsSig(c.effects),
         effects: c.effects,
@@ -1207,15 +1243,20 @@ export function exportDefinitionsRpy(
   // ---- 自由微调通用 Transform（承载自由坐标 + 缩放，A-4）----
   // 注意：sw_pos / sw_zoom 均为合规 transform，可被 `at` / `with` 合法引用。
   lines.push('# ---- 位置/缩放通用 Transform ----')
-  lines.push('transform sw_pos(xpos, ypos, zoom=1.0):')
+  lines.push('transform sw_pos(xpos, ypos, zoom=1.0, xanchor=0.5, yanchor=1.0):')
   lines.push('    xpos xpos')
   lines.push('    ypos ypos')
-  lines.push('    xanchor 0.5')
-  lines.push('    yanchor 1.0')
+  lines.push('    xanchor xanchor')
+  lines.push('    yanchor yanchor')
   lines.push('    zoom zoom')
   lines.push('')
   lines.push('transform sw_zoom(z):')
   lines.push('    zoom z')
+  lines.push('')
+  lines.push('transform sw_bg(zoom=1.0, xalign=0.5, yalign=0.5):')
+  lines.push('    zoom zoom')
+  lines.push('    xalign xalign')
+  lines.push('    yalign yalign')
   lines.push('')
 
   // ---- 自定义特效 Transform 库（保证 with <name> 必定存在，编译无忧）----

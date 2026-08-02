@@ -119,8 +119,9 @@ describe('rpyExporter · Ren\'Py 合规产出', () => {
   it('缩放通过合规 transform（sw_pos/sw_zoom），绝不使用非法的 zoom() 调用', () => {
     expect(script).not.toContain('zoom(')
     expect(script).toContain('sw_pos(0.3, 0.6, 1.2)')
-    expect(defs).toContain('transform sw_pos(xpos, ypos, zoom=1.0):')
+    expect(defs).toContain('transform sw_pos(xpos, ypos, zoom=1.0, xanchor=0.5, yanchor=1.0):')
     expect(defs).toContain('transform sw_zoom(z):')
+    expect(defs).toContain('transform sw_bg(zoom=1.0, xalign=0.5, yalign=0.5):')
     expect(defs).not.toContain('semislotted')
   })
 

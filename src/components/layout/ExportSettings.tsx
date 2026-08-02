@@ -238,6 +238,7 @@ export default function ExportSettings() {
       assets,
       variables,
       canvasRatio,
+      baseResolution: useAppStore.getState().baseResolution,
       title: projectMeta.title,
     })
     const res = await api.exportWeb({
