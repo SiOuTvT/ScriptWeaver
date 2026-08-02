@@ -29,7 +29,7 @@ export interface RpyImportAsset {
   /** 相对于 game 目录的路径 */
   relativePath: string
   /** 资产类型 */
-  kind: 'image' | 'audio'
+  kind: 'image' | 'audio' | 'video'
   /** 图片用途（立绘 sprite / 背景 background） */
   usage?: 'background' | 'sprite'
   /** 音频子分类 */
@@ -55,6 +55,9 @@ export interface RpyImportResult {
   audioAssets: RpyImportAsset[]
   imageCount: number
   audioCount: number
+  /** 扫描到的视频资产 */
+  videoAssets: RpyImportAsset[]
+  videoCount: number
   /**
    * 工程基准分辨率（gui.init 声明，缺省 1920x1080）。
    * 立绘的 zoom 相对原图像素，必须结合基准分辨率才能算出它在舞台上的占屏比，
@@ -89,6 +92,7 @@ const now = new Date().toISOString()
 
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.ogg', '.wav', '.flac', '.aac', '.m4a', '.opus', '.wma'])
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif'])
+const VIDEO_EXTENSIONS = new Set(['.webm', '.mp4', '.ogv', '.mkv', '.mov', '.avi', '.m4v'])
 
 // ═══════════════════════════════════════════
 // Helpers
@@ -301,6 +305,8 @@ export function parseRpy(
   warnings: string[]
   referencedImages: RpyImageRef[]
   referencedAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[]
+  /** 视频引用文件名（如 op.webm），由 Movie(play=...) / renpy.movie_cutscene 收集 */
+  referencedVideo: string[]
   transforms: RpyTransformDefs
   screen: RpyScreenSize
 } {
@@ -312,6 +318,7 @@ export function parseRpy(
   const varSet = new Set<string>()
   const refImages = new Map<string, RpyImageRef>() // key = refName
   const refAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[] = []
+  const refVideo = new Set<string>() // 视频文件名（去重）
 
   /** 基准分辨率：gui.init(W, H)，默认 Ren'Py 1920x1080 */
   let screenW = screen?.width ?? 1920
@@ -923,6 +930,8 @@ export function parseRpy(
     const cutscene = line.match(/renpy\.movie_(?:cutscene|start_displayable)\s*\(\s*(['"])(.+?)\1/)
     if (cutscene) {
       const clip = cutscene[2]
+      const clipBase = clip.includes('/') ? clip.slice(clip.lastIndexOf('/') + 1) : clip
+      refVideo.add(clipBase)
       if (!cutsceneSeen.has(clip)) {
         cutsceneSeen.add(clip)
         warnings.push(`视频过场 ${clip} 已用占位面板标记，正片仍需回 Ren'Py 播放`)
@@ -1019,6 +1028,7 @@ export function parseRpy(
       const loopStr = movieBg[2]
       const movieLoop = loopStr ? /^(True|true)$/.test(loopStr) : true
       const assetId = `sw-video:${base}`
+      refVideo.add(base)
       if (!cutsceneSeen.has(base)) {
         cutsceneSeen.add(base)
         warnings.push(`视频背景 ${base} 已用占位面板标记，正片仍需回 Ren'Py 播放`)
@@ -1341,6 +1351,7 @@ export function parseRpy(
     warnings,
     referencedImages: [...refImages.values()],
     referencedAudio: refAudio,
+    referencedVideo: [...refVideo],
     transforms: transformDefs,
     screen: { width: screenW, height: screenH },
   }
@@ -1357,14 +1368,16 @@ export function parseRpy(
 export async function scanAssetFiles(dirPath: string): Promise<{
   images: { fileName: string; relativePath: string }[]
   audio: { fileName: string; relativePath: string }[]
+  video: { fileName: string; relativePath: string }[]
   rpyFiles: { fileName: string; relativePath: string }[]
 }> {
   const fsApi = (window as any).electronAPI?.fs as FsApi | undefined
-  if (!fsApi) return { images: [], audio: [], rpyFiles: [] }
+  if (!fsApi) return { images: [], audio: [], video: [], rpyFiles: [] }
   const api = fsApi // narrowed for closure
 
   const images: { fileName: string; relativePath: string }[] = []
   const audio: { fileName: string; relativePath: string }[] = []
+  const video: { fileName: string; relativePath: string }[] = []
   const rpyFiles: { fileName: string; relativePath: string }[] = []
 
   async function walk(currentDir: string, relBase: string) {
@@ -1388,6 +1401,7 @@ export async function scanAssetFiles(dirPath: string): Promise<{
           const ext = '.' + (lower.split('.').pop() || '')
           if (IMAGE_EXTENSIONS.has(ext)) images.push({ fileName: entry, relativePath: rel })
           else if (AUDIO_EXTENSIONS.has(ext)) audio.push({ fileName: entry, relativePath: rel })
+          else if (VIDEO_EXTENSIONS.has(ext)) video.push({ fileName: entry, relativePath: rel })
           else if (ext === '.rpy' || ext === '.rpym') rpyFiles.push({ fileName: entry, relativePath: rel })
           continue
         }
@@ -1397,6 +1411,7 @@ export async function scanAssetFiles(dirPath: string): Promise<{
           const ext = '.' + (lower.split('.').pop() || '')
           if (IMAGE_EXTENSIONS.has(ext)) images.push({ fileName: entry, relativePath: rel })
           else if (AUDIO_EXTENSIONS.has(ext)) audio.push({ fileName: entry, relativePath: rel })
+          else if (VIDEO_EXTENSIONS.has(ext)) video.push({ fileName: entry, relativePath: rel })
           else if (ext === '.rpy' || ext === '.rpym') rpyFiles.push({ fileName: entry, relativePath: rel })
         } else {
           // 可能是子目录，尝试递归
@@ -1407,7 +1422,7 @@ export async function scanAssetFiles(dirPath: string): Promise<{
   }
 
   await walk(dirPath, '')
-  return { images, audio, rpyFiles }
+  return { images, audio, video, rpyFiles }
 }
 
 /**
@@ -1418,14 +1433,18 @@ export function matchAssets(
   referencedAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[],
   foundImages: { fileName: string; relativePath: string }[],
   foundAudio: { fileName: string; relativePath: string }[],
+  foundVideo: { fileName: string; relativePath: string }[] = [],
+  referencedVideo: string[] = [],
 ): {
   imageAssets: RpyImportAsset[]
   audioAssets: RpyImportAsset[]
+  videoAssets: RpyImportAsset[]
   unmatchedImages: string[]
   unmatchedAudio: string[]
 } {
   const imageAssets: RpyImportAsset[] = []
   const audioAssets: RpyImportAsset[] = []
+  const videoAssets: RpyImportAsset[] = []
   const unmatchedImages: string[] = []
   const unmatchedAudio: string[] = []
 
@@ -1467,13 +1486,20 @@ export function matchAssets(
 
     if (best) {
       usedImageFiles.add(best.relativePath)
+      // 用途推断：优先用 scene/show 的动词（background/sprite）；
+      // 纯 image 声明（无 scene/show 动词）时，按名称/路径里的 bg|background|cg 令牌判定，
+      // 避免把所有未直接 show 的立绘误归为背景。
+      const tokenHint = ref.refName + ' ' + (ref.path || '')
+      const usage: 'background' | 'sprite' =
+        ref.usage ??
+        (/(^|[\\/\s_])(bg|background|cg)([\\/\s_]|$)/i.test(tokenHint) ? 'background' : 'sprite')
       imageAssets.push({
         id: `rpy_img_${imageAssets.length}_${stem(best.fileName)}`,
         refName: refName,
         fileName: best.fileName,
         relativePath: best.relativePath,
         kind: 'image',
-        usage: ref.usage ?? 'background',
+        usage,
         sizeBytes: 0, // 由 main 进程后续填充
       })
     } else {
@@ -1534,7 +1560,44 @@ export function matchAssets(
     })
   }
 
-  return { imageAssets, audioAssets, unmatchedImages, unmatchedAudio }
+  // 匹配视频（由 Movie(play=...) / renpy.movie_cutscene 收集到的文件名）
+  const usedVideoFiles = new Set<string>()
+  const unmatchedVideo: string[] = []
+  for (const ref of [...new Set(referencedVideo)]) {
+    const refLow = ref.toLowerCase()
+    let best: typeof foundVideo[0] | null = null
+    for (const fi of foundVideo) {
+      if (usedVideoFiles.has(fi.relativePath)) continue
+      const fiLow = fi.fileName.toLowerCase()
+      if (fiLow === refLow || stem(fiLow) === stem(refLow)) { best = fi; break }
+      if (!best && (fiLow.includes(refLow) || refLow.includes(stem(fiLow)))) best = fi
+    }
+    if (best) {
+      usedVideoFiles.add(best.relativePath)
+      videoAssets.push({
+        id: `rpy_video_${videoAssets.length}_${stem(best.fileName)}`,
+        refName: ref,
+        fileName: best.fileName,
+        relativePath: best.relativePath,
+        kind: 'video',
+        sizeBytes: 0,
+      })
+    } else {
+      unmatchedVideo.push(ref)
+    }
+  }
+  for (const ref of unmatchedVideo) {
+    videoAssets.push({
+      id: `rpy_video_unmatched_${videoAssets.length}_${ref.replace(/[^a-zA-Z0-9_.]/g, '_')}`,
+      refName: ref,
+      fileName: '',
+      relativePath: '',
+      kind: 'video',
+      sizeBytes: 0,
+    })
+  }
+
+  return { imageAssets, audioAssets, videoAssets, unmatchedImages, unmatchedAudio }
 }
 
 // ═══════════════════════════════════════════
@@ -1551,7 +1614,7 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
   const api = fsApi // narrowed
 
   // 递归扫描：素材文件 + 所有 .rpy/.rpym 脚本（含子目录）
-  const { images: foundImages, audio: foundAudio, rpyFiles } = await scanAssetFiles(dirPath)
+  const { images: foundImages, audio: foundAudio, video: foundVideo, rpyFiles } = await scanAssetFiles(dirPath)
 
   const allDeltas: LineDelta[] = []
   const allChars: CharacterConfig[] = []
@@ -1559,12 +1622,13 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
   const allWarnings: string[] = []
   const allRefImages = new Map<string, RpyImageRef>() // key = refName
   const allRefAudio: { path: string; type: 'bgm' | 'ambient' | 'se' | 'voice' }[] = []
+  const allRefVideo = new Set<string>()
   const charSeen = new Set<string>()
   const varSeen = new Set<string>()
 
   if (rpyFiles.length === 0) {
     // 即使没有 .rpy 文件，也报告扫描到的素材
-    const { imageAssets, audioAssets } = matchAssets([], [], foundImages, foundAudio)
+    const { imageAssets, audioAssets, videoAssets } = matchAssets([], [], foundImages, foundAudio, foundVideo, [])
     return {
       deltas: [],
       characters: [],
@@ -1575,8 +1639,10 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
       varCount: 0,
       imageAssets,
       audioAssets,
+      videoAssets,
       imageCount: imageAssets.filter(a => a.fileName).length,
       audioCount: audioAssets.filter(a => a.fileName).length,
+      videoCount: videoAssets.filter(a => a.fileName).length,
       screen: { width: 1920, height: 1080 },
     }
   }
@@ -1644,6 +1710,7 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
       if (!allRefImages.has(img.refName)) allRefImages.set(img.refName, img)
     }
     allRefAudio.push(...result.referencedAudio)
+    for (const v of result.referencedVideo) allRefVideo.add(v)
   }
 
   // 去重音频引用
@@ -1657,11 +1724,13 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
     }
   }
 
-  const { imageAssets, audioAssets, unmatchedImages, unmatchedAudio } = matchAssets(
+  const { imageAssets, audioAssets, videoAssets, unmatchedImages, unmatchedAudio } = matchAssets(
     [...allRefImages.values()],
     dedupedAudio,
     foundImages,
     foundAudio,
+    foundVideo,
+    [...allRefVideo],
   )
 
   // 未匹配的素材引用生成警告
@@ -1670,6 +1739,10 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
   }
   if (unmatchedAudio.length > 0) {
     allWarnings.push(`以下音频引用未在目录中找到对应文件: ${unmatchedAudio.join(', ')}`)
+  }
+  const unmatchedVideo = videoAssets.filter(a => !a.fileName).map(a => a.refName)
+  if (unmatchedVideo.length > 0) {
+    allWarnings.push(`以下视频引用未在目录中找到对应文件: ${unmatchedVideo.join(', ')}`)
   }
 
   // 注意：此处不要对 asset_id 做任何预映射（历史上曾把引用名重映射成 relativePath）。
@@ -1689,8 +1762,10 @@ export async function importRpyDirectory(dirPath: string): Promise<RpyImportResu
     varCount: allVars.length,
     imageAssets,
     audioAssets,
+    videoAssets,
     imageCount: imageAssets.filter(a => a.fileName).length,
     audioCount: audioAssets.filter(a => a.fileName).length,
+    videoCount: videoAssets.filter(a => a.fileName).length,
     screen: { ...screenSize },
   }
 }

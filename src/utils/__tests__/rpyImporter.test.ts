@@ -604,3 +604,65 @@ describe('parseRpy：视频背景 Movie 往返（与导出 Movie 一致）', () 
     expect(out).toContain('scene bg = Movie(play="video/op.webm", loop=False)')
   })
 })
+
+describe('importRpyDirectory：视频文件识别与素材去重', () => {
+  const tree = {
+    dirs: {
+      'game': ['script.rpy', 'images', 'video'],
+      'game/images': ['bg', 'eileen'],
+      'game/images/bg': ['room.png'],
+      'game/images/eileen': ['happy.png', 'sad.png'],
+      'game/video': ['op.webm', 'ed.webm'],
+    },
+    files: {
+      'game/script.rpy': `
+image bg room = "images/bg/room.png"
+image eileen happy = "images/eileen/happy.png"
+image eileen sad = "images/eileen/sad.png"
+label start:
+    scene bg room
+    show eileen happy
+    "对话1"
+    scene bg = Movie(play="video/op.webm")
+    "视频背景1"
+    scene bg = Movie(play="video/ed.webm")
+    "视频背景2"
+`,
+      'game/images/bg/room.png': 'PNGDATA',
+      'game/images/eileen/happy.png': 'PNGDATA',
+      'game/images/eileen/sad.png': 'PNGDATA',
+      'game/video/op.webm': 'WEBMDATA',
+      'game/video/ed.webm': 'WEBMDATA',
+    },
+  }
+
+  it('视频文件被扫描并匹配为 videoAssets（无视频时为空）', async () => {
+    installFs(tree)
+    const r = await importRpyDirectory('game')
+    expect(r.videoAssets.filter(a => a.fileName).length).toBe(2)
+    expect(r.videoAssets.some(a => a.fileName === 'op.webm' && a.kind === 'video')).toBe(true)
+    expect(r.videoAssets.some(a => a.fileName === 'ed.webm' && a.kind === 'video')).toBe(true)
+  })
+
+  it('两个视频背景对应两条 sw-video 引用且被正确保留', async () => {
+    installFs(tree)
+    const r = await importRpyDirectory('game')
+    const bgIds = r.deltas.map(d => d.background?.asset_id).filter(Boolean)
+    expect(bgIds).toContain('sw-video:op.webm')
+    expect(bgIds).toContain('sw-video:ed.webm')
+  })
+
+  it('图片素材按物理文件去重，不出现重复条目', async () => {
+    installFs(tree)
+    const r = await importRpyDirectory('game')
+    const matched = r.imageAssets.filter(a => a.fileName)
+    // 每个物理文件只应出现一次
+    const byFile = new Map<string, number>()
+    for (const a of matched) {
+      const k = a.relativePath || a.fileName
+      byFile.set(k, (byFile.get(k) ?? 0) + 1)
+    }
+    for (const [, n] of byFile) expect(n).toBe(1)
+    expect(matched.length).toBe(3) // room / happy / sad 各一
+  })
+})

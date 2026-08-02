@@ -139,6 +139,7 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
       // ── Step 1: 导入素材文件 ──
       const importedImageMap = new Map<string, AssetItem>()
       const importedAudioMap = new Map<string, AssetItem>()
+      const importedVideoMap = new Map<string, AssetItem>()
 
       if (fsImport) {
         const validImages = preview.imageAssets.filter(a => a.fileName)
@@ -176,18 +177,38 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
             }
           } catch { /* 部分音频导入失败 */ }
         }
+
+        // 视频组：Movie(play=...) / renpy.movie_cutscene 收集到的视频文件
+        const validVideo = preview.videoAssets.filter(a => a.fileName)
+        if (validVideo.length > 0) {
+          const videoPaths = validVideo.map(a =>
+            dirPath + (dirPath.endsWith('\\') || dirPath.endsWith('/') ? '' : '\\') + a.relativePath)
+          try {
+            const r = await fsImport(videoPaths, 'video')
+            if (r.success && r.files) {
+              for (let i = 0; i < r.files.length && i < validVideo.length; i++) {
+                importedVideoMap.set(validVideo[i].refName, r.files[i])
+              }
+            }
+          } catch { /* 部分视频导入失败 */ }
+        }
       }
 
       // ── Step 2: 注册素材到 store ──
-      // 使用 store.setAssets() 一次性批量替换，避免每 addAsset 都 pushHistory
+      // 使用 store.setAssets() 一次性批量替换，避免每 addAsset 都 pushHistory。
+      // 按 relativePath 去重：fsImport 已做内容去重（同名/同内容文件复用），
+      // 这里再兜底一次，杜绝同一文件在素材库里出现两份 AssetItem。
       const currentAssets = [...useAppStore.getState().assets]
       const newAssets: AssetItem[] = [...currentAssets]
-      for (const [, asset] of importedImageMap) {
-        if (!newAssets.find(a => a.id === asset.id)) newAssets.push(asset)
+      const seenRel = new Set(newAssets.map(a => a.relativePath))
+      const pushUnique = (asset: AssetItem) => {
+        if (seenRel.has(asset.relativePath)) return
+        seenRel.add(asset.relativePath)
+        newAssets.push(asset)
       }
-      for (const [, asset] of importedAudioMap) {
-        if (!newAssets.find(a => a.id === asset.id)) newAssets.push(asset)
-      }
+      for (const [, asset] of importedImageMap) pushUnique(asset)
+      for (const [, asset] of importedAudioMap) pushUnique(asset)
+      for (const [, asset] of importedVideoMap) pushUnique(asset)
       useAppStore.getState().setAssets(newAssets)
 
       // ── Step 3: 注册角色 ──
@@ -236,8 +257,15 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
       const revisedDeltas: LineDelta[] = preview.deltas.map(d => {
         const next = { ...d }
         if (next.background?.asset_id) {
-          const asset = importedImageMap.get(next.background.asset_id)
-          if (asset) next.background = { ...next.background, asset_id: asset.id }
+          const bgId = next.background.asset_id
+          // 视频背景：sw-video:<文件名> → 导入的视频素材 id
+          if (bgId.startsWith('sw-video:')) {
+            const v = importedVideoMap.get(bgId.slice('sw-video:'.length))
+            if (v) next.background = { ...next.background, asset_id: v.id }
+          } else {
+            const asset = importedImageMap.get(bgId)
+            if (asset) next.background = { ...next.background, asset_id: asset.id }
+          }
         }
         // 修正立绘：sprite_id（变量名）→ 绑定导入素材 id + 默认表情（场景预览据此渲染）
         if (next.characters) {

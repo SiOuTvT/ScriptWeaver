@@ -2,6 +2,7 @@ import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, nativeThe
 import path from 'path'
 import fs from 'fs'
 import os from 'os'
+import crypto from 'node:crypto'
 import { spawn } from 'child_process'
 import zlib from 'zlib'
 import { Readable } from 'stream'
@@ -880,6 +881,36 @@ ipcMain.handle('fs:importFilesFromPaths', async (_event, srcPaths: string[], kin
   try {
     const files: { id: string; fileName: string; relativePath: string; type: AssetKind }[] = []
 
+    // 内容去重缓存：目标目录 -> (内容哈希 -> 文件名)。
+    // 同一张图被脚本多次复用、或重复导入同一工程时，复用已存在的文件，
+    // 而不是改名 _N 再拷贝一份，避免素材库堆满重复副本。
+    const dirHashCache = new Map<string, Map<string, string>>()
+    function hashOf(p: string): string | null {
+      try {
+        return crypto.createHash('sha1').update(fs.readFileSync(p)).digest('hex')
+      } catch {
+        return null
+      }
+    }
+    function existingHashFile(destDir: string, hash: string): string | null {
+      if (!dirHashCache.has(destDir)) {
+        const m = new Map<string, string>()
+        try {
+          for (const f of fs.readdirSync(destDir)) {
+            const fp = path.join(destDir, f)
+            if (fs.statSync(fp).isFile()) {
+              const h = hashOf(fp)
+              if (h) m.set(h, f)
+            }
+          }
+        } catch {
+          /* 目录不存在等 */
+        }
+        dirHashCache.set(destDir, m)
+      }
+      return dirHashCache.get(destDir)!.get(hash) ?? null
+    }
+
     for (const srcPath of srcPaths) {
       if (typeof srcPath !== 'string' || !fs.existsSync(srcPath)) continue
       const ext = path.extname(srcPath).toLowerCase()
@@ -888,6 +919,17 @@ ipcMain.handle('fs:importFilesFromPaths', async (_event, srcPaths: string[], kin
 
       const destDir = path.join(activeProjectRoot!, 'assets', subdir)
       ensureDir(destDir)
+
+      // 内容相同则直接复用已落盘的文件，不重复拷贝
+      const srcHash = hashOf(srcPath)
+      if (srcHash) {
+        const existing = existingHashFile(destDir, srcHash)
+        if (existing) {
+          const rel = path.join('assets', subdir, existing).replace(/\\/g, '/')
+          files.push({ id: uuid(), fileName: existing, relativePath: rel, type })
+          continue
+        }
+      }
 
       let fileDest = path.join(destDir, baseName)
       let counter = 1

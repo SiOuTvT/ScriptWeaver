@@ -6,6 +6,7 @@ const electron = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
+const crypto = require("node:crypto");
 const child_process = require("child_process");
 const zlib = require("zlib");
 const stream = require("stream");
@@ -844,7 +845,31 @@ electron.ipcMain.handle("fs:importFilesFromPaths", async (_event, srcPaths, kind
   if (!Array.isArray(srcPaths) || srcPaths.length === 0) return { success: false, error: "未提供文件" };
   if (!activeProjectRoot) return { success: false, error: "请先保存项目，再导入素材" };
   try {
+    let hashOf = function(p) {
+      try {
+        return crypto.createHash("sha1").update(fs.readFileSync(p)).digest("hex");
+      } catch {
+        return null;
+      }
+    }, existingHashFile = function(destDir, hash) {
+      if (!dirHashCache.has(destDir)) {
+        const m = /* @__PURE__ */ new Map();
+        try {
+          for (const f of fs.readdirSync(destDir)) {
+            const fp = path.join(destDir, f);
+            if (fs.statSync(fp).isFile()) {
+              const h = hashOf(fp);
+              if (h) m.set(h, f);
+            }
+          }
+        } catch {
+        }
+        dirHashCache.set(destDir, m);
+      }
+      return dirHashCache.get(destDir).get(hash) ?? null;
+    };
     const files = [];
+    const dirHashCache = /* @__PURE__ */ new Map();
     for (const srcPath of srcPaths) {
       if (typeof srcPath !== "string" || !fs.existsSync(srcPath)) continue;
       const ext = path.extname(srcPath).toLowerCase();
@@ -852,6 +877,15 @@ electron.ipcMain.handle("fs:importFilesFromPaths", async (_event, srcPaths, kind
       const { subdir, type } = resolveSubdir(ext, kind);
       const destDir = path.join(activeProjectRoot, "assets", subdir);
       ensureDir(destDir);
+      const srcHash = hashOf(srcPath);
+      if (srcHash) {
+        const existing = existingHashFile(destDir, srcHash);
+        if (existing) {
+          const rel = path.join("assets", subdir, existing).replace(/\\/g, "/");
+          files.push({ id: uuid(), fileName: existing, relativePath: rel, type });
+          continue;
+        }
+      }
       let fileDest = path.join(destDir, baseName);
       let counter = 1;
       while (fs.existsSync(fileDest)) {
