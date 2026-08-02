@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react'
-import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2, Play, Package, ShieldCheck, RefreshCw, Languages, Gamepad2, SlidersHorizontal, Image, Plus, Trash2 } from 'lucide-react'
+import { Monitor, Apple, Smartphone, Globe, Circle, CheckCircle2, XCircle, Loader2, Play, Package, ShieldCheck, RefreshCw, Languages, Gamepad2, SlidersHorizontal, Image, Plus, Trash2, ChevronDown } from 'lucide-react'
 import { useAppStore } from '@/stores/appStore'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import type { GalleryItem } from '@/core/types'
@@ -126,6 +126,10 @@ export default function ExportSettings() {
   const [scriptLabel, setScriptLabel] = useState('start')
   const [validationResult, setValidationResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [packageResult, setPackageResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  // 新手模式：快捷发布区 + 高级选项折叠
+  const simpleMode = useAppStore((s) => s.simpleMode)
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   // 平台导航选中态
   const [platform, setPlatform] = useState('windows')
@@ -415,9 +419,77 @@ export default function ExportSettings() {
             <span className="signal-dot" />
             <span className="eyebrow">Export</span>
           </div>
-          <h2 className="t-h1 mt-1.5">导出设置</h2>
-          <p className="mt-0.5 t-subtitle">选择导出目标、配置打包偏好并校验脚本完整性</p>
+          <h2 className="t-h1 mt-1.5">发布与导出</h2>
+          {simpleMode ? (
+            <p className="mt-0.5 t-subtitle">把你的剧本变成能玩、能发的游戏：试玩、打包或发布成网页。</p>
+          ) : (
+            <p className="mt-0.5 t-subtitle">选择导出目标、配置打包偏好并校验脚本完整性</p>
+          )}
         </header>
+
+        {/* ============ 新手模式：快捷发布（三个大按钮，其它收进「更多选项」） ============ */}
+        {simpleMode && (
+          <>
+            <section className="mb-6 rounded-xl border border-primary/25 bg-surface p-5 shadow-1">
+              <div className="mb-3 flex items-center gap-2">
+                <Gamepad2 size={16} className="text-primary" />
+                <h3 className="t-title">把游戏做出来</h3>
+                <span className="ml-auto rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+                  三个选一个
+                </span>
+              </div>
+              <p className="mb-4 t-subtitle">
+                想先看看效果，点「试玩」；做好了要发给人玩，点「打包成安装包」或「发布成网页」。
+              </p>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={() => runEngineAction('run')}
+                  disabled={engineBusy || totalLines === 0}
+                  className="flex flex-col items-start gap-1 rounded-xl border border-primary/30 bg-primary/5 px-4 py-4 text-left transition-all hover:border-primary/60 hover:bg-primary/10 disabled:opacity-40"
+                >
+                  <span className="text-[15px] font-semibold text-primary">试玩</span>
+                  <span className="t-micro text-fg-subtle">用你装好的 Ren'Py 打开，看效果</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => runEngineAction('build')}
+                  disabled={engineBusy || totalLines === 0}
+                  className="flex flex-col items-start gap-1 rounded-xl border border-edge/15 bg-surface-2 px-4 py-4 text-left transition-all hover:border-primary/40 hover:bg-surface-hover disabled:opacity-40"
+                >
+                  <span className="text-[15px] font-semibold text-fg">打包成安装包</span>
+                  <span className="t-micro text-fg-subtle">直接调 Ren'Py 做成安装包</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setPlatform('web'); setShowAdvanced(true) }}
+                  className="flex flex-col items-start gap-1 rounded-xl border border-edge/15 bg-surface-2 px-4 py-4 text-left transition-all hover:border-primary/40 hover:bg-surface-hover disabled:opacity-40"
+                >
+                  <span className="text-[15px] font-semibold text-fg">发布成网页</span>
+                  <span className="t-micro text-fg-subtle">生成网页版，发链接给朋友就能玩</span>
+                </button>
+              </div>
+              <p className="mt-3 t-micro text-fg-subtle">
+                试玩和打包都会调用你电脑上已安装的 Ren'Py 官方软件；没装的话会提示你去安装并指路。
+              </p>
+            </section>
+
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="mb-6 flex w-full items-center justify-between rounded-xl border border-edge/10 bg-surface px-4 py-3 text-left shadow-1 transition-colors hover:bg-surface-hover"
+            >
+              <span className="flex items-center gap-2 text-[13px] font-medium text-fg">
+                <ChevronDown size={15} strokeWidth={1.75} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                {showAdvanced ? '收起高级选项' : '更多选项（游戏信息 / 图标 / 多语言等）'}
+              </span>
+            </button>
+          </>
+        )}
+
+        {/* 新手模式折叠时隐藏高级区；完整模式永远显示 */}
+        <div className={simpleMode && !showAdvanced ? 'hidden' : undefined}>
+        {/* ============ 游戏信息（标题 / 封面 / 图标） ============ */}
 
         {/* ============ 游戏信息（标题 / 封面 / 图标） ============ */}
         <section className="mb-6 rounded-xl border border-edge/10 bg-surface p-5">
@@ -1103,6 +1175,7 @@ export default function ExportSettings() {
               </div>
             </section>
           </div>
+        </div>
         </div>
       </div>
     </div>
