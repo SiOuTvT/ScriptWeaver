@@ -35,7 +35,7 @@ interface WebLine {
   line_id: string
   speaker: string | null
   dialogue: string
-  background: { asset_id: string; transition?: string } | null
+  background: { asset_id: string; transition?: string; scale?: number; focus_x?: number; focus_y?: number } | null
   characters: Record<
     string,
     {
@@ -129,7 +129,15 @@ export function buildWebProject(params: {
       line_id: st.line_id,
       speaker: st.speaker,
       dialogue: st.dialogue,
-      background: st.background ? { asset_id: st.background.asset_id, transition: st.background.transition } : null,
+      background: st.background
+        ? {
+            asset_id: st.background.asset_id,
+            transition: st.background.transition,
+            scale: st.background.scale,
+            focus_x: st.background.focus_x,
+            focus_y: st.background.focus_y,
+          }
+        : null,
       characters,
       audio: {
         voice: au.voice ?? null,

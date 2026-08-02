@@ -195,14 +195,45 @@
       img = document.createElement('img')
       bgLayer.appendChild(img)
     }
-    if (img.getAttribute('data-src') === src) {
+    if (img.getAttribute('data-src') !== src) {
+      img.setAttribute('data-src', src)
+      img.classList.remove('show')
+      img.onload = function () { img.classList.add('show'); applyRenpyBgBox(img, bg) }
+      img.src = src
+    } else {
       img.classList.add('show')
-      return
     }
-    img.setAttribute('data-src', src)
-    img.classList.remove('show')
-    img.onload = function () { img.classList.add('show') }
-    img.src = src
+    // src 未变时也要同步 zoom / 取景焦点变化
+    applyRenpyBgBox(img, bg)
+  }
+
+  /**
+   * 按 Ren'Py 口径给背景定尺寸：原图像素 × zoom ÷ 工程分辨率，按舞台百分比定位。
+   * 与编辑器一致——小尺寸背景写 zoom 2.0 是「原图 2 倍铺满」，而非「铺满再 2 倍」过度放大。
+   */
+  function applyRenpyBgBox(img, bg) {
+    var baseW = (game && game.baseResolution && game.baseResolution.width) || 1920
+    var baseH = (game && game.baseResolution && game.baseResolution.height) || 1080
+    var zoom = (bg && bg.scale != null && bg.scale !== 1) ? bg.scale : 1
+    var fx = (bg && bg.focus_x != null) ? bg.focus_x : 0.5
+    var fy = (bg && bg.focus_y != null) ? bg.focus_y : 0.5
+    function size() {
+      if (!img.naturalWidth) return
+      var wPct = (img.naturalWidth * zoom) / baseW * 100
+      var hPct = (img.naturalHeight * zoom) / baseH * 100
+      img.style.position = 'absolute'
+      img.style.inset = 'auto'
+      img.style.left = '50%'
+      img.style.top = '50%'
+      img.style.right = 'auto'
+      img.style.bottom = 'auto'
+      img.style.width = wPct + '%'
+      img.style.height = hPct + '%'
+      img.style.objectFit = 'fill'
+      img.style.transform = 'translate(' + (-fx * 100) + '%, ' + (-fy * 100) + '%)'
+    }
+    if (img.complete && img.naturalWidth) size()
+    else img.addEventListener('load', size, { once: true })
   }
 
   /**

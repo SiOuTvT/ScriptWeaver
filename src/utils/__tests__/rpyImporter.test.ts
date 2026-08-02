@@ -511,6 +511,29 @@ describe('parseRpy：真实工程常见写法整段回归', () => {
     const r = parseRpy('init python:\n    gui.init(1280, 720)\nlabel start:\n    "x"')
     expect(r.screen).toEqual({ width: 1280, height: 720 })
   })
+
+  it('导入识别 sw_bg/sw_pos 位置参数，保证导出往返一致', () => {
+    const r = parseRpy(
+      [
+        'label start:',
+        '    scene bj1 at sw_bg(2, 0.3, 0.7)',
+        '    show js1 at sw_pos(1300, 200, 0.8)',
+        '    js1 "hi"',
+      ].join('\n'),
+    )
+    expect(r.warnings.filter((w) => w.includes('未识别'))).toEqual([])
+    const states = reduceLines(r.deltas)
+    const i = r.deltas.findIndex((d) => d.dialogue === 'hi')
+    // 背景 zoom 与取景焦点按 sw_bg 位置参数还原
+    expect(states[i].background?.scale).toBe(2)
+    expect(states[i].background?.focus_x).toBeCloseTo(0.3, 3)
+    expect(states[i].background?.focus_y).toBeCloseTo(0.7, 3)
+    // 立绘坐标与 zoom 按 sw_pos 位置参数还原（原图像素折算，不塞进编辑器 scale）
+    const js1 = states[i].characters['js1']
+    expect(js1?.renpy_zoom).toBe(0.8)
+    expect(js1?.pos_x).toBeCloseTo(1300 / 1920, 3)
+    expect(js1?.pos_y).toBeCloseTo(200 / 1080, 3)
+  })
 })
 
 describe('importRpyDirectory：全局两阶段解析', () => {

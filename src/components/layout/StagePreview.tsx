@@ -12,7 +12,7 @@ import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import {
   Music, AudioLines, Megaphone, Volume2, Image as ImageIcon, ChevronLeft, ChevronRight,
-  Plus, FileText, Play, Pause, Square, Copy, X, Pencil, Trash2, Sparkles,
+  Plus, FileText, Play, Pause, Square, Copy, X, Pencil, Trash2, Sparkles, Film,
 } from 'lucide-react'
 import { Skeleton, IconButton, RenpyRichText } from '@/components/ui'
 import EffectMountPanel from '@/components/effects/EffectMountPanel'
@@ -340,7 +340,11 @@ export default function StagePreview() {
     }
     return out
   }, [state?.characters, assets, characterConfigs])
-  useNaturalSizes(spriteUrls)
+
+  // 背景图原始尺寸也要预载：Ren'Py 的 bg zoom 是相对原图像素的倍率，必须知道真实尺寸
+  // 才能按「原图 × zoom ÷ 工程分辨率」还原，否则会退化成先 contain 铺满再二次缩放。
+  const bgDataUrl = resolveBackgroundUrl(state?.background?.asset_id, assets)
+  useNaturalSizes([...spriteUrls, ...(bgDataUrl ? [bgDataUrl] : [])])
 
   // 快捷台词编辑本地状态
   const [localSpeaker, setLocalSpeaker] = useState(currentDelta?.speaker ?? '')
@@ -1299,7 +1303,6 @@ export default function StagePreview() {
   // 背景图加载检测：hook 必须在提前 return 之前无条件调用，遵守 React Rules of Hooks
   // （此前 useImageLoaded 写在 if (!state) return 之后，导致有/无数据时 hook 数量不一致 → #310）
   const bgAssetId = state?.background?.asset_id
-  const bgDataUrl = resolveBackgroundUrl(bgAssetId, assets)
   const bgLoaded = useImageLoaded(bgDataUrl)
 
   if (!state) {
@@ -1326,6 +1329,22 @@ export default function StagePreview() {
   const bgZoom = state.background?.scale ?? 1
   const bgFocusX = state.background?.focus_x ?? 0.5
   const bgFocusY = state.background?.focus_y ?? 0.5
+
+  // —— 背景还原采用 Ren'Py 原生模型 ——
+  // Ren'Py 背景按「原图像素 × zoom ÷ 工程分辨率」映射到屏幕，而非先 contain 铺满再叠 scale。
+  // 小尺寸背景（如 960×540）写 zoom 2.0 时引擎是「原图 2 倍 = 正好铺满」；若先铺满再 2 倍会过度放大。
+  const baseW = baseResolution?.width ?? 1920
+  const baseH = baseResolution?.height ?? 1080
+  const bgStretch = stageSize.w / baseW // 工程像素 → 舞台像素（画布比例与工程一致，h 同系数）
+  const bgNatural = bgDataUrl ? naturalSizeCache.get(bgDataUrl) : undefined
+  const bgNatW = bgNatural?.w ?? baseW
+  const bgNatH = bgNatural?.h ?? baseH
+  const bgBoxWpx = bgNatW * bgZoom * bgStretch
+  const bgBoxHpx = bgNatH * bgZoom * bgStretch
+  // 缺省引擎中心定位（xalign / yalign 0.5）：取景焦点即锚点，对准屏幕中心
+  const bgLeftPx = 0.5 * stageSize.w - bgFocusX * bgBoxWpx
+  const bgTopPx = 0.5 * stageSize.h - bgFocusY * bgBoxHpx
+  const isVideoBg = !!state.background?.asset_id?.startsWith('sw-video:')
 
   return (
     <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm overflow-hidden">
@@ -1471,27 +1490,40 @@ export default function StagePreview() {
             上下文里对自定义 sw-asset:// 协议不渲染 background-image（请求会发出并 200，但画面空白）；
             <img src> 直读协议是铁律 1 下已验证可用的消费路径（与 PreviewStage 一致）。 */}
         <div className="absolute inset-0 bg-canvas">
-          {hasBgImage && (
-            <img
-              // key 绑定「图源 + 过渡」：仅在背景真正更换、或该行显式声明了转场时重新挂载并播放动画，
-              // 同一背景延续的行不会重复播放，避免逐行闪动
-              key={`${bgDataUrl}|${state.background?.transition ?? ''}`}
-              src={bgDataUrl}
-              alt=""
-              draggable={false}
-              className={`pointer-events-none absolute inset-0 h-full w-full object-contain object-center ${
-                bgTransitionClass || 'animate-fade-in'
-              }`}
-              // scene bg: zoom 2.0 / xalign 0.3 这类推近取景，按脚本声明的倍率与焦点还原
-              style={
-                bgZoom !== 1
-                  ? {
-                      transform: `scale(${bgZoom})`,
-                      transformOrigin: `${bgFocusX * 100}% ${bgFocusY * 100}%`,
-                    }
-                  : undefined
-              }
-            />
+          {isVideoBg ? (
+            // 视频过场占位：编辑器暂无视频轨，用面板标明而非留白，正片仍回 Ren'Py 播放
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-canvas text-fg-subtle">
+              <Film size={42} strokeWidth={1.4} className="text-fg-faint" />
+              <div className="px-6 text-center">
+                <p className="text-[14px] font-medium text-fg-muted">视频过场</p>
+                <p className="mx-auto mt-1 max-w-[80%] break-all text-[12px] text-fg-subtle">
+                  {state.background!.asset_id.slice('sw-video:'.length)}
+                </p>
+                <p className="mt-1 text-[12px] text-fg-faint">正片请在 Ren'Py 中播放</p>
+              </div>
+            </div>
+          ) : (
+            hasBgImage && (
+              <img
+                // key 绑定「图源 + 过渡」：仅在背景真正更换、或该行显式声明了转场时重新挂载并播放动画，
+                // 同一背景延续的行不会重复播放，避免逐行闪动
+                key={`${bgDataUrl}|${state.background?.transition ?? ''}`}
+                src={bgDataUrl}
+                alt=""
+                draggable={false}
+                className={`pointer-events-none absolute ${bgTransitionClass || 'animate-fade-in'}`}
+                // scene bg: zoom 2.0 / xalign 0.3 这类推近取景，按脚本声明的倍率与焦点还原。
+                // 尺寸用「原图像素 × zoom ÷ 工程分辨率」折算到舞台（不走 object-contain 铺满再叠 scale），
+                // 这样小尺寸背景写 zoom 2.0 是「原图 2 倍铺满」，与 Ren'Py 一致。
+                style={{
+                  width: `${bgBoxWpx.toFixed(2)}px`,
+                  height: `${bgBoxHpx.toFixed(2)}px`,
+                  left: `${bgLeftPx.toFixed(2)}px`,
+                  top: `${bgTopPx.toFixed(2)}px`,
+                  objectFit: 'fill',
+                }}
+              />
+            )
           )}
           {bgDataUrl && !bgLoaded && (
             <Skeleton className="absolute inset-0" />

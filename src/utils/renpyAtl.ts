@@ -261,8 +261,12 @@ export function alignToSlot(xalign: number): string {
 export function parseTransformCall(expr: string, state: AtlState): boolean {
   const m = expr.match(/^([A-Za-z_]\w*)\s*\((.*)\)$/s)
   if (!m) return false
+  const name = m[1]
+  const argStr = m[2]
   let matched = false
-  for (const part of m[2].split(',')) {
+
+  // 关键字参数（xpos=0.5, zoom=0.8 …）
+  for (const part of argStr.split(',')) {
     const kv = part.split('=')
     if (kv.length !== 2) continue
     const key = kv[0].trim()
@@ -270,6 +274,29 @@ export function parseTransformCall(expr: string, state: AtlState): boolean {
     if (!value) continue
     const setter = SCALAR_SETTERS[key]
     if (setter) { setter(state, value); matched = true }
+  }
+
+  // 位置参数：ScriptWeaver 自定义 transform（sw_pos / sw_zoom / sw_bg）以固定签名传参，
+  // 导出时写成位置实参，导入必须按签名还原，否则导入↔导出往返会丢失缩放/坐标。
+  //   sw_zoom(z)                     → 第 0 参 = zoom
+  //   sw_pos(xpos, ypos, zoom, xanchor, yanchor)
+  //   sw_bg(zoom, xalign, yalign)    → 焦点对齐中心用 ratio 归一化
+  const args = argStr.split(',').map((s) => num(s.trim())).filter(Boolean) as { v: number; ratio: boolean }[]
+  if (name === 'sw_zoom' && args[0]) {
+    state.zoom = args[0].v
+    matched = true
+  } else if (name === 'sw_bg') {
+    if (args[0]) state.zoom = args[0].v
+    if (args[1]) state.xpos = { v: args[1].v, ratio: true }
+    if (args[2]) state.ypos = { v: args[2].v, ratio: true }
+    if (args[0] || args[1] || args[2]) matched = true
+  } else if (name === 'sw_pos') {
+    if (args[0]) state.xpos = args[0]
+    if (args[1]) state.ypos = args[1]
+    if (args[2]) state.zoom = args[2].v
+    if (args[3]) state.xanchor = { v: args[3].v, ratio: false }
+    if (args[4]) state.yanchor = { v: args[4].v, ratio: false }
+    if (args.length) matched = true
   }
   return matched
 }

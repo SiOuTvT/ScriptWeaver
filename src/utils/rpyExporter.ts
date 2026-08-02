@@ -868,23 +868,30 @@ function compileToNodes(
     if (newBgKey !== currentBgKey) {
       currentBgKey = newBgKey
       if (newBg) {
-        const transition = resolveTransition(state.background?.transition, customTransitions)
-        const bgFx = mountEffects(state.background?.effects)
-        if (st.bgDefs.get(newBg)) {
-          // 推近取景走参数化 transform，不能把 zoom 当 transform 直接调用
-          const framing =
-            bgZoom !== 1 || bgFocusX !== 0.5 || bgFocusY !== 0.5
-              ? [`sw_bg(${round3(bgZoom)}, ${round3(bgFocusX)}, ${round3(bgFocusY)})`]
-              : []
-          block.push({
-            kind: 'scene',
-            image: newBg,
-            transition,
-            effectAt: [...framing, ...(bgFx.at ?? [])],
-            effectWith: bgFx.withCall,
-          })
+        if (newBg.startsWith('sw-video:')) {
+          // 视频过场占位：导出为 renpy.movie_cutscene 调用，与导入格式一致，保证往返
+          const clip = newBg.slice('sw-video:'.length)
+          block.push({ kind: 'comment', text: `视频过场 ${clip}（正片请在 Ren'Py 中播放）` })
+          block.push({ kind: 'python', expr: `renpy.movie_cutscene("${clip}")` })
         } else {
-          block.push({ kind: 'comment', text: `[缺失背景] ${newBg}` })
+          const transition = resolveTransition(state.background?.transition, customTransitions)
+          const bgFx = mountEffects(state.background?.effects)
+          if (st.bgDefs.get(newBg)) {
+            // 推近取景走参数化 transform，不能把 zoom 当 transform 直接调用
+            const framing =
+              bgZoom !== 1 || bgFocusX !== 0.5 || bgFocusY !== 0.5
+                ? [`sw_bg(${round3(bgZoom)}, ${round3(bgFocusX)}, ${round3(bgFocusY)})`]
+                : []
+            block.push({
+              kind: 'scene',
+              image: newBg,
+              transition,
+              effectAt: [...framing, ...(bgFx.at ?? [])],
+              effectWith: bgFx.withCall,
+            })
+          } else {
+            block.push({ kind: 'comment', text: `[缺失背景] ${newBg}` })
+          }
         }
       }
     }
