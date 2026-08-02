@@ -296,9 +296,11 @@ function effectCallStr(e: MountedEffect): string | null {
  * 必须内联进定义名，否则同一特效的不同曲线会互相覆盖。
  */
 function customTransformName(def: MountableEffectDef, e: MountedEffect): string {
-  if (!def.params.some((p) => p.key === WARP_KEY)) return `sw_custom_${def.id}`
+  // 定义名必须是合法 Ren'Py 标识符（连字符非法），故把 id 里的 - 统一转成 _
+  const base = `sw_custom_${def.id.replace(/-/g, '_')}`
+  if (!def.params.some((p) => p.key === WARP_KEY)) return base
   const w = warperName(e.params[WARP_KEY])
-  return w === 'linear' ? `sw_custom_${def.id}` : `sw_custom_${def.id}_${w}`
+  return w === 'linear' ? base : `${base}_${w}`
 }
 
 /** 自定义 transform 的实参串（枚举型参数已内联进定义名，不再作运行时参数） */
@@ -482,6 +484,8 @@ function effectTransformBody(id: string, warp: string = 'linear'): string[] {
         `    ${w} (0.5 / rate) yoffset 0`,
       ]
     // ---- 立体 3D 族（perspective + x/y/zrotate + zzoom）----
+    // 注意：body 为 Ren'Py 字面量文本，参数名（perspective/duration 等）供 transform 定义引用，
+    // 仅 ${w} 是 JS 插值的缓动曲线关键字；故写 `perspective perspective`（第二词是参数名，运行时解析为数值）。
     case 't-3d-flip':
       return ['perspective perspective', 'yrotate 0', `${w} duration yrotate 360`]
     case 't-3d-tumble':
@@ -975,11 +979,12 @@ function compileToNodes(
     // ---- 舞台镜头（Camera）：整层摄像机运动 / 立体变换 ----
     // 复用 mountEffects 收集 transform 型特效（镜头预设均为 transform 类），变化才发射；
     // 清空（无镜头特效）时发射裸 `camera` 复位，避免镜头残影穿透到后续剧情。
+    // 用 null 哨兵表示「无镜头」，与 layer_filter 的初始化/复位语义一致，避免首行误发复位。
     const camAt = mountEffects(state.cameraEffects).at
-    const camKey = camAt.join(', ')
-    if (camKey !== currentCameraTransform) {
-      currentCameraTransform = camKey
-      block.push({ kind: 'camera', transform: camAt.length ? camKey : null })
+    const camTransform = camAt.length ? camAt.join(', ') : null
+    if (camTransform !== currentCameraTransform) {
+      currentCameraTransform = camTransform
+      block.push({ kind: 'camera', transform: camTransform })
     }
 
     // ---- 角色：先收集本行完整状态 ----

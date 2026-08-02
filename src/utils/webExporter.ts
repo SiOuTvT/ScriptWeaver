@@ -136,6 +136,7 @@ export function buildWebProject(params: {
             scale: st.background.scale,
             focus_x: st.background.focus_x,
             focus_y: st.background.focus_y,
+            movieLoop: st.background.movieLoop,
           }
         : null,
       characters,

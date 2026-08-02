@@ -1519,17 +1519,16 @@ export default function StagePreview() {
             <img src> 直读协议是铁律 1 下已验证可用的消费路径（与 PreviewStage 一致）。 */}
         <div className="absolute inset-0 bg-canvas">
           {isVideoBg ? (
-            // 视频过场占位：编辑器暂无视频轨，用面板标明而非留白，正片仍回 Ren'Py 播放
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-canvas text-fg-subtle">
-              <Film size={42} strokeWidth={1.4} className="text-fg-faint" />
-              <div className="px-6 text-center">
-                <p className="text-[14px] font-medium text-fg-muted">视频过场</p>
-                <p className="mx-auto mt-1 max-w-[80%] break-all text-[12px] text-fg-subtle">
-                  {state.background!.asset_id.slice('sw-video:'.length)}
-                </p>
-                <p className="mt-1 text-[12px] text-fg-faint">正片请在 Ren'Py 中播放</p>
-              </div>
-            </div>
+            // 视频背景直读 sw-asset 协议（铁律 1：消费端一律用 <video src>，勿用 CSS background-image）
+            <video
+              key={state.background!.asset_id}
+              src={resolveBackgroundUrl(state.background!.asset_id, assets)}
+              className="pointer-events-none absolute inset-0 h-full w-full object-contain bg-canvas"
+              autoPlay
+              loop={state.background?.movieLoop ?? true}
+              muted
+              playsInline
+            />
           ) : (
             hasBgImage && (
               <img

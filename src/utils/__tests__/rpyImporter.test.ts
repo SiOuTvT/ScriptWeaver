@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { parseRpy, matchAssets, scanAssetFiles, importRpyDirectory, parseDisplayStatement, type RpyImageRef } from '../rpyImporter'
 import { reduceLines } from '../../core/reducer'
+import { buildBundle } from '../rpyExporter'
 
 /** 构造内存文件树 mock：dirs 用归一化路径（/）做 key，files 同。 */
 function mockFs(tree: { dirs: Record<string, string[]>; files: Record<string, string> }) {
@@ -571,5 +572,35 @@ describe('importRpyDirectory：全局两阶段解析', () => {
     })
     const res = await importRpyDirectory('game')
     expect(res.deltas.find((d) => d.dialogue === '子目录对白')?.speaker).toBe('阿五')
+  })
+})
+
+describe('parseRpy：视频背景 Movie 往返（与导出 Movie 一致）', () => {
+  it('scene bg = Movie(play="video/op.webm", loop=True) 解析为 sw-video:op.webm 且 movieLoop=true', () => {
+    const r = parseRpy('label start:\n    scene bg = Movie(play="video/op.webm", loop=True)\n    "台词"')
+    const d = r.deltas.find((x) => x.background)
+    expect(d?.background?.asset_id).toBe('sw-video:op.webm')
+    expect(d?.background?.movieLoop).toBe(true)
+  })
+
+  it('loop=False 解析为 movieLoop=false', () => {
+    const r = parseRpy('label start:\n    scene bg = Movie(play="video/op.webm", loop=False)\n    "台词"')
+    const d = r.deltas.find((x) => x.background)
+    expect(d?.background?.asset_id).toBe('sw-video:op.webm')
+    expect(d?.background?.movieLoop).toBe(false)
+  })
+
+  it('缺省 loop 视为循环（movieLoop=true）', () => {
+    const r = parseRpy('label start:\n    scene bg = Movie(play="video/op.webm")\n    "台词"')
+    const d = r.deltas.find((x) => x.background)
+    expect(d?.background?.asset_id).toBe('sw-video:op.webm')
+    expect(d?.background?.movieLoop).toBe(true)
+  })
+
+  it('导出 Movie 往返：导入后再导出仍为 Movie(loop=...)', () => {
+    const r = parseRpy('label start:\n    scene bg = Movie(play="video/op.webm", loop=False)\n    "台词"')
+    const states = reduceLines(r.deltas)
+    const out = buildBundle(r.deltas, states, [], []).script
+    expect(out).toContain('scene bg = Movie(play="video/op.webm", loop=False)')
   })
 })

@@ -184,9 +184,34 @@
   function renderBackground(state) {
     var bg = state.background
     var id = bg && bg.asset_id
+    var isVideo = !!(id && id.indexOf('sw-video:') === 0)
     var src = id && assetMap[id] ? assetMap[id].src : null
-    // 复用单张背景图做淡入
     var img = bgLayer.querySelector('img')
+    var vid = bgLayer.querySelector('video')
+    // ---- 视频背景：直读素材做可循环播放（与编辑器铁律 1 一致的 <video src> 消费路径） ----
+    if (isVideo) {
+      if (img) img.classList.remove('show')
+      if (!src) { if (vid) vid.style.display = 'none'; return }
+      if (!vid) {
+        vid = document.createElement('video')
+        vid.className = 'sw-bg sw-bg-img'
+        vid.style.objectFit = 'contain'
+        vid.muted = true
+        vid.autoplay = true
+        vid.playsInline = true
+        bgLayer.appendChild(vid)
+      }
+      vid.style.display = 'block'
+      vid.loop = !!(bg && bg.movieLoop != null ? bg.movieLoop : true)
+      if (vid.getAttribute('data-src') !== src) {
+        vid.setAttribute('data-src', src)
+        vid.src = src
+        vid.play().catch(function () {})
+      }
+      return
+    }
+    // ---- 图片背景（原逻辑）----
+    if (vid) { vid.style.display = 'none'; if (vid.pause) vid.pause() }
     if (!src) {
       if (img) img.classList.remove('show')
       return

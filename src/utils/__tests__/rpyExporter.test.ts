@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { exportToRpy, exportDefinitionsRpy, buildBundle, resolveLookups, validateExportNames } from '../rpyExporter'
 import { MOUNTABLE_EFFECTS, RENPY_WARPERS } from '@/data/mountableEffects'
+import { reduceLines } from '@/core/reducer'
 import type { LineDelta, ResolvedLineState, CharacterConfig, AssetItem, MountedEffect, GlobalVariable } from '@/core/types'
 
 const characterConfigs: CharacterConfig[] = [
@@ -768,5 +769,58 @@ describe('rpyExporter · 剧情标签节点化与多分支（任务 3/3）', () 
     const lookups = resolveLookups([a], characterConfigs, assets)
     const errors = validateExportNames([a], lookups, characterConfigs, assets)
     expect(errors.some((e) => e.field === 'label' && e.value === 'start')).toBe(true)
+  })
+})
+
+describe('rpyExporter · 视频背景 Movie 与舞台镜头 camera（Camera/Video 任务）', () => {
+  const eff = (uid: string, effectId: string, params: Record<string, number> = {}): MountedEffect => ({ uid, effectId, params, enabled: true })
+  const videoAssets: AssetItem[] = [
+    ...assets,
+    { id: 'sw-video:op.webm', type: 'video', name: 'op', fileName: 'op.webm', relativePath: 'assets/video/op.webm', importedAt: '' },
+  ]
+  const vDeltas: LineDelta[] = [
+    baseDelta('L1', { speaker: 'alice', dialogue: '视频循环背景', background: { asset_id: 'sw-video:op.webm', movieLoop: true } }),
+    baseDelta('L2', { speaker: 'alice', dialogue: '镜头震动', cameraEffects: [eff('k1', 'shake', { duration: 0.5, amplitude: 10 })] }),
+    baseDelta('L3', { speaker: 'alice', dialogue: '镜头复位', cameraEffects: [] }),
+    baseDelta('L4', {
+      speaker: 'alice', dialogue: '立体翻转',
+      cameraEffects: [eff('c4', 't-3d-flip', { duration: 1.2, perspective: 800 })],
+    }),
+  ]
+  const vStates = reduceLines(vDeltas)
+  const bundle = buildBundle(vDeltas, vStates, characterConfigs, videoAssets)
+  const script = bundle.script
+
+  it('视频背景导出为可循环 Movie displayable，play 带 video/ 前缀、loop 为大写布尔', () => {
+    expect(script).toContain('scene bg = Movie(play="video/op.webm", loop=True)')
+  })
+
+  it('movieLoop=false 导出 loop=False', () => {
+    const d2 = [baseDelta('V1', { speaker: 'alice', dialogue: 'x', background: { asset_id: 'sw-video:op.webm', movieLoop: false } })]
+    const s2 = reduceLines(d2)
+    const out = buildBundle(d2, s2, characterConfigs, videoAssets).script
+    expect(out).toContain('scene bg = Movie(play="video/op.webm", loop=False)')
+  })
+
+  it('buildAssetRefs 拷贝视频素材到 game/video', () => {
+    expect(bundle.assets.some((a) => a.type === 'video' && a.assetId === 'sw-video:op.webm')).toBe(true)
+  })
+
+  it('舞台镜头：存在镜头特效时发射 camera at <transform>', () => {
+    expect(script).toContain('camera at sw_custom_shake')
+    expect(bundle.transforms).toContain('transform sw_custom_shake(')
+  })
+
+  it('舞台镜头：清空镜头特效时发射裸 camera 复位（不残留镜头运动）', () => {
+    const lines = script.split('\n')
+    const resetIdx = lines.findIndex((l) => l.trim() === 'camera')
+    expect(resetIdx).toBeGreaterThan(-1)
+  })
+
+  it('3D 立体翻转（镜头）导出含 perspective + yrotate 的 transform 定义', () => {
+    expect(script).toContain('camera at sw_custom_t_3d_flip')
+    expect(bundle.transforms).toContain('transform sw_custom_t_3d_flip(')
+    expect(bundle.transforms).toContain('perspective perspective')
+    expect(bundle.transforms).toContain('yrotate 360')
   })
 })
