@@ -109,7 +109,7 @@ export default function LeftSidebar() {
     window.electronAPI?.getVersion().then((v) => setAppVersion(v)).catch(() => {})
   }, [])
 
-  const width = collapsed ? 'w-12' : 'w-52'
+  const width = collapsed ? 'w-12' : 'w-44'
 
   const groups = simpleMode ? SIMPLE_GROUPS : NAV_GROUPS
   const allItems = groups.flatMap((g) => g.items)
@@ -135,14 +135,7 @@ export default function LeftSidebar() {
       >
         <span className="shrink-0">{item.icon}</span>
         {!collapsed && (
-          <>
-            <span className="min-w-0 flex-1 truncate text-[14px] text-left">{item.label}</span>
-            {item.code && (
-              <span className="shrink-0 font-mono text-[11px] tabular-nums text-fg-faint/40">
-                {item.code}
-              </span>
-            )}
-          </>
+          <span className="min-w-0 flex-1 truncate text-[14px] text-left">{item.label}</span>
         )}
       </button>
     )
