@@ -58,7 +58,7 @@ function StatCard({ icon: Icon, label, value, sub, color = 'primary' }: {
         <span className="text-[12px] font-medium text-fg-muted">{label}</span>
       </div>
       <div className="text-[24px] font-semibold text-fg tabular-nums leading-none">{value}</div>
-      {sub && <div className="mt-1 text-[11px] text-fg-faint">{sub}</div>}
+      {sub && <div className="mt-1 text-[12px] text-fg-faint">{sub}</div>}
     </div>
   )
 }
@@ -420,9 +420,9 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
                 浏览
               </button>
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-fg-faint">
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-fg-faint">
               <Info size={11} strokeWidth={1.5} />
-              例如：<code className="rounded border border-edge/10 bg-surface-2 px-1.5 py-px text-fg-muted text-[11px]">D:\mygame\game</code>
+              例如：<code className="rounded border border-edge/10 bg-surface-2 px-1.5 py-px text-fg-muted text-[12px]">D:\mygame\game</code>
             </div>
           </div>
 
@@ -535,7 +535,7 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
                 </summary>
                 <div className="max-h-40 overflow-y-auto border-t border-warning/10 px-4 py-3 space-y-1">
                   {preview.warnings.map((w, i) => (
-                    <div key={i} className="text-[11px] text-fg-muted break-all">{w}</div>
+                    <div key={i} className="text-[12px] text-fg-muted break-all">{w}</div>
                   ))}
                 </div>
               </details>
@@ -599,11 +599,11 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
             {/* .rpy 文件预览：列出已解析的关键场景 */}
             {hasPreview && preview.deltas.length > 0 && (
               <details className="group rounded-xl border border-edge/10 bg-surface-2">
-                <summary className="flex cursor-pointer items-center gap-2 px-4 py-2 text-[11px] text-fg-muted">
+                <summary className="flex cursor-pointer items-center gap-2 px-4 py-2 text-[12px] text-fg-muted">
                   <BookOpen size={11} />
                   剧本预览（前 20 行）
                 </summary>
-                <div className="max-h-48 overflow-y-auto border-t border-edge/10 px-4 py-3 space-y-0.5 font-mono text-[11px]">
+                <div className="max-h-48 overflow-y-auto border-t border-edge/10 px-4 py-3 space-y-0.5 font-mono text-[12px]">
                   {preview.deltas.slice(0, 20).map((d, i) => (
                     <div key={i} className="text-fg-faint">
                       {d.label && <span className="text-sky">{d.label} → </span>}
@@ -637,10 +637,10 @@ function ImportHeader({ wrappedClose }: { wrappedClose: () => void }) {
         <div>
           <div className="flex items-center gap-2">
             <span className="signal-dot" />
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-fg-faint">Import</span>
+            <span className="text-[12px] font-semibold uppercase tracking-widest text-fg-faint">Import</span>
             <button
               onClick={wrappedClose}
-              className="inline-flex items-center gap-1 rounded-xl border border-edge/10 px-2 py-0.5 text-[11px] text-fg-muted hover:bg-surface-2 hover:text-fg transition-colors"
+              className="inline-flex items-center gap-1 rounded-xl border border-edge/10 px-2 py-0.5 text-[12px] text-fg-muted hover:bg-surface-2 hover:text-fg transition-colors"
             >
               <ChevronLeft size={12} />
               返回剧本流
@@ -719,33 +719,33 @@ function ImportBody(props: {
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl bg-surface-2 p-3 text-center">
-              <div className="text-[11px] text-fg-muted">剧本行</div>
+              <div className="text-[12px] text-fg-muted">剧本行</div>
               <div className="text-[18px] font-semibold text-fg">{preview.lineCount}</div>
             </div>
             <div className="rounded-xl bg-surface-2 p-3 text-center">
-              <div className="text-[11px] text-fg-muted">场景</div>
+              <div className="text-[12px] text-fg-muted">场景</div>
               <div className="text-[18px] font-semibold text-fg">{labelCount || '—'}</div>
             </div>
             <div className="rounded-xl bg-surface-2 p-3 text-center">
-              <div className="text-[11px] text-fg-muted">角色</div>
+              <div className="text-[12px] text-fg-muted">角色</div>
               <div className="text-[18px] font-semibold text-fg">{preview.charCount}</div>
             </div>
             <div className="rounded-xl bg-surface-2 p-3 text-center">
-              <div className="text-[11px] text-fg-muted">图片</div>
+              <div className="text-[12px] text-fg-muted">图片</div>
               <div className="text-[18px] font-semibold text-fg">{matchedImages}</div>
             </div>
             <div className="rounded-xl bg-surface-2 p-3 text-center">
-              <div className="text-[11px] text-fg-muted">音频</div>
+              <div className="text-[12px] text-fg-muted">音频</div>
               <div className="text-[18px] font-semibold text-fg">{matchedAudio}</div>
             </div>
             <div className="rounded-xl bg-surface-2 p-3 text-center">
-              <div className="text-[11px] text-fg-muted">变量</div>
+              <div className="text-[12px] text-fg-muted">变量</div>
               <div className="text-[18px] font-semibold text-fg">{preview.varCount}</div>
             </div>
           </div>
 
           {preview.warnings.length > 0 && (
-            <div className="flex items-start gap-2 rounded-xl border border-warning/20 bg-warning/[0.04] p-3 text-[11px] text-fg-muted">
+            <div className="flex items-start gap-2 rounded-xl border border-warning/20 bg-warning/[0.04] p-3 text-[12px] text-fg-muted">
               <AlertTriangle size={12} className="mt-0.5 shrink-0 text-warning" />
               <span>{preview.warnings.length} 条警告</span>
             </div>

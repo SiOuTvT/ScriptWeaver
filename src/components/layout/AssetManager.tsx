@@ -424,14 +424,14 @@ export default function AssetManager() {
                 <span className="truncate">{c.label}</span>
                 {c.enabled ? (
                   <span
-                    className={`ml-auto rounded-full px-1.5 text-[11px] tabular-nums ${
+                    className={`ml-auto rounded-full px-1.5 text-[12px] tabular-nums ${
                       active ? 'bg-primary/15 text-primary' : 'bg-surface-2 text-fg-faint'
                     }`}
                   >
                     {counts[c.id] ?? 0}
                   </span>
                 ) : (
-                  <span className="ml-auto shrink-0 rounded bg-surface-2 px-1.5 text-[10px] text-fg-faint">
+                  <span className="ml-auto shrink-0 rounded bg-surface-2 px-1.5 text-[12px] text-fg-faint">
                     即将开放
                   </span>
                 )}
@@ -688,11 +688,11 @@ export default function AssetManager() {
                     onClick={() => jumpToLine(r.index)}
                     className="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface-hover"
                   >
-                    <span className="shrink-0 rounded-md bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg-subtle">
+                    <span className="shrink-0 rounded-md bg-surface-2 px-2 py-1 font-mono text-[12px] text-fg-subtle">
                       {r.label}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-[13px] text-fg-muted group-hover:text-fg">{r.snippet || '(无台词)'}</span>
-                    <span className="shrink-0 text-[11px] text-fg-faint opacity-0 transition-opacity group-hover:opacity-100">跳转 →</span>
+                    <span className="shrink-0 text-[12px] text-fg-faint opacity-0 transition-opacity group-hover:opacity-100">跳转 →</span>
                   </button>
                 ))
               )}
@@ -893,7 +893,7 @@ function AssetCloudBar({ asset }: { asset: AssetItem }) {
   }
 
   return (
-    <div className="flex items-center gap-1.5 border-t border-edge/8 px-2 py-1.5 text-[11px]">
+    <div className="flex items-center gap-1.5 border-t border-edge/8 px-2 py-1.5 text-[12px]">
       <span
         className={`flex items-center gap-1 ${isCloud ? 'text-info' : 'text-fg-faint'}`}
         title={isCloud ? '已同步云端' : '仅本地存储'}
@@ -1067,7 +1067,7 @@ function ImageCard(p: ImageCardProps) {
       </div>
 
       {/* 元数据条 */}
-      <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-[11px] text-fg-faint">
+      <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-[12px] text-fg-faint">
         <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono uppercase">{extOf(asset.fileName)}</span>
         <span className="truncate font-mono">{dims}</span>
         <span className="shrink-0 font-mono">{formatBytes(size)}</span>
@@ -1204,7 +1204,7 @@ function VideoCard(p: ImageCardProps) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-[11px] text-fg-faint">
+      <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-[12px] text-fg-faint">
         <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono uppercase">{extOf(asset.fileName)}</span>
         <span className="truncate font-mono">{dur}</span>
         <span className="shrink-0 font-mono">{formatBytes(size)}</span>
@@ -1244,7 +1244,7 @@ function PresetCard(p: ImageCardProps) {
       <div className={`relative ${ratio} overflow-hidden bg-surface-2`}>
         <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-fg-subtle">
           <Sparkles size={26} strokeWidth={1.5} />
-          <span className="text-[11px] text-fg-faint">特效预设</span>
+          <span className="text-[12px] text-fg-faint">特效预设</span>
         </div>
 
         <label
@@ -1297,7 +1297,7 @@ function PresetCard(p: ImageCardProps) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-[11px] text-fg-faint">
+      <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-[12px] text-fg-faint">
         <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono uppercase">{extOf(asset.fileName)}</span>
         <span className="truncate font-mono">预设</span>
         <span className="shrink-0 font-mono">{formatBytes(size)}</span>
@@ -1472,7 +1472,7 @@ function AudioCard(p: AudioCardProps) {
               {asset.name}
             </span>
           )}
-          <span className="block truncate text-[11px] text-fg-subtle">{asset.fileName}</span>
+          <span className="block truncate text-[12px] text-fg-subtle">{asset.fileName}</span>
         </div>
       </div>
 
@@ -1486,8 +1486,8 @@ function AudioCard(p: AudioCardProps) {
 
       {/* 时间 + 音量 */}
       <div className="flex items-center gap-2">
-        <span className="shrink-0 font-mono text-[11px] text-fg-faint">{formatTime(current)}</span>
-        <span className="font-mono text-[11px] text-fg-faint">{formatTime(duration)}</span>
+        <span className="shrink-0 font-mono text-[12px] text-fg-faint">{formatTime(current)}</span>
+        <span className="font-mono text-[12px] text-fg-faint">{formatTime(duration)}</span>
         <div className="ml-auto flex items-center gap-1 text-fg-subtle">
           <Volume2 size={13} strokeWidth={1.75} />
           <input
@@ -1508,7 +1508,7 @@ function AudioCard(p: AudioCardProps) {
       </div>
 
       {/* 元数据 + 操作 */}
-      <div className="flex items-center justify-between border-t border-edge/8 pt-1.5 text-[11px] text-fg-faint">
+      <div className="flex items-center justify-between border-t border-edge/8 pt-1.5 text-[12px] text-fg-faint">
         <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono uppercase">{extOf(asset.fileName)}</span>
         <span className="font-mono">{formatBytes(size)}</span>
         <div className="flex gap-0.5">
@@ -1604,13 +1604,13 @@ function ImageRow(p: ListProps & { asset: AssetItem }) {
         ) : (
           <div className="truncate text-[13px] font-medium text-fg">{asset.name}</div>
         )}
-        <div className="truncate text-[11px] text-fg-subtle">{asset.fileName}</div>
+        <div className="truncate text-[12px] text-fg-subtle">{asset.fileName}</div>
       </div>
 
-      <span className="hidden shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] uppercase text-fg-faint sm:block">{extOf(asset.fileName)}</span>
-      <span className="hidden w-20 shrink-0 text-right font-mono text-[11px] text-fg-faint md:block">{dims}</span>
-      <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint lg:block">{formatBytes(size)}</span>
-      <span className="hidden w-24 shrink-0 text-right font-mono text-[11px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
+      <span className="hidden shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[12px] uppercase text-fg-faint sm:block">{extOf(asset.fileName)}</span>
+      <span className="hidden w-20 shrink-0 text-right font-mono text-[12px] text-fg-faint md:block">{dims}</span>
+      <span className="hidden w-16 shrink-0 text-right font-mono text-[12px] text-fg-faint lg:block">{formatBytes(size)}</span>
+      <span className="hidden w-24 shrink-0 text-right font-mono text-[12px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
 
       <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <IconButton size="xs" variant="ghost" icon={<Link2 size={13} strokeWidth={1.75} />} aria-label="查看引用" title="查看引用" onClick={() => p.onShowRefs(asset)} />
@@ -1699,13 +1699,13 @@ function VideoRow(p: ListProps & { asset: AssetItem }) {
         ) : (
           <div className="truncate text-[13px] font-medium text-fg">{asset.name}</div>
         )}
-        <div className="truncate text-[11px] text-fg-subtle">{asset.fileName}</div>
+        <div className="truncate text-[12px] text-fg-subtle">{asset.fileName}</div>
       </div>
 
-      <span className="hidden shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] uppercase text-fg-faint sm:block">{extOf(asset.fileName)}</span>
-      <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint md:block">{dur}</span>
-      <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint lg:block">{formatBytes(size)}</span>
-      <span className="hidden w-24 shrink-0 text-right font-mono text-[11px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
+      <span className="hidden shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[12px] uppercase text-fg-faint sm:block">{extOf(asset.fileName)}</span>
+      <span className="hidden w-16 shrink-0 text-right font-mono text-[12px] text-fg-faint md:block">{dur}</span>
+      <span className="hidden w-16 shrink-0 text-right font-mono text-[12px] text-fg-faint lg:block">{formatBytes(size)}</span>
+      <span className="hidden w-24 shrink-0 text-right font-mono text-[12px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
 
       <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <IconButton size="xs" variant="ghost" icon={<Link2 size={13} strokeWidth={1.75} />} aria-label="查看引用" title="查看引用" onClick={() => p.onShowRefs(asset)} />
@@ -1759,13 +1759,13 @@ function PresetRow(p: ListProps & { asset: AssetItem }) {
         ) : (
           <div className="truncate text-[13px] font-medium text-fg">{asset.name}</div>
         )}
-        <div className="truncate text-[11px] text-fg-subtle">{asset.fileName}</div>
+        <div className="truncate text-[12px] text-fg-subtle">{asset.fileName}</div>
       </div>
 
-      <span className="hidden shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] uppercase text-fg-faint sm:block">{extOf(asset.fileName)}</span>
-      <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint md:block">预设</span>
-      <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint lg:block">{formatBytes(size)}</span>
-      <span className="hidden w-24 shrink-0 text-right font-mono text-[11px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
+      <span className="hidden shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[12px] uppercase text-fg-faint sm:block">{extOf(asset.fileName)}</span>
+      <span className="hidden w-16 shrink-0 text-right font-mono text-[12px] text-fg-faint md:block">预设</span>
+      <span className="hidden w-16 shrink-0 text-right font-mono text-[12px] text-fg-faint lg:block">{formatBytes(size)}</span>
+      <span className="hidden w-24 shrink-0 text-right font-mono text-[12px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
 
       <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
         <IconButton size="xs" variant="ghost" icon={<Link2 size={13} strokeWidth={1.75} />} aria-label="查看引用" title="查看引用" onClick={() => p.onShowRefs(asset)} />
@@ -1851,12 +1851,12 @@ function AudioRow(p: ListProps & { asset: AssetItem }) {
         ) : (
           <div className="truncate text-[13px] font-medium text-fg">{asset.name}</div>
         )}
-        <div className="truncate text-[11px] text-fg-subtle">{asset.fileName}</div>
+        <div className="truncate text-[12px] text-fg-subtle">{asset.fileName}</div>
       </div>
 
-      <span className="hidden w-20 shrink-0 text-right font-mono text-[11px] text-fg-faint sm:block">{formatTime(current)} / {formatTime(duration)}</span>
-      <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint lg:block">{formatBytes(size)}</span>
-      <span className="hidden w-24 shrink-0 text-right font-mono text-[11px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
+      <span className="hidden w-20 shrink-0 text-right font-mono text-[12px] text-fg-faint sm:block">{formatTime(current)} / {formatTime(duration)}</span>
+      <span className="hidden w-16 shrink-0 text-right font-mono text-[12px] text-fg-faint lg:block">{formatBytes(size)}</span>
+      <span className="hidden w-24 shrink-0 text-right font-mono text-[12px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
 
       <div className="hidden items-center gap-1 text-fg-subtle md:flex">
         <Volume2 size={13} strokeWidth={1.75} />

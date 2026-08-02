@@ -603,7 +603,7 @@ function BranchTreeView({
                   onMouseLeave={() => setHoveredNode(null)}
                 >
                   <span
-                    className="rounded-full px-2 py-0.5 text-[11px] font-medium leading-none"
+                    className="rounded-full px-2 py-0.5 text-[12px] font-medium leading-none"
                     style={{ background: badge.bg, color: badge.fg }}
                   >
                     {badge.label}
@@ -612,19 +612,19 @@ function BranchTreeView({
                     {node.label}
                   </span>
                   {node.dialogue && (
-                    <span className="line-clamp-1 text-[11px] text-fg-muted">
+                    <span className="line-clamp-1 text-[12px] text-fg-muted">
                       {node.dialogue}
                     </span>
                   )}
                   {node.speakerName && (
                     <span
-                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px]"
+                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[12px]"
                       style={{ color: node.speakerColor ?? undefined }}
                     >
                       {node.speakerName}
                     </span>
                   )}
-                  <span className="t-mono text-[10px] text-fg-faint">
+                  <span className="t-mono text-[12px] text-fg-faint">
                     {node.lineIndex >= 0 ? `L${node.lineIndex + 1}` : '未定位'}
                   </span>
                 </button>
@@ -636,14 +636,14 @@ function BranchTreeView({
                       const targetNode = nodeMap.get(ce.to)
                       return (
                         <div key={`${ce.from}-${ce.to}-${ci}`} className="flex flex-col items-center">
-                          <div className="flex items-center gap-1 text-[11px]">
+                          <div className="flex items-center gap-1 text-[12px]">
                             <span className="rounded bg-[rgb(var(--c-warning,234,179,8)/0.12)] px-1.5 py-0.5 text-[rgb(var(--c-warning,234,179,8))]">
                               {ce.choiceText || '选择'}
                             </span>
                             <span className="text-fg-faint">→</span>
                             {targetNode && (
                               <button
-                                className="rounded bg-[rgb(var(--c-danger,239,68,68)/0.1)] px-1.5 py-0.5 text-[11px] text-[rgb(var(--c-danger,239,68,68))] hover:underline"
+                                className="rounded bg-[rgb(var(--c-danger,239,68,68)/0.1)] px-1.5 py-0.5 text-[12px] text-[rgb(var(--c-danger,239,68,68))] hover:underline"
                                 onClick={() => targetNode.lineIndex >= 0 && onJump(targetNode.lineIndex)}
                               >
                                 {targetNode.label}
@@ -651,7 +651,7 @@ function BranchTreeView({
                             )}
                           </div>
                           {ci < choiceEdges.length - 1 && (
-                            <span className="my-1 text-[10px] text-fg-faint">或</span>
+                            <span className="my-1 text-[12px] text-fg-faint">或</span>
                           )}
                         </div>
                       )
@@ -932,7 +932,7 @@ function OutlineScene({
               {ln.isChoice ? `选择支 · ${ln.choiceCount} 选项` : ln.dialogue.trim() || '(空行)'}
             </span>
             {ln.label && (
-              <span className="shrink-0 rounded bg-signal/15 px-1 text-[11px] text-signal" title={`剧情块标签：${ln.label}`}>
+              <span className="shrink-0 rounded bg-signal/15 px-1 text-[12px] text-signal" title={`剧情块标签：${ln.label}`}>
                 #{ln.label}
               </span>
             )}

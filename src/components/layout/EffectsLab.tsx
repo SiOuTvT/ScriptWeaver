@@ -190,7 +190,7 @@ function EffectCard({ item, active, onClick }: { item: EffectItem; active: boole
       <span className="mt-1.5 line-clamp-2 min-h-[2em] text-[13px] leading-relaxed text-fg-subtle">{firstLine(item.desc)}</span>
       {/* 底部属性行 */}
       <div className="mt-auto flex items-center gap-2 pt-2 text-[12px] text-fg-faint">
-        <span className="inline-flex items-center gap-1 rounded-full bg-surface px-1.5 py-0.5 text-[10px]">
+        <span className="inline-flex items-center gap-1 rounded-full bg-surface px-1.5 py-0.5 text-[12px]">
           <Sparkles size={10} strokeWidth={1.5} />
           {item.preview.kind}
         </span>
@@ -235,7 +235,7 @@ function DetailView({
         <IconButton variant="ghost" size="sm" icon={<ArrowLeft size={15} strokeWidth={1.75} />} onClick={onBack} title="返回卡片墙" aria-label="返回卡片墙" />
         <span className="signal-dot" />
         <div className="min-w-0">
-          <div className="eyebrow text-[11px]">Effect Detail</div>
+          <div className="eyebrow text-[12px]">Effect Detail</div>
           <h1 className="t-title truncate">{item.cn}</h1>
           <div className="font-mono text-[12px] text-signal">{item.name}</div>
         </div>
@@ -476,7 +476,7 @@ function CombosBlock({ combos }: { combos: ComboItem[] }) {
           return (
             <div key={i} className="rounded-xl border border-edge/10 bg-surface-2 p-3 shadow-1">
               <div className="mb-1 flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded bg-primary/[0.10] px-1.5 py-0.5 text-[11px] font-medium text-signal">
+                <span className="inline-flex items-center gap-1 rounded bg-primary/[0.10] px-1.5 py-0.5 text-[12px] font-medium text-signal">
                   <Icon size={11} strokeWidth={2} /> {c.kind}
                 </span>
                 <span className="text-[13px] font-medium text-fg">{c.title}</span>
@@ -499,7 +499,7 @@ function ClassicBlock({ classic }: { classic: ClassicScene[] }) {
           <div key={i} className="rounded-xl border border-edge/10 bg-surface-2 p-3 shadow-1">
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="truncate text-[13px] font-medium text-fg">{s.work}</span>
-              <span className="shrink-0 rounded bg-surface px-1.5 py-0.5 text-[11px] text-fg-muted">{s.mood}</span>
+              <span className="shrink-0 rounded bg-surface px-1.5 py-0.5 text-[12px] text-fg-muted">{s.mood}</span>
             </div>
             <p className="text-[12px] leading-relaxed text-fg-subtle">{s.scene}</p>
             <div className="mt-2 flex items-center gap-1">
@@ -510,7 +510,7 @@ function ClassicBlock({ classic }: { classic: ClassicScene[] }) {
                   style={{ animationDelay: `${d * 240}ms` }}
                 />
               ))}
-              <span className="ml-1 text-[11px] text-fg-faint">名场面节奏拆解</span>
+              <span className="ml-1 text-[12px] text-fg-faint">名场面节奏拆解</span>
             </div>
           </div>
         ))}
@@ -640,7 +640,7 @@ function PreviewView({
         <IconButton variant="ghost" size="sm" icon={<ArrowLeft size={15} strokeWidth={1.75} />} onClick={onBack} title="返回百科" aria-label="返回百科" />
         <span className="signal-dot" />
         <div className="min-w-0">
-          <div className="eyebrow text-[11px]">Live Preview</div>
+          <div className="eyebrow text-[12px]">Live Preview</div>
           <h1 className="t-title truncate">{selected.cn}</h1>
           <div className="font-mono text-[12px] text-signal">{selected.name}</div>
         </div>

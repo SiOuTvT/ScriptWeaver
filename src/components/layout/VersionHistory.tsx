@@ -105,7 +105,7 @@ function DiffRow({ diff, isExpanded, onToggle }: {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-[12px] font-medium text-fg">{label}</span>
-            <span className={`text-[11px] px-1.5 py-px rounded-full ${
+            <span className={`text-[12px] px-1.5 py-px rounded-full ${
               diff.type === 'added' ? 'bg-[rgb(var(--c-success)/0.1)] text-[rgb(var(--c-success))]' :
               diff.type === 'removed' ? 'bg-[rgb(var(--c-danger)/0.1)] text-[rgb(var(--c-danger))]' :
               'bg-[rgb(var(--c-primary)/0.1)] text-[rgb(var(--c-primary))]'
@@ -121,7 +121,7 @@ function DiffRow({ diff, isExpanded, onToggle }: {
             </div>
           )}
         </div>
-        <span className="mt-0.5 text-[11px] text-fg-faint">{isExpanded ? '收起' : '展开'}</span>
+        <span className="mt-0.5 text-[12px] text-fg-faint">{isExpanded ? '收起' : '展开'}</span>
       </div>
     </div>
   )
@@ -193,7 +193,7 @@ function RightInfoPanel({ selected, total, totalLines, totalAssets, totalChars, 
           {/* 回滚警告 */}
           <div className="rounded-xl border border-warning/15 bg-warning/[0.04] p-3 flex items-start gap-2">
             <ShieldAlert size={13} className="mt-0.5 shrink-0 text-warning" />
-            <span className="text-[11px] text-fg-muted">
+            <span className="text-[12px] text-fg-muted">
               回滚将覆盖当前所有未保存的改动。建议先创建快照保存当前状态。
             </span>
           </div>
@@ -249,31 +249,31 @@ function RightInfoPanel({ selected, total, totalLines, totalAssets, totalChars, 
         <div className="rounded-xl border border-edge/10 bg-surface-2 p-4">
           <div className="text-center mb-3">
             <div className="text-[28px] font-semibold text-primary tabular-nums">{total}</div>
-            <div className="text-[11px] text-fg-muted mt-0.5">版本快照总数</div>
+            <div className="text-[12px] text-fg-muted mt-0.5">版本快照总数</div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg bg-surface p-2.5 text-center">
               <div className="text-[16px] font-semibold text-fg tabular-nums">{totalLines}</div>
-              <div className="text-[10px] text-fg-faint">脚本行</div>
+              <div className="text-[12px] text-fg-faint">脚本行</div>
             </div>
             <div className="rounded-lg bg-surface p-2.5 text-center">
               <div className="text-[16px] font-semibold text-fg tabular-nums">{totalAssets}</div>
-              <div className="text-[10px] text-fg-faint">素材</div>
+              <div className="text-[12px] text-fg-faint">素材</div>
             </div>
             <div className="rounded-lg bg-surface p-2.5 text-center">
               <div className="text-[16px] font-semibold text-fg tabular-nums">{totalChars}</div>
-              <div className="text-[10px] text-fg-faint">角色</div>
+              <div className="text-[12px] text-fg-faint">角色</div>
             </div>
             <div className="rounded-lg bg-surface p-2.5 text-center">
               <div className="text-[16px] font-semibold text-fg tabular-nums">{fmtSize(totalSize)}</div>
-              <div className="text-[10px] text-fg-faint">总容量</div>
+              <div className="text-[12px] text-fg-faint">总容量</div>
             </div>
           </div>
         </div>
 
         <div className="rounded-xl border border-edge/10 bg-surface-2 p-3">
-          <div className="text-[11px] font-medium text-fg-muted mb-2">操作提示</div>
-          <ul className="space-y-1.5 text-[11px] text-fg-subtle">
+          <div className="text-[12px] font-medium text-fg-muted mb-2">操作提示</div>
+          <ul className="space-y-1.5 text-[12px] text-fg-subtle">
             <li>点击左侧快照可查看详情</li>
             <li>选中后点击「对比」查看与当前版本的差异</li>
             <li>「回滚」将把工作区恢复到该快照状态</li>
@@ -448,7 +448,7 @@ export default function VersionHistory() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="signal-dot" />
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-fg-faint">Version History</span>
+              <span className="text-[12px] font-semibold uppercase tracking-widest text-fg-faint">Version History</span>
             </div>
             <h2 className="text-[15px] font-semibold text-fg mt-1.5">版本历史</h2>
             <p className="mt-0.5 text-[12px] text-fg-muted">
@@ -526,10 +526,10 @@ export default function VersionHistory() {
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="truncate text-[14px] font-medium text-fg">{s.label}</span>
                       {s.auto && (
-                        <span className="shrink-0 rounded-full border border-edge/10 bg-surface px-2 py-px text-[11px] text-fg-muted">自动</span>
+                        <span className="shrink-0 rounded-full border border-edge/10 bg-surface px-2 py-px text-[12px] text-fg-muted">自动</span>
                       )}
                       {isBeingRestored && (
-                        <span className="shrink-0 rounded-full border border-primary/20 bg-primary/[0.06] px-2 py-px text-[11px] text-primary">回滚中…</span>
+                        <span className="shrink-0 rounded-full border border-primary/20 bg-primary/[0.06] px-2 py-px text-[12px] text-primary">回滚中…</span>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[12px] text-fg-muted">

@@ -127,7 +127,7 @@ export default function DiagnosticsPanel() {
                 <button
                   key={s}
                   onClick={() => setSeverityFilter(s)}
-                  className={`inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+                  className={`inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-[12px] font-medium transition-all duration-200 ${
                     active
                       ? cfg
                         ? `bg-surface-2 text-${s === 'error' ? 'danger' : s === 'warning' ? 'warning' : 'info'} border border-edge/10 shadow-1`
@@ -172,13 +172,13 @@ export default function DiagnosticsPanel() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex items-center gap-2">
-                        <span className={`text-[11px] font-medium ${cfg.color}`}>{cfg.label}</span>
-                        <span className="truncate text-[11px] text-fg-faint">{item.category}</span>
+                        <span className={`text-[12px] font-medium ${cfg.color}`}>{cfg.label}</span>
+                        <span className="truncate text-[12px] text-fg-faint">{item.category}</span>
                       </div>
                       <p className="text-[13px] leading-relaxed text-fg">{item.message}</p>
                     </div>
                     {canJump && (
-                      <span className="mt-0.5 shrink-0 rounded-xl border border-primary/15 bg-primary/5 px-2 py-0.5 text-[11px] text-primary transition-colors group-hover:bg-primary/10">
+                      <span className="mt-0.5 shrink-0 rounded-xl border border-primary/15 bg-primary/5 px-2 py-0.5 text-[12px] text-primary transition-colors group-hover:bg-primary/10">
                         <Zap size={10} className="mr-0.5 inline" />
                         跳转
                       </span>

@@ -1592,7 +1592,7 @@ export default function StagePreview() {
                 className="absolute top-0 bottom-0 w-px -translate-x-1/2 bg-signal/50"
                 style={{ left: `${a.x * 100}%` }}
               >
-                <span className="absolute top-1 left-1 rounded bg-signal/20 px-1 text-[11px] text-signal">
+                <span className="absolute top-1 left-1 rounded bg-signal/20 px-1 text-[12px] text-signal">
                   {id}
                 </span>
               </div>
@@ -1717,7 +1717,7 @@ export default function StagePreview() {
                       {getDisplayName(char.char_id ?? charId)}
                     </span>
                     {spriteFailed ? (
-                      <span className="text-center text-[11px] text-white/70">素材缺失</span>
+                      <span className="text-center text-[12px] text-white/70">素材缺失</span>
                     ) : (
                       <span className="text-center text-[12px] text-white/50">
                         {char.sprite_id}
@@ -2025,7 +2025,7 @@ export default function StagePreview() {
 
             {/* 一键定点（五档经典站位） */}
             <div>
-              <div className="mb-1 text-[11px] text-fg-subtle">定点</div>
+              <div className="mb-1 text-[12px] text-fg-subtle">定点</div>
               <div className="grid grid-cols-3 gap-1">
                 {PRESET_SLOTS.map((s) => {
                   const cur = state.characters[selectedCharId]
@@ -2061,7 +2061,7 @@ export default function StagePreview() {
 
             {/* 锁定单轴 */}
             <div>
-              <div className="mb-1 text-[11px] text-fg-subtle">锁定轴</div>
+              <div className="mb-1 text-[12px] text-fg-subtle">锁定轴</div>
               <div className="flex gap-1">
                 {(['none', 'x', 'y'] as const).map((ax) => (
                   <button
@@ -2083,7 +2083,7 @@ export default function StagePreview() {
 
             {/* 缩放（与位置完全解耦） */}
             <div>
-              <div className="mb-1 flex items-center justify-between text-[11px] text-fg-subtle">
+              <div className="mb-1 flex items-center justify-between text-[12px] text-fg-subtle">
                 <span>缩放</span>
                 <span className="tabular-nums text-fg-muted">×{(state.characters[selectedCharId].scale ?? 1).toFixed(2)}</span>
               </div>
@@ -2100,7 +2100,7 @@ export default function StagePreview() {
 
             {/* 位置（与缩放完全解耦，面板滑块实时驱动舞台立绘，所见即所得） */}
             <div>
-              <div className="mb-1 flex items-center justify-between text-[11px] text-fg-subtle">
+              <div className="mb-1 flex items-center justify-between text-[12px] text-fg-subtle">
                 <span>位置 X</span>
                 <span className="tabular-nums text-fg-muted">
                   {Math.round((state.characters[selectedCharId].pos_x ?? SLOT_ANCHORS[state.characters[selectedCharId].position_slot]?.x ?? 0.5) * 100)}%
@@ -2121,7 +2121,7 @@ export default function StagePreview() {
                 }
                 className="w-full accent-signal"
               />
-              <div className="mt-1 flex items-center justify-between text-[11px] text-fg-subtle">
+              <div className="mt-1 flex items-center justify-between text-[12px] text-fg-subtle">
                 <span>位置 Y</span>
                 <span className="tabular-nums text-fg-muted">
                   {Math.round((state.characters[selectedCharId].pos_y ?? SLOT_ANCHORS[state.characters[selectedCharId].position_slot]?.y ?? SLOT_Y) * 100)}%
@@ -2146,7 +2146,7 @@ export default function StagePreview() {
 
             {/* 立绘特效挂载（时间轴 → 特效大本营 闭环） */}
             <div className="border-t border-edge/10 pt-2">
-              <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-fg-subtle">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-fg-subtle">
                 <Sparkles size={12} strokeWidth={1.75} className="text-signal" />
                 立绘特效
               </div>
@@ -2180,7 +2180,7 @@ export default function StagePreview() {
                   <ImageIcon size={13} strokeWidth={1.75} className="text-signal" />
                   <span className="text-[12px] font-semibold text-fg">背景特效</span>
                 </div>
-                <p className="text-[11px] leading-relaxed text-fg-faint">应用到本行背景的演出特效。</p>
+                <p className="text-[12px] leading-relaxed text-fg-faint">应用到本行背景的演出特效。</p>
                 <EffectMountPanel
                   scope="background"
                   effects={state.background.effects ?? []}
@@ -2216,7 +2216,7 @@ export default function StagePreview() {
                     <ChevronRight size={14} strokeWidth={1.75} />
                   </button>
                 </div>
-                <p className="mb-1 text-[11px] leading-relaxed text-fg-faint">整层色调，作用于全部图层。</p>
+                <p className="mb-1 text-[12px] leading-relaxed text-fg-faint">整层色调，作用于全部图层。</p>
                 <EffectMountPanel
                   scope="filter"
                   effects={state.stageEffects ?? []}
@@ -2228,7 +2228,7 @@ export default function StagePreview() {
                   <Film size={13} strokeWidth={1.75} className="text-signal" />
                   <span className="text-[12px] font-semibold text-fg">镜头运动</span>
                 </div>
-                <p className="mb-1 text-[11px] leading-relaxed text-fg-faint">整层摄像机位移 / 缩放 / 立体翻转。</p>
+                <p className="mb-1 text-[12px] leading-relaxed text-fg-faint">整层摄像机位移 / 缩放 / 立体翻转。</p>
                 <EffectMountPanel
                   scope="stage"
                   effects={state.cameraEffects ?? []}

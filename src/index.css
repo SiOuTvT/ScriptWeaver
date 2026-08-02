@@ -180,7 +180,7 @@
   /* 等宽眉标：章节号 / 面板标题 / 数据标签 —— 科技味来源 */
   .eyebrow {
     font-family: var(--font-mono, ui-monospace, 'JetBrains Mono', monospace);
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.4;
     letter-spacing: 0.12em;
     text-transform: uppercase;

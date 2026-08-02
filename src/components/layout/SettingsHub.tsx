@@ -282,7 +282,7 @@ export default function SettingsHub() {
                         className="w-full rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg font-mono placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
                       />
                     </div>
-                    <p className="mt-1.5 text-[11px] text-fg-faint">
+                    <p className="mt-1.5 text-[12px] text-fg-faint">
                       <Info size={11} className="inline mr-1" />
                       {hasStoredKey ? '密钥已存于本地安全区，不会回显' : '密钥加密存储在本地'}
                     </p>
@@ -298,7 +298,7 @@ export default function SettingsHub() {
                       placeholder="https://api.openai.com/v1"
                       className="w-full rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg font-mono placeholder-fg-faint focus:outline-none focus:ring-1 focus:ring-primary/30"
                     />
-                    <p className="mt-1.5 text-[11px] text-fg-faint">支持 OpenAI 兼容 API</p>
+                    <p className="mt-1.5 text-[12px] text-fg-faint">支持 OpenAI 兼容 API</p>
                   </div>
 
                   {/* Model */}

@@ -1115,7 +1115,7 @@ export default function Timeline() {
                     title={remoteLock ? `${remoteLock.displayName} 正在编辑此行` : undefined}
                   >
                     {remoteLock && (
-                      <span className="pointer-events-none absolute -top-px left-0 right-0 z-10 truncate bg-warning/90 px-1 text-center text-[10px] font-medium leading-4 text-black/85">
+                      <span className="pointer-events-none absolute -top-px left-0 right-0 z-10 truncate bg-warning/90 px-1 text-center text-[12px] font-medium leading-4 text-black/85">
                         {remoteLock.displayName} 正在编辑...
                       </span>
                     )}
@@ -1136,7 +1136,7 @@ export default function Timeline() {
                       </span>
                       {s.label && (
                         <span
-                          className="mt-0.5 max-w-full truncate rounded bg-signal/15 px-1 text-[11px] text-signal"
+                          className="mt-0.5 max-w-full truncate rounded bg-signal/15 px-1 text-[12px] text-signal"
                           title={`剧情块标签：${s.label}`}
                         >
                           #{s.label}

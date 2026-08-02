@@ -20,7 +20,7 @@ const ROLE_COLORS: Record<'HOST' | 'GUEST', { bg: string; text: string; border: 
 
 export default function PeerBadge({ role, displayName, isSelf, size = 'sm' }: Props) {
   const c = ROLE_COLORS[role]
-  const textSize = size === 'sm' ? 'text-[11px]' : 'text-[12px]'
+  const textSize = size === 'sm' ? 'text-[12px]' : 'text-[12px]'
 
   return (
     <span

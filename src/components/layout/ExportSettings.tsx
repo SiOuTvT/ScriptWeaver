@@ -434,7 +434,7 @@ export default function ExportSettings() {
               <div className="mb-3 flex items-center gap-2">
                 <Gamepad2 size={16} className="text-primary" />
                 <h3 className="t-title">把游戏做出来</h3>
-                <span className="ml-auto rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary">
+                <span className="ml-auto rounded-full bg-primary/10 px-2.5 py-0.5 text-[12px] font-medium text-primary">
                   三个选一个
                 </span>
               </div>
@@ -507,7 +507,7 @@ export default function ExportSettings() {
             onChange={(e) => setProjectMeta({ title: e.target.value })}
             placeholder="我的视觉小说"
           />
-          <p className="mt-1 text-[11px] text-fg-faint">作为窗口标题、关于页名称与打包目录名</p>
+          <p className="mt-1 text-[12px] text-fg-faint">作为窗口标题、关于页名称与打包目录名</p>
 
           {/* 标题画面封面 */}
           <div className="mt-4">
@@ -522,7 +522,7 @@ export default function ExportSettings() {
                 <option key={a.id} value={a.id}>{a.fileName}</option>
               ))}
             </select>
-            <p className="mt-1 text-[11px] text-fg-faint">选一张背景图作为打开游戏时的封面；不选则使用默认主菜单</p>
+            <p className="mt-1 text-[12px] text-fg-faint">选一张背景图作为打开游戏时的封面；不选则使用默认主菜单</p>
           </div>
 
           {/* 游戏图标 */}
@@ -538,7 +538,7 @@ export default function ExportSettings() {
                 <option key={a.id} value={a.id}>{a.fileName}</option>
               ))}
             </select>
-            <p className="mt-1 text-[11px] text-fg-faint">导出为根目录 icon.ico；Windows 打包为 .exe 图标建议使用真实 .ico 文件</p>
+            <p className="mt-1 text-[12px] text-fg-faint">导出为根目录 icon.ico；Windows 打包为 .exe 图标建议使用真实 .ico 文件</p>
           </div>
 
           {/* 结局画面 */}
@@ -564,7 +564,7 @@ export default function ExportSettings() {
                       <option key={a.id} value={a.id}>{a.fileName}</option>
                     ))}
                   </select>
-                  <p className="mt-1 text-[11px] text-fg-faint">选一张背景图铺满结局画面；不选则叠在最后一幕场景之上</p>
+                  <p className="mt-1 text-[12px] text-fg-faint">选一张背景图铺满结局画面；不选则叠在最后一幕场景之上</p>
                 </div>
 
                 <div>
@@ -575,7 +575,7 @@ export default function ExportSettings() {
                     onChange={(e) => setProjectMeta({ endingText: e.target.value })}
                     placeholder="The End"
                   />
-                  <p className="mt-1 text-[11px] text-fg-faint">居中显示的大字，可改成「完」「终章」等</p>
+                  <p className="mt-1 text-[12px] text-fg-faint">居中显示的大字，可改成「完」「终章」等</p>
                 </div>
               </div>
             )}
@@ -603,7 +603,7 @@ export default function ExportSettings() {
                   onChange={(e) => setProjectMeta({ textSpeed: Number(e.target.value) })}
                   className="mt-1 w-full"
                 />
-                <div className="mt-0.5 flex justify-between text-[11px] text-fg-faint">
+                <div className="mt-0.5 flex justify-between text-[12px] text-fg-faint">
                   <span>立即显示</span><span>很慢 (200)</span>
                 </div>
               </div>
@@ -618,7 +618,7 @@ export default function ExportSettings() {
                   onChange={(e) => setProjectMeta({ autoForwardDelay: Number(e.target.value) })}
                   className="mt-1 w-full"
                 />
-                <div className="mt-0.5 flex justify-between text-[11px] text-fg-faint">
+                <div className="mt-0.5 flex justify-between text-[12px] text-fg-faint">
                   <span>1s</span><span>60s</span>
                 </div>
               </div>
@@ -703,7 +703,7 @@ export default function ExportSettings() {
                   onChange={(e) => setProjectMeta({ saveSlots: Number(e.target.value) })}
                   className="mt-1 w-full"
                 />
-                <div className="mt-0.5 flex justify-between text-[11px] text-fg-faint">
+                <div className="mt-0.5 flex justify-between text-[12px] text-fg-faint">
                   <span>1</span><span>100</span>
                 </div>
               </div>
@@ -718,7 +718,7 @@ export default function ExportSettings() {
               <div className="flex items-center gap-2">
                 <Image size={16} className="text-primary" />
                 <h3 className="t-title">CG 画廊</h3>
-                <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">{(projectMeta.galleryItems ?? []).length} 张</span>
+                <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[12px] text-fg-muted">{(projectMeta.galleryItems ?? []).length} 张</span>
               </div>
               <button
                 type="button"

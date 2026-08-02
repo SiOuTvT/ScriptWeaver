@@ -372,7 +372,7 @@ export default function CommandPalette() {
             autoComplete="off"
             spellCheck={false}
           />
-          <kbd className="px-1.5 py-0.5 rounded text-[11px] font-mono text-fg-faint bg-surface-3/50 border border-edge/10">
+          <kbd className="px-1.5 py-0.5 rounded text-[12px] font-mono text-fg-faint bg-surface-3/50 border border-edge/10">
             ESC
           </kbd>
         </div>
@@ -387,7 +387,7 @@ export default function CommandPalette() {
             Array.from(groups.entries()).map(([category, cmds], gi) => (
               <div key={category}>
                 {gi > 0 && <div className="my-1 border-t border-edge/5" />}
-                <div className="px-3 pt-2 pb-1 text-[11px] font-medium text-fg-faint uppercase tracking-wider">
+                <div className="px-3 pt-2 pb-1 text-[12px] font-medium text-fg-faint uppercase tracking-wider">
                   {categoryLabels[category] || category}
                 </div>
                 {cmds.map((cmd, ci) => {
@@ -413,7 +413,7 @@ export default function CommandPalette() {
                         )}
                       </div>
                       {isSelected && (
-                        <kbd className="text-[11px] text-fg-faint/60">↩</kbd>
+                        <kbd className="text-[12px] text-fg-faint/60">↩</kbd>
                       )}
                     </button>
                   )
@@ -424,7 +424,7 @@ export default function CommandPalette() {
         </div>
 
         {/* 底部提示 */}
-        <div className="flex items-center gap-4 border-t border-edge/10 px-4 py-2 text-[11px] text-fg-faint">
+        <div className="flex items-center gap-4 border-t border-edge/10 px-4 py-2 text-[12px] text-fg-faint">
           <span>↑↓ 导航</span>
           <span>↩ 执行</span>
           <span>Esc 关闭</span>

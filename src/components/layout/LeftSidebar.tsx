@@ -138,7 +138,7 @@ export default function LeftSidebar() {
   const renderGroupDivider = (title: string) => (
     <div
       key={`divider-${title}`}
-      className="mb-0.5 mt-2.5 px-2 pb-1 text-[10px] font-medium tracking-[0.08em] text-fg-faint/70 select-none"
+      className="mb-0.5 mt-2.5 px-2 pb-1 text-[12px] font-medium tracking-[0.08em] text-fg-faint/70 select-none"
     >
       {title}
     </div>
@@ -171,7 +171,7 @@ export default function LeftSidebar() {
       </nav>
 
       {/* 底部版本号 */}
-      <div className="shrink-0 border-t border-edge/10 py-1.5 text-center font-mono text-[11px] text-fg-faint">
+      <div className="shrink-0 border-t border-edge/10 py-1.5 text-center font-mono text-[12px] text-fg-faint">
         {`v${appVersion}`}
       </div>
     </aside>

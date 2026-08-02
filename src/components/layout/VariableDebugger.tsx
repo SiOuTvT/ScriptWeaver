@@ -93,11 +93,11 @@ export default function VariableDebugger({ embedded = false }: { embedded?: bool
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
                         <span className="truncate font-mono text-[12px] text-fg">{v.name}</span>
-                        <span className="shrink-0 rounded bg-surface-1 px-1 text-[10px] uppercase text-fg-faint">
+                        <span className="shrink-0 rounded bg-surface-1 px-1 text-[12px] uppercase text-fg-faint">
                           {v.type === 'boolean' ? 'bool' : 'num'}
                         </span>
                       </div>
-                      {v.note && <p className="truncate text-[11px] text-fg-faint">{v.note}</p>}
+                      {v.note && <p className="truncate text-[12px] text-fg-faint">{v.note}</p>}
                     </div>
 
                     {/* 手动编辑 / 实时值 */}

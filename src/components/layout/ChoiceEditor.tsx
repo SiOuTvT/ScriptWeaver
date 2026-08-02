@@ -212,7 +212,7 @@ function ChoiceCard({
     <div className="rounded-md border border-edge/15 bg-canvas/40 p-2.5">
       <div className="mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[12px] font-semibold text-fg-muted">
-          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-signal/15 text-[11px] text-signal">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-signal/15 text-[12px] text-signal">
             {index + 1}
           </span>
           选项

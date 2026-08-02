@@ -113,7 +113,7 @@ export default function AuditLogHub() {
           <History size={13} strokeWidth={1.75} className="text-primary" />
         </div>
         <span className="text-[13px] font-medium text-fg">协作审计日志</span>
-        <span className="rounded-full border border-edge/10 bg-surface-2 px-1.5 py-0 text-[10px] font-medium text-fg-muted">{store.auditLogs.length}</span>
+        <span className="rounded-full border border-edge/10 bg-surface-2 px-1.5 py-0 text-[12px] font-medium text-fg-muted">{store.auditLogs.length}</span>
 
         <button
           onClick={() => store.clearAuditLogs()}
@@ -132,13 +132,13 @@ export default function AuditLogHub() {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="搜索操作人或类型..."
-            className="w-full rounded-xl border border-edge/10 bg-surface-2 py-1.5 pl-7 pr-2 text-[11px] text-fg outline-none placeholder-fg-faint focus:ring-1 focus:ring-primary/30 transition-colors"
+            className="w-full rounded-xl border border-edge/10 bg-surface-2 py-1.5 pl-7 pr-2 text-[12px] text-fg outline-none placeholder-fg-faint focus:ring-1 focus:ring-primary/30 transition-colors"
           />
         </div>
         <select
           value={severityFilter}
           onChange={(e) => setSeverityFilter(e.target.value)}
-          className="rounded-xl border border-edge/10 bg-surface-2 px-2 py-1.5 text-[11px] text-fg outline-none focus:ring-1 focus:ring-primary/30"
+          className="rounded-xl border border-edge/10 bg-surface-2 px-2 py-1.5 text-[12px] text-fg outline-none focus:ring-1 focus:ring-primary/30"
         >
           <option value="all">全部</option>
           <option value="info">信息</option>
@@ -169,7 +169,7 @@ export default function AuditLogHub() {
               className={`border-l-2 px-3 py-2.5 transition-colors hover:bg-surface-hover ${SEVERITY_COLORS[entry.severity] || ''} ${entry.severity === 'danger' ? 'border-l-danger' : 'border-l-transparent'}`}
             >
               <div className="flex items-start gap-2">
-                <span className="shrink-0 text-[10px] font-mono text-fg-faint mt-0.5">
+                <span className="shrink-0 text-[12px] font-mono text-fg-faint mt-0.5">
                   {formatTime(entry.timestamp)}
                 </span>
                 <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOTS[entry.severity]}`} />
@@ -180,15 +180,15 @@ export default function AuditLogHub() {
                       {ACTION_LABELS[entry.action] || entry.action}
                     </span>
                     {entry.target && (
-                      <span className="text-[11px] font-medium text-primary">[{entry.target}]</span>
+                      <span className="text-[12px] font-medium text-primary">[{entry.target}]</span>
                     )}
                   </div>
                   {entry.detail && (
                     <div className="mt-0.5 flex items-center gap-2">
-                      <p className="min-w-0 truncate text-[11px] text-fg-subtle">{entry.detail}</p>
+                      <p className="min-w-0 truncate text-[12px] text-fg-subtle">{entry.detail}</p>
                       <button
                         onClick={() => handleJumpLine(entry.detail)}
-                        className="flex shrink-0 items-center gap-0.5 rounded-lg px-1 py-0.5 text-[10px] text-fg-muted transition-colors hover:bg-surface-2 hover:text-primary"
+                        className="flex shrink-0 items-center gap-0.5 rounded-lg px-1 py-0.5 text-[12px] text-fg-muted transition-colors hover:bg-surface-2 hover:text-primary"
                         title="定位到对应行"
                       >
                         <ArrowRight size={10} strokeWidth={1.75} />
@@ -217,20 +217,20 @@ export default function AuditLogHub() {
             {/* Total */}
             <div className="rounded-xl border border-edge/10 bg-surface-2 p-3 text-center">
               <div className="text-[24px] font-semibold text-primary tabular-nums">{store.auditLogs.length}</div>
-              <div className="text-[10px] text-fg-muted mt-0.5">操作记录总数</div>
+              <div className="text-[12px] text-fg-muted mt-0.5">操作记录总数</div>
             </div>
 
             {/* Severity breakdown */}
             {store.auditLogs.length > 0 && (
               <div className="rounded-xl border border-edge/10 bg-surface-2 p-3">
-                <div className="text-[10px] font-medium text-fg-muted mb-2">严重程度分布</div>
+                <div className="text-[12px] font-medium text-fg-muted mb-2">严重程度分布</div>
                 <div className="space-y-1.5">
                   {(['info', 'warning', 'danger'] as const).map(sev => {
                     const cnt = store.auditLogs.filter(l => l.severity === sev).length
                     const pct = Math.round((cnt / store.auditLogs.length) * 100)
                     const colors = sev === 'danger' ? 'bg-danger' : sev === 'warning' ? 'bg-warning' : 'bg-info'
                     return (
-                      <div key={sev} className="flex items-center gap-2 text-[11px]">
+                      <div key={sev} className="flex items-center gap-2 text-[12px]">
                         <span className={`h-1.5 w-1.5 rounded-full ${colors}`} />
                         <span className="flex-1 text-fg-muted">{sev === 'info' ? '信息' : sev === 'warning' ? '警告' : '高危'}</span>
                         <span className="text-fg tabular-nums font-medium">{cnt}</span>
@@ -254,7 +254,7 @@ export default function AuditLogHub() {
             {/* Action type breakdown (top items) */}
             {store.auditLogs.length > 0 && (
               <div className="rounded-xl border border-edge/10 bg-surface-2 p-3">
-                <div className="text-[10px] font-medium text-fg-muted mb-2">操作类型排行</div>
+                <div className="text-[12px] font-medium text-fg-muted mb-2">操作类型排行</div>
                 <div className="space-y-1">
                   {Object.entries(
                     store.auditLogs.reduce((acc, l) => {
@@ -265,7 +265,7 @@ export default function AuditLogHub() {
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 5)
                     .map(([action, cnt]) => (
-                      <div key={action} className="flex items-center justify-between text-[11px]">
+                      <div key={action} className="flex items-center justify-between text-[12px]">
                         <span className="text-fg-muted truncate flex-1 mr-2">{ACTION_LABELS[action] || action}</span>
                         <span className="text-fg tabular-nums font-medium">{cnt}</span>
                       </div>
@@ -277,7 +277,7 @@ export default function AuditLogHub() {
             {/* Users breakdown */}
             {store.auditLogs.length > 0 && (
               <div className="rounded-xl border border-edge/10 bg-surface-2 p-3">
-                <div className="text-[10px] font-medium text-fg-muted mb-2">活跃协作者</div>
+                <div className="text-[12px] font-medium text-fg-muted mb-2">活跃协作者</div>
                 <div className="space-y-1">
                   {Object.entries(
                     store.auditLogs.reduce((acc, l) => {
@@ -288,7 +288,7 @@ export default function AuditLogHub() {
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 5)
                     .map(([name, cnt]) => (
-                      <div key={name} className="flex items-center justify-between text-[11px]">
+                      <div key={name} className="flex items-center justify-between text-[12px]">
                         <span className="text-fg-muted truncate flex-1 mr-2">{name}</span>
                         <span className="text-fg tabular-nums font-medium">{cnt}</span>
                       </div>
@@ -301,7 +301,7 @@ export default function AuditLogHub() {
       </div>
 
       {/* Footer summary */}
-      <div className="border-t border-edge/10 px-3 py-2 text-[10px] text-fg-faint">
+      <div className="border-t border-edge/10 px-3 py-2 text-[12px] text-fg-faint">
         共 {store.auditLogs.length} 条操作记录
         {severityFilter !== 'all' && <span> 筛选: {severityFilter}</span>}
       </div>

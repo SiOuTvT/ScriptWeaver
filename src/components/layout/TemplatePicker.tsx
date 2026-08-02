@@ -77,7 +77,7 @@ export default function TemplatePicker({ onSelect, onClose, embedded }: Props) {
                   <span className="text-[12px] text-fg-muted leading-snug text-center">{tpl.description}</span>
                   <span className="flex gap-1 flex-wrap justify-center">
                     {tpl.tags.map((tag) => (
-                      <span key={tag} className="rounded-full bg-surface px-1.5 py-0.5 text-[10px] text-fg-subtle">{tag}</span>
+                      <span key={tag} className="rounded-full bg-surface px-1.5 py-0.5 text-[12px] text-fg-subtle">{tag}</span>
                     ))}
                   </span>
                 </button>
@@ -130,10 +130,10 @@ export default function TemplatePicker({ onSelect, onClose, embedded }: Props) {
                   {TEMPLATE_ICONS[tpl.id] ?? <FilePlus size={28} strokeWidth={1.5} />}
                 </span>
                 <span className="text-[13px] font-semibold">{tpl.name}</span>
-                <span className="text-[11px] text-fg-muted leading-snug">{tpl.description}</span>
+                <span className="text-[12px] text-fg-muted leading-snug">{tpl.description}</span>
                 <span className="flex gap-1 flex-wrap justify-center">
                   {tpl.tags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] text-fg-faint">{tag}</span>
+                    <span key={tag} className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[12px] text-fg-faint">{tag}</span>
                   ))}
                 </span>
               </button>

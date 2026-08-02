@@ -27,7 +27,7 @@ function PreviewFrame({ dark, style }: { dark?: boolean; style?: CSSProperties }
       {/* 顶栏 */}
       <div className="flex h-8 items-center gap-1.5 border-b border-edge/10 bg-surface-1 px-2.5">
         <span className="signal-dot" />
-        <span className="text-[11px] font-semibold text-fg">
+        <span className="text-[12px] font-semibold text-fg">
           Script<span className="font-light text-fg-muted">Weaver</span>
         </span>
         <span className="ml-auto signal-dot signal-dot--pulse" aria-hidden />
@@ -48,10 +48,10 @@ function PreviewFrame({ dark, style }: { dark?: boolean; style?: CSSProperties }
           一段正文示例，含 <span className="font-medium text-primary">主题色链接</span> 样式。
         </p>
         <div className="flex items-center gap-1.5">
-          <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary">
+          <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[12px] font-medium text-primary">
             已保存
           </span>
-          <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">草稿</span>
+          <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[12px] text-fg-muted">草稿</span>
         </div>
       </div>
     </div>
@@ -160,7 +160,7 @@ export default function ThemeSettings({ embedded = false }: { embedded?: boolean
                         </span>
                         {active && <Check size={13} strokeWidth={3} className="text-primary" />}
                       </div>
-                      <span className="t-mono text-[11px] text-fg-faint">{p.hex}</span>
+                      <span className="t-mono text-[12px] text-fg-faint">{p.hex}</span>
                     </button>
                   )
                 })}

@@ -122,7 +122,7 @@ export default function EffectMountPanel({ effects, scope, onChange }: EffectMou
                 >
                   <Power size={13} strokeWidth={2} />
                 </button>
-                <span className="shrink-0 rounded bg-primary/[0.10] px-1.5 py-0.5 text-[10px] font-medium text-signal">
+                <span className="shrink-0 rounded bg-primary/[0.10] px-1.5 py-0.5 text-[12px] font-medium text-signal">
                   {EFFECT_CATEGORY3_META[def.category].short}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-fg">{def.cn}</span>
@@ -153,11 +153,11 @@ export default function EffectMountPanel({ effects, scope, onChange }: EffectMou
                       const idx = Math.min(Math.max(Math.round(val), 0), p.enumValues.length - 1)
                       return (
                         <div key={p.key}>
-                          <div className="mb-0.5 text-[11px] text-fg-subtle">{p.label}</div>
+                          <div className="mb-0.5 text-[12px] text-fg-subtle">{p.label}</div>
                           <select
                             value={idx}
                             onChange={(e) => setParam(ef.uid, p.key, Number(e.target.value))}
-                            className="w-full rounded border border-edge/15 bg-surface-3 px-1.5 py-1 font-mono text-[11px] text-fg outline-none transition-colors focus:border-signal/60"
+                            className="w-full rounded border border-edge/15 bg-surface-3 px-1.5 py-1 font-mono text-[12px] text-fg outline-none transition-colors focus:border-signal/60"
                             title="Ren'Py 官方内建插值曲线，决定动画的加速与减速手感"
                           >
                             {p.enumValues.map((name, i) => (
@@ -171,7 +171,7 @@ export default function EffectMountPanel({ effects, scope, onChange }: EffectMou
                     }
                     return (
                       <div key={p.key}>
-                        <div className="mb-0.5 flex items-center justify-between text-[11px]">
+                        <div className="mb-0.5 flex items-center justify-between text-[12px]">
                           <span className="text-fg-subtle">{p.label}</span>
                           <span className="font-mono text-fg-faint">
                             {val}

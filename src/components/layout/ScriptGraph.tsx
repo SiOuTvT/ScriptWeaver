@@ -451,7 +451,7 @@ export default function ScriptGraph({ onFocusLine }: { onFocusLine?: (index: num
                         >
                           <CornerDownRight size={11} strokeWidth={1.75} className="shrink-0 text-signal/70" />
                           <span className="truncate">{c.text || '（空选项）'}</span>
-                          {c.condition && <span className="ml-auto shrink-0 text-[11px] text-fg-faint">[{c.condition}]</span>}
+                          {c.condition && <span className="ml-auto shrink-0 text-[12px] text-fg-faint">[{c.condition}]</span>}
                         </button>
                       ))}
                     </div>

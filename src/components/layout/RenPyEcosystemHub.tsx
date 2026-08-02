@@ -115,7 +115,7 @@ export default function RenPyEcosystemHub() {
     const map: Record<string, string> = { beginner: '入门', intermediate: '中等', advanced: '高级', 入门: '入门', 进阶: '进阶', 高级: '高级' }
     const colors: Record<string, string> = { beginner: 'bg-[rgb(var(--c-info)/0.1)] text-[rgb(var(--c-info))]', intermediate: 'bg-[rgb(var(--c-primary)/0.1)] text-[rgb(var(--c-primary))]', advanced: 'bg-[rgb(var(--c-danger)/0.1)] text-[rgb(var(--c-danger))]', 入门: 'bg-[rgb(var(--c-info)/0.1)] text-[rgb(var(--c-info))]', 进阶: 'bg-[rgb(var(--c-primary)/0.1)] text-[rgb(var(--c-primary))]', 高级: 'bg-[rgb(var(--c-danger)/0.1)] text-[rgb(var(--c-danger))]' }
     return (
-      <span className={`inline-flex px-1.5 py-0 text-[10px] font-medium rounded ${colors[level] ?? 'bg-surface-2 text-fg-muted'}`}>
+      <span className={`inline-flex px-1.5 py-0 text-[12px] font-medium rounded ${colors[level] ?? 'bg-surface-2 text-fg-muted'}`}>
         {map[level] ?? level}
       </span>
     )
@@ -131,7 +131,7 @@ export default function RenPyEcosystemHub() {
             <div className="flex items-center gap-2">
               <span className="signal-dot" />
               <span className="eyebrow">Ecosystem Hub</span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-edge/10 bg-surface-2 px-2 py-0.5 text-[11px] text-fg-muted">
+              <span className="inline-flex items-center gap-1 rounded-full border border-edge/10 bg-surface-2 px-2 py-0.5 text-[12px] text-fg-muted">
                 <Library size={11} />
                 {COMMUNITY_PLUGINS.length + SYNTAX_LESSONS.length} 项资源
               </span>
@@ -196,7 +196,7 @@ export default function RenPyEcosystemHub() {
                 <button
                   key={cat}
                   onClick={() => setPluginCategory(cat)}
-                  className={`rounded-xl px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+                  className={`rounded-xl px-2.5 py-1 text-[12px] font-medium transition-all duration-200 ${
                     pluginCategory === cat
                       ? 'bg-primary/10 text-primary border border-primary/20 shadow-1'
                       : 'border border-transparent text-fg-muted hover:text-fg hover:bg-surface-2'
@@ -211,7 +211,7 @@ export default function RenPyEcosystemHub() {
                 <button
                   key={cat}
                   onClick={() => setAcademyCategory(cat)}
-                  className={`rounded-xl px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+                  className={`rounded-xl px-2.5 py-1 text-[12px] font-medium transition-all duration-200 ${
                     academyCategory === cat
                       ? 'bg-primary/10 text-primary border border-primary/20 shadow-1'
                       : 'border border-transparent text-fg-muted hover:text-fg hover:bg-surface-2'
@@ -300,7 +300,7 @@ export default function RenPyEcosystemHub() {
                       <span className={`h-2 w-2 rounded-full ${cat.covered ? 'bg-signal' : 'bg-fg-muted'}`} />
                       <h3 className="t-title text-[14px]">{cat.name}</h3>
                     </div>
-                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[12px] font-medium ${
                       cat.covered
                         ? 'border-signal/20 bg-signal/[0.06] text-signal'
                         : 'border-edge/10 bg-surface text-fg-muted'
@@ -312,12 +312,12 @@ export default function RenPyEcosystemHub() {
                     {cat.items.map((item) => (
                       <span
                         key={item}
-                        className="inline-flex rounded-xl border border-edge/10 bg-surface px-2 py-0.5 text-[11px] font-mono text-fg-subtle"
+                        className="inline-flex rounded-xl border border-edge/10 bg-surface px-2 py-0.5 text-[12px] font-mono text-fg-subtle"
                       >{item}</span>
                     ))}
                   </div>
                   {cat.supplement && (
-                    <p className="mt-2.5 text-[11px] leading-snug text-fg-faint">{cat.supplement}</p>
+                    <p className="mt-2.5 text-[12px] leading-snug text-fg-faint">{cat.supplement}</p>
                   )}
                 </div>
               ))}
@@ -355,7 +355,7 @@ export default function RenPyEcosystemHub() {
                       <div className="mb-1 flex flex-wrap items-center gap-2">
                         <span className="t-title text-[14px]">{plugin.name}</span>
                         {plugin.tags.slice(0, 2).map((t) => (
-                          <span key={t} className="rounded-full border border-edge/10 bg-surface px-1.5 py-0 text-[10px] text-fg-muted">{t}</span>
+                          <span key={t} className="rounded-full border border-edge/10 bg-surface px-1.5 py-0 text-[12px] text-fg-muted">{t}</span>
                         ))}
                       </div>
                       <p className="line-clamp-2 text-[12px] leading-relaxed text-fg-subtle">{plugin.desc}</p>
@@ -425,7 +425,7 @@ export default function RenPyEcosystemHub() {
                         <span className="t-title text-[14px]">{lesson.title}</span>
                         {difficultyBadge(lesson.level)}
                       </div>
-                      <span className="inline-flex rounded-full border border-edge/10 bg-surface px-1.5 py-0 text-[10px] text-fg-muted">{lesson.category}</span>
+                      <span className="inline-flex rounded-full border border-edge/10 bg-surface px-1.5 py-0 text-[12px] text-fg-muted">{lesson.category}</span>
                     </div>
                     <span className={`mt-1.5 text-fg-muted transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
                       <ChevronDown size={15} />

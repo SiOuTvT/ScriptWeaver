@@ -457,7 +457,7 @@ export default function CharacterManager() {
                   取消
                 </Button>
               </div>
-              <p className="text-[11px] text-fg-faint">变量名仅允许小写字母开头 + 数字/下划线，如 alice, hero_1</p>
+              <p className="text-[12px] text-fg-faint">变量名仅允许小写字母开头 + 数字/下划线，如 alice, hero_1</p>
             </div>
           )}
 
@@ -512,16 +512,16 @@ export default function CharacterManager() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[13px] font-semibold text-fg">{char.displayName}</div>
-                          <div className="font-mono text-[11px] text-fg-faint">{char.charId}</div>
+                          <div className="font-mono text-[12px] text-fg-faint">{char.charId}</div>
                           {/* 对话框文本样式预览（微型） */}
                           <div className="mt-1 flex items-center gap-1 rounded bg-surface-1/60 px-1.5 py-0.5">
                             <span
-                              className="shrink-0 text-[11px] font-semibold"
+                              className="shrink-0 text-[12px] font-semibold"
                               style={{ color }}
                             >
                               {char.displayName.slice(0, 4)}
                             </span>
-                            <span className="truncate text-[11px] text-fg-subtle">示例台词…</span>
+                            <span className="truncate text-[12px] text-fg-subtle">示例台词…</span>
                           </div>
                         </div>
                       </button>
@@ -568,7 +568,7 @@ export default function CharacterManager() {
                         />
                       </div>
                       {defExpr && (
-                        <span className="absolute bottom-1.5 right-2 font-mono text-[10px] text-fg-faint">
+                        <span className="absolute bottom-1.5 right-2 font-mono text-[12px] text-fg-faint">
                           {char.expressions.length} 表情
                         </span>
                       )}
@@ -613,7 +613,7 @@ export default function CharacterManager() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h2 className="truncate text-[18px] font-semibold text-fg">{selectedChar.displayName}</h2>
-                    <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] uppercase text-fg-subtle">
+                    <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[12px] uppercase text-fg-subtle">
                       {selectedChar.charId}
                     </span>
                   </div>
@@ -633,7 +633,7 @@ export default function CharacterManager() {
 
                 {/* 主题色 */}
                 <div className="shrink-0 rounded-lg border border-edge/12 bg-surface-1 p-2.5">
-                  <label className="mb-1 block text-[11px] text-fg-subtle">对话框主题色</label>
+                  <label className="mb-1 block text-[12px] text-fg-subtle">对话框主题色</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
@@ -691,7 +691,7 @@ export default function CharacterManager() {
                       )}
                     </div>
                     {voiceAssets.length === 0 && (
-                      <p className="mt-1 text-[11px] text-fg-faint">尚未导入 voice 类音频素材</p>
+                      <p className="mt-1 text-[12px] text-fg-faint">尚未导入 voice 类音频素材</p>
                     )}
                   </div>
 
@@ -712,7 +712,7 @@ export default function CharacterManager() {
                       onChange={(e) => handleUpdateField('defaultScale', Number(e.target.value))}
                       className="w-full accent-signal"
                     />
-                    <p className="mt-1 text-[11px] text-fg-faint">
+                    <p className="mt-1 text-[12px] text-fg-faint">
                       仅作用于新拖入舞台的立绘，已放置的立绘保持原缩放
                     </p>
                   </div>
@@ -738,7 +738,7 @@ export default function CharacterManager() {
                         )
                       })}
                     </div>
-                    <p className="mt-1 text-[11px] text-fg-faint">
+                    <p className="mt-1 text-[12px] text-fg-faint">
                       新立绘默认站此位，已放置的立绘保持原站位
                     </p>
                   </div>
@@ -759,7 +759,7 @@ export default function CharacterManager() {
                     <div className="flex items-center gap-1 rounded-md border border-edge/15 bg-surface-3 p-0.5">
                       <button
                         onClick={() => setPreviewNameStyle('normal')}
-                        className={`rounded px-1.5 py-0.5 text-[11px] transition-colors ${
+                        className={`rounded px-1.5 py-0.5 text-[12px] transition-colors ${
                           previewNameStyle === 'normal' ? 'bg-surface-2 text-fg' : 'text-fg-subtle'
                         }`}
                       >
@@ -767,7 +767,7 @@ export default function CharacterManager() {
                       </button>
                       <button
                         onClick={() => setPreviewNameStyle('bold')}
-                        className={`rounded px-1.5 py-0.5 text-[11px] font-semibold transition-colors ${
+                        className={`rounded px-1.5 py-0.5 text-[12px] font-semibold transition-colors ${
                           previewNameStyle === 'bold' ? 'bg-surface-2 text-fg' : 'text-fg-subtle'
                         }`}
                       >
@@ -870,7 +870,7 @@ export default function CharacterManager() {
                         }
                         className="w-full accent-signal"
                       />
-                      <p className="mt-1 text-[11px] text-fg-faint">
+                      <p className="mt-1 text-[12px] text-fg-faint">
                         音调仅 SSML 兼容提供方（如微软）生效；OpenAI 等忽略。
                       </p>
                     </div>
@@ -898,14 +898,14 @@ export default function CharacterManager() {
                         关闭 TTS
                       </Button>
                       {ttsTestErr && (
-                        <span className="truncate text-[11px] text-danger" title={ttsTestErr}>
+                        <span className="truncate text-[12px] text-danger" title={ttsTestErr}>
                           {ttsTestErr}
                         </span>
                       )}
                     </div>
                   </div>
                 )}
-                <p className="mt-2 text-[11px] text-fg-faint">
+                <p className="mt-2 text-[12px] text-fg-faint">
                   合成复用 AI 设置中的密钥与接口（OpenAI 兼容 /audio/speech），音频本地落盘并自动导入素材库。
                 </p>
               </div>
@@ -960,7 +960,7 @@ export default function CharacterManager() {
                           >
                             <ImageIcon size={14} strokeWidth={1.75} className="shrink-0 text-fg-subtle" />
                             <span className="truncate">{asset.name}</span>
-                            {used && <span className="ml-auto text-[11px] text-fg-faint">已使用</span>}
+                            {used && <span className="ml-auto text-[12px] text-fg-faint">已使用</span>}
                           </button>
                         )
                       })
@@ -1034,7 +1034,7 @@ export default function CharacterManager() {
 
                               {/* 默认徽标 */}
                               {isDefault && (
-                                <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-signal px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                                <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-signal px-1.5 py-0.5 text-[12px] font-semibold text-white">
                                   <Star size={10} strokeWidth={2.5} /> 默认
                                 </span>
                               )}
@@ -1095,7 +1095,7 @@ export default function CharacterManager() {
                                   {expr.id}
                                 </div>
                               )}
-                              <div className="truncate text-[11px] text-fg-subtle">{expr.label}</div>
+                              <div className="truncate text-[12px] text-fg-subtle">{expr.label}</div>
                             </div>
                           </div>
                         )

@@ -136,7 +136,7 @@ export default function MultiExporter() {
                   <option value="">全部角色</option>
                   {characters.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
-                <p className="mt-1.5 text-[11px] text-fg-faint">仅导出指定角色的台词</p>
+                <p className="mt-1.5 text-[12px] text-fg-faint">仅导出指定角色的台词</p>
               </section>
 
               {/* Stats */}
@@ -150,7 +150,7 @@ export default function MultiExporter() {
                     { label: '选择支', value: stats.choiceLines },
                   ].map((s) => (
                     <div key={s.label} className="rounded-xl border border-edge/10 bg-surface px-3 py-2.5 shadow-1">
-                      <div className="text-[11px] text-fg-faint">{s.label}</div>
+                      <div className="text-[12px] text-fg-faint">{s.label}</div>
                       <div className="text-[18px] font-semibold text-fg mt-0.5">{s.value}</div>
                     </div>
                   ))}

@@ -289,10 +289,10 @@ export default function AIPanel() {
 
         {/* Quick stats pills */}
         <div className="flex items-center gap-2 ml-auto">
-          <span className="text-[11px] text-fg-faint bg-surface-2/60 px-2 py-0.5 rounded border border-edge/8">
+          <span className="text-[12px] text-fg-faint bg-surface-2/60 px-2 py-0.5 rounded border border-edge/8">
             {contextInfo.dialogueLines} 对白
           </span>
-          <span className="text-[11px] text-fg-faint bg-surface-2/60 px-2 py-0.5 rounded border border-edge/8">
+          <span className="text-[12px] text-fg-faint bg-surface-2/60 px-2 py-0.5 rounded border border-edge/8">
             {contextInfo.choices} 选择支
           </span>
         </div>
@@ -301,7 +301,7 @@ export default function AIPanel() {
       {/* Expanded Context */}
       {contextExpanded && (
         <div className="shrink-0 mx-6 mb-4 rounded-lg border border-edge/10 bg-surface-2/30 p-4 max-h-40 overflow-y-auto">
-          <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-2">当前剧本上下文</div>
+          <div className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-2">当前剧本上下文</div>
           <div className="text-[12px] text-fg-muted leading-relaxed space-y-0.5 font-mono">
             {draftDeltas.slice(-15).map((d, i) => (
               <div key={i} className="truncate">
@@ -350,7 +350,7 @@ export default function AIPanel() {
                     <Bot size={16} className="text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-2">
+                    <div className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.05em] mb-2">
                       {mode === 'blueprint' ? '剧情蓝图' : 'AI 回复'}
                     </div>
                     <div className="prose-content text-[13px] text-fg leading-relaxed space-y-2 whitespace-pre-wrap">
@@ -398,7 +398,7 @@ export default function AIPanel() {
                               : 'bg-primary'
                             }`} />
                             <span className="font-medium text-fg">{node.title}</span>
-                            <span className="text-fg-faint text-[10px]">
+                            <span className="text-fg-faint text-[12px]">
                               {node.kind === 'start' ? '起点' : node.kind === 'ending' ? '结局' : '分支'}
                             </span>
                           </div>
@@ -460,7 +460,7 @@ export default function AIPanel() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-fg-faint">{prompt.length} 字</span>
+                <span className="text-[12px] text-fg-faint">{prompt.length} 字</span>
                 <button
                   onClick={handleSend}
                   disabled={!prompt.trim() || loading}
@@ -480,7 +480,7 @@ export default function AIPanel() {
               </div>
             </div>
           </div>
-          <p className="mt-2 text-[11px] text-fg-faint text-center">
+          <p className="mt-2 text-[12px] text-fg-faint text-center">
             按 Enter 发送 · Shift+Enter 换行
           </p>
         </div>
@@ -491,7 +491,7 @@ export default function AIPanel() {
 
 function TemplateInfo({ text }: { text: string }) {
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] text-fg-faint">
+    <span className="inline-flex items-center gap-1 text-[12px] text-fg-faint">
       <Lightbulb size={11} />
       {text}
     </span>
