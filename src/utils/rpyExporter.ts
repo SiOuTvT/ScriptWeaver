@@ -488,6 +488,9 @@ function subdirFor(type: AssetItem['type']): string {
     case 'background': return 'images/background'
     case 'sprite': return 'images/sprite'
     case 'audio': return 'audio'
+    case 'video': return 'video'
+    case 'effect': return 'effects'
+    default: return 'misc'
   }
 }
 

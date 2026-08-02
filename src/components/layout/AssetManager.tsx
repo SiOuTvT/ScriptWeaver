@@ -36,15 +36,15 @@ import {
 
 // ============================ 类型与工具 ============================
 
-type Cat = 'all' | AssetType | 'video' | 'effect'
+type Cat = 'all' | AssetType
 
 const CATS: { id: Cat; label: string; icon: React.ReactNode; enabled: boolean }[] = [
   { id: 'all', label: '全部素材', icon: <LayoutGrid size={15} strokeWidth={1.75} />, enabled: true },
   { id: 'background', label: '背景', icon: <ImageIcon size={15} strokeWidth={1.75} />, enabled: true },
   { id: 'sprite', label: '立绘', icon: <User size={15} strokeWidth={1.75} />, enabled: true },
   { id: 'audio', label: '音频', icon: <Music size={15} strokeWidth={1.75} />, enabled: true },
-  { id: 'video', label: '视频', icon: <Film size={15} strokeWidth={1.75} />, enabled: false },
-  { id: 'effect', label: '特效预设', icon: <Sparkles size={15} strokeWidth={1.75} />, enabled: false },
+  { id: 'video', label: '视频', icon: <Film size={15} strokeWidth={1.75} />, enabled: true },
+  { id: 'effect', label: '特效预设', icon: <Sparkles size={15} strokeWidth={1.75} />, enabled: true },
 ]
 
 const CHECKER =
@@ -214,11 +214,11 @@ export default function AssetManager() {
   const list = useMemo(() => {
     let arr = assets.filter((a) => (cat === 'all' ? true : a.type === cat))
     const q = search.trim().toLowerCase()
-    if (q) arr = arr.filter((a) => a.name.toLowerCase().includes(q) || a.fileName.toLowerCase().includes(q))
+    if (q) arr = arr.filter((a) => (a.name || '').toLowerCase().includes(q) || (a.fileName || '').toLowerCase().includes(q))
     arr = [...arr].sort((a, b) => {
-      if (sort === 'name') return a.name.localeCompare(b.name, 'zh')
-      if (sort === 'type') return a.type.localeCompare(b.type)
-      return b.importedAt.localeCompare(a.importedAt)
+      if (sort === 'name') return (a.name || '').localeCompare(b.name || '', 'zh')
+      if (sort === 'type') return (a.type || '').localeCompare(b.type || '')
+      return (b.importedAt || '').localeCompare(a.importedAt || '')
     })
     return arr
   }, [assets, cat, search, sort])
@@ -254,14 +254,22 @@ export default function AssetManager() {
     [],
   )
 
+  // 视频 / 特效预设的扩展名表：导入过滤与浏览器降级路径的类型推断共用
+  const VIDEO_EXTS = ['.webm', '.mp4', '.ogv', '.mov', '.mkv', '.avi']
+  const EFFECT_EXTS = ['.rpy', '.rpym', '.json']
+
   const handleImport = useCallback(async () => {
     const api = window.electronAPI
-    const kind: AssetType | undefined = cat === 'all' || cat === 'video' || cat === 'effect' ? undefined : cat
+    const kind: AssetType | undefined = cat === 'all' ? undefined : cat
     if (api) {
       const filters =
         kind === 'audio'
           ? [{ name: '音频文件', extensions: ['mp3', 'ogg', 'wav', 'flac'] }]
-          : [{ name: '图片文件', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }]
+          : kind === 'video'
+            ? [{ name: '视频文件', extensions: ['webm', 'mp4', 'ogv', 'mov', 'mkv', 'avi'] }]
+            : kind === 'effect'
+              ? [{ name: '特效预设', extensions: ['rpy', 'rpym', 'json'] }]
+              : [{ name: '图片文件', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }]
       const result = await api.pickAssetFiles({ filters, kind })
       if (!result.success) {
         toast(result.error || '导入失败，请重试', 'error')
@@ -283,7 +291,8 @@ export default function AssetManager() {
       const api = window.electronAPI
       const real = paths.filter(Boolean)
       if (real.length && api?.importFilesFromPaths) {
-        const kind: AssetType | undefined = cat === 'all' || cat === 'video' || cat === 'effect' ? undefined : cat
+        // 拖入时按当前分类显式指定 kind，让主进程落入 video/effects 子目录（扩展名也可回退识别）
+        const kind: AssetType | undefined = cat === 'all' ? undefined : cat
         const res = await api.importFilesFromPaths(real, kind)
         if (res.success && res.files) {
           for (const f of res.files) addAsset(makeAsset(f))
@@ -305,14 +314,29 @@ export default function AssetManager() {
       const now = new Date().toISOString()
       Array.from(files).forEach((file) => {
         const id = `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+        const ext = '.' + (file.name.split('.').pop() || '').toLowerCase()
+        const isVideo = VIDEO_EXTS.includes(ext) || file.type.startsWith('video/')
+        const isEffect = EFFECT_EXTS.includes(ext)
         const isImage = file.type.startsWith('image/')
+        const type: AssetType =
+          cat !== 'all'
+            ? cat
+            : isVideo
+              ? 'video'
+              : isEffect
+                ? 'effect'
+                : file.type.startsWith('audio/')
+                  ? 'audio'
+                  : 'sprite'
+        // 浏览器降级路径：视频与图片用 blobUrl 预览；音频/特效预设无预览
+        const blobUrl = isImage || isVideo ? URL.createObjectURL(file) : undefined
         addAsset({
           id,
-          type: cat === 'all' || cat === 'video' || cat === 'effect' ? (isImage ? 'sprite' : 'audio') : cat,
+          type,
           name: file.name.replace(/\.[^.]+$/, ''),
           fileName: file.name,
           relativePath: '',
-          blobUrl: isImage ? URL.createObjectURL(file) : undefined,
+          blobUrl,
           importedAt: now,
         })
       })
@@ -366,7 +390,6 @@ export default function AssetManager() {
     [selectLine, setActiveNavItem],
   )
 
-  const isUnsupported = cat === 'video' || cat === 'effect'
   const catLabel = CATS.find((c) => c.id === cat)?.label ?? '素材'
 
   return (
@@ -522,9 +545,7 @@ export default function AssetManager() {
           }}
         >
           <div className="h-full overflow-y-auto p-3">
-            {isUnsupported ? (
-              <UnsupportedPanel label={catLabel} />
-            ) : list.length === 0 ? (
+            {list.length === 0 ? (
               <EmptyPanel search={search} onImport={handleImport} />
             ) : view === 'grid' ? (
               <GridArea
@@ -571,7 +592,7 @@ export default function AssetManager() {
             <div className="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/60 bg-primary/[0.08] backdrop-blur-sm">
               <UploadCloud size={34} strokeWidth={1.5} className="text-primary" />
               <span className="text-[14px] font-medium text-fg">松开鼠标即可导入素材</span>
-              <span className="text-[12px] text-fg-subtle">支持背景 / 立绘 / 音频，自动归类落盘</span>
+              <span className="text-[12px] text-fg-subtle">支持背景 / 立绘 / 音频 / 视频 / 特效预设，自动归类落盘</span>
             </div>
           )}
         </div>
@@ -590,7 +611,15 @@ export default function AssetManager() {
       <input
         ref={fileInputRef}
         type="file"
-        accept={cat === 'audio' ? 'audio/*' : 'image/*'}
+        accept={
+          cat === 'audio'
+            ? 'audio/*'
+            : cat === 'video'
+              ? 'video/*'
+              : cat === 'effect'
+                ? '.rpy,.rpym,.json'
+                : 'image/*'
+        }
         multiple
         className="hidden"
         onChange={handleBrowserImport}
@@ -728,6 +757,12 @@ function densityCols(type: AssetType, density: 'compact' | 'normal' | 'large'): 
   if (type === 'sprite') {
     return density === 'compact' ? 'grid-cols-4 sm:grid-cols-5' : density === 'normal' ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'
   }
+  if (type === 'video') {
+    return density === 'compact' ? 'grid-cols-3 sm:grid-cols-4' : density === 'normal' ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'
+  }
+  if (type === 'effect') {
+    return density === 'compact' ? 'grid-cols-4 sm:grid-cols-5' : density === 'normal' ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'
+  }
   return density === 'compact' ? 'grid-cols-4 sm:grid-cols-6 lg:grid-cols-8' : density === 'normal' ? 'grid-cols-3 sm:grid-cols-5 lg:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
 }
 
@@ -753,10 +788,14 @@ function GridArea(props: GridProps) {
     const bg = props.list.filter((a) => a.type === 'background')
     const sp = props.list.filter((a) => a.type === 'sprite')
     const au = props.list.filter((a) => a.type === 'audio')
+    const vi = props.list.filter((a) => a.type === 'video')
+    const ef = props.list.filter((a) => a.type === 'effect')
     return [
       { type: 'background' as AssetType, items: bg },
       { type: 'sprite' as AssetType, items: sp },
       { type: 'audio' as AssetType, items: au },
+      { type: 'video' as AssetType, items: vi },
+      { type: 'effect' as AssetType, items: ef },
     ].filter((g) => g.items.length > 0)
   }, [props.list])
 
@@ -767,6 +806,10 @@ function GridArea(props: GridProps) {
           {g.items.map((a) =>
             a.type === 'audio' ? (
               <AudioCard key={a.id} asset={a} {...audioCardProps(props, a)} />
+            ) : a.type === 'video' ? (
+              <VideoCard key={a.id} asset={a} density={props.density} {...imageCardProps(props, a)} />
+            ) : a.type === 'effect' ? (
+              <PresetCard key={a.id} asset={a} density={props.density} {...imageCardProps(props, a)} />
             ) : (
               <ImageCard key={a.id} asset={a} density={props.density} {...imageCardProps(props, a)} />
             ),
@@ -1036,6 +1079,235 @@ function ImageCard(p: ImageCardProps) {
   )
 }
 
+// ============================ 视频卡片 ============================
+
+function fmtDuration(sec: number): string {
+  if (!isFinite(sec) || sec < 0) return '—'
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+function VideoCard(p: ImageCardProps) {
+  const { asset, density } = p
+  const src = resolveAssetSrc(asset)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [size, setSize] = useState<number | null>(null)
+  const [dur, setDur] = useState<string>(asset.duration ? fmtDuration(asset.duration) : '—')
+  const [broken, setBroken] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    if (src) getByteSize(src).then((s) => alive && setSize(s))
+    return () => {
+      alive = false
+    }
+  }, [src])
+
+  const ratio = density === 'compact' ? 'aspect-[4/3]' : density === 'large' ? 'aspect-[3/4]' : 'aspect-video'
+
+  const onEnter = () => {
+    const v = videoRef.current
+    if (v) {
+      v.currentTime = 0
+      void v.play().catch(() => {})
+    }
+  }
+  const onLeave = () => {
+    const v = videoRef.current
+    if (v) v.pause()
+  }
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => p.onDragStart(e, asset)}
+      onDragEnd={p.onDragEnd}
+      onContextMenu={(e) => p.onContextMenu(e, asset)}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+      className="group relative cursor-grab overflow-hidden rounded-xl border border-edge/12 bg-surface-1 shadow-1 transition-all duration-300 hover:-translate-y-1 hover:border-signal/30 hover:shadow-2 hover:ring-1 hover:ring-signal/20 active:cursor-grabbing"
+      title="拖拽到舞台或时间轴使用"
+    >
+      <div className={`relative ${ratio} overflow-hidden bg-surface-2`}>
+        {src && !broken ? (
+          <video
+            ref={videoRef}
+            src={src}
+            muted
+            playsInline
+            preload="metadata"
+            draggable={false}
+            onError={() => setBroken(true)}
+            onLoadedMetadata={(e) => {
+              const v = e.currentTarget
+              if (v.duration && isFinite(v.duration)) {
+                setDur(fmtDuration(v.duration))
+                if (!asset.duration) useAppStore.getState().updateAsset(asset.id, { duration: v.duration })
+              }
+            }}
+            className="relative h-full w-full object-contain transition-transform duration-300 ease-out group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-fg-subtle">
+            <Film size={26} strokeWidth={1.5} />
+          </div>
+        )}
+
+        <label
+          title="素材显示色"
+          className="absolute left-1.5 top-1.5 flex h-4 w-4 cursor-pointer items-center justify-center rounded hover:bg-black/15"
+        >
+          <span
+            className="pointer-events-none h-2.5 w-2.5 rounded-full border border-edge/40 shadow-sm"
+            style={{ backgroundColor: asset.color || hashAssetColor(asset.id) }}
+          />
+          <input
+            type="color"
+            value={asset.color || '#888888'}
+            onChange={(e) => useAppStore.getState().updateAsset(asset.id, { color: e.target.value })}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </label>
+
+        <div className="absolute right-1.5 top-1.5 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          <button onClick={() => p.onStartRename(asset)} className="rounded-md bg-black/45 p-1 text-white/90 backdrop-blur transition-colors hover:bg-black/65" title="重命名" aria-label="重命名">
+            <Pencil size={12} strokeWidth={1.75} />
+          </button>
+          <button onClick={() => p.onShowRefs(asset)} className="rounded-md bg-black/45 p-1 text-white/90 backdrop-blur transition-colors hover:bg-info/70" title="查看引用" aria-label="查看引用">
+            <Link2 size={12} strokeWidth={1.75} />
+          </button>
+          <button onClick={() => p.onRequestDelete(asset)} className="rounded-md bg-black/45 p-1 text-white/90 backdrop-blur transition-colors hover:bg-danger/70" title="删除" aria-label="删除">
+            <Trash2 size={12} strokeWidth={1.75} />
+          </button>
+        </div>
+
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-2 pb-1.5 pt-5">
+          {p.editingId === asset.id ? (
+            <input
+              type="text"
+              value={p.editName}
+              onChange={(e) => p.onEditName(e.target.value)}
+              onBlur={p.onCommitRename}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') p.onCommitRename()
+                if (e.key === 'Escape') p.onCancelEdit()
+              }}
+              autoFocus
+              className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[12px] text-fg outline-none"
+            />
+          ) : (
+            <span className="block truncate text-[12px] font-medium text-white" title={asset.name}>
+              {asset.name}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-[11px] text-fg-faint">
+        <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono uppercase">{extOf(asset.fileName)}</span>
+        <span className="truncate font-mono">{dur}</span>
+        <span className="shrink-0 font-mono">{formatBytes(size)}</span>
+      </div>
+
+      <AssetCloudBar asset={asset} />
+    </div>
+  )
+}
+
+// ============================ 特效预设卡片 ============================
+
+function PresetCard(p: ImageCardProps) {
+  const { asset, density } = p
+  const src = resolveAssetSrc(asset)
+  const [size, setSize] = useState<number | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    if (src) getByteSize(src).then((s) => alive && setSize(s))
+    return () => {
+      alive = false
+    }
+  }, [src])
+
+  const ratio = density === 'compact' ? 'aspect-[4/3]' : density === 'large' ? 'aspect-[3/4]' : 'aspect-square'
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => p.onDragStart(e, asset)}
+      onDragEnd={p.onDragEnd}
+      onContextMenu={(e) => p.onContextMenu(e, asset)}
+      className="group relative cursor-grab overflow-hidden rounded-xl border border-edge/12 bg-surface-1 shadow-1 transition-all duration-300 hover:-translate-y-1 hover:border-signal/30 hover:shadow-2 hover:ring-1 hover:ring-signal/20 active:cursor-grabbing"
+      title="拖拽到舞台或时间轴使用"
+    >
+      <div className={`relative ${ratio} overflow-hidden bg-surface-2`}>
+        <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-fg-subtle">
+          <Sparkles size={26} strokeWidth={1.5} />
+          <span className="text-[11px] text-fg-faint">特效预设</span>
+        </div>
+
+        <label
+          title="素材显示色"
+          className="absolute left-1.5 top-1.5 flex h-4 w-4 cursor-pointer items-center justify-center rounded hover:bg-black/15"
+        >
+          <span
+            className="pointer-events-none h-2.5 w-2.5 rounded-full border border-edge/40 shadow-sm"
+            style={{ backgroundColor: asset.color || hashAssetColor(asset.id) }}
+          />
+          <input
+            type="color"
+            value={asset.color || '#888888'}
+            onChange={(e) => useAppStore.getState().updateAsset(asset.id, { color: e.target.value })}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </label>
+
+        <div className="absolute right-1.5 top-1.5 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          <button onClick={() => p.onStartRename(asset)} className="rounded-md bg-black/45 p-1 text-white/90 backdrop-blur transition-colors hover:bg-black/65" title="重命名" aria-label="重命名">
+            <Pencil size={12} strokeWidth={1.75} />
+          </button>
+          <button onClick={() => p.onShowRefs(asset)} className="rounded-md bg-black/45 p-1 text-white/90 backdrop-blur transition-colors hover:bg-info/70" title="查看引用" aria-label="查看引用">
+            <Link2 size={12} strokeWidth={1.75} />
+          </button>
+          <button onClick={() => p.onRequestDelete(asset)} className="rounded-md bg-black/45 p-1 text-white/90 backdrop-blur transition-colors hover:bg-danger/70" title="删除" aria-label="删除">
+            <Trash2 size={12} strokeWidth={1.75} />
+          </button>
+        </div>
+
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-2 pb-1.5 pt-5">
+          {p.editingId === asset.id ? (
+            <input
+              type="text"
+              value={p.editName}
+              onChange={(e) => p.onEditName(e.target.value)}
+              onBlur={p.onCommitRename}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') p.onCommitRename()
+                if (e.key === 'Escape') p.onCancelEdit()
+              }}
+              autoFocus
+              className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[12px] text-fg outline-none"
+            />
+          ) : (
+            <span className="block truncate text-[12px] font-medium text-white" title={asset.name}>
+              {asset.name}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-[11px] text-fg-faint">
+        <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono uppercase">{extOf(asset.fileName)}</span>
+        <span className="truncate font-mono">预设</span>
+        <span className="shrink-0 font-mono">{formatBytes(size)}</span>
+      </div>
+
+      <AssetCloudBar asset={asset} />
+    </div>
+  )
+}
+
 // ============================ 音频卡片 + 波形播放器 ============================
 
 interface AudioCardProps {
@@ -1281,6 +1553,10 @@ function ListArea(props: ListProps) {
       {props.list.map((a) =>
         a.type === 'audio' ? (
           <AudioRow key={a.id} asset={a} {...props} />
+        ) : a.type === 'video' ? (
+          <VideoRow key={a.id} asset={a} {...props} />
+        ) : a.type === 'effect' ? (
+          <PresetRow key={a.id} asset={a} {...props} />
         ) : (
           <ImageRow key={a.id} asset={a} {...props} />
         ),
@@ -1333,6 +1609,161 @@ function ImageRow(p: ListProps & { asset: AssetItem }) {
 
       <span className="hidden shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] uppercase text-fg-faint sm:block">{extOf(asset.fileName)}</span>
       <span className="hidden w-20 shrink-0 text-right font-mono text-[11px] text-fg-faint md:block">{dims}</span>
+      <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint lg:block">{formatBytes(size)}</span>
+      <span className="hidden w-24 shrink-0 text-right font-mono text-[11px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
+
+      <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+        <IconButton size="xs" variant="ghost" icon={<Link2 size={13} strokeWidth={1.75} />} aria-label="查看引用" title="查看引用" onClick={() => p.onShowRefs(asset)} />
+        <IconButton size="xs" variant="ghost" icon={<Pencil size={13} strokeWidth={1.75} />} aria-label="重命名" title="重命名" onClick={() => p.onStartRename(asset)} />
+        <IconButton size="xs" variant="danger" icon={<Trash2 size={13} strokeWidth={1.75} />} aria-label="删除" title="删除" onClick={() => p.onRequestDelete(asset)} />
+      </div>
+    </div>
+  )
+}
+
+function VideoRow(p: ListProps & { asset: AssetItem }) {
+  const { asset } = p
+  const src = resolveAssetSrc(asset)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [playing, setPlaying] = useState(false)
+  const [size, setSize] = useState<number | null>(null)
+  const [dur, setDur] = useState<string>(asset.duration ? fmtDuration(asset.duration) : '—')
+
+  useEffect(() => {
+    let alive = true
+    if (src) getByteSize(src).then((s) => alive && setSize(s))
+    return () => {
+      alive = false
+    }
+  }, [src])
+
+  const toggle = useCallback(() => {
+    const v = videoRef.current
+    if (!v) return
+    if (v.paused) v.play().catch(() => {})
+    else v.pause()
+  }, [])
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => p.onDragStart(e, asset)}
+      onDragEnd={p.onDragEnd}
+      onContextMenu={(e) => p.onContextMenu(e, asset)}
+      className="group flex items-center gap-3 rounded-lg border border-edge/10 bg-surface-1 px-2.5 py-2 shadow-1 transition-colors hover:border-edge-strong/20 hover:bg-surface-hover"
+      title="拖拽到舞台或时间轴使用"
+    >
+      <button
+        onClick={toggle}
+        className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-2 ${playing ? 'text-signal' : 'text-fg-muted'}`}
+        aria-label={playing ? '暂停' : '预览'}
+      >
+        {src ? (
+          <video
+            ref={videoRef}
+            src={src}
+            muted
+            playsInline
+            preload="metadata"
+            className="absolute inset-0 h-full w-full object-cover"
+            onPlay={() => setPlaying(true)}
+            onPause={() => setPlaying(false)}
+            onLoadedMetadata={(e) => {
+              const v = e.currentTarget
+              if (v.duration && isFinite(v.duration)) {
+                setDur(fmtDuration(v.duration))
+                if (!asset.duration) useAppStore.getState().updateAsset(asset.id, { duration: v.duration })
+              }
+            }}
+          />
+        ) : null}
+        <span className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white">
+          {playing ? <Pause size={14} strokeWidth={2} /> : <Play size={14} strokeWidth={2} className="ml-0.5" />}
+        </span>
+      </button>
+
+      <div className="min-w-0 flex-1">
+        {p.editingId === asset.id ? (
+          <input
+            type="text"
+            value={p.editName}
+            onChange={(e) => p.onEditName(e.target.value)}
+            onBlur={p.onCommitRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') p.onCommitRename()
+              if (e.key === 'Escape') p.onCancelEdit()
+            }}
+            autoFocus
+            className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[13px] text-fg outline-none"
+          />
+        ) : (
+          <div className="truncate text-[13px] font-medium text-fg">{asset.name}</div>
+        )}
+        <div className="truncate text-[11px] text-fg-subtle">{asset.fileName}</div>
+      </div>
+
+      <span className="hidden shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] uppercase text-fg-faint sm:block">{extOf(asset.fileName)}</span>
+      <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint md:block">{dur}</span>
+      <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint lg:block">{formatBytes(size)}</span>
+      <span className="hidden w-24 shrink-0 text-right font-mono text-[11px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
+
+      <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+        <IconButton size="xs" variant="ghost" icon={<Link2 size={13} strokeWidth={1.75} />} aria-label="查看引用" title="查看引用" onClick={() => p.onShowRefs(asset)} />
+        <IconButton size="xs" variant="ghost" icon={<Pencil size={13} strokeWidth={1.75} />} aria-label="重命名" title="重命名" onClick={() => p.onStartRename(asset)} />
+        <IconButton size="xs" variant="danger" icon={<Trash2 size={13} strokeWidth={1.75} />} aria-label="删除" title="删除" onClick={() => p.onRequestDelete(asset)} />
+      </div>
+    </div>
+  )
+}
+
+function PresetRow(p: ListProps & { asset: AssetItem }) {
+  const { asset } = p
+  const src = resolveAssetSrc(asset)
+  const [size, setSize] = useState<number | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    if (src) getByteSize(src).then((s) => alive && setSize(s))
+    return () => {
+      alive = false
+    }
+  }, [src])
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => p.onDragStart(e, asset)}
+      onDragEnd={p.onDragEnd}
+      onContextMenu={(e) => p.onContextMenu(e, asset)}
+      className="group flex items-center gap-3 rounded-lg border border-edge/10 bg-surface-1 px-2.5 py-2 shadow-1 transition-colors hover:border-edge-strong/20 hover:bg-surface-hover"
+      title="拖拽到舞台或时间轴使用"
+    >
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-surface-2 text-fg-subtle">
+        <Sparkles size={18} strokeWidth={1.5} />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        {p.editingId === asset.id ? (
+          <input
+            type="text"
+            value={p.editName}
+            onChange={(e) => p.onEditName(e.target.value)}
+            onBlur={p.onCommitRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') p.onCommitRename()
+              if (e.key === 'Escape') p.onCancelEdit()
+            }}
+            autoFocus
+            className="w-full rounded border border-signal bg-surface-3 px-1 py-0.5 text-[13px] text-fg outline-none"
+          />
+        ) : (
+          <div className="truncate text-[13px] font-medium text-fg">{asset.name}</div>
+        )}
+        <div className="truncate text-[11px] text-fg-subtle">{asset.fileName}</div>
+      </div>
+
+      <span className="hidden shrink-0 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] uppercase text-fg-faint sm:block">{extOf(asset.fileName)}</span>
+      <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint md:block">预设</span>
       <span className="hidden w-16 shrink-0 text-right font-mono text-[11px] text-fg-faint lg:block">{formatBytes(size)}</span>
       <span className="hidden w-24 shrink-0 text-right font-mono text-[11px] text-fg-faint xl:block">{formatDate(asset.importedAt)}</span>
 
@@ -1455,20 +1886,6 @@ function EmptyPanel({ search, onImport }: { search: string; onImport: () => void
           导入素材
         </Button>
       )}
-    </div>
-  )
-}
-
-function UnsupportedPanel({ label }: { label: string }) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-2 text-fg-subtle">
-        <Film size={26} strokeWidth={1.5} />
-      </div>
-      <div className="text-[14px] font-medium text-fg-muted">{label} 类型暂未开放导入</div>
-      <div className="max-w-xs text-[12px] leading-relaxed text-fg-faint">
-        当前版本素材管线聚焦于背景、立绘与音频三类。视频与特效预设的导入链路将在后续版本接入，左侧分类树已为其预留位置。
-      </div>
     </div>
   )
 }

@@ -19,6 +19,9 @@ let isQuiting = false
 
 const IMG_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.gif']
 const AUDIO_EXTS = ['.mp3', '.ogg', '.wav', '.flac']
+const VIDEO_EXTS = ['.webm', '.mp4', '.ogv', '.mov', '.mkv', '.avi']
+// 特效预设：可复用 ATL / 转场模板（.rpy/.rpym 片段或自定义 JSON 预设）
+const EFFECT_EXTS = ['.rpy', '.rpym', '.json']
 
 const MIME_MAP: Record<string, string> = {
   '.png': 'image/png',
@@ -30,17 +33,30 @@ const MIME_MAP: Record<string, string> = {
   '.ogg': 'audio/ogg',
   '.wav': 'audio/wav',
   '.flac': 'audio/flac',
+  '.webm': 'video/webm',
+  '.mp4': 'video/mp4',
+  '.ogv': 'video/ogg',
+  '.mov': 'video/quicktime',
+  '.mkv': 'video/x-matroska',
+  '.avi': 'video/x-msvideo',
+  '.rpy': 'text/plain',
+  '.rpym': 'text/plain',
+  '.json': 'application/json',
 }
 
 // 统一目录规范：
 //   assets/images/background   背景
 //   assets/images/sprite       立绘
 //   assets/audio               音频
+//   assets/video               视频过场
+//   assets/effects             特效预设
 const SUBDIR_BACKGROUND = path.join('images', 'background')
 const SUBDIR_SPRITE = path.join('images', 'sprite')
 const SUBDIR_AUDIO = 'audio'
+const SUBDIR_VIDEO = 'video'
+const SUBDIR_EFFECT = 'effects'
 
-type AssetKind = 'background' | 'sprite' | 'audio'
+type AssetKind = 'background' | 'sprite' | 'audio' | 'video' | 'effect'
 
 /** 当前活动项目根目录（由渲染进程通过 fs:setActiveProjectRoot 同步） */
 let activeProjectRoot: string | null = null
@@ -274,17 +290,23 @@ function uuid(): string {
 
 /** 依据扩展名与 kind 决定落盘子目录 */
 function resolveSubdir(ext: string, kind?: AssetKind): { subdir: string; type: AssetKind } {
+  if (VIDEO_EXTS.includes(ext)) return { subdir: SUBDIR_VIDEO, type: 'video' }
+  if (EFFECT_EXTS.includes(ext)) return { subdir: SUBDIR_EFFECT, type: 'effect' }
   if (AUDIO_EXTS.includes(ext)) return { subdir: SUBDIR_AUDIO, type: 'audio' }
   if (kind === 'background') return { subdir: SUBDIR_BACKGROUND, type: 'background' }
+  if (kind === 'video') return { subdir: SUBDIR_VIDEO, type: 'video' }
+  if (kind === 'effect') return { subdir: SUBDIR_EFFECT, type: 'effect' }
   return { subdir: SUBDIR_SPRITE, type: 'sprite' }
 }
 
 /** 依据磁盘绝对路径推断资产类型（用于扫描 / 监听） */
 function classifyAsset(abs: string): AssetKind | null {
   const ext = path.extname(abs).toLowerCase()
+  const normalized = abs.replace(/\\/g, '/')
+  if (VIDEO_EXTS.includes(ext)) return 'video'
+  if (EFFECT_EXTS.includes(ext)) return 'effect'
   if (AUDIO_EXTS.includes(ext)) return 'audio'
   if (IMG_EXTS.includes(ext)) {
-    const normalized = abs.replace(/\\/g, '/')
     return normalized.includes('/images/background/') ? 'background' : 'sprite'
   }
   return null
@@ -349,7 +371,8 @@ function registerAssetProtocol(): void {
           // 防目录穿越：必须在 assets 子树内
           const inTree = abs === assetsDir || abs.startsWith(assetsDir + path.sep)
           const ext = path.extname(abs).toLowerCase()
-          const extOk = IMG_EXTS.includes(ext) || AUDIO_EXTS.includes(ext)
+          const extOk =
+            IMG_EXTS.includes(ext) || AUDIO_EXTS.includes(ext) || VIDEO_EXTS.includes(ext) || EFFECT_EXTS.includes(ext)
           const exists = fs.existsSync(abs)
           if (!inTree) continue
           if (!extOk) continue
@@ -711,6 +734,8 @@ function writeProjectToDir(projectDir: string, projectJson: string, projectName?
   ensureDir(path.join(assetsDir, SUBDIR_BACKGROUND))
   ensureDir(path.join(assetsDir, SUBDIR_SPRITE))
   ensureDir(path.join(assetsDir, SUBDIR_AUDIO))
+  ensureDir(path.join(assetsDir, SUBDIR_VIDEO))
+  ensureDir(path.join(assetsDir, SUBDIR_EFFECT))
   ensureDir(path.join(assetsDir, 'scripts'))
 
   const projPath = path.join(projectDir, `${projectName || 'untitled'}.swproj`)

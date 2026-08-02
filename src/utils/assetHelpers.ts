@@ -1,10 +1,11 @@
 /**
  * 素材拖拽辅助工具
  */
+import type { AssetType } from '../core/types'
 
 /** 拖拽传输的数据格式 */
 export interface DragAssetData {
-  type: 'background' | 'sprite' | 'audio'
+  type: AssetType
   assetId: string
   label: string
   /** 素材显示名，用于 toast 等提示文案 */

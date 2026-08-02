@@ -21,7 +21,7 @@ export interface PositionSlot {
 
 // --------------- 素材 ---------------
 
-export type AssetType = 'background' | 'sprite' | 'audio'
+export type AssetType = 'background' | 'sprite' | 'audio' | 'video' | 'effect'
 
 export interface AssetItem {
   /** 全局唯一 ID */

@@ -28,20 +28,20 @@ interface ElectronAPI {
   /** 导入素材文件：打开文件选择器（二进制落盘，无 Base64） */
   pickAssetFiles: (options?: {
     filters?: { name: string; extensions: string[] }[]
-    kind?: 'background' | 'sprite' | 'audio'
+    kind?: 'background' | 'sprite' | 'audio' | 'video' | 'effect'
   }) => Promise<{
     success: boolean
-    files?: { id: string; fileName: string; relativePath: string; type: 'background' | 'sprite' | 'audio' }[]
+    files?: { id: string; fileName: string; relativePath: string; type: 'background' | 'sprite' | 'audio' | 'video' | 'effect' }[]
     error?: string
   }>
 
   /** 拖入素材：接收 OS 拖放的真实文件路径，二进制落盘（不返回 Base64） */
   importFilesFromPaths: (
     srcPaths: string[],
-    kind?: 'background' | 'sprite' | 'audio',
+    kind?: 'background' | 'sprite' | 'audio' | 'video' | 'effect',
   ) => Promise<{
     success: boolean
-    files?: { id: string; fileName: string; relativePath: string; type: 'background' | 'sprite' | 'audio' }[]
+    files?: { id: string; fileName: string; relativePath: string; type: 'background' | 'sprite' | 'audio' | 'video' | 'effect' }[]
     error?: string
   }>
 
@@ -53,7 +53,7 @@ interface ElectronAPI {
     success: boolean
     assets?: {
       id: string
-      type: 'background' | 'sprite' | 'audio'
+      type: 'background' | 'sprite' | 'audio' | 'video' | 'effect'
       name: string
       fileName: string
       relativePath: string

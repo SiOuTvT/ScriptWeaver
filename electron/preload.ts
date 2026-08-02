@@ -148,14 +148,14 @@ const api = {
   /** 导入素材：打开文件选择器，二进制复制到会话目录（不再返回 Base64） */
   pickAssetFiles: (options?: {
     filters?: { name: string; extensions: string[] }[]
-    kind?: 'background' | 'sprite' | 'audio'
+    kind?: 'background' | 'sprite' | 'audio' | 'video' | 'effect'
   }): Promise<{
     success: boolean
     files?: {
       id: string
       fileName: string
       relativePath: string
-      type: 'background' | 'sprite' | 'audio'
+      type: 'background' | 'sprite' | 'audio' | 'video' | 'effect'
     }[]
     error?: string
   }> => ipcRenderer.invoke('dialog:pickAssetFiles', options),
@@ -163,10 +163,10 @@ const api = {
   /** 拖入素材：接收 OS 拖放的真实文件路径，二进制落盘（不返回 Base64） */
   importFilesFromPaths: (
     srcPaths: string[],
-    kind?: 'background' | 'sprite' | 'audio',
+    kind?: 'background' | 'sprite' | 'audio' | 'video' | 'effect',
   ): Promise<{
     success: boolean
-    files?: { id: string; fileName: string; relativePath: string; type: 'background' | 'sprite' | 'audio' }[]
+    files?: { id: string; fileName: string; relativePath: string; type: 'background' | 'sprite' | 'audio' | 'video' | 'effect' }[]
     error?: string
   }> => ipcRenderer.invoke('fs:importFilesFromPaths', srcPaths, kind),
 
