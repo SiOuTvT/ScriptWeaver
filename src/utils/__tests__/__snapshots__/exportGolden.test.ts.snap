@@ -320,7 +320,7 @@ exports[`导出层黄金快照 · 挂载特效转 Ren'Py > 特效脚本整文件
 # 1 lines
 
 label start:
-    scene bg_room with dissolve(0.5)
+    scene bg_room with Dissolve(0.5)
     show alice smile at center, sw_custom_shake(duration=0.5, amplitude=10), sw_custom_blink(frequency=2, minAlpha=0.2) zorder 5
     alice "震起来！"
     # L1

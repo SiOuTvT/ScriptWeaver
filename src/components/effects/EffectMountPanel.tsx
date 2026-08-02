@@ -7,6 +7,8 @@ import {
   createMountedEffect,
   EFFECT_CATEGORY3_ORDER,
   EFFECT_CATEGORY3_META,
+  EFFECT_GROUP_ORDER,
+  EFFECT_GROUP_LABEL,
   type EffectCategory3,
 } from '@/data/mountableEffects'
 
@@ -63,6 +65,22 @@ export default function EffectMountPanel({ effects, scope, onChange }: EffectMou
           {EFFECT_CATEGORY3_ORDER.map((cat: EffectCategory3) => {
             const catOpts = options.filter((o) => o.category === cat)
             if (catOpts.length === 0) return null
+            // 转场已覆盖官方全部预定义族，条目达数十条，按族拆二级分组避免下拉变成长条
+            if (cat === 'transition') {
+              return EFFECT_GROUP_ORDER.map((g) => {
+                const gOpts = catOpts.filter((o) => (o.group ?? 'misc') === g)
+                if (gOpts.length === 0) return null
+                return (
+                  <optgroup key={`${cat}-${g}`} label={`${EFFECT_CATEGORY3_META[cat].short} ${EFFECT_GROUP_LABEL[g]}`}>
+                    {gOpts.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.cn}
+                      </option>
+                    ))}
+                  </optgroup>
+                )
+              })
+            }
             return (
               <optgroup key={cat} label={EFFECT_CATEGORY3_META[cat].label}>
                 {catOpts.map((o) => (
@@ -130,6 +148,27 @@ export default function EffectMountPanel({ effects, scope, onChange }: EffectMou
                 <div className="mt-2 space-y-1.5">
                   {def.params.map((p) => {
                     const val = ef.params[p.key] ?? p.def
+                    // 离散选项（如官方 32 条缓动曲线）用下拉，连续量用滑块
+                    if (p.enumValues) {
+                      const idx = Math.min(Math.max(Math.round(val), 0), p.enumValues.length - 1)
+                      return (
+                        <div key={p.key}>
+                          <div className="mb-0.5 text-[11px] text-fg-subtle">{p.label}</div>
+                          <select
+                            value={idx}
+                            onChange={(e) => setParam(ef.uid, p.key, Number(e.target.value))}
+                            className="w-full rounded border border-edge/15 bg-surface-3 px-1.5 py-1 font-mono text-[11px] text-fg outline-none transition-colors focus:border-signal/60"
+                            title="Ren'Py 官方内建插值曲线，决定动画的加速与减速手感"
+                          >
+                            {p.enumValues.map((name, i) => (
+                              <option key={name} value={i}>
+                                {name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )
+                    }
                     return (
                       <div key={p.key}>
                         <div className="mb-0.5 flex items-center justify-between text-[11px]">

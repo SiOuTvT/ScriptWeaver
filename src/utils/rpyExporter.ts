@@ -14,7 +14,13 @@
  */
 
 import type { LineDelta, ResolvedLineState, CharacterConfig, AssetItem, PositionSlot, MountedEffect, GlobalVariable, VariableOperation, ChoiceItem, ProjectMeta } from '@/core/types'
-import { getMountable } from '@/data/mountableEffects'
+import {
+  getMountable,
+  emitOf,
+  warperName,
+  WARP_KEY,
+  type MountableEffectDef,
+} from '@/data/mountableEffects'
 
 // ======================= 类型 =======================
 
@@ -137,8 +143,10 @@ function escapeDialogue(s: string): string {
  * 一律走自定义 transform 定义路径，保证 `with <name>` 必定存在、必定可编译。
  * 注意方向后缀：上为 top/bottom（非 up/down），如 moveintop / moveinbottom。
  */
+// 注意：官方并无名为 flash 的预定义转场，故不得列入，否则 `with flash` 会 NameError；
+// 闪白改由自定义 ATL 定义路径产出。
 const BUILTIN_TRANSITIONS = new Set<string>([
-  'dissolve', 'fade', 'flash', 'pixellate', 'blinds', 'squares',
+  'dissolve', 'fade', 'pixellate', 'blinds', 'squares',
   'irisin', 'irisout', 'move',
   'moveinleft', 'moveinright', 'moveintop', 'moveinbottom',
   'moveoutleft', 'moveoutright', 'moveouttop', 'moveoutbottom',
@@ -225,18 +233,17 @@ function collectUsedTransitions(
 //  - 少数内建过渡工厂（dissolve/fade/pixellate）直接 `with dissolve(0.5)`，无需自定义定义，
 //    其余一律 `sw_custom_` 前缀，彻底规避与内建名/其它自定义名的 NameError 碰撞。
 
-/** 内建过渡工厂：可直接 `with <id>(参数)` 调用，无需生成自定义 transform */
-const BUILTIN_FACTORY_TRANSITIONS = new Set([
-  'dissolve', 'fade', 'pixellate',
-  'wiperight', 'wipeleft', 'wipeup', 'wipedown',
-])
-
 /** 格式化数值参数（3 位小数，避免超长浮点污染 .rpy） */
 function num(n: number): number {
   return round3(n)
 }
 
-/** 内建过渡工厂的参数拼接（dissolve(time) / fade(out,hold,in) / pixellate(time,steps) / wipe*(time)） */
+/**
+ * 可调用转场类的参数拼接。
+ * 注意：官方小写 dissolve / fade / pixellate 是**实例**，加括号会 TypeError；
+ * 真正可调用的是同名大写类 Dissolve / Fade / Pixellate，故此处只拼参数，
+ * 类名由预设的 emit.name 提供。
+ */
 function builtinFactoryArgs(id: string, params: Record<string, number>): string {
   switch (id) {
     case 'dissolve':
@@ -245,38 +252,66 @@ function builtinFactoryArgs(id: string, params: Record<string, number>): string 
       return `${num(params.out_time ?? 0.5)}, ${num(params.hold_time ?? 0)}, ${num(params.in_time ?? 0.5)}`
     case 'pixellate':
       return `${num(params.time ?? 0.5)}, ${Math.round(params.steps ?? 4)}`
-    case 'wiperight':
-    case 'wipeleft':
-    case 'wipeup':
-    case 'wipedown':
-      return `${num(params.time ?? 0.8)}`
     default:
       return ''
   }
 }
 
-/** 把单个挂载特效实例渲染为调用字符串（at/with 子句用） */
+/**
+ * 把单个挂载特效实例渲染为调用字符串（at / with 子句用）。
+ * 按预设声明的导出通道分发，逐条对齐官方手册，杜绝对预定义实例误加括号。
+ */
 function effectCallStr(e: MountedEffect): string | null {
   const def = getMountable(e.effectId)
   if (!def) return null
-  // 滤镜（filter）不走 at/with，由 layer_filter 节点单独处理
-  if (def.kind === 'filter') return null
-  // 内建过渡工厂：直接 with dissolve(0.5) / fade(...) / pixellate(...) / wiperight(...)
-  if (def.kind === 'transition' && BUILTIN_FACTORY_TRANSITIONS.has(def.id)) {
-    return `${def.id}(${builtinFactoryArgs(def.id, e.params)})`
+  const emit = emitOf(def)
+  switch (emit.via) {
+    // 滤镜不走 at/with，由 layer_filter 节点统一处理
+    case 'matrix':
+      return null
+    // 预定义转场实例：裸名直用，绝不加括号
+    case 'bare':
+      return emit.name
+    // 可调用转场类：Dissolve(0.5) / Fade(...) / Pixellate(...)
+    case 'factory':
+      return `${emit.name}(${builtinFactoryArgs(def.id, e.params)})`
+    // CropMove 实例族：擦除 / 滑动 / 滑出 / 虹膜，时长可调
+    case 'cropmove':
+      return `CropMove(${num(e.params.time ?? 0.8)}, "${emit.mode}")`
+    // PushMove 实例族：推挤，时长可调
+    case 'pushmove':
+      return `PushMove(${num(e.params.time ?? 0.8)}, "${emit.mode}")`
+    // 自定义 ATL：sw_custom_<id>(k=v, ...)，参数取实例实值（缺省回退 def）
+    case 'custom':
+    default:
+      return `${customTransformName(def, e)}(${customTransformArgs(def, e)})`
   }
-  // 自定义：sw_custom_<id>(k=v, ...)，参数取实例实值（缺省回退 def）
-  const args = def.params.map((p) => `${p.key}=${num(e.params[p.key] ?? p.def)}`).join(', ')
-  return `sw_custom_${def.id}(${args})`
 }
 
-/** 该特效是否需要生成 transform 定义（自定义均需；内建工厂/滤镜无需） */
+/**
+ * 自定义 transform 的定义名。
+ * warper 在 ATL 里是语法关键字、无法当运行时参数传入，因此非 linear 曲线
+ * 必须内联进定义名，否则同一特效的不同曲线会互相覆盖。
+ */
+function customTransformName(def: MountableEffectDef, e: MountedEffect): string {
+  if (!def.params.some((p) => p.key === WARP_KEY)) return `sw_custom_${def.id}`
+  const w = warperName(e.params[WARP_KEY])
+  return w === 'linear' ? `sw_custom_${def.id}` : `sw_custom_${def.id}_${w}`
+}
+
+/** 自定义 transform 的实参串（枚举型参数已内联进定义名，不再作运行时参数） */
+function customTransformArgs(def: MountableEffectDef, e: MountedEffect): string {
+  return def.params
+    .filter((p) => !p.enumValues)
+    .map((p) => `${p.key}=${num(e.params[p.key] ?? p.def)}`)
+    .join(', ')
+}
+
+/** 该特效是否需要生成 transform 定义（仅自定义 ATL 通道需要） */
 function effectNeedsDef(e: MountedEffect): boolean {
   const def = getMountable(e.effectId)
   if (!def) return false
-  if (def.kind === 'filter') return false
-  if (def.kind === 'transition' && BUILTIN_FACTORY_TRANSITIONS.has(def.id)) return false
-  return true
+  return emitOf(def).via === 'custom'
 }
 
 /** 稳定签名：仅取启用的挂载特效，用于 diff 是否变化 */
@@ -330,6 +365,14 @@ function filterMatrixExpr(e: MountedEffect): string | null {
       return `SaturationMatrix(${num(e.params.saturation ?? 0)})`
     case 'sepia':
       return `SepiaMatrix()`
+    case 'brightness':
+      return `BrightnessMatrix(${num(e.params.value ?? 0)})`
+    case 'invert':
+      return `InvertMatrix(${num(e.params.value ?? 1)})`
+    case 'opacity':
+      return `OpacityMatrix(${num(e.params.value ?? 1)})`
+    case 'hue':
+      return `HueMatrix(${num(e.params.value ?? 180)})`
     case 'colormatrix': {
       const hue = num(e.params.hue ?? 0)
       const sat = num(e.params.saturation ?? 1)
@@ -392,45 +435,47 @@ function varOpExpr(op: VariableOperation): string | null {
  * 参数化 transform 的 ATL 正文（已含 4 空格基础缩进；repeat 内层 8 空格）。
  * 正文直接引用参数变量名（duration / amplitude…），调用处覆盖即生效。
  */
-function effectTransformBody(id: string): string[] {
+function effectTransformBody(id: string, warp: string = 'linear'): string[] {
+  // 插值关键字由调用方按预设的缓动曲线参数决定，取值来自官方 32 条内建 warper
+  const w = warp
   switch (id) {
     // ---- transform 型（at 叠加）----
     case 'shake':
       return [
         'xoffset 0',
-        'linear (duration / 4.0) xoffset -amplitude',
-        'linear (duration / 4.0) xoffset amplitude',
-        'linear (duration / 4.0) xoffset -amplitude',
-        'linear (duration / 4.0) xoffset 0',
+        `${w} (duration / 4.0) xoffset -amplitude`,
+        `${w} (duration / 4.0) xoffset amplitude`,
+        `${w} (duration / 4.0) xoffset -amplitude`,
+        `${w} (duration / 4.0) xoffset 0`,
       ]
     case 'alpha':
-      return ['alpha 1.0', 'linear duration alpha alpha']
+      return ['alpha 1.0', `${w} duration alpha alpha`]
     case 'blink':
       return [
         'repeat:',
         '    alpha 1.0',
-        '    linear (0.5 / frequency) alpha minAlpha',
-        '    linear (0.5 / frequency) alpha 1.0',
+        `    ${w} (0.5 / frequency) alpha minAlpha`,
+        `    ${w} (0.5 / frequency) alpha 1.0`,
       ]
     case 'rotate':
-      return ['rotate 0', 'linear duration rotate angle']
+      return ['rotate 0', `${w} duration rotate angle`]
     case 'zoomin':
-      return ['zoom 1.0', 'linear duration zoom zoom']
+      return ['zoom 1.0', `${w} duration zoom zoom`]
     case 'zoom':
       return ['zoom zoom']
     case 'blur':
       return ['blur blur']
     case 'breathing':
-      return ['zoom 1.0', 'repeat:', '    linear (0.5 / rate) zoom (1.0 + depth)', '    linear (0.5 / rate) zoom 1.0']
+      return ['zoom 1.0', 'repeat:', `    ${w} (0.5 / rate) zoom (1.0 + depth)`, `    ${w} (0.5 / rate) zoom 1.0`]
     case 'nudge':
       return [
         'xoffset 0',
         'yoffset 0',
         'repeat:',
-        '    linear (0.5 / rate) xoffset dx',
-        '    linear (0.5 / rate) xoffset 0',
-        '    linear (0.5 / rate) yoffset dy',
-        '    linear (0.5 / rate) yoffset 0',
+        `    ${w} (0.5 / rate) xoffset dx`,
+        `    ${w} (0.5 / rate) xoffset 0`,
+        `    ${w} (0.5 / rate) yoffset dy`,
+        `    ${w} (0.5 / rate) yoffset 0`,
       ]
     // ---- transition 型（with 调度，自定义 ATL 过渡）----
     case 'hpunch':
@@ -452,9 +497,13 @@ function effectTransformBody(id: string): string[] {
 export function exportTransformsRpy(resolvedStates: ResolvedLineState[]): string {
   const used = collectMountedEffects(resolvedStates).filter((e) => e.enabled && effectNeedsDef(e))
   const seen = new Set<string>()
+  // 去重键取最终定义名：同一特效选用不同缓动曲线会各自生成一份定义
   const distinct = used.filter((e) => {
-    if (seen.has(e.effectId)) return false
-    seen.add(e.effectId)
+    const def = getMountable(e.effectId)
+    if (!def) return false
+    const name = customTransformName(def, e)
+    if (seen.has(name)) return false
+    seen.add(name)
     return true
   })
 
@@ -474,9 +523,10 @@ export function exportTransformsRpy(resolvedStates: ResolvedLineState[]): string
   for (const e of distinct) {
     const def = getMountable(e.effectId)
     if (!def) continue
-    const sig = def.params.map((p) => `${p.key}=${num(p.def)}`).join(', ')
-    lines.push(`transform sw_custom_${def.id}(${sig}):`)
-    for (const bl of effectTransformBody(def.id)) lines.push(`    ${bl}`)
+    // 枚举型参数（缓动曲线）已内联进定义名与正文，不进形参表
+    const sig = def.params.filter((p) => !p.enumValues).map((p) => `${p.key}=${num(p.def)}`).join(', ')
+    lines.push(`transform ${customTransformName(def, e)}(${sig}):`)
+    for (const bl of effectTransformBody(def.id, warperName(e.params[WARP_KEY]))) lines.push(`    ${bl}`)
     lines.push('')
   }
   return lines.join('\n')

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { exportToRpy, exportDefinitionsRpy, buildBundle, resolveLookups, validateExportNames } from '../rpyExporter'
-import { MOUNTABLE_EFFECTS } from '@/data/mountableEffects'
+import { MOUNTABLE_EFFECTS, RENPY_WARPERS } from '@/data/mountableEffects'
 import type { LineDelta, ResolvedLineState, CharacterConfig, AssetItem, MountedEffect, GlobalVariable } from '@/core/types'
 
 const characterConfigs: CharacterConfig[] = [
@@ -141,7 +141,10 @@ describe('rpyExporter · Ren\'Py 合规产出', () => {
 
   it('所有非内建 with <name> 都在 definitions 中有 transform 定义', () => {
     const builtins = new Set([
-      'dissolve', 'fade', 'flash', 'pixellate', 'blinds', 'squares', 'irisin', 'irisout', 'move',
+      // 可调用的转场类（with Dissolve(0.5) 形式，正则会捕到类名）
+      'Dissolve', 'Fade', 'Pixellate', 'CropMove', 'PushMove',
+      // 预定义转场实例（裸用）。官方无 flash，故不得列入
+      'dissolve', 'fade', 'pixellate', 'blinds', 'squares', 'irisin', 'irisout', 'move',
       'moveinleft', 'moveinright', 'moveintop', 'moveinbottom', 'moveoutleft', 'moveoutright', 'moveouttop', 'moveoutbottom',
       'pushleft', 'pushright', 'pushup', 'pushdown', 'slideleft', 'slideright', 'slideup', 'slidedown',
       'slideawayleft', 'slideawayright', 'slideawayup', 'slideawaydown',
@@ -221,8 +224,9 @@ describe('rpyExporter · 挂载特效导出闭环（任务 2/2）', () => {
     )
   })
 
-  it('背景挂载内建过渡工厂 → with dissolve(0.5) 直接调用', () => {
-    expect(bundle.script).toContain('scene bg_room with dissolve(0.5)')
+  it('背景挂载可调用转场类 → with Dissolve(0.5)（小写 dissolve 是实例，加括号会 TypeError）', () => {
+    expect(bundle.script).toContain('scene bg_room with Dissolve(0.5)')
+    expect(bundle.script).not.toContain('with dissolve(')
   })
 
   it('同一特效多次挂载只生成一次 transform 定义（去重）', () => {
@@ -277,7 +281,7 @@ describe('rpyExporter · 三大类目与缺失项补全（增补任务）', () =
     expect(ids.has('nudge')).toBe(true)
   })
 
-  it('Wipe 转场映射到 Ren\'Py 内建 with wiperight(time) 且不生成自定义 transform', () => {
+  it('Wipe 转场映射到官方 CropMove(time, "wiperight")（wiperight 是实例，不可调用）', () => {
     const d = baseDelta('LW', { background: { asset_id: 'bg_room', effects: [eff('uW', 'wiperight', { time: 0.8 })] } })
     const r: ResolvedLineState[] = [{
       line_id: 'LW', speaker: null, dialogue: '',
@@ -285,8 +289,124 @@ describe('rpyExporter · 三大类目与缺失项补全（增补任务）', () =
       characters: {}, audio: noAudio,
     }]
     const b = buildBundle([d], r, characterConfigs, assets)
-    expect(b.script).toContain('scene bg_room with wiperight(0.8)')
+    expect(b.script).toContain('scene bg_room with CropMove(0.8, "wiperight")')
+    expect(b.script).not.toContain('with wiperight(')
     expect(b.transforms).not.toContain('sw_custom_wiperight')
+  })
+
+  it('预定义转场实例裸用，绝不加括号且不生成自定义定义', () => {
+    const d = baseDelta('LB', { background: { asset_id: 'bg_room', effects: [eff('uB', 'tr-moveinleft', {})] } })
+    const r: ResolvedLineState[] = [{
+      line_id: 'LB', speaker: null, dialogue: '',
+      background: { asset_id: 'bg_room', effects: [eff('uB', 'tr-moveinleft', {})] },
+      characters: {}, audio: noAudio,
+    }]
+    const b = buildBundle([d], r, characterConfigs, assets)
+    expect(b.script).toContain('scene bg_room with moveinleft')
+    expect(b.script).not.toContain('moveinleft(')
+    expect(b.transforms).not.toContain('sw_custom_tr-moveinleft')
+  })
+
+  it('Push 族映射到官方 PushMove(time, mode)', () => {
+    const d = baseDelta('LP', { background: { asset_id: 'bg_room', effects: [eff('uP', 'tr-pushright', { time: 1.2 })] } })
+    const r: ResolvedLineState[] = [{
+      line_id: 'LP', speaker: null, dialogue: '',
+      background: { asset_id: 'bg_room', effects: [eff('uP', 'tr-pushright', { time: 1.2 })] },
+      characters: {}, audio: noAudio,
+    }]
+    const b = buildBundle([d], r, characterConfigs, assets)
+    expect(b.script).toContain('scene bg_room with PushMove(1.2, "pushright")')
+  })
+
+  it('闪白无官方预定义变量，必须落为自定义 transform 定义', () => {
+    const d = baseDelta('LZ', { background: { asset_id: 'bg_room', effects: [eff('uZ', 'flash', {})] } })
+    const r: ResolvedLineState[] = [{
+      line_id: 'LZ', speaker: null, dialogue: '',
+      background: { asset_id: 'bg_room', effects: [eff('uZ', 'flash', {})] },
+      characters: {}, audio: noAudio,
+    }]
+    const b = buildBundle([d], r, characterConfigs, assets)
+    expect(b.script).toContain('with sw_custom_flash()')
+    expect(b.transforms).toContain('transform sw_custom_flash')
+  })
+
+  it('新增 matrixcolor 滤镜逐条对齐官方矩阵类', () => {
+    const cases: Array<[string, Record<string, number>, string]> = [
+      ['brightness', { value: 0.3 }, 'BrightnessMatrix(0.3)'],
+      ['invert', { value: 1 }, 'InvertMatrix(1)'],
+      ['opacity', { value: 0.5 }, 'OpacityMatrix(0.5)'],
+      ['hue', { value: 120 }, 'HueMatrix(120)'],
+    ]
+    for (const [id, params, expected] of cases) {
+      const d = baseDelta('LM', { background: { asset_id: 'bg_room', effects: [eff('uX', id, params)] } })
+      const r: ResolvedLineState[] = [{
+        line_id: 'LM', speaker: null, dialogue: '',
+        background: { asset_id: 'bg_room', effects: [eff('uX', id, params)] },
+        characters: {}, audio: noAudio,
+      }]
+      const b = buildBundle([d], r, characterConfigs, assets)
+      expect(b.script).toContain(expected)
+    }
+  })
+
+  it('缓动曲线覆盖官方 32 条内建 warper', () => {
+    expect(RENPY_WARPERS.length).toBe(32)
+    expect(RENPY_WARPERS[0]).toBe('linear')
+    for (const w of ['pause', 'ease', 'easein', 'easeout', 'ease_bounce', 'easeout_elastic']) {
+      expect(RENPY_WARPERS).toContain(w)
+    }
+  })
+
+  it('非 linear 曲线内联进定义名与正文，且不污染形参表', () => {
+    const idx = RENPY_WARPERS.indexOf('easeout_bounce')
+    const params = { duration: 0.6, amplitude: 10, warp: idx }
+    const d = baseDelta('LC', {
+      characters: {
+        c1: { sprite_id: 'smile', position_slot: 'center', char_id: 'alice', action: 'show',
+          effects: [eff('uC', 'shake', params)] },
+      },
+    })
+    const r: ResolvedLineState[] = [{
+      line_id: 'LC', speaker: null, dialogue: '', background: null,
+      characters: { c1: { sprite_id: 'smile', char_id: 'alice', position_slot: 'center',
+        effects: [eff('uC', 'shake', params)] } },
+      audio: noAudio,
+    }]
+    const b = buildBundle([d], r, characterConfigs, assets)
+    expect(b.transforms).toContain('transform sw_custom_shake_easeout_bounce(duration=0.6, amplitude=10):')
+    expect(b.transforms).toContain('easeout_bounce (duration / 4.0) xoffset -amplitude')
+    // 曲线不得出现在形参表或调用实参中
+    expect(b.transforms).not.toContain('warp=')
+    expect(b.script).not.toContain('warp=')
+    expect(b.script).toContain('sw_custom_shake_easeout_bounce(duration=0.6, amplitude=10)')
+  })
+
+  it('默认 linear 曲线保持原定义名，保证既有工程不受影响', () => {
+    const params = { duration: 0.6, amplitude: 10 }
+    const d = baseDelta('LD', {
+      characters: {
+        c1: { sprite_id: 'smile', position_slot: 'center', char_id: 'alice', action: 'show',
+          effects: [eff('uD', 'shake', params)] },
+      },
+    })
+    const r: ResolvedLineState[] = [{
+      line_id: 'LD', speaker: null, dialogue: '', background: null,
+      characters: { c1: { sprite_id: 'smile', char_id: 'alice', position_slot: 'center',
+        effects: [eff('uD', 'shake', params)] } },
+      audio: noAudio,
+    }]
+    const b = buildBundle([d], r, characterConfigs, assets)
+    expect(b.transforms).toContain('transform sw_custom_shake(duration=0.6, amplitude=10):')
+    expect(b.transforms).not.toContain('sw_custom_shake_linear')
+  })
+
+  it('可挂载表内不存在对预定义转场实例的括号调用（全表扫描）', () => {
+    const bare = MOUNTABLE_EFFECTS.filter((m) => m.emit?.via === 'bare')
+    expect(bare.length).toBeGreaterThan(20)
+    for (const m of bare) {
+      // 裸用通道一律不得声明参数，否则导出时会被迫加括号
+      expect(m.params.length).toBe(0)
+    }
   })
 
   it('滤镜挂载导出为 show layer master: matrixcolor（全屏色调），且不进 transforms.rpy', () => {
