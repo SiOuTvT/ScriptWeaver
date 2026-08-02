@@ -287,12 +287,13 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
           const na = { ...next.audio }
           const bgm = na.bgm
           if (bgm && typeof bgm === 'object' && 'asset_id' in bgm) {
-            const audioAsset = importedAudioMap.get(bgm.asset_id.replace(/\.[^.]+$/, ''))
+            // 解析出的 audio.bgm.asset_id 形如 sw-audio:nhjj（带前缀），需去掉前缀按 refName 查真实素材 id
+            const audioAsset = importedAudioMap.get(bgm.asset_id.replace(/^sw-audio:/, ''))
             if (audioAsset) na.bgm = { ...bgm, asset_id: audioAsset.id }
           }
           if (na.se) {
             na.se = na.se.map(ref => {
-              const audioAsset = importedAudioMap.get(ref.replace(/\.[^.]+$/, ''))
+              const audioAsset = importedAudioMap.get(ref.replace(/^sw-audio:/, ''))
               return audioAsset ? audioAsset.id : ref
             })
           }

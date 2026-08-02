@@ -52,6 +52,7 @@ export interface SymbolTable {
   }>
   bgDefs: Map<string, AssetItem>
   audioDefs: Map<string, AssetItem>
+  videoDefs: Map<string, AssetItem>
   slots: Record<string, { xalign: number; yalign: number; anchor_point: string }>
 }
 
@@ -593,12 +594,14 @@ export function buildSymbolTable(
     charDefs[c.charId] = { displayName: c.displayName, dialogueColor: c.dialogueColor, expressions: expMap }
   }
 
-  // 背景 / 音频 索引
+  // 背景 / 音频 / 视频 索引
   const bgDefs = new Map<string, AssetItem>()
   const audioDefs = new Map<string, AssetItem>()
+  const videoDefs = new Map<string, AssetItem>()
   for (const a of assets) {
     if (a.type === 'background') bgDefs.set(a.id, a)
     else if (a.type === 'audio') audioDefs.set(a.id, a)
+    else if (a.type === 'video') videoDefs.set(a.id, a)
   }
 
   // 位置槽位
@@ -607,7 +610,7 @@ export function buildSymbolTable(
     slots[s.id] = { xalign: s.anchor_x, yalign: s.anchor_y, anchor_point: s.anchor_point }
   }
 
-  return { speakerToCharId, charDefs, bgDefs, audioDefs, slots }
+  return { speakerToCharId, charDefs, bgDefs, audioDefs, videoDefs, slots }
 }
 
 // ======================= 校验层（A-5 扩展 voice/se） =======================
@@ -939,10 +942,15 @@ function compileToNodes(
     if (newBgKey !== currentBgKey) {
       currentBgKey = newBgKey
       if (newBg) {
-        if (newBg.startsWith('sw-video:')) {
+        // 视频背景判定：兼容旧约定 sw-video:<文件名> 前缀，也要识别导入后真实视频素材 id（其 type==='video'）。
+        // 导入链路会把 sw-video: 重映射成真实素材 id，仅靠前缀会在导入后把视频背景错当成普通背景导出（缺失背景）。
+        const bgVideoAsset = st.videoDefs.get(newBg)
+        if (newBg.startsWith('sw-video:') || bgVideoAsset?.type === 'video') {
           // 视频背景：导出为可循环的电影 displayable，挂到 bg 标签（与导入 Movie(play=...) 往返一致）。
           // loop 缺省为 True（背景视频通常循环），由 background.movieLoop 控制；布尔须大写 True/False。
-          const clip = newBg.slice('sw-video:'.length)
+          const clip = newBg.startsWith('sw-video:')
+            ? newBg.slice('sw-video:'.length)
+            : (bgVideoAsset?.fileName ?? '')
           const loop = state.background?.movieLoop ?? true
           block.push({ kind: 'video_bg', clip, loop })
         } else {

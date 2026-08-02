@@ -184,7 +184,7 @@
   function renderBackground(state) {
     var bg = state.background
     var id = bg && bg.asset_id
-    var isVideo = !!(id && id.indexOf('sw-video:') === 0)
+    var isVideo = !!(id && (id.indexOf('sw-video:') === 0 || (assetMap[id] && assetMap[id].type === 'video')))
     var src = id && assetMap[id] ? assetMap[id].src : null
     var img = bgLayer.querySelector('img')
     var vid = bgLayer.querySelector('video')

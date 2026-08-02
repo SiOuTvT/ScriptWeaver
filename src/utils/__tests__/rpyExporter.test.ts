@@ -802,6 +802,18 @@ describe('rpyExporter · 视频背景 Movie 与舞台镜头 camera（Camera/Vide
     expect(out).toContain('scene bg = Movie(play="video/op.webm", loop=False)')
   })
 
+  it('导入后视频背景用真实素材 id（type=video）也能正确导为 Movie', () => {
+    // 导入链路会把 sw-video:op.webm 重映射成真实哈希素材 id，导出器必须靠素材 type 识别视频背景
+    const realIdAssets: AssetItem[] = [
+      ...assets,
+      { id: 'vid_abc_op.webm', type: 'video', name: 'op', fileName: 'op.webm', relativePath: 'assets/video/op.webm', importedAt: '' },
+    ]
+    const d = [baseDelta('V1', { speaker: 'alice', dialogue: 'x', background: { asset_id: 'vid_abc_op.webm', movieLoop: true } })]
+    const s = reduceLines(d)
+    const out = buildBundle(d, s, characterConfigs, realIdAssets).script
+    expect(out).toContain('scene bg = Movie(play="video/op.webm", loop=True)')
+  })
+
   it('buildAssetRefs 拷贝视频素材到 game/video', () => {
     expect(bundle.assets.some((a) => a.type === 'video' && a.assetId === 'sw-video:op.webm')).toBe(true)
   })

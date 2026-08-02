@@ -1372,7 +1372,10 @@ export default function StagePreview() {
   // 缺省引擎中心定位（xalign / yalign 0.5）：取景焦点即锚点，对准屏幕中心
   const bgLeftPx = 0.5 * stageSize.w - bgFocusX * bgBoxWpx
   const bgTopPx = 0.5 * stageSize.h - bgFocusY * bgBoxHpx
-  const isVideoBg = !!state.background?.asset_id?.startsWith('sw-video:')
+  // 视频背景判定：兼容旧约定 sw-video:<文件名> 前缀，也要识别导入后真实视频素材 id（其 type==='video'）。
+  // 导入链路会把 sw-video: 重映射成真实素材 id，仅靠前缀会在导入后漏判视频背景，被当图片渲染。
+  const bgAssetForVideo = assets.find((a) => a.id === state.background?.asset_id)
+  const isVideoBg = !!state.background?.asset_id?.startsWith('sw-video:') || bgAssetForVideo?.type === 'video'
 
   return (
     <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm overflow-hidden">
