@@ -836,6 +836,9 @@ export default function StagePreview() {
     [selectedIndex, updateDeltaAt],
   )
 
+  /** 右侧特效面板（背景特效 / 舞台滤镜 / 镜头运动）是否收起为细条 */
+  const [fxCollapsed, setFxCollapsed] = useState(false)
+
   /** 切换视频背景是否循环（仅 sw-video: 背景生效） */
   const setBgMovieLoop = useCallback(
     (loop: boolean) => {
@@ -2157,60 +2160,84 @@ export default function StagePreview() {
         )}
 
         {/* 背景特效挂载面板 + 视频循环：当前行有背景即常驻（与立绘面板并列，互不遮挡） */}
-        {state.background && (
-          <aside className="flex w-52 shrink-0 flex-col gap-2 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
-            <div className="flex items-center gap-1.5">
-              <ImageIcon size={13} strokeWidth={1.75} className="text-signal" />
-              <span className="text-[12px] font-semibold text-fg">背景特效</span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-fg-faint">应用到本行背景的演出特效。</p>
-            <EffectMountPanel
-              scope="background"
-              effects={state.background.effects ?? []}
-              onChange={(next) => setBgEffects(next)}
-            />
-            {isVideoBg && (
-              <label className="mt-1 flex cursor-pointer select-none items-center justify-between rounded-md border border-edge/12 bg-canvas/60 px-2 py-1.5">
-                <span className="text-[12px] text-fg-muted">视频循环播放</span>
-                <input
-                  type="checkbox"
-                  className="h-3.5 w-3.5 accent-signal"
-                  checked={state.background?.movieLoop ?? true}
-                  onChange={(e) => setBgMovieLoop(e.target.checked)}
-                />
-              </label>
-            )}
+        {fxCollapsed ? (
+          /* 收起态：一条细轨，点击重新展开 */
+          <aside className="flex w-9 shrink-0 flex-col items-center gap-2 border-l border-edge/12 bg-surface/95 py-2 shadow-xl">
+            <button
+              type="button"
+              onClick={() => setFxCollapsed(false)}
+              title="展开特效面板（背景特效 / 舞台滤镜 / 镜头运动）"
+              className="rounded-md p-1.5 text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg"
+            >
+              <ChevronLeft size={15} strokeWidth={1.75} />
+            </button>
           </aside>
-        )}
+        ) : (
+          <>
+            {state.background && (
+              <aside className="flex w-52 shrink-0 flex-col gap-2 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
+                <div className="flex items-center gap-1.5">
+                  <ImageIcon size={13} strokeWidth={1.75} className="text-signal" />
+                  <span className="text-[12px] font-semibold text-fg">背景特效</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-fg-faint">应用到本行背景的演出特效。</p>
+                <EffectMountPanel
+                  scope="background"
+                  effects={state.background.effects ?? []}
+                  onChange={(next) => setBgEffects(next)}
+                />
+                {isVideoBg && (
+                  <label className="mt-1 flex cursor-pointer select-none items-center justify-between rounded-md border border-edge/12 bg-canvas/60 px-2 py-1.5">
+                    <span className="text-[12px] text-fg-muted">视频循环播放</span>
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5 accent-signal"
+                      checked={state.background?.movieLoop ?? true}
+                      onChange={(e) => setBgMovieLoop(e.target.checked)}
+                    />
+                  </label>
+                )}
+              </aside>
+            )}
 
-        {/* 舞台 / 镜头特效：常驻右侧，属 Dock 抽屉（不遮挡头部核心按钮）。
-            舞台滤镜仅 matrixcolor 滤镜类（scope=filter）；镜头运动为整层摄像机变换（scope=stage）。 */}
-        <aside className="flex w-52 shrink-0 flex-col gap-3 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
-          <div>
-            <div className="flex items-center gap-1.5">
-              <Sparkles size={13} strokeWidth={1.75} className="text-signal" />
-              <span className="text-[12px] font-semibold text-fg">舞台滤镜</span>
-            </div>
-            <p className="mb-1 text-[11px] leading-relaxed text-fg-faint">整层色调，作用于全部图层。</p>
-            <EffectMountPanel
-              scope="filter"
-              effects={state.stageEffects ?? []}
-              onChange={(next) => setStageEffects(next)}
-            />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <Film size={13} strokeWidth={1.75} className="text-signal" />
-              <span className="text-[12px] font-semibold text-fg">镜头运动</span>
-            </div>
-            <p className="mb-1 text-[11px] leading-relaxed text-fg-faint">整层摄像机位移 / 缩放 / 立体翻转。</p>
-            <EffectMountPanel
-              scope="stage"
-              effects={state.cameraEffects ?? []}
-              onChange={(next) => setCameraEffects(next)}
-            />
-          </div>
-        </aside>
+            {/* 舞台 / 镜头特效：常驻右侧，可整体收起为细轨，不遮挡头部核心按钮。
+                舞台滤镜仅 matrixcolor 滤镜类（scope=filter）；镜头运动为整层摄像机变换（scope=stage）。 */}
+            <aside className="flex w-52 shrink-0 flex-col gap-3 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={13} strokeWidth={1.75} className="text-signal" />
+                  <span className="text-[12px] font-semibold text-fg">舞台滤镜</span>
+                  <button
+                    type="button"
+                    onClick={() => setFxCollapsed(true)}
+                    title="收起特效面板"
+                    className="ml-auto rounded-md p-1 text-fg-faint transition-colors hover:bg-surface-hover hover:text-fg"
+                  >
+                    <ChevronRight size={14} strokeWidth={1.75} />
+                  </button>
+                </div>
+                <p className="mb-1 text-[11px] leading-relaxed text-fg-faint">整层色调，作用于全部图层。</p>
+                <EffectMountPanel
+                  scope="filter"
+                  effects={state.stageEffects ?? []}
+                  onChange={(next) => setStageEffects(next)}
+                />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <Film size={13} strokeWidth={1.75} className="text-signal" />
+                  <span className="text-[12px] font-semibold text-fg">镜头运动</span>
+                </div>
+                <p className="mb-1 text-[11px] leading-relaxed text-fg-faint">整层摄像机位移 / 缩放 / 立体翻转。</p>
+                <EffectMountPanel
+                  scope="stage"
+                  effects={state.cameraEffects ?? []}
+                  onChange={(next) => setCameraEffects(next)}
+                />
+              </div>
+            </aside>
+          </>
+        )}
       </div>
     </main>
   )
