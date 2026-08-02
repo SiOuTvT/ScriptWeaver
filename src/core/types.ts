@@ -312,6 +312,11 @@ export interface LineDelta {
     focus_y?: number
     /** 挂载到背景的特效（淡入 / 擦除 / 闪烁…），导出为 `with` 或 `scene ... at <transform>` */
     effects?: MountedEffect[]
+    /**
+     * 视频背景是否循环播放（仅当 asset_id 以 `sw-video:` 开头时生效）。
+     * 导出为 `scene bg = Movie(play=..., loop=<bool>)`；缺省 true（背景视频通常循环）。
+     */
+    movieLoop?: boolean
   } | null
 
   /**
@@ -343,6 +348,14 @@ export interface LineDelta {
    * undefined = 继承上一行；null/[] = 显式清空（无滤镜）。
    */
   stageEffects?: MountedEffect[] | null
+
+  /**
+   * 舞台级镜头特效（scope: 'stage'，与 stageEffects 滤镜并列但作用于「摄像机」）。
+   * 导出为整层 `camera at <transform>`，控制镜头位移 / 缩放 / 震动 / 立体翻转等运动；
+   * 后续无镜头特效的行自动复位 `camera`（裸语句），避免镜头残影。
+   * undefined = 继承上一行；null/[] = 显式清空（无镜头运动）。
+   */
+  cameraEffects?: MountedEffect[] | null
 
   /**
    * 本行触发的变量操作（在台词前发射 `$ <python 表达式>`）。
@@ -523,11 +536,15 @@ export interface ResolvedLineState {
     focus_x?: number
     focus_y?: number
     effects?: MountedEffect[]
+    /** 视频背景循环播放（同 LineDelta.background.movieLoop） */
+    movieLoop?: boolean
   } | null
   characters: Record<string, ResolvedCharacterState>
   audio: ResolvedAudioState
   /** 合并后的舞台级全局滤镜（继承上一行；空数组表示无滤镜） */
   stageEffects?: MountedEffect[]
+  /** 合并后的舞台级镜头特效（继承上一行；空数组表示无镜头运动） */
+  cameraEffects?: MountedEffect[]
   /** 行类型（合并透传） */
   line_type?: LineType
   /** 合并后的选择支选项（仅选择支行） */

@@ -15,8 +15,8 @@ import {
 interface EffectMountPanelProps {
   /** 当前已挂载的特效（来自立绘 / 背景） */
   effects: MountedEffect[]
-  /** 挂载目标，决定下拉可用预设 */
-  scope: 'sprite' | 'background'
+  /** 挂载目标，决定下拉可用预设（'stage' = 舞台镜头 camera，'filter' = 仅 matrixcolor 滤镜） */
+  scope: 'sprite' | 'background' | 'stage' | 'filter'
   /** 任意变更（增 / 删 / 启停 / 调参）后回传完整新数组，由父级单事务提交 */
   onChange: (next: MountedEffect[]) => void
 }

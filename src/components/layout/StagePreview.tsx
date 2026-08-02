@@ -836,6 +836,34 @@ export default function StagePreview() {
     [selectedIndex, updateDeltaAt],
   )
 
+  /** 切换视频背景是否循环（仅 sw-video: 背景生效） */
+  const setBgMovieLoop = useCallback(
+    (loop: boolean) => {
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => {
+        const bg = prev.background
+        if (!bg) return prev
+        return { ...prev, background: { ...bg, movieLoop: loop } }
+      })
+    },
+    [selectedIndex, updateDeltaAt],
+  )
+
+  /** 设置舞台级全局滤镜（整层色调，导出为 show layer master: matrixcolor） */
+  const setStageEffects = useCallback(
+    (next: MountedEffect[]) => {
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => ({ ...prev, stageEffects: next }))
+    },
+    [selectedIndex, updateDeltaAt],
+  )
+
+  /** 设置舞台级镜头特效（整层摄像机运动 / 立体，导出为 camera at ...） */
+  const setCameraEffects = useCallback(
+    (next: MountedEffect[]) => {
+      updateDeltaAt(selectedIndex, (prev: LineDelta) => ({ ...prev, cameraEffects: next }))
+    },
+    [selectedIndex, updateDeltaAt],
+  )
+
   /** 设置立绘自由坐标（X/Y，独立于缩放）。面板滑块实时驱动，所见即所得；写入前 clamp 到完整可见范围 */
   const setCharPos = useCallback(
     (charId: string, x: number, y: number) => {
@@ -2126,7 +2154,7 @@ export default function StagePreview() {
           </aside>
         )}
 
-        {/* 背景特效挂载面板：当前行有背景即常驻（与立绘面板并列，互不遮挡） */}
+        {/* 背景特效挂载面板 + 视频循环：当前行有背景即常驻（与立绘面板并列，互不遮挡） */}
         {state.background && (
           <aside className="flex w-52 shrink-0 flex-col gap-2 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
             <div className="flex items-center gap-1.5">
@@ -2139,8 +2167,48 @@ export default function StagePreview() {
               effects={state.background.effects ?? []}
               onChange={(next) => setBgEffects(next)}
             />
+            {isVideoBg && (
+              <label className="mt-1 flex cursor-pointer select-none items-center justify-between rounded-md border border-edge/12 bg-canvas/60 px-2 py-1.5">
+                <span className="text-[12px] text-fg-muted">视频循环播放</span>
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5 accent-signal"
+                  checked={state.background?.movieLoop ?? true}
+                  onChange={(e) => setBgMovieLoop(e.target.checked)}
+                />
+              </label>
+            )}
           </aside>
         )}
+
+        {/* 舞台 / 镜头特效：常驻右侧，属 Dock 抽屉（不遮挡头部核心按钮）。
+            舞台滤镜仅 matrixcolor 滤镜类（scope=filter）；镜头运动为整层摄像机变换（scope=stage）。 */}
+        <aside className="flex w-52 shrink-0 flex-col gap-3 overflow-y-auto border-l border-edge/12 bg-surface/95 p-3 shadow-xl">
+          <div>
+            <div className="flex items-center gap-1.5">
+              <Sparkles size={13} strokeWidth={1.75} className="text-signal" />
+              <span className="text-[12px] font-semibold text-fg">舞台滤镜</span>
+            </div>
+            <p className="mb-1 text-[11px] leading-relaxed text-fg-faint">整层色调，作用于全部图层。</p>
+            <EffectMountPanel
+              scope="filter"
+              effects={state.stageEffects ?? []}
+              onChange={(next) => setStageEffects(next)}
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <Film size={13} strokeWidth={1.75} className="text-signal" />
+              <span className="text-[12px] font-semibold text-fg">镜头运动</span>
+            </div>
+            <p className="mb-1 text-[11px] leading-relaxed text-fg-faint">整层摄像机位移 / 缩放 / 立体翻转。</p>
+            <EffectMountPanel
+              scope="stage"
+              effects={state.cameraEffects ?? []}
+              onChange={(next) => setCameraEffects(next)}
+            />
+          </div>
+        </aside>
       </div>
     </main>
   )

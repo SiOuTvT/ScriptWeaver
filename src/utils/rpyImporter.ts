@@ -538,7 +538,7 @@ export function parseRpy(
    * 而且背景/音频只在空白行上生效、到了真正的对白行就丢失。
    * 正确做法：把指令累积进 acc，遇到下一条「对白/选择支/变量操作」时合并成一个 beat。
    */
-  type BgAcc = { asset_id: string; transition?: string; scale?: number; focus_x?: number; focus_y?: number }
+  type BgAcc = { asset_id: string; transition?: string; scale?: number; focus_x?: number; focus_y?: number; movieLoop?: boolean }
   let accBackground: BgAcc | null = null
   let accCharacters: Record<string, CharacterDelta> = {}
   /**
@@ -1007,6 +1007,30 @@ export function parseRpy(
       && !/^[a-zA-Z_]\w*\s+"[^"]*"\s*$/.test(line)) {
       blockMode = 'skip'
       skipIndent = raw.length - raw.trimStart().length
+      continue
+    }
+
+    // ---- 视频背景（scene bg = Movie(play="video/<file>", loop=...)）----
+    // 与导出的 Movie 背景往返一致；loop 缺省 True，解析为 movieLoop 标记。
+    const movieBg = line.match(/^scene\s+bg\s*=\s*Movie\(\s*play\s*=\s*["']([^"']+)["']\s*(?:,\s*loop\s*=\s*(True|False|true|false))?\s*\)/)
+    if (movieBg) {
+      const path = movieBg[1]
+      const base = path.includes('/') ? path.slice(path.lastIndexOf('/') + 1) : path
+      const loopStr = movieBg[2]
+      const movieLoop = loopStr ? /^(True|true)$/.test(loopStr) : true
+      const assetId = `sw-video:${base}`
+      if (!cutsceneSeen.has(base)) {
+        cutsceneSeen.add(base)
+        warnings.push(`视频背景 ${base} 已用占位面板标记，正片仍需回 Ren'Py 播放`)
+      }
+      accBackground = { asset_id: assetId, movieLoop }
+      lineId++
+      emitDelta({
+        ...baseDelta(lineId),
+        background: { asset_id: assetId, movieLoop },
+        characters: noChars,
+        audio: emptyAudio,
+      })
       continue
     }
 

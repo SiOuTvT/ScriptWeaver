@@ -53,6 +53,13 @@ export function applyDelta(
       ? delta.stageEffects ?? []
       : prev?.stageEffects ?? []
 
+  // --- 舞台级镜头特效（scope: 'stage'，运动/立体类，导出为 camera at ...）---
+  // 合并规则与 stageEffects 一致：undefined 继承上一行；null/[] 显式清空
+  const cameraEffects: MountedEffect[] =
+    delta.cameraEffects !== undefined
+      ? delta.cameraEffects ?? []
+      : prev?.cameraEffects ?? []
+
 
   // --- 角色 ---
   // 1. 继承上一行所有角色状态（浅拷贝）
@@ -134,6 +141,7 @@ export function applyDelta(
     background,
     characters,
     stageEffects,
+    cameraEffects,
     line_type: delta.line_type ?? 'dialogue',
     choices: delta.line_type === 'choice' ? (delta.choices ?? []) : undefined,
     prompt: delta.line_type === 'choice' ? (delta.prompt ?? '') : undefined,
@@ -206,6 +214,7 @@ export function normalizeDelta(d: LineDelta): LineDelta {
   }
   if (d.label !== undefined) base.label = d.label
   if (d.stageEffects !== undefined) base.stageEffects = d.stageEffects ?? []
+  if (d.cameraEffects !== undefined) base.cameraEffects = d.cameraEffects ?? []
   if (d.variableOps) base.variableOps = d.variableOps
   if (d.save_point !== undefined) base.save_point = d.save_point
   return base

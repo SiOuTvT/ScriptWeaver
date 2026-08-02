@@ -146,8 +146,8 @@ export interface MountableEffectDef {
   renpyEffectId: string
   /** 展示名（下拉与面板显示） */
   cn: string
-  /** 可挂载目标：立绘 / 背景（多数两者皆可） */
-  scope: ('sprite' | 'background')[]
+  /** 可挂载目标：立绘 / 背景 / 舞台镜头（camera）/ 滤镜专用（filter，仅 matrixcolor 类） */
+  scope: ('sprite' | 'background' | 'stage' | 'filter')[]
   /** 挂载语义（驱动导出通道） */
   kind: EffectKind
   /** 三大核心类目归属（驱动 UI 分组导航） */
@@ -178,7 +178,7 @@ export const MOUNTABLE_EFFECTS: MountableEffectDef[] = [
   // ===================== 一、组件 / 元素特效类（Element Effects） =====================
   // 针对单个立绘 / 单张背景的持续动效，导出为 `at <transform>` 叠加在元素上。
   {
-    id: 'shake', renpyEffectId: 'shake', cn: '自定义抖动 (Shake)', category: 'element', scope: ['sprite'], kind: 'transform',
+    id: 'shake', renpyEffectId: 'shake', cn: '自定义抖动 (Shake)', category: 'element', scope: ['sprite', 'stage'], kind: 'transform',
     params: [
       { key: 'duration', label: '时长', min: 0.2, max: 3, step: 0.1, def: 0.6, unit: 's' },
       { key: 'amplitude', label: '幅度', min: 2, max: 40, step: 1, def: 10, unit: 'px' },
@@ -186,7 +186,7 @@ export const MOUNTABLE_EFFECTS: MountableEffectDef[] = [
     ],
   },
   {
-    id: 'zoomin', renpyEffectId: 'zoomin', cn: '弹性放大 (ZoomIn)', category: 'element', scope: ['sprite', 'background'], kind: 'transform',
+    id: 'zoomin', renpyEffectId: 'zoomin', cn: '弹性放大 (ZoomIn)', category: 'element', scope: ['sprite', 'background', 'stage'], kind: 'transform',
     params: [
       { key: 'zoom', label: '目标缩放', min: 1, max: 2, step: 0.05, def: 1.2, unit: 'x' },
       { key: 'duration', label: '时长', min: 0.2, max: 3, step: 0.1, def: 0.6, unit: 's' },
@@ -203,7 +203,7 @@ export const MOUNTABLE_EFFECTS: MountableEffectDef[] = [
     ],
   },
   {
-    id: 'breathing', renpyEffectId: 'tf-zoom', cn: '呼吸效果 (Breathing)', category: 'element', scope: ['sprite', 'background'], kind: 'transform',
+    id: 'breathing', renpyEffectId: 'tf-zoom', cn: '呼吸效果 (Breathing)', category: 'element', scope: ['sprite', 'background', 'stage'], kind: 'transform',
     params: [
       { key: 'rate', label: '频率', min: 0.2, max: 2, step: 0.1, def: 0.6, unit: 'Hz' },
       { key: 'depth', label: '缩放幅度', min: 0.02, max: 0.2, step: 0.01, def: 0.05, unit: 'x' },
@@ -211,7 +211,7 @@ export const MOUNTABLE_EFFECTS: MountableEffectDef[] = [
     ],
   },
   {
-    id: 'nudge', renpyEffectId: 'tf-offset', cn: '位置微调 (Nudge)', category: 'element', scope: ['sprite', 'background'], kind: 'transform',
+    id: 'nudge', renpyEffectId: 'tf-offset', cn: '位置微调 (Nudge)', category: 'element', scope: ['sprite', 'background', 'stage'], kind: 'transform',
     params: [
       { key: 'dx', label: '水平幅度', min: 0, max: 20, step: 1, def: 6, unit: 'px' },
       { key: 'dy', label: '垂直幅度', min: 0, max: 20, step: 1, def: 4, unit: 'px' },
@@ -220,7 +220,7 @@ export const MOUNTABLE_EFFECTS: MountableEffectDef[] = [
     ],
   },
   {
-    id: 'alpha', renpyEffectId: 'tf-alpha', cn: '透明度 (Alpha)', category: 'element', scope: ['sprite', 'background'], kind: 'transform',
+    id: 'alpha', renpyEffectId: 'tf-alpha', cn: '透明度 (Alpha)', category: 'element', scope: ['sprite', 'background', 'stage'], kind: 'transform',
     params: [
       { key: 'alpha', label: '不透明度', min: 0, max: 1, step: 0.05, def: 0.6 },
       { key: 'duration', label: '时长', min: 0.2, max: 3, step: 0.1, def: 0.8, unit: 's' },
@@ -228,7 +228,7 @@ export const MOUNTABLE_EFFECTS: MountableEffectDef[] = [
     ],
   },
   {
-    id: 'rotate', renpyEffectId: 'tf-rotate', cn: '旋转 (Rotate)', category: 'element', scope: ['sprite', 'background'], kind: 'transform',
+    id: 'rotate', renpyEffectId: 'tf-rotate', cn: '旋转 (Rotate)', category: 'element', scope: ['sprite', 'background', 'stage'], kind: 'transform',
     params: [
       { key: 'angle', label: '角度', min: 0, max: 360, step: 5, def: 360, unit: '°' },
       { key: 'duration', label: '时长', min: 0.2, max: 3, step: 0.1, def: 1, unit: 's' },
@@ -243,6 +243,47 @@ export const MOUNTABLE_EFFECTS: MountableEffectDef[] = [
     id: 'blur', renpyEffectId: 'tf-blur', cn: '模糊 (Blur)', category: 'element', scope: ['sprite', 'background'], kind: 'transform',
     params: [{ key: 'blur', label: '模糊半径', min: 0, max: 20, step: 1, def: 6, unit: 'px' }],
   },
+
+  // ===================== 立体 / 镜头 3D 族（perspective + x/y/zrotate + zzoom） =====================
+  // 官方 3D 舞台基于 transform 的 perspective 属性 + 旋转/深度属性，导出为参数化 ATL transform。
+  // 可挂载到立绘 / 背景（做单体 3D 翻面），也可挂载到舞台镜头（camera）做整屏立体运动。
+  {
+    id: 't-3d-flip', renpyEffectId: 's-perspective', cn: '立体翻转 (3D Flip)', category: 'element', scope: ['sprite', 'background', 'stage'], kind: 'transform',
+    emit: { via: 'custom' },
+    params: [
+      { key: 'perspective', label: '透视强度', min: 200, max: 2000, step: 50, def: 800 },
+      { key: 'duration', label: '时长', min: 0.3, max: 4, step: 0.1, def: 1.2, unit: 's' },
+      WARP_PARAM,
+    ],
+  },
+  {
+    id: 't-3d-tumble', renpyEffectId: 's-perspective', cn: '立体翻滚 (3D Tumble)', category: 'element', scope: ['sprite', 'background', 'stage'], kind: 'transform',
+    emit: { via: 'custom' },
+    params: [
+      { key: 'perspective', label: '透视强度', min: 200, max: 2000, step: 50, def: 800 },
+      { key: 'duration', label: '时长', min: 0.3, max: 4, step: 0.1, def: 1.2, unit: 's' },
+      WARP_PARAM,
+    ],
+  },
+  {
+    id: 't-3d-orbit', renpyEffectId: 's-matrixtransform', cn: '立体环绕 (3D Orbit)', category: 'element', scope: ['sprite', 'background', 'stage'], kind: 'transform',
+    emit: { via: 'custom' },
+    params: [
+      { key: 'perspective', label: '透视强度', min: 200, max: 2000, step: 50, def: 800 },
+      { key: 'duration', label: '时长', min: 0.3, max: 4, step: 0.1, def: 1.4, unit: 's' },
+      WARP_PARAM,
+    ],
+  },
+  {
+    id: 't-3d-zoom', renpyEffectId: 's-perspective', cn: '立体推进 (3D Zoom)', category: 'element', scope: ['sprite', 'background', 'stage'], kind: 'transform',
+    emit: { via: 'custom' },
+    params: [
+      { key: 'perspective', label: '透视强度', min: 200, max: 2000, step: 50, def: 800 },
+      { key: 'duration', label: '时长', min: 0.3, max: 4, step: 0.1, def: 1, unit: 's' },
+      WARP_PARAM,
+    ],
+  },
+
 
   // ===================== 二、全屏转场类（Transitions） =====================
   // 针对场景切换 / 剧本行行进的视觉过渡，导出为 `with <transition>`。
@@ -484,14 +525,14 @@ export const MOUNTABLE_EFFECTS: MountableEffectDef[] = [
   // 针对整个舞台色调与氛围，导出为 `show layer master: matrixcolor <Matrix>`，
   // 复用 Ren'Py 内建 SaturationMatrix / SepiaMatrix / HueMatrix，无需自定义 shader。
   {
-    id: 'monochrome', renpyEffectId: 'mc-saturation', cn: '黑白 / 回忆 (Monochrome)', category: 'filter', scope: ['sprite', 'background'], kind: 'filter',
+    id: 'monochrome', renpyEffectId: 'mc-saturation', cn: '黑白 / 回忆 (Monochrome)', category: 'filter', scope: ['sprite', 'background', 'filter'], kind: 'filter',
     params: [{ key: 'saturation', label: '去色程度', min: 0, max: 1, step: 0.05, def: 0, unit: 'x' }],
   },
   {
-    id: 'sepia', renpyEffectId: 'mc-sepia', cn: '老照片 (Sepia)', category: 'filter', scope: ['sprite', 'background'], kind: 'filter', params: [],
+    id: 'sepia', renpyEffectId: 'mc-sepia', cn: '老照片 (Sepia)', category: 'filter', scope: ['sprite', 'background', 'filter'], kind: 'filter', params: [],
   },
   {
-    id: 'colormatrix', renpyEffectId: 'mc-matrix', cn: '调色滤镜 (ColorMatrix/Tint)', category: 'filter', scope: ['sprite', 'background'], kind: 'filter',
+    id: 'colormatrix', renpyEffectId: 'mc-matrix', cn: '调色滤镜 (ColorMatrix/Tint)', category: 'filter', scope: ['sprite', 'background', 'filter'], kind: 'filter',
     params: [
       { key: 'hue', label: '色相', min: 0, max: 360, step: 5, def: 0, unit: '°' },
       { key: 'saturation', label: '饱和度', min: 0, max: 2, step: 0.05, def: 1, unit: 'x' },
@@ -499,19 +540,19 @@ export const MOUNTABLE_EFFECTS: MountableEffectDef[] = [
   },
   // 以下为官方 matrixcolor 章节其余内建矩阵类。注意官方并无 ContrastMatrix，故不提供。
   {
-    id: 'brightness', renpyEffectId: 'mc-brightness', cn: '亮度 (Brightness)', category: 'filter', scope: ['sprite', 'background'], kind: 'filter',
+    id: 'brightness', renpyEffectId: 'mc-brightness', cn: '亮度 (Brightness)', category: 'filter', scope: ['sprite', 'background', 'filter'], kind: 'filter',
     params: [{ key: 'value', label: '亮度增减', min: -1, max: 1, step: 0.05, def: 0 }],
   },
   {
-    id: 'invert', renpyEffectId: 'mc-invert', cn: '反色 (Invert)', category: 'filter', scope: ['sprite', 'background'], kind: 'filter',
+    id: 'invert', renpyEffectId: 'mc-invert', cn: '反色 (Invert)', category: 'filter', scope: ['sprite', 'background', 'filter'], kind: 'filter',
     params: [{ key: 'value', label: '反转程度', min: 0, max: 1, step: 0.05, def: 1 }],
   },
   {
-    id: 'opacity', renpyEffectId: 'mc-opacity', cn: '整层不透明度 (Opacity)', category: 'filter', scope: ['sprite', 'background'], kind: 'filter',
+    id: 'opacity', renpyEffectId: 'mc-opacity', cn: '整层不透明度 (Opacity)', category: 'filter', scope: ['sprite', 'background', 'filter'], kind: 'filter',
     params: [{ key: 'value', label: '不透明度', min: 0, max: 1, step: 0.05, def: 1 }],
   },
   {
-    id: 'hue', renpyEffectId: 'mc-hue', cn: '色相旋转 (Hue)', category: 'filter', scope: ['sprite', 'background'], kind: 'filter',
+    id: 'hue', renpyEffectId: 'mc-hue', cn: '色相旋转 (Hue)', category: 'filter', scope: ['sprite', 'background', 'filter'], kind: 'filter',
     params: [{ key: 'value', label: '旋转角度', min: 0, max: 360, step: 5, def: 180, unit: '°' }],
   },
 ]
@@ -523,8 +564,8 @@ export function getMountable(id: string): MountableEffectDef | undefined {
   return MOUNTABLE_EFFECTS.find((m) => m.id === id)
 }
 
-/** 按挂载目标过滤可用预设 */
-export function mountablesForScope(scope: 'sprite' | 'background'): MountableEffectDef[] {
+/** 按挂载目标过滤可用预设；'stage' 为舞台镜头（camera），作用于整层摄像机 */
+export function mountablesForScope(scope: 'sprite' | 'background' | 'stage' | 'filter'): MountableEffectDef[] {
   return MOUNTABLE_EFFECTS.filter((m) => m.scope.includes(scope))
 }
 

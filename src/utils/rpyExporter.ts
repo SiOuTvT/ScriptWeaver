@@ -66,6 +66,8 @@ type RpyNode =
   | { kind: 'scene'; image: string; transition?: string; effectAt?: string[]; effectWith?: string }
   | { kind: 'show'; charId: string; exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string; effectAt?: string[]; effectWith?: string }
   | { kind: 'layer_filter'; expr: string | null }
+  | { kind: 'camera'; transform: string | null }
+  | { kind: 'video_bg'; clip: string; loop: boolean }
   | { kind: 'hide'; charId: string }
   | { kind: 'playMusic'; file: string; fadein?: number; loop: boolean }
   | { kind: 'playAmbient'; file: string; fadein?: number; loop: boolean }
@@ -83,7 +85,7 @@ type RpyNode =
 // ---- 文件包分发模型（A-6）----
 export interface AssetRef {
   assetId: string
-  type: 'background' | 'sprite' | 'audio'
+  type: 'background' | 'sprite' | 'audio' | 'video'
   /** 真实文件名（含扩展名），如 street_dusk.jpg */
   fileName: string
   /** 相对项目根目录的源路径，如 assets/images/background/street_dusk.jpg */
@@ -346,6 +348,8 @@ function collectMountedEffects(resolvedStates: ResolvedLineState[]): MountedEffe
   const out: MountedEffect[] = []
   for (const s of resolvedStates) {
     if (s.background?.effects) out.push(...s.background.effects)
+    if (s.stageEffects) out.push(...s.stageEffects)
+    if (s.cameraEffects) out.push(...s.cameraEffects)
     for (const c of Object.values(s.characters)) if (c.effects) out.push(...c.effects)
   }
   return out
@@ -477,6 +481,15 @@ function effectTransformBody(id: string, warp: string = 'linear'): string[] {
         `    ${w} (0.5 / rate) yoffset dy`,
         `    ${w} (0.5 / rate) yoffset 0`,
       ]
+    // ---- 立体 3D 族（perspective + x/y/zrotate + zzoom）----
+    case 't-3d-flip':
+      return ['perspective perspective', 'yrotate 0', `${w} duration yrotate 360`]
+    case 't-3d-tumble':
+      return ['perspective perspective', 'xrotate 0', `${w} duration xrotate 360`]
+    case 't-3d-orbit':
+      return ['perspective perspective', 'yrotate 0 zrotate 0', `${w} duration yrotate 360 zrotate 360`]
+    case 't-3d-zoom':
+      return ['perspective perspective', 'zzoom 1.0', `${w} duration zzoom zzoom`]
     // ---- transition 型（with 调度，自定义 ATL 过渡）----
     case 'hpunch':
       return ['xoffset 0', 'linear 0.06 xoffset -10', 'linear 0.06 xoffset 10', 'linear 0.06 xoffset 0']
@@ -886,6 +899,7 @@ function compileToNodes(
   let currentBgm: string | null = null
   let currentAmbient: string | null = null
   let currentLayerFilter: string | null = null
+  let currentCameraTransform: string | null = null
   let currentChars = new Map<string, { exprId: string; at: AtClause; zorder: number; zoom?: number; transition?: string; effectsSig: string; effects?: MountedEffect[] }>()
 
   for (let i = 0; i < resolvedStates.length; i++) {
@@ -916,16 +930,17 @@ function compileToNodes(
     const bgFocusX = state.background?.focus_x ?? 0.5
     const bgFocusY = state.background?.focus_y ?? 0.5
     const newBgKey = newBg
-      ? `${newBg}|${effectsSig(state.background?.effects)}|${bgZoom}|${bgFocusX}|${bgFocusY}`
+      ? `${newBg}|${effectsSig(state.background?.effects)}|${bgZoom}|${bgFocusX}|${bgFocusY}|${state.background?.movieLoop ?? ''}`
       : null
     if (newBgKey !== currentBgKey) {
       currentBgKey = newBgKey
       if (newBg) {
         if (newBg.startsWith('sw-video:')) {
-          // 视频过场占位：导出为 renpy.movie_cutscene 调用，与导入格式一致，保证往返
+          // 视频背景：导出为可循环的电影 displayable，挂到 bg 标签（与导入 Movie(play=...) 往返一致）。
+          // loop 缺省为 True（背景视频通常循环），由 background.movieLoop 控制；布尔须大写 True/False。
           const clip = newBg.slice('sw-video:'.length)
-          block.push({ kind: 'comment', text: `视频过场 ${clip}（正片请在 Ren'Py 中播放）` })
-          block.push({ kind: 'python', expr: `renpy.movie_cutscene("${clip}")` })
+          const loop = state.background?.movieLoop ?? true
+          block.push({ kind: 'video_bg', clip, loop })
         } else {
           const transition = resolveTransition(state.background?.transition, customTransitions)
           const bgFx = mountEffects(state.background?.effects)
@@ -955,6 +970,16 @@ function compileToNodes(
     if (lineFilterExpr !== currentLayerFilter) {
       currentLayerFilter = lineFilterExpr
       block.push({ kind: 'layer_filter', expr: lineFilterExpr })
+    }
+
+    // ---- 舞台镜头（Camera）：整层摄像机运动 / 立体变换 ----
+    // 复用 mountEffects 收集 transform 型特效（镜头预设均为 transform 类），变化才发射；
+    // 清空（无镜头特效）时发射裸 `camera` 复位，避免镜头残影穿透到后续剧情。
+    const camAt = mountEffects(state.cameraEffects).at
+    const camKey = camAt.join(', ')
+    if (camKey !== currentCameraTransform) {
+      currentCameraTransform = camKey
+      block.push({ kind: 'camera', transform: camAt.length ? camKey : null })
     }
 
     // ---- 角色：先收集本行完整状态 ----
@@ -1185,6 +1210,12 @@ function serializeNode(n: RpyNode): string {
       return n.expr == null
         ? 'show layer master:\n    matrixcolor IdentityMatrix()'
         : `show layer master:\n    matrixcolor ${n.expr}`
+    case 'camera':
+      // 整层摄像机运动：transform 为 null 表示复位（裸 camera 语句清除镜头变换）
+      return n.transform == null ? 'camera' : `camera at ${n.transform}`
+    case 'video_bg':
+      // 电影背景：play 取相对 game/ 的 video/<文件名> 路径；loop 必须大写布尔
+      return `scene bg = Movie(play="video/${n.clip}", loop=${n.loop ? 'True' : 'False'})`
     case 'playMusic': {
       let s = `play music "${n.file}"`
       if (n.loop) s += ' loop'
@@ -1407,7 +1438,7 @@ function buildAssetRefs(assets: AssetItem[]): AssetRef[] {
   const seen = new Set<string>()
   const refs: AssetRef[] = []
   for (const a of assets) {
-    if (a.type !== 'background' && a.type !== 'sprite' && a.type !== 'audio') continue
+    if (a.type !== 'background' && a.type !== 'sprite' && a.type !== 'audio' && a.type !== 'video') continue
     if (seen.has(a.id)) continue
     seen.add(a.id)
     const sub = subdirFor(a.type)
