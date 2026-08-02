@@ -149,6 +149,8 @@ interface AppState {
   // ---- 左侧边栏 ----
   leftSidebarCollapsed: boolean
   activeNavItem: NavItemId | null
+  /** 新手模式：左侧导航只显示 6 个大白话入口，隐藏进阶功能 */
+  simpleMode: boolean
 
   // ---- 主题 ----
   theme: ThemeMode
@@ -246,6 +248,7 @@ interface AppState {
   selectLine: (index: number) => void
   toggleLeftSidebar: () => void
   setActiveNavItem: (item: AppState['activeNavItem']) => void
+  setSimpleMode: (v: boolean) => void
   toggleScriptDrawer: () => void
   toggleScriptDrawerPin: () => void
   setScriptDrawerOpen: (open: boolean) => void
@@ -293,6 +296,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // ---- 左侧边栏 ----
   leftSidebarCollapsed: false,
   activeNavItem: 'chapters',
+  simpleMode: true,
 
   // ---- 剧本抽屉 ----
   scriptDrawerOpen: true,
@@ -641,6 +645,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   toggleLeftSidebar: () =>
     set((s) => ({ leftSidebarCollapsed: !s.leftSidebarCollapsed })),
+
+  setSimpleMode: (v) => set({ simpleMode: v }),
 
   // ---- 主题 ----
   setTheme: (t) => {

@@ -26,7 +26,7 @@ import { deserializeProject, restoreProjectFromJson, serializeProject } from '@/
 import { bindAssetWatcher } from '@/services/assetSync'
 import { DEFAULT_POSITION_SLOTS } from '@/core/positionSlots'
 import { subscribe, getToastItems, toast, type ToastItem } from '@/utils/toast'
-import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown, Images, FileText, Activity, GitBranch, Play, ChevronUp, ChevronDown } from 'lucide-react'
+import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown, Images, FileText, Activity, GitBranch, Play, Package, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button, IconButton, ConfirmDialog } from '@/components/ui'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem, GlobalVariable } from '@/core/types'
 import { createSnapshot } from '@/utils/cloudSync'
@@ -40,6 +40,30 @@ import CollabPanel from './CollabPanel'
 import AuditLogHub from './AuditLogHub'
 import TemplatePicker from './TemplatePicker'
 import RpyImportDialog from './RpyImportDialog'
+import PageHint from '@/components/ui/PageHint'
+
+/** 每页大白话提示：告诉小白「这页是干嘛的、下一步做什么」。只影响展示，不改任何逻辑。 */
+const PAGE_HINTS: Record<string, { title: string; desc: string }> = {
+  chapters: { title: '写剧情', desc: '这是你的主要创作台：中央是舞台（摆背景和人物），底部是整部剧的时间轴，左右抽屉放素材和角色。加一句台词就在这写。' },
+  'script-overview': { title: '剧本总览', desc: '整部戏的概况：多少字、几个场景、几条分支、几个角色。点任意卡片会跳回对应那一幕。' },
+  script: { title: '脚本文本', desc: '像看文档一样连续看整段文字稿。想直接看全文时用；日常写戏在「写剧情」里写。' },
+  ai: { title: 'AI 编剧', desc: '让 AI 帮你：挑毛病（舞台监督）、改文笔（文学导师）、或只给个梗概让它画出整张分支剧情网（剧情蓝图）。' },
+  characters: { title: '角色', desc: '管理人物：头像、表情、配音、默认站左边还是右边。设好一次，拖到舞台自动套用。' },
+  assets: { title: '素材库', desc: '所有图片、音乐、视频都在这。先把电脑里的文件拖进来，舞台才用得上。' },
+  effects: { title: '特效', desc: '给画面加料：转场、滤镜、抖动等。想让场景切换更有感觉就来这。' },
+  export: { title: '发布与导出', desc: '做完了到这里：校验脚本、导出 Ren\'Py 工程、一键调用 Ren\'Py 预览或打包、或发布成网页链接给朋友玩。' },
+  exporter: { title: '多文件导出', desc: '大戏分章节拆成多个脚本文件导出，结构更清晰。一般用「发布与导出」就够了。' },
+  'renpy-hub': { title: 'Ren\'Py 生态', desc: '了解 Ren\'Py 怎么装、怎么跑、有哪些学习资源，入口都集中在这。' },
+  templates: { title: '从模板新建', desc: '不想从零开始？挑一个现成模板（校园、恋爱、悬疑等）直接起手。' },
+  'import-rpy': { title: '导入工程', desc: '把别人做的 Ren\'Py 工程搬进来改：选文件夹，软件自动认场景、对话、素材。' },
+  diagnostics: { title: '工程体检', desc: '软件跑起来怪怪的？来这看一眼哪里出问题，照着提示修。' },
+  history: { title: '版本历史', desc: '改崩了别怕：这里自动存着每次快照，随时能回到过去某一版。' },
+  collab: { title: 'P2P 协作', desc: '和朋友一起做这部戏时用：互相看到对方，改动实时同步。' },
+  'audit-log': { title: '协作日志', desc: '谁在什么时候改了什么，一笔笔账都在这里，多人合作防扯皮。' },
+  settings: { title: '设置', desc: '软件外观、新手模式开关、AI 密钥、数据与缓存都在这里。' },
+  help: { title: '帮助', desc: '卡住了看这里：语法学院教你 Ren\'Py 语法，还有常见问题。' },
+  about: { title: '关于', desc: '看看版本号、软件介绍、给 Ren\'Py 的署名。' },
+}
 
 /**
  * 合并磁盘扫描出的素材：仅新增库中尚未存在（按 relativePath 去重）的文件，
@@ -87,6 +111,7 @@ export default function AppLayout() {
   const assets = useAppStore((s) => s.assets)
   const projectRoot = useAppStore((s) => s.projectRoot)
   const activeNavItem = useAppStore((s) => s.activeNavItem)
+  const pageHint = PAGE_HINTS[activeNavItem as string] ?? null
   const settings = useAppStore((s) => s.settings)
   const setDraftDeltas = useAppStore((s) => s.setDraftDeltas)
   const loadProjectData = useAppStore((s) => s.loadProjectData)
@@ -100,11 +125,18 @@ export default function AppLayout() {
   const [showNewConfirm, setShowNewConfirm] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>(getToastItems)
 
-  // ---- 顶栏「测试运行」：组装工程并启动 Ren'Py 预览 ----
-  const handleTestRun = useCallback(async () => {
-    const st = useAppStore.getState()
+  // ---- 顶栏「测试运行 / 构建打包」：均调用你电脑上已安装的 Ren'Py 官方软件 ----
+  // 设计前提（与用户确认）：不内置/不打包 Ren'Py 引擎，只在本机已装好 Ren'Py 时才会跑，
+  // 没装则友好引导去官网安装并在「导出设置 · Ren'Py 引擎」里指定路径，绝不喧宾夺主。
+  const runRenpy = useCallback(async (action: 'run' | 'build') => {
     if (!window.electronAPI?.renpyStageProject || !window.electronAPI?.renpyRunEngine) {
-      toast('未检测到 Ren\'Py SDK 集成', 'error')
+      toast('需要 Ren\'Py 官方软件：本功能会调用你电脑上已安装的 Ren\'Py 来预览/打包，请先安装 Ren\'Py（renpy.org），再到「导出设置 · Ren\'Py 引擎」指定路径。', 'error')
+      setActiveNavItem('export')
+      return
+    }
+    const st = useAppStore.getState()
+    if (st.draftDeltas.length === 0) {
+      toast('还没有任何剧本内容，先写几行再运行吧', 'info')
       return
     }
     const bundle = buildBundle(
@@ -113,16 +145,28 @@ export default function AppLayout() {
     )
     const stage = await window.electronAPI.renpyStageProject({ bundle, title: st.projectMeta.title })
     if (!stage?.success) {
-      toast(`测试运行准备失败：${stage?.error ?? '未知错误'}`, 'error')
+      toast(`准备工程失败：${stage?.error ?? '未知错误'}`, 'error')
       return
     }
-    const res = await window.electronAPI.renpyRunEngine({ action: 'run', projectDir: stage.projectDir as string })
+    const res = await window.electronAPI.renpyRunEngine({ action, projectDir: stage.projectDir as string })
     if (!res?.success) {
-      toast(`启动 Ren'Py 失败：${res?.error ?? '未知错误'}`, 'error')
+      if (res?.error && res.error.includes('未检测到 Ren\'Py SDK')) {
+        toast('没找到 Ren\'Py 官方软件。请先到 renpy.org 安装，再在「导出设置 · Ren\'Py 引擎」里指定 SDK 路径，本功能就会调用它来预览/打包。', 'error')
+        setActiveNavItem('export')
+      } else {
+        toast(`操作失败：${res?.error ?? '未知错误'}`, 'error')
+      }
       return
     }
-    toast('已启动 Ren\'Py 预览', 'success')
-  }, [])
+    if (action === 'build') {
+      toast(`已开始构建分发包，产物目录：${res.distDir ?? '(见导出设置 · Ren\'Py 引擎)'}`, 'success')
+    } else {
+      toast('已启动 Ren\'Py 预览', 'success')
+    }
+  }, [setActiveNavItem])
+
+  const handleTestRun = useCallback(() => { void runRenpy('run') }, [runRenpy])
+  const handleBuild = useCallback(() => { void runRenpy('build') }, [runRenpy])
 
   // ---- 自动静默备份：编辑停顿 4 分钟后自动建档（防丢稿） ----
   const autoBackupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -448,6 +492,9 @@ export default function AppLayout() {
           <Button variant="ghost" size="md" icon={<Play size={14} strokeWidth={1.75} />} onClick={handleTestRun}>
             测试运行
           </Button>
+          <Button variant="ghost" size="md" icon={<Package size={14} strokeWidth={1.75} />} onClick={handleBuild}>
+            构建打包
+          </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
           <Button variant="outline" size="md" icon={<FileDown size={14} strokeWidth={1.75} />} onClick={handleExport}>
             导出 RPY
@@ -461,6 +508,9 @@ export default function AppLayout() {
           />
         </div>
       </header>
+
+      {/* 每页大白话提示条：告诉小白「这页是干嘛的」 */}
+      {pageHint && <PageHint title={pageHint.title} desc={pageHint.desc} />}
 
       {/* ===== 主内容区 ===== */}
       <div className="relative flex flex-1 overflow-hidden bg-canvas">
