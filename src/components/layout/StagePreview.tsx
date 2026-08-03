@@ -836,8 +836,9 @@ export default function StagePreview() {
     [selectedIndex, updateDeltaAt],
   )
 
-  /** 右侧特效面板（背景特效 / 舞台滤镜 / 镜头运动）是否收起为细条 */
-  const [fxCollapsed, setFxCollapsed] = useState(false)
+  /** 右侧特效面板（背景特效 / 舞台滤镜 / 镜头运动）是否收起为细条。
+      默认收起：舞台是核心，把横向空间优先让给舞台；需要调滤镜/镜头运动时再展开。 */
+  const [fxCollapsed, setFxCollapsed] = useState(true)
 
   /** 切换视频背景是否循环（仅 sw-video: 背景生效） */
   const setBgMovieLoop = useCallback(
