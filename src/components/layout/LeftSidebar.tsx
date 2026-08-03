@@ -129,7 +129,7 @@ export default function LeftSidebar() {
       >
         <span className="shrink-0">{item.icon}</span>
         {!collapsed && (
-          <span className="min-w-0 flex-1 truncate text-[13px] text-left">{item.label}</span>
+          <span className="min-w-0 flex-1 truncate text-center text-[13px]">{item.label}</span>
         )}
       </button>
     )
