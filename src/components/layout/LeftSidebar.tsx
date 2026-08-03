@@ -17,30 +17,30 @@ interface NavGroup {
   items: NavItem[]
 }
 
-/** 完整模式：全部功能入口（面向进阶用户） */
+/** 完整模式：全部功能入口（正式命名） */
 const NAV_GROUPS: NavGroup[] = [
   {
     title: '创作工作区',
     items: [
-      { id: 'chapters', label: '写剧情', icon: <BookOpen size={17} strokeWidth={1.75} /> },
+      { id: 'chapters', label: '场景导航', icon: <BookOpen size={17} strokeWidth={1.75} /> },
       { id: 'script-overview', label: '剧本总览', icon: <FileText size={17} strokeWidth={1.75} /> },
-      { id: 'script', label: '脚本文本', icon: <Code size={17} strokeWidth={1.75} /> },
+      { id: 'script', label: '脚本编辑', icon: <Code size={17} strokeWidth={1.75} /> },
       { id: 'ai', label: 'AI 编剧', icon: <Sparkles size={17} strokeWidth={1.75} /> },
     ],
   },
   {
     title: '内容资产',
     items: [
-      { id: 'characters', label: '角色', icon: <Users size={17} strokeWidth={1.75} /> },
-      { id: 'assets', label: '素材库', icon: <Images size={17} strokeWidth={1.75} /> },
+      { id: 'characters', label: '角色管理', icon: <Users size={17} strokeWidth={1.75} /> },
+      { id: 'assets', label: '素材管理', icon: <Images size={17} strokeWidth={1.75} /> },
       { id: 'effects', label: '特效', icon: <Wand2 size={17} strokeWidth={1.75} /> },
     ],
   },
   {
     title: '导出与生态',
     items: [
-      { id: 'export', label: '发布与导出', icon: <Download size={17} strokeWidth={1.75} /> },
-      { id: 'exporter', label: '多文件导出', icon: <FileDown size={17} strokeWidth={1.75} /> },
+      { id: 'export', label: '导出设置', icon: <Download size={17} strokeWidth={1.75} /> },
+      { id: 'exporter', label: '多格式导出', icon: <FileDown size={17} strokeWidth={1.75} /> },
       { id: 'renpy-hub', label: 'Ren\'Py 生态', icon: <Globe size={17} strokeWidth={1.75} /> },
     ],
   },
@@ -48,7 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: '工程与协作',
     items: [
       { id: 'templates', label: '从模板新建', icon: <FilePlus2 size={17} strokeWidth={1.75} /> },
-      { id: 'import-rpy', label: '导入工程', icon: <FolderOpen size={17} strokeWidth={1.75} /> },
+      { id: 'import-rpy', label: '导入 Ren\'Py 工程', icon: <FolderOpen size={17} strokeWidth={1.75} /> },
       { id: 'diagnostics', label: '工程体检', icon: <Stethoscope size={17} strokeWidth={1.75} /> },
       { id: 'history', label: '版本历史', icon: <History size={17} strokeWidth={1.75} /> },
       { id: 'collab', label: 'P2P 协作', icon: <Cloud size={17} strokeWidth={1.75} /> },
@@ -58,34 +58,9 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: '设置与帮助',
     items: [
-      { id: 'settings', label: '设置', icon: <Settings size={17} strokeWidth={1.75} /> },
-      { id: 'help', label: '帮助', icon: <HelpCircle size={17} strokeWidth={1.75} /> },
+      { id: 'settings', label: '设置中心', icon: <Settings size={17} strokeWidth={1.75} /> },
+      { id: 'help', label: '帮助中心', icon: <HelpCircle size={17} strokeWidth={1.75} /> },
       { id: 'about', label: '关于', icon: <Info size={17} strokeWidth={1.75} /> },
-    ],
-  },
-]
-
-/** 新手模式：只留最常用的入口，名字全是大白话 */
-const SIMPLE_GROUPS: NavGroup[] = [
-  {
-    title: '开始创作',
-    items: [
-      { id: 'chapters', label: '写剧情', icon: <BookOpen size={17} strokeWidth={1.75} /> },
-      { id: 'assets', label: '素材库', icon: <Images size={17} strokeWidth={1.75} /> },
-      { id: 'characters', label: '角色', icon: <Users size={17} strokeWidth={1.75} /> },
-    ],
-  },
-  {
-    title: '完成发布',
-    items: [
-      { id: 'export', label: '发布与导出', icon: <Download size={17} strokeWidth={1.75} /> },
-    ],
-  },
-  {
-    title: '设置与帮助',
-    items: [
-      { id: 'settings', label: '设置', icon: <Settings size={17} strokeWidth={1.75} /> },
-      { id: 'help', label: '帮助', icon: <HelpCircle size={17} strokeWidth={1.75} /> },
     ],
   },
 ]
@@ -95,7 +70,6 @@ export default function LeftSidebar() {
   const activeItem = useAppStore((s) => s.activeNavItem)
   const setActive = useAppStore((s) => s.setActiveNavItem)
   const toggle = useAppStore((s) => s.toggleLeftSidebar)
-  const simpleMode = useAppStore((s) => s.simpleMode)
 
   const [appVersion, setAppVersion] = useState('1.0.0')
 
@@ -105,7 +79,7 @@ export default function LeftSidebar() {
 
   const width = collapsed ? 'w-12' : 'w-[136px]'
 
-  const groups = simpleMode ? SIMPLE_GROUPS : NAV_GROUPS
+  const groups = NAV_GROUPS
   const allItems = groups.flatMap((g) => g.items)
 
   const handleClick = (item: NavItem) => {

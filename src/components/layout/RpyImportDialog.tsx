@@ -9,7 +9,7 @@ import {
   FileDown, Info, BookOpen, FileText, Users, Code, Image, Music, BarChart3,
   ExternalLink, FolderSearch, FileCheck, Upload, ShieldAlert,
 } from 'lucide-react'
-import { importRpyDirectory, type RpyImportResult } from '@/utils/rpyImporter'
+import { importRpyDirectory, normalizeAudioRef, type RpyImportResult } from '@/utils/rpyImporter'
 import { useAppStore } from '@/stores/appStore'
 import { createSnapshot } from '@/utils/cloudSync'
 import { serializeProject } from '@/utils/projectFile'
@@ -30,6 +30,8 @@ function buildImportLabel(dirPath: string): string {
   const ts = new Date().toLocaleString('zh-CN', { hour12: false })
   return `导入: ${name} (${ts})`
 }
+
+
 
 // ═══════════════════════════════════════════
 // Stats card component
@@ -263,7 +265,9 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
             const v = importedVideoMap.get(bgId.slice('sw-video:'.length))
             if (v) next.background = { ...next.background, asset_id: v.id }
           } else {
-            const asset = importedImageMap.get(bgId)
+            // Ren'Py 惯例：声明 image bg room = "..."，使用 scene bg room。
+            // 先按原引用查，查不到再补 "bg " 前缀查一次，避免背景绑定失败导致舞台空白。
+            const asset = importedImageMap.get(bgId) ?? importedImageMap.get('bg ' + bgId)
             if (asset) next.background = { ...next.background, asset_id: asset.id }
           }
         }
@@ -287,13 +291,13 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
           const na = { ...next.audio }
           const bgm = na.bgm
           if (bgm && typeof bgm === 'object' && 'asset_id' in bgm) {
-            // 解析出的 audio.bgm.asset_id 形如 sw-audio:nhjj（带前缀），需去掉前缀按 refName 查真实素材 id
-            const audioAsset = importedAudioMap.get(bgm.asset_id.replace(/^sw-audio:/, ''))
+            // 归一化后按 refName 查真实素材 id（去 sw-audio: 前缀与扩展名）
+            const audioAsset = importedAudioMap.get(normalizeAudioRef(bgm.asset_id))
             if (audioAsset) na.bgm = { ...bgm, asset_id: audioAsset.id }
           }
           if (na.se) {
             na.se = na.se.map(ref => {
-              const audioAsset = importedAudioMap.get(ref.replace(/^sw-audio:/, ''))
+              const audioAsset = importedAudioMap.get(normalizeAudioRef(ref))
               return audioAsset ? audioAsset.id : ref
             })
           }
@@ -307,6 +311,10 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
       // 追加到顶部，造成顶部一堆空白隔断、背景/音频看起来「丢失」的错觉。
       // 直接以本次解析出的干净 beats 覆盖当前剧本。
       useAppStore.getState().setDraftDeltas(revisedDeltas)
+
+      // 整本替换后选中行归零：否则旧 selectedLineIndex 可能越界，
+      // 舞台解析不到任何状态 → 背景/立绘/音频全部「不显示」。
+      useAppStore.getState().selectLine(0)
 
       // ── Step 6.5: 对齐工程基准分辨率与画布比例 ──
       // 立绘 zoom 是相对原图像素的，舞台必须知道脚本的基准分辨率才能算对占屏比

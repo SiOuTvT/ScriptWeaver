@@ -155,6 +155,17 @@ function stripAudioCtl(raw: string): string {
   return s
 }
 
+/**
+ * 标准化音频引用（供导入弹窗做素材 id 重映射时查询）：
+ * 去 sw-audio: 前缀、控制标签、引号、扩展名，与 matchAssets 的音频 refName key 对齐。
+ * 例：sw-audio:nhjj / nhjj.wav / "<from 0.8 to 4.5>zoulu.wav" → nhjj / nhjj / zoulu
+ */
+export function normalizeAudioRef(raw: string): string {
+  let s = raw.trim().replace(/^sw-audio:/, '')
+  s = stripAudioCtl(s)
+  return normalizeRef(s)
+}
+
 /** 数值夹取到 [a, b] */
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v))
 

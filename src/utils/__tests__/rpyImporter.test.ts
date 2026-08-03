@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { parseRpy, matchAssets, scanAssetFiles, importRpyDirectory, parseDisplayStatement, type RpyImageRef } from '../rpyImporter'
+import { parseRpy, matchAssets, scanAssetFiles, importRpyDirectory, parseDisplayStatement, normalizeAudioRef, type RpyImageRef } from '../rpyImporter'
 import { reduceLines } from '../../core/reducer'
 import { buildBundle } from '../rpyExporter'
 
@@ -157,6 +157,26 @@ describe('matchAssets：refName 模糊匹配取最佳而非遍历最后一个', 
     ]
     const { imageAssets } = matchAssets(refs, [], found, [])
     expect(imageAssets[0].fileName).toBe('eileen_happy.png')
+  })
+})
+
+describe('normalizeAudioRef：音频引用归一化（导入重映射用）', () => {
+  it('去 sw-audio: 前缀', () => {
+    expect(normalizeAudioRef('sw-audio:nhjj')).toBe('nhjj')
+  })
+
+  it('去扩展名（se 引用常带扩展名，素材 key 不带）', () => {
+    expect(normalizeAudioRef('nhjj.wav')).toBe('nhjj')
+    expect(normalizeAudioRef('zoulu.ogg')).toBe('zoulu')
+  })
+
+  it('去控制标签与引号', () => {
+    expect(normalizeAudioRef('<from 0.8 to 4.5>zoulu.wav')).toBe('zoulu')
+    expect(normalizeAudioRef('"ls.ogg"')).toBe('ls')
+  })
+
+  it('组合场景：带前缀 + 扩展名', () => {
+    expect(normalizeAudioRef('sw-audio:jy.mp3')).toBe('jy')
   })
 })
 

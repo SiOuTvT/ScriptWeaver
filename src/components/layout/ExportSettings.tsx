@@ -127,8 +127,7 @@ export default function ExportSettings() {
   const [validationResult, setValidationResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [packageResult, setPackageResult] = useState<{ ok: boolean; message: string } | null>(null)
 
-  // 新手模式：快捷发布区 + 高级选项折叠
-  const simpleMode = useAppStore((s) => s.simpleMode)
+  // 快捷发布区 + 高级选项折叠（默认收起高级区，保持页面清爽）
   const [showAdvanced, setShowAdvanced] = useState(false)
 
   // 平台导航选中态
@@ -420,16 +419,10 @@ export default function ExportSettings() {
             <span className="eyebrow">Export</span>
           </div>
           <h2 className="t-h1 mt-1.5">发布与导出</h2>
-          {simpleMode ? (
-            <p className="mt-0.5 t-subtitle">把你的剧本变成能玩、能发的游戏：试玩、打包或发布成网页。</p>
-          ) : (
-            <p className="mt-0.5 t-subtitle">选择导出目标、配置打包偏好并校验脚本完整性</p>
-          )}
+          <p className="mt-0.5 t-subtitle">选择导出目标、配置打包偏好并校验脚本完整性</p>
         </header>
 
-        {/* ============ 新手模式：快捷发布（三个大按钮，其它收进「更多选项」） ============ */}
-        {simpleMode && (
-          <>
+        {/* ============ 快捷发布（三个大按钮，其它收进「更多选项」） ============ */}
             <section className="mb-6 rounded-xl border border-primary/25 bg-surface p-5 shadow-1">
               <div className="mb-3 flex items-center gap-2">
                 <Gamepad2 size={16} className="text-primary" />
@@ -484,11 +477,9 @@ export default function ExportSettings() {
                 {showAdvanced ? '收起高级选项' : '更多选项（游戏信息 / 图标 / 多语言等）'}
               </span>
             </button>
-          </>
-        )}
 
-        {/* 新手模式折叠时隐藏高级区；完整模式永远显示 */}
-        <div className={simpleMode && !showAdvanced ? 'hidden' : undefined}>
+        {/* 高级区：默认收起，可展开 */}
+        <div className={showAdvanced ? undefined : 'hidden'}>
         {/* ============ 游戏信息（标题 / 封面 / 图标） ============ */}
 
         {/* ============ 游戏信息（标题 / 封面 / 图标） ============ */}

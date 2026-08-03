@@ -84,8 +84,6 @@ function SliderRow({
 export default function SettingsHub() {
   const settings = useAppStore((s) => s.settings)
   const updateSettings = useAppStore((s) => s.updateSettings)
-  const simpleMode = useAppStore((s) => s.simpleMode)
-  const setSimpleMode = useAppStore((s) => s.setSimpleMode)
 
   const [activeSection, setActiveSection] = useState<SectionId>('general')
 
@@ -190,19 +188,6 @@ export default function SettingsHub() {
           {/* ── 通用 ─────────────────────────────────── */}
           {activeSection === 'general' && (
             <div className="space-y-6">
-              <section>
-                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">界面模式</h3>
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-edge/10 bg-surface-2 px-4 py-3 shadow-1">
-                  <div>
-                    <div className="text-[13px] font-medium text-fg">新手模式</div>
-                    <div className="mt-0.5 text-[12px] text-fg-muted leading-relaxed">
-                      左侧导航只显示最常用的入口（写剧情 / 素材库 / 角色 / 发布与导出 / 设置 / 帮助），
-                      藏起进阶功能。觉得不够用时，随时切回完整模式。
-                    </div>
-                  </div>
-                  <Toggle checked={simpleMode} onChange={setSimpleMode} />
-                </div>
-              </section>
               <section>
                 <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">编辑器</h3>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
