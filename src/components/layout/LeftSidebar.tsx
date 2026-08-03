@@ -103,7 +103,7 @@ export default function LeftSidebar() {
     window.electronAPI?.getVersion().then((v) => setAppVersion(v)).catch(() => {})
   }, [])
 
-  const width = collapsed ? 'w-12' : 'w-40'
+  const width = collapsed ? 'w-12' : 'w-[136px]'
 
   const groups = simpleMode ? SIMPLE_GROUPS : NAV_GROUPS
   const allItems = groups.flatMap((g) => g.items)
