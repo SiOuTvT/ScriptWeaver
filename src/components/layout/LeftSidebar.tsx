@@ -103,7 +103,7 @@ export default function LeftSidebar() {
     window.electronAPI?.getVersion().then((v) => setAppVersion(v)).catch(() => {})
   }, [])
 
-  const width = collapsed ? 'w-12' : 'w-36'
+  const width = collapsed ? 'w-12' : 'w-40'
 
   const groups = simpleMode ? SIMPLE_GROUPS : NAV_GROUPS
   const allItems = groups.flatMap((g) => g.items)
@@ -119,7 +119,7 @@ export default function LeftSidebar() {
         key={item.id}
         onClick={() => handleClick(item)}
         title={collapsed ? item.label : undefined}
-        className={`group relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all ${
+        className={`group relative flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all ${
           collapsed ? 'justify-center' : ''
         } ${
           isActive
