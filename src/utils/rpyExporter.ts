@@ -976,8 +976,12 @@ function compileToNodes(
         if (newBg.startsWith('sw-cutscene:')) {
           // 视频过场：全屏播一次，播完自动继续剧情（$ renpy.movie_cutscene("video/<文件>")）。
           // 与视频背景（无限循环）语义不同，必须区分，否则过场会变成循环背景把剧情卡死。
+          // 过场会停掉正在播放的音乐（movie_cutscene 默认 stop_music=True），
+          // 因此把 BGM 状态置为哨兵，强制过场后的下一行重新 play music，
+          // 否则同一首歌会被「歌曲去重」吞掉，导致过场后音乐消失。
           const clip = newBg.slice('sw-cutscene:'.length)
           block.push({ kind: 'cutscene', clip })
+          currentBgm = '\u0000cutscene\u0000' // 哨兵值：与任何真实 asset_id 都不同
         } else if (newBg.startsWith('sw-video:') || bgVideoAsset?.type === 'video') {
           // 视频背景：导出为可循环的电影 displayable，挂到 bg 标签（与导入 Movie(play=...) 往返一致）。
           // loop 缺省为 True（背景视频通常循环），由 background.movieLoop 控制；布尔须大写 True/False。

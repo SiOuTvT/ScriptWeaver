@@ -724,6 +724,50 @@ label start:
   })
 })
 
+describe('parseRpy：视频过场 sw-cutscene（区别于循环背景）', () => {
+  it('renpy.movie_cutscene 解析为 sw-cutscene: 前缀（过场语义）', () => {
+    const r = parseRpy('label start:\n    $ renpy.movie_cutscene("op.webm")\n    "台词"')
+    const d = r.deltas.find((x) => x.background)
+    expect(d?.background?.asset_id).toBe('sw-cutscene:op.webm')
+    // 过场不带 movieLoop（它是播完继续剧情，不是循环背景）
+    expect(d?.background?.movieLoop).toBeUndefined()
+  })
+
+  it('renpy.movie_cutscene 带子目录路径时只取文件名', () => {
+    const r = parseRpy('label start:\n    $ renpy.movie_cutscene("video/op.webm")\n    "台词"')
+    const d = r.deltas.find((x) => x.background)
+    expect(d?.background?.asset_id).toBe('sw-cutscene:op.webm')
+  })
+})
+
+describe('parseRpy：角色识别（界面变量与道具立绘不误判为角色）', () => {
+  it('default device = "keyboard"（界面局部变量）不注册为角色', () => {
+    const r = parseRpy(
+      'init python:\n    pass\n\nlabel start:\n    "开场"\n    $ device = "keyboard"\n    "继续"',
+    )
+    expect(r.characters.find((c) => c.charId === 'device')).toBeUndefined()
+  })
+
+  it('default gs1 = "阿五" 且对白 gs1 "..." 时，gs1 注册为角色', () => {
+    const r = parseRpy('default gs1 = "阿五"\n\nlabel start:\n    gs1 "你好"\n    "旁白"')
+    const gs1 = r.characters.find((c) => c.charId === 'gs1')
+    expect(gs1?.charId).toBe('gs1')
+    expect(gs1?.displayName).toBe('阿五')
+  })
+
+  it('道具立绘 image js2g 经 show js2g 出场，但不注册为角色（无对白）', () => {
+    const r = parseRpy(
+      'image js2g = "z-gc.png"\n\nlabel start:\n    show js2g\n    "描述"',
+    )
+    expect(r.characters.find((c) => c.charId === 'js2g')).toBeUndefined()
+  })
+
+  it('真实角色 show alice + alice "..." 注册为角色', () => {
+    const r = parseRpy('define alice = Character("爱丽丝")\n\nlabel start:\n    show alice happy\n    alice "你好"')
+    expect(r.characters.find((c) => c.charId === 'alice')).toBeDefined()
+  })
+})
+
 describe('canonicalizeImportedAssets：重复导入时素材 id 必须真实存在（舞台空白修复回归）', () => {
   const mkAsset = (id: string, rel: string): AssetItem =>
     ({ id, fileName: rel.split('/').pop() ?? id, relativePath: rel, type: 'background', createdAt: '', updatedAt: '', importedAt: '', name: rel }) as AssetItem

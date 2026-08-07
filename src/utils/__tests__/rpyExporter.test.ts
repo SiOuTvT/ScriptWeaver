@@ -837,6 +837,38 @@ describe('rpyExporter · 视频背景 Movie 与舞台镜头 camera（Camera/Vide
   })
 })
 
+describe('rpyExporter · 视频过场 sw-cutscene（播完继续剧情，非循环背景）', () => {
+  const cutsceneAssets: AssetItem[] = [
+    ...assets,
+    { id: 'sw-cutscene:op.webm', type: 'video', name: 'op', fileName: 'op.webm', relativePath: 'assets/video/op.webm', importedAt: '' },
+    { id: 'sw-cutscene:ed.webm', type: 'video', name: 'ed', fileName: 'ed.webm', relativePath: 'assets/video/ed.webm', importedAt: '' },
+  ]
+
+  it('过场导出为 $ renpy.movie_cutscene（不是 scene Movie 循环背景）', () => {
+    const deltas: LineDelta[] = [
+      baseDelta('C1', { speaker: 'alice', dialogue: '过场前', background: { asset_id: 'sw-cutscene:op.webm' } }),
+      baseDelta('C2', { speaker: 'alice', dialogue: '过场后' }),
+    ]
+    const out = buildBundle(deltas, reduceLines(deltas), characterConfigs, cutsceneAssets).script
+    expect(out).toContain('$ renpy.movie_cutscene("video/op.webm")')
+    expect(out).not.toContain('scene expression Movie(play="video/op.webm"')
+  })
+
+  it('过场后同一首 BGM 重新发射 play music（过场会停音乐，不能按歌曲去重吞掉）', () => {
+    const bgmAsset: AssetItem = { id: 'aud_jy', type: 'audio', name: 'jy', fileName: 'jy.mp3', relativePath: 'assets/audio/jy.mp3', importedAt: '' }
+    const deltas: LineDelta[] = [
+      baseDelta('M1', { speaker: 'alice', dialogue: '开场', audio: { bgm: { asset_id: 'aud_jy', volume: 1, loop: true }, ambient: null, se: [], voice: null } }),
+      baseDelta('M2', { speaker: 'alice', dialogue: '过场', background: { asset_id: 'sw-cutscene:op.webm' } }),
+      baseDelta('M3', { speaker: 'alice', dialogue: '过场后同曲再播', audio: { bgm: { asset_id: 'aud_jy', volume: 1, loop: true }, ambient: null, se: [], voice: null } }),
+    ]
+    const assetsAll = [...cutsceneAssets, bgmAsset]
+    const out = buildBundle(deltas, reduceLines(deltas), characterConfigs, assetsAll).script
+    // 过场前一条 + 过场后一条（过场重置了 BGM 状态，不允许歌曲去重吞掉第二条）
+    const plays = out.split('\n').filter((l) => l.includes('play music "audio/jy.mp3"'))
+    expect(plays.length).toBe(2)
+  })
+})
+
 describe('rpyExporter · 非法标识符与 Movie 语法修复（RenPy 实测回归）', () => {
   const slotDeltas: LineDelta[] = [
     baseDelta('S1', { background: { asset_id: 'bg_room' } }),

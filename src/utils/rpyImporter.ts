@@ -439,16 +439,15 @@ export function parseRpy(
       continue
     }
 
-    // default var = "Name"（字符串变量，可视为角色显示名）
+    // default var = "Name"（字符串变量，可视为角色显示名，如 default gs1 = "阿五"）
+    // 注意：不能立即注册为角色——很多界面局部变量（如 screens 里的 default device = "keyboard"）
+    // 也是这种写法，但它们不是角色。只登记到 varToDisplayName 供说话人解析，
+    // 等它真正以说话人身份出现（xxx "台词"）时再由 resolveSpeaker/ensureChar 注册为角色。
     const defaultSimpleChar = line.match(/^default\s+([a-zA-Z_]\w*)\s*=\s*"([^"]*)"\s*$/)
     if (defaultSimpleChar) {
       const varName = defaultSimpleChar[1]
       const displayName = defaultSimpleChar[2]
       varToDisplayName.set(varName, displayName)
-      if (!charSet.has(varName)) {
-        charSet.add(varName)
-        characters.push(createCharConfig(varName, displayName))
-      }
       continue
     }
 
@@ -948,13 +947,14 @@ export function parseRpy(
         cutsceneSeen.add(clip)
         warnings.push(`视频过场 ${clip} 已用占位面板标记，正片仍需回 Ren'Py 播放`)
       }
-      accBackground = { asset_id: `sw-cutscene:${clip}` }
+      // 统一只存文件名（导出时补 video/ 前缀），避免子目录路径导致 video/video/x 双重前缀
+      accBackground = { asset_id: `sw-cutscene:${clipBase}` }
       lineId++
       // 直接发占位 delta，但不走 flushAcc：flushAcc 会清空 accAudio.se/voice，
       // 那样会把过场前已排好的音效（如 zoulu.wav）一并吞掉，导致后续 beat 音频丢失。
       emitDelta({
         ...baseDelta(lineId),
-        background: { asset_id: `sw-cutscene:${clip}` },
+        background: { asset_id: `sw-cutscene:${clipBase}` },
         characters: noChars,
         audio: emptyAudio,
       })
@@ -1104,7 +1104,17 @@ export function parseRpy(
       // Ren'Py 以标签(tag)标识在场立绘，同标签再次 show 即替换；
       // as 别名则让同一角色的多个实例并存
       const charKey = st.alias || charId
-      ensureChar(charId, resolved.displayName || tag)
+      // 仅当该 tag 是「有 Character 声明的已知角色」时才注册进角色管理。
+      // 道具/背景立绘（如 image js2g = "z-gc.png" 后 show js2g，或 screens 里的局部变量）
+      // 从未出现在对白说话人里，不应被当成角色塞进角色管理。
+      // 判定：纯英文 tag 且在全局角色声明(varToDisplayName)中无定义，说明它是道具/图片标签。
+      const isDeclaredChar = varToDisplayName.has(charId) || characters.some((c) => c.charId === charId)
+      if (isDeclaredChar || !/^[a-zA-Z_]\w*$/.test(charId)) {
+        // 有中文显示名（如 "阿五"）或已有 Character 声明的，确实是角色
+        ensureChar(charId, resolved.displayName || tag)
+      }
+      // 道具立绘（js2g 等）不 ensureChar，但立绘素材引用已通过 upsertImageRef 建立，
+      // 舞台仍能正常渲染该立绘，只是不占用角色管理位。
 
       // 同标签重复 show 属于「换表情/换姿势」，是替换而非新增，不产生退场
       const entry: CharacterDelta = {
