@@ -229,7 +229,12 @@ const DropCell = memo(function DropCell({
     <div
       ref={elRef}
       className={`shrink-0 border-r border-edge/10 ${isSelected ? 'bg-primary/5' : ''}`}
-      style={{ width }}
+      style={{
+        width,
+        contentVisibility: 'auto',
+        containIntrinsicWidth: `${width}px`,
+        containIntrinsicHeight: '36px',
+      }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -1111,7 +1116,13 @@ export default function Timeline() {
                     className={`group relative flex shrink-0 flex-col border-r border-edge/10 ${
                       i === selectedIndex ? 'bg-primary/15' : ''
                     } ${remoteLock ? 'ring-1 ring-inset ring-warning/60 bg-warning/8' : ''}`}
-                    style={{ width: cellWidth }}
+                    style={{
+                      width: cellWidth,
+                      // 横向虚拟化：行号列同样跳过视口外渲染
+                      contentVisibility: 'auto',
+                      containIntrinsicWidth: `${cellWidth}px`,
+                      containIntrinsicHeight: '48px',
+                    }}
                     title={remoteLock ? `${remoteLock.displayName} 正在编辑此行` : undefined}
                   >
                     {remoteLock && (
