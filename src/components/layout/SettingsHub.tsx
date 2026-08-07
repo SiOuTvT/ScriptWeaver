@@ -6,7 +6,7 @@ import { ClearCacheButton } from './ClearCacheButton'
 import ThemeSettings from './ThemeSettings'
 import { toast } from '../../utils/toast'
 import {
-  Settings, Palette, Key, Database, Save, RotateCcw, Eye, EyeOff, Info,
+  Settings, Palette, Key, Database, Save, RotateCcw, Eye, EyeOff, Info, RefreshCw, Loader2,
 } from 'lucide-react'
 
 type SectionId = 'general' | 'appearance' | 'ai' | 'data'
@@ -95,17 +95,43 @@ export default function SettingsHub() {
   const [apiEndpoint, setApiEndpoint] = useState('https://api.openai.com/v1/chat/completions')
   const [model, setModel] = useState('gpt-4o-mini')
   const [showKey, setShowKey] = useState(false)
+  const [models, setModels] = useState<string[]>([])
+  const [modelsLoading, setModelsLoading] = useState(false)
+  const [modelsError, setModelsError] = useState<string | null>(null)
 
   useEffect(() => {
     ;(async () => {
       try {
         const config = await (window as any).electronAPI?.aiGetConfig?.()
         if (config?.hasApiKey) setHasStoredKey(true)
+        if (config?.provider) setProvider(config.provider)
         if (config?.endpoint) setApiEndpoint(config.endpoint)
         if (config?.model) setModel(config.model)
       } catch { /* ignore */ }
     })()
   }, [])
+
+  // 从厂商实时拉取可用模型列表（不写死模型名）
+  const handleFetchModels = useCallback(async () => {
+    setModelsLoading(true)
+    setModelsError(null)
+    try {
+      const r = await (window as any).electronAPI?.aiListModels?.()
+      if (r?.success && Array.isArray(r.models)) {
+        setModels(r.models as string[])
+      } else {
+        setModelsError(r?.error ?? '拉取模型列表失败')
+      }
+    } catch {
+      setModelsError('拉取模型列表失败')
+    } finally {
+      setModelsLoading(false)
+    }
+  }, [])
+  // 已配置密钥时自动拉取一次
+  useEffect(() => {
+    if (hasStoredKey) void handleFetchModels()
+  }, [hasStoredKey, handleFetchModels])
 
   const handleSave = useCallback(() => {
     // 密钥留空 = 保留主进程已存密钥（writeAIConfig 约定），端点/模型始终保存
@@ -318,21 +344,45 @@ export default function SettingsHub() {
                     <p className="mt-1.5 text-[12px] text-fg-faint">支持 OpenAI 兼容 API</p>
                   </div>
 
-                  {/* Model */}
+                  {/* Model：从厂商实时拉取，不写死 */}
                   <div className="px-4 py-3 rounded-xl border border-edge/10 bg-surface-2 shadow-1">
-                    <label className="text-[13px] font-medium text-fg block mb-2">模型</label>
-                    <select
-                      value={model}
-                      onChange={(e) => setModel(e.target.value)}
-                      className="w-full rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
-                    >
-                      <option value="gpt-4">GPT-4</option>
-                      <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                      <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                      <option value="claude-3-opus">Claude 3 Opus</option>
-                      <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-                      <option value="deepseek-chat">DeepSeek Chat</option>
-                    </select>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[13px] font-medium text-fg block">模型</label>
+                      <button
+                        type="button"
+                        onClick={() => void handleFetchModels()}
+                        disabled={modelsLoading}
+                        className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-[12px] text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+                      >
+                        {modelsLoading ? <Loader2 size={12} strokeWidth={1.75} className="animate-spin" /> : <RefreshCw size={12} strokeWidth={1.75} />}
+                        {models.length > 0 ? '刷新模型列表' : '拉取模型列表'}
+                      </button>
+                    </div>
+                    {models.length > 0 ? (
+                      <select
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
+                        className="w-full rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      >
+                        {model && !models.includes(model) && (
+                          <option value={model}>{model}（当前）</option>
+                        )}
+                        {models.map((m) => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
+                        placeholder="配置厂商与密钥后，点上方拉取可用模型"
+                        className="w-full rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                    )}
+                    {modelsError ? (
+                      <p className="mt-1.5 text-[12px] text-danger/90">{modelsError}</p>
+                    ) : (
+                      <p className="mt-1.5 text-[12px] text-fg-faint">模型列表从当前厂商实时拉取，不在软件里写死</p>
+                    )}
                   </div>
                 </div>
               </section>

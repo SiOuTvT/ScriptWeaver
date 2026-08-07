@@ -16,6 +16,8 @@ const api = {
   aiGetConfig: () => electron.ipcRenderer.invoke("ai:getConfig"),
   /** 保存 AI 配置（密钥落入主进程安全区） */
   aiSetConfig: (cfg) => electron.ipcRenderer.invoke("ai:setConfig", cfg),
+  /** 从厂商实时拉取可用模型列表 */
+  aiListModels: () => electron.ipcRenderer.invoke("ai:listModels"),
   /** 发送对话请求（只发 messages，密钥由主进程注入） */
   aiChat: (payload) => electron.ipcRenderer.send("ai:chat", payload),
   /** 中断当前流式对话 */

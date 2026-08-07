@@ -79,6 +79,8 @@ interface ElectronAPI {
   // --------------- AI 桥接（密钥不进渲染进程） ---------------
   aiGetConfig: () => Promise<import('./utils/aiDirector').AIConfig & { hasApiKey: boolean }>
   aiSetConfig: (cfg: import('./utils/aiDirector').AIConfig) => Promise<{ ok: boolean }>
+  /** 从厂商实时拉取可用模型列表 */
+  aiListModels: () => Promise<{ success: boolean; models?: string[]; error?: string }>
   aiChat: (payload: { messages: import('./utils/aiDirector').ChatMessage[] }) => void
   aiAbort: () => void
   onAiChunk: (cb: (d: { delta: string }) => void) => void

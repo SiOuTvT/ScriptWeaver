@@ -556,6 +556,31 @@ ipcMain.handle('ai:setConfig', (_event, cfg: AIConfig) => {
   return { ok: true }
 })
 
+/** 从厂商实时拉取可用模型列表（OpenAI 兼容 /models 接口），不内置写死模型名 */
+ipcMain.handle('ai:listModels', async () => {
+  const cfg = readAIConfig()
+  if (!cfg.apiKey) return { success: false, error: '未配置 API Key' }
+  try {
+    const base = cfg.endpoint.replace(/\/chat\/completions$/, '')
+    const res = await fetch(`${base}/models`, {
+      headers: { Authorization: `Bearer ${cfg.apiKey}` },
+      signal: AbortSignal.timeout(15_000),
+    })
+    if (!res.ok) {
+      return { success: false, error: `拉取失败（HTTP ${res.status}）：${res.statusText || '请检查密钥与厂商配置'}` }
+    }
+    const data = (await res.json()) as { data?: { id?: string }[] }
+    const ids = (data?.data ?? [])
+      .map((m) => m.id)
+      .filter((x): x is string => typeof x === 'string' && x.length > 0)
+      // 过滤明显非对话类模型（向量/语音/图像/审核等）
+      .filter((id) => !/embedding|whisper|tts|moderation|dall|image|speech|audio|rerank/i.test(id))
+    return { success: true, models: [...new Set(ids)].sort() }
+  } catch (err) {
+    return { success: false, error: `拉取模型列表失败：${(err as Error).message}` }
+  }
+})
+
 // 流式对话：渲染端只发 messages，主进程用自有密钥请求上游并回灌 chunk
 let activeChat: AbortController | null = null
 

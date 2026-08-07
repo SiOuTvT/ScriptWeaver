@@ -29,6 +29,10 @@ const api = {
   aiSetConfig: (cfg: AIConfig): Promise<{ ok: boolean }> =>
     ipcRenderer.invoke('ai:setConfig', cfg),
 
+  /** 从厂商实时拉取可用模型列表 */
+  aiListModels: (): Promise<{ success: boolean; models?: string[]; error?: string }> =>
+    ipcRenderer.invoke('ai:listModels'),
+
   /** 发送对话请求（只发 messages，密钥由主进程注入） */
   aiChat: (payload: { messages: ChatMessage[] }): void =>
     ipcRenderer.send('ai:chat', payload),
