@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { exportToRpy, exportDefinitionsRpy, buildBundle, resolveLookups, validateExportNames } from '../rpyExporter'
+import { exportToRpy, exportDefinitionsRpy, buildBundle, resolveLookups, validateExportNames, exportOptionsRpy } from '../rpyExporter'
 import { MOUNTABLE_EFFECTS, RENPY_WARPERS } from '@/data/mountableEffects'
 import { reduceLines } from '@/core/reducer'
 import type { LineDelta, ResolvedLineState, CharacterConfig, AssetItem, MountedEffect, GlobalVariable, PositionSlot } from '@/core/types'
@@ -843,8 +843,8 @@ describe('rpyExporter · 非法标识符与 Movie 语法修复（RenPy 实测回
   ]
   const slotStates = reduceLines(slotDeltas)
   const slotConfigs: CharacterConfig[] = [
-    { charId: 'left-center', variableName: '', displayName: '左', color: '#ffffff', expressions: [{ id: 'default', label: '默认', assetId: 'spr_left' }] },
-    { charId: '???', variableName: '', displayName: '无名', color: '#61afef', expressions: [{ id: 'default', label: '默认', assetId: 'spr_unknown' }] },
+    { charId: 'left-center', displayName: '左', dialogueColor: '#ffffff', expressions: [{ id: 'default', label: '默认', assetId: 'spr_left' }], createdAt: '', updatedAt: '' },
+    { charId: '???', displayName: '无名', dialogueColor: '#61afef', expressions: [{ id: 'default', label: '默认', assetId: 'spr_unknown' }], createdAt: '', updatedAt: '' },
   ]
   const slotAssets: AssetItem[] = [
     { id: 'bg_room', type: 'background', name: 'room', fileName: 'room.jpg', relativePath: 'assets/images/background/room.jpg', importedAt: '' },
@@ -857,8 +857,8 @@ describe('rpyExporter · 非法标识符与 Movie 语法修复（RenPy 实测回
     baseDelta('S3', { speaker: '???', dialogue: '嘿', characters: { unknown: { char_id: '???', sprite_id: 'default', asset_id: 'spr_unknown', position_slot: 'center', scale: 1, action: 'show' } } }),
   ]
   const slotPositions: PositionSlot[] = [
-    { id: 'left-center', anchor_x: 0.25, anchor_y: 1.0, anchor_point: 'x' },
-    { id: 'center', anchor_x: 0.5, anchor_y: 1.0, anchor_point: 'x' },
+    { id: 'left-center', anchor_x: 0.25, anchor_y: 1.0, anchor_point: 'bottom' },
+    { id: 'center', anchor_x: 0.5, anchor_y: 1.0, anchor_point: 'bottom' },
   ]
   const slotBundle = buildBundle(slotDeltasWithChars, reduceLines(slotDeltasWithChars), slotConfigs, slotAssets, slotPositions)
 
@@ -892,5 +892,44 @@ describe('rpyExporter · 非法标识符与 Movie 语法修复（RenPy 实测回
 
   it('视频背景导出用 scene expression Movie（非法 scene bg = 写法已废弃）', () => {
     expect(slotBundle.script).not.toContain('scene bg = Movie')
+  })
+})
+
+describe('rpyExporter · options.rpy 配置变量合规（RenPy 实测回归）', () => {
+  it('不产出不存在的 config 变量（skip 属偏好设置，走 _preferences）', () => {
+    const opts = exportOptionsRpy({ title: 'Test' })
+    expect(opts).not.toContain('config.skip_unseen')
+    expect(opts).not.toContain('config.skip_after_choices')
+    expect(opts).not.toContain('config.save_slots')
+    expect(opts).toContain('_preferences.skip_unseen =')
+    expect(opts).toContain('_preferences.skip_after_choices =')
+  })
+
+  it('全部 config 变量均为 RenPy 8.x 官方变量', () => {
+    const opts = exportOptionsRpy({ title: 'Test', skipUnseen: true, skipAfterChoices: true })
+    // 官方 config 变量白名单（8.x 源码 config.py / common 脚本实测确认）
+    const official = [
+      'config.developer',
+      'config.name',
+      'config.window_title',
+      'config.default_text_cps',
+      'config.default_afm_time',
+      'config.allow_skipping',
+      'config.fast_skipping',
+      'config.autosave_on_choice',
+      'config.autosave_on_quit',
+      'config.has_music',
+      'config.has_sound',
+      'config.has_voice',
+    ]
+    for (const name of official) {
+      expect(opts).toContain(name)
+    }
+    // 扫描所有 config.xxx 赋值，确保全部在白名单内
+    const used = new Set<string>()
+    for (const m of opts.matchAll(/config\.([a-z_]+)\s*=/g)) used.add('config.' + m[1])
+    for (const u of used) {
+      expect(official, `非法配置变量: ${u}`).toContain(u)
+    }
   })
 })

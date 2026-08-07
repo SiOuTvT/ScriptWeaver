@@ -148,3 +148,11 @@ release_build2/
 release_build3/
 release_build4/
 rb3/
+
+# 调试/测试临时文件（绝不进仓库）
+_*.txt
+_*.log
+_*.json
+_*.png
+_*.bak
+*.tmp

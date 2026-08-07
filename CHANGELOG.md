@@ -50,11 +50,16 @@
 - Ren'Py 引擎自动探测扩展到所有磁盘根目录。
 
 ### 导出修复
-- 修复导出的剧本在 Ren'Py 中无法运行的问题（实测 lint 报错 4 类已全部修复）：
+- 修复导出的剧本在 Ren'Py 中无法运行的问题（实测 lint 报错已全部修复）：
   - 角色占位名（如 ???）清洗为合法标识符，不再生成 define ??? 与 ??? "台词"。
   - 位置槽位名（如 left-center）清洗为下划线（left_center），transform 定义与 show at 引用同步闭合。
   - 视频背景改用官方合法的 scene expression Movie(...) 写法，不再输出非法的 scene bg = Movie(...)。
-  - 补充 5 个回归测试（54 个导出测试全过），并用真实工程做导入导出闭环验证。
+  - 跳过设置改用官方正确的偏好写法 _preferences.skip_unseen / _preferences.skip_after_choices（原 config.skip_unseen 与误改的 config.skip_unseen_text 均非法，已对照 SDK 源码逐一核对全部配置变量）。
+  - 修复入口 label 重复定义：剧本自带 label start 时不再额外发射，消除「label defined twice」报错。
+  - 新增 6 个回归测试；用真实工程跑官方 Ren'Py lint 验收通过（exit 0）。
+
+### 试玩前自动校验
+- 点「试玩」「打包成安装包」时自动先跑一遍 Ren'Py 官方语法校验，语法有问题会直接把错误列出来并停止启动，不会再出现「启动窗口才报错」的情况。
 
 ### 数据目录（默认不存 C 盘）
 - 应用一切数据（缓存、版本快照、AI 配置、测试运行暂存、构建日志等）默认全部保存到 D 盘，绝不默认写入 C 盘（不再使用 AppData\Roaming）。

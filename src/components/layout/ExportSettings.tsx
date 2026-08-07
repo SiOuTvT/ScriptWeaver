@@ -332,8 +332,34 @@ export default function ExportSettings() {
           return
         }
         setEngineResult(
-          `工程已暂存（拷贝素材 ${stage.copied ?? 0} 个${stage.missingCount ? `，缺失 ${stage.missingCount} 个` : ''}）。\n正在调用 Ren'Py SDK…`,
+          `工程已暂存（拷贝素材 ${stage.copied ?? 0} 个${stage.missingCount ? `，缺失 ${stage.missingCount} 个` : ''}）。`,
         )
+
+        // 试玩 / 打包 前先自动跑一遍 Ren'Py Lint，让引擎自己当守门员：
+        // 无论导出器有没有漏网的语法问题，都在启动前暴露出来，而不是等窗口崩了才看到。
+        if (action === 'run' || action === 'build') {
+          setEngineResult((prev) => prev + '\n正在校验语法（Ren\'Py Lint）…')
+          const lintRes = await window.electronAPI?.renpyRunEngine({
+            action: 'lint',
+            projectDir: stage.projectDir as string,
+            sdkPath: manualSdk.trim() || undefined,
+          })
+          if (lintRes && !lintRes.success) {
+            setEngineResult((prev) => prev + '\n\n语法校验失败：' + (lintRes.error ?? '未知错误'))
+            return
+          }
+          if (lintRes && lintRes.exitCode !== 0) {
+            setEngineResult(
+              (prev) =>
+                prev +
+                `\n\n语法校验未通过（退出码 ${lintRes.exitCode}），已停止启动。\n\n` +
+                (lintRes.output || '(无输出)'),
+            )
+            return
+          }
+          setEngineResult((prev) => prev + '\n语法校验通过 ✔\n正在调用 Ren\'Py SDK…')
+        }
+
         const res = await window.electronAPI?.renpyRunEngine({
           action,
           projectDir: stage.projectDir as string,

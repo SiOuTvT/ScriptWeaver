@@ -724,7 +724,7 @@ label start:
 
 describe('canonicalizeImportedAssets：重复导入时素材 id 必须真实存在（舞台空白修复回归）', () => {
   const mkAsset = (id: string, rel: string): AssetItem =>
-    ({ id, fileName: rel.split('/').pop() ?? id, relativePath: rel, type: 'background', createdAt: '', updatedAt: '', name: rel }) as AssetItem
+    ({ id, fileName: rel.split('/').pop() ?? id, relativePath: rel, type: 'background', createdAt: '', updatedAt: '', importedAt: '', name: rel }) as AssetItem
 
   it('第一次导入：新条目全部注册', () => {
     const m = new Map([['room', mkAsset('new-id-1', 'assets/images/room.png')]])
