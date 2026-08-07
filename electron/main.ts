@@ -311,6 +311,22 @@ function copyFile(src: string, dest: string): void {
   fs.copyFileSync(src, dest)
 }
 
+/** 递归复制目录（含子目录），目标目录已存在则合并覆盖 */
+function copyDirRecursive(srcDir: string, destDir: string): void {
+  if (!fs.existsSync(srcDir)) return
+  ensureDir(destDir)
+  for (const name of fs.readdirSync(srcDir)) {
+    const s = path.join(srcDir, name)
+    const d = path.join(destDir, name)
+    try {
+      if (fs.statSync(s).isDirectory()) copyDirRecursive(s, d)
+      else copyFile(s, d)
+    } catch {
+      /* ignore 单个文件失败不阻断整体 */
+    }
+  }
+}
+
 /** 递归复制目录 */
 function copyDir(src: string, dest: string): void {
   if (!fs.existsSync(src)) return
@@ -1379,6 +1395,46 @@ function buildMinimalScreens(): string {
     '',
     '',
   ].join('\n')
+}
+
+/**
+ * 从当前项目根目录原样复用原工程的界面资源（gui.rpy + screens.rpy + gui/ 图片目录 + 字体）。
+ * 若导入的 Ren'Py 工程自带完整界面，则「测试运行」应呈现与用户在自己 Ren'Py 中完全一致的
+ * 外观（对话框样式、角色名位置、字体、颜色、开始界面），而不是 ScriptWeaver 生成的极简界面。
+ * 返回是否成功复用了完整界面。
+ */
+function stageOriginalUi(gameDir: string): boolean {
+  if (!activeProjectRoot) return false
+  // 工程根可能是 Ren'Py 工程根（含 game/）或 game 目录本身（swproj 曾直接保存到 game 内）
+  const rootCandidates = [
+    path.resolve(activeProjectRoot, 'game'),
+    path.resolve(activeProjectRoot),
+  ]
+  for (const root of rootCandidates) {
+    const guiRpy = path.join(root, 'gui.rpy')
+    const screensRpy = path.join(root, 'screens.rpy')
+    if (!fs.existsSync(guiRpy) || !fs.existsSync(screensRpy)) continue
+    try {
+      // gui.rpy / screens.rpy 必须同时带，否则引用的 gui.* 变量与界面 screen 会互相缺失
+      copyFile(guiRpy, path.join(gameDir, 'gui.rpy'))
+      copyFile(screensRpy, path.join(gameDir, 'screens.rpy'))
+      // gui/ 目录（对话框、按钮、箭头等界面图片）必须连根复制
+      const guiDir = path.join(root, 'gui')
+      if (fs.existsSync(guiDir)) copyDirRecursive(guiDir, path.join(gameDir, 'gui'))
+      // 字体文件（gui.rpy 里 gui.text_font 等引用的 ttf/otf）
+      try {
+        for (const name of fs.readdirSync(root)) {
+          if (/\.(ttf|otf|ttc)$/i.test(name)) copyFile(path.join(root, name), path.join(gameDir, name))
+        }
+      } catch {
+        /* ignore */
+      }
+      return true
+    } catch {
+      return false
+    }
+  }
+  return false
 }
 
 /**
