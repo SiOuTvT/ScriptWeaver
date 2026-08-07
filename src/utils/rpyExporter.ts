@@ -973,13 +973,18 @@ function compileToNodes(
         // 视频判定：兼容旧约定 sw-video:/sw-cutscene: 前缀，也要识别导入后真实视频素材 id（其 type==='video'）。
         // 导入链路会把前缀重映射成真实素材 id，仅靠前缀会在导入后把视频错当成普通背景导出（缺失背景）。
         const bgVideoAsset = st.videoDefs.get(newBg)
-        if (newBg.startsWith('sw-cutscene:')) {
+        // 视频过场 vs 视频背景的唯一可靠区分：movie_cutscene 解析时不带 movieLoop，
+        // Movie(play=..., loop=...) 背景必带 movieLoop。导入绑定后前缀消失，靠此字段区分。
+        const isCutscene = state.background?.movieLoop === undefined
+        if (newBg.startsWith('sw-cutscene:') || (bgVideoAsset?.type === 'video' && isCutscene)) {
           // 视频过场：全屏播一次，播完自动继续剧情（$ renpy.movie_cutscene("video/<文件>")）。
           // 与视频背景（无限循环）语义不同，必须区分，否则过场会变成循环背景把剧情卡死。
           // 过场会停掉正在播放的音乐（movie_cutscene 默认 stop_music=True），
           // 因此把 BGM 状态置为哨兵，强制过场后的下一行重新 play music，
           // 否则同一首歌会被「歌曲去重」吞掉，导致过场后音乐消失。
-          const clip = newBg.slice('sw-cutscene:'.length)
+          const clip = newBg.startsWith('sw-cutscene:')
+            ? newBg.slice('sw-cutscene:'.length)
+            : (bgVideoAsset?.fileName ?? '')
           block.push({ kind: 'cutscene', clip })
           currentBgm = '\u0000cutscene\u0000' // 哨兵值：与任何真实 asset_id 都不同
         } else if (newBg.startsWith('sw-video:') || bgVideoAsset?.type === 'video') {

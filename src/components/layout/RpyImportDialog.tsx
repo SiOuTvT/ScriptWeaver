@@ -312,6 +312,36 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
       // 舞台解析不到任何状态 → 背景/立绘/音频全部「不显示」。
       useAppStore.getState().selectLine(0)
 
+      // ── Step 6.4: 清理历史遗留的重复副本素材 ──
+      // 旧版本导入同名素材会生成 _1/_2 后缀的副本并长期堆积在素材库。
+      // 本次整本替换后，未被剧本引用的 _N 副本应清理掉（磁盘文件保留，仅移除库内条目）。
+      {
+        const referenced = new Set<string>()
+        for (const d of revisedDeltas) {
+          if (d.background?.asset_id) referenced.add(d.background.asset_id)
+          if (d.characters) {
+            for (const c of Object.values(d.characters)) {
+              if (c.asset_id) referenced.add(c.asset_id)
+            }
+          }
+          if (d.audio?.bgm && typeof d.audio.bgm === 'object' && 'asset_id' in d.audio.bgm) {
+            referenced.add((d.audio.bgm as { asset_id: string }).asset_id)
+          }
+          if (d.audio?.ambient && typeof d.audio.ambient === 'object' && 'asset_id' in d.audio.ambient) {
+            referenced.add((d.audio.ambient as { asset_id: string }).asset_id)
+          }
+          if (d.audio?.se) for (const s of d.audio.se) referenced.add(s)
+          if (d.audio?.voice) referenced.add(d.audio.voice)
+        }
+        const kept = newAssets.filter((a) => {
+          const isDup = /_[0-9]+(\.[A-Za-z0-9]+)?$/.test(a.relativePath)
+          return !isDup || referenced.has(a.id)
+        })
+        if (kept.length !== newAssets.length) {
+          useAppStore.getState().setAssets(kept)
+        }
+      }
+
       // ── Step 6.5: 对齐工程基准分辨率与画布比例 ──
       // 立绘 zoom 是相对原图像素的，舞台必须知道脚本的基准分辨率才能算对占屏比
       if (preview.screen?.width > 0 && preview.screen?.height > 0) {
