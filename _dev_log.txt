@@ -121,3 +121,92 @@ computing gzip size...
 [sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_3.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/szj_4.jpg | rel= assets/images/background/szj_4.jpg | activeRoot= D:\meihuogu\hlzz\game
 [sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/b.png | rel= assets/images/background/b.png | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\b.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/b_1.png | rel= assets/images/background/b_1.png | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\b_1.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/b_2.png | rel= assets/images/background/b_2.png | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\b_2.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/b_3.png | rel= assets/images/background/b_3.png | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\b_3.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/c.jpg | rel= assets/images/background/c.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\c.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/cd.jpg | rel= assets/images/background/cd.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/cd_1.jpg | rel= assets/images/background/cd_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/cd_2.jpg | rel= assets/images/background/cd_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/cd_3.jpg | rel= assets/images/background/cd_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/cd_4.jpg | rel= assets/images/background/cd_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/c_1.jpg | rel= assets/images/background/c_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\c_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/c_2.jpg | rel= assets/images/background/c_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\c_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/c_3.jpg | rel= assets/images/background/c_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\c_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/c_4.jpg | rel= assets/images/background/c_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\c_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fz.jpg | rel= assets/images/background/fz.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fz_1.jpg | rel= assets/images/background/fz_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fz_2.jpg | rel= assets/images/background/fz_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fz_3.jpg | rel= assets/images/background/fz_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fz_4.jpg | rel= assets/images/background/fz_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr.jpg | rel= assets/images/background/jjr.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjr.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr_1.jpg | rel= assets/images/background/jjr_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjr_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr_2.jpg | rel= assets/images/background/jjr_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjr_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr_3.jpg | rel= assets/images/background/jjr_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjr_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr_4.jpg | rel= assets/images/background/jjr_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjr_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs.jpg | rel= assets/images/background/jjs.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjs.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs_1.jpg | rel= assets/images/background/jjs_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjs_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs_2.jpg | rel= assets/images/background/jjs_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjs_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs_3.jpg | rel= assets/images/background/jjs_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjs_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs_4.jpg | rel= assets/images/background/jjs_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjs_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp.jpg | rel= assets/images/background/jjtp.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjtp.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp_1.jpg | rel= assets/images/background/jjtp_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjtp_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp_2.jpg | rel= assets/images/background/jjtp_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjtp_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp_3.jpg | rel= assets/images/background/jjtp_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjtp_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp_4.jpg | rel= assets/images/background/jjtp_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjtp_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy.jpg | rel= assets/images/background/jjy.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjy.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy_1.jpg | rel= assets/images/background/jjy_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjy_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy_2.jpg | rel= assets/images/background/jjy_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjy_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy_3.jpg | rel= assets/images/background/jjy_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjy_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy_4.jpg | rel= assets/images/background/jjy_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjy_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj.jpg | rel= assets/images/background/szj.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj_1.jpg | rel= assets/images/background/szj_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj_2.jpg | rel= assets/images/background/szj_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj_3.jpg | rel= assets/images/background/szj_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj_4.jpg | rel= assets/images/background/szj_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_4.jpg image/jpeg
+错误: 没有找到进程 "27680"。

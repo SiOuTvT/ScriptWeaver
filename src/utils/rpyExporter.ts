@@ -178,6 +178,27 @@ function sanitizeIdent(t: string): string {
 /** 合法 Python 标识符正则（字母/下划线开头，仅含 [a-zA-Z0-9_]） */
 const PY_IDENT_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 
+/**
+ * 把角色 ID 清洗为合法 Ren'Py / Python 标识符（支持中文等 Unicode 字母）。
+ * - 合法字符（字母/数字/下划线）原样保留，非法字符（如 ? 空格 -）替换为下划线并收敛；
+ * - 清洗后为空（如角色占位名 "???"）时，用「unknown_<短哈希>」保证确定性且不冲突；
+ * - 数字开头的标识符补 c_ 前缀（Python 标识符不能以数字开头）。
+ */
+function charVarName(id: string): string {
+  const cleaned = id
+    .replace(/[^\p{L}\p{N}_]+/gu, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+  if (cleaned) {
+    if (/^[\p{L}_]/u.test(cleaned)) return cleaned
+    return `c_${cleaned}`
+  }
+  // 全为非法字符（如 "???"）→ 确定性短哈希兜底，避免多个占位名互相冲突
+  let h = 0
+  for (const ch of id) h = (h * 31 + (ch.codePointAt(0) ?? 0)) >>> 0
+  return `unknown_${h.toString(36)}`
+}
+
 /** Python 关键字（不可用作变量名） */
 const PYTHON_KEYWORDS = new Set([
   'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 'class',
@@ -856,8 +877,8 @@ function atEqual(a: AtClause, b: AtClause): boolean {
  */
 function serializeAt(at: AtClause, zoom?: number): string {
   if (at.kind === 'slot') {
-    if (zoom != null && zoom !== 1) return `${at.slotId}, sw_zoom(${zoom})`
-    return at.slotId
+    if (zoom != null && zoom !== 1) return `${sanitizeIdent(at.slotId)}, sw_zoom(${zoom})`
+    return sanitizeIdent(at.slotId)
   }
   // 锚点非默认（脚底居中）时补上，保证导入脚本里的 xanchor/yanchor 能原样回到导出结果
   if (at.xanchor !== 0.5 || at.yanchor !== 1) {
@@ -1212,12 +1233,14 @@ function serializeNode(n: RpyNode): string {
     case 'show': {
       const at = serializeAt(n.at, n.zoom)
       const atStr = n.effectAt && n.effectAt.length ? `${at}, ${n.effectAt.join(', ')}` : at
-      if (n.transition) return `show ${n.charId} ${n.exprId} at ${atStr} zorder ${n.zorder} with ${n.transition}`
-      if (n.effectWith) return `show ${n.charId} ${n.exprId} at ${atStr} zorder ${n.zorder} with ${n.effectWith}`
-      return `show ${n.charId} ${n.exprId} at ${atStr} zorder ${n.zorder}`
+      // 角色 ID 清洗为合法标识符，与 definitions 的 define/image 声明保持闭合
+      const cid = charVarName(n.charId)
+      if (n.transition) return `show ${cid} ${n.exprId} at ${atStr} zorder ${n.zorder} with ${n.transition}`
+      if (n.effectWith) return `show ${cid} ${n.exprId} at ${atStr} zorder ${n.zorder} with ${n.effectWith}`
+      return `show ${cid} ${n.exprId} at ${atStr} zorder ${n.zorder}`
     }
     case 'hide':
-      return `hide ${n.charId}`
+      return `hide ${charVarName(n.charId)}`
     case 'layer_filter':
       // 整层颜色矩阵：expr 为 null 表示关闭滤镜（复位为单位矩阵，避免残留染色）
       return n.expr == null
@@ -1227,8 +1250,11 @@ function serializeNode(n: RpyNode): string {
       // 整层摄像机运动：transform 为 null 表示复位（裸 camera 语句清除镜头变换）
       return n.transform == null ? 'camera' : `camera at ${n.transform}`
     case 'video_bg':
-      // 电影背景：play 取相对 game/ 的 video/<文件名> 路径；loop 必须大写布尔
-      return `scene bg = Movie(play="video/${n.clip}", loop=${n.loop ? 'True' : 'False'})`
+      // 电影背景：play 取相对 game/ 的 video/<文件名> 路径；loop 必须大写布尔。
+      // 注意：不能写 `scene bg = Movie(...)`（Ren'Py 语法非法），
+      // 官方写法是 `scene expression Movie(...)` 或先 `image <名> = Movie(...)` 再 scene <名>。
+      // 用 expression 形式可直接渲染任意 Movie displayable，且无副作用。
+      return `scene expression Movie(play="video/${n.clip}", loop=${n.loop ? 'True' : 'False'})`
     case 'playMusic': {
       let s = `play music "${n.file}"`
       if (n.loop) s += ' loop'
@@ -1251,7 +1277,8 @@ function serializeNode(n: RpyNode): string {
       return 'stop ambient'
     case 'say': {
       const text = escapeDialogue(n.text)
-      return n.speaker ? `${n.speaker} "${text}"` : `"${text}"`
+      // speaker 已是解析后的 charId，清洗为合法标识符（与 define 声明闭合）
+      return n.speaker ? `${charVarName(n.speaker)} "${text}"` : `"${text}"`
     }
     case 'comment':
       return `# ${n.text}`
@@ -1333,11 +1360,13 @@ export function exportDefinitionsRpy(
   lines.push('')
 
   // ---- Position Transforms（从槽位配置生成，非硬编码）----
+  // 槽位 id 可能含连字符（如 left-center），Ren'Py transform 名必须是合法标识符 →
+  // 统一清洗为 left_center，使用处（show ... at left_center）同样清洗，保证闭合。
   const slots = positionSlots ?? []
   if (slots.length > 0) {
     lines.push('# ---- Position Transforms ----')
     for (const slot of slots) {
-      lines.push(`transform ${slot.id}:`)
+      lines.push(`transform ${sanitizeIdent(slot.id)}:`)
       lines.push(`    xalign ${round3(slot.anchor_x)}`)
       lines.push(`    yalign ${round3(slot.anchor_y)}`)
       lines.push('')
@@ -1395,7 +1424,8 @@ export function exportDefinitionsRpy(
     lines.push('# ---- Character 声明 ----')
     for (const char of characterConfigs) {
       const colorArg = char.dialogueColor ? `, color="${escapeDialogue(char.dialogueColor)}"` : ''
-      lines.push(`define ${char.charId} = Character("${escapeDialogue(char.displayName)}"${colorArg})`)
+      // 角色 ID 清洗为合法标识符（"???" 等占位名会转成 unknown_<hash>），保证 define 可编译
+      lines.push(`define ${charVarName(char.charId)} = Character("${escapeDialogue(char.displayName)}"${colorArg})`)
     }
     lines.push('')
   }
@@ -1417,10 +1447,10 @@ export function exportDefinitionsRpy(
       for (const expr of char.expressions) {
         const asset = symbol.charDefs[char.charId]?.expressions.get(expr.id)
         if (!asset) {
-          lines.push(`# [缺失] image ${char.charId} ${expr.id} = "images/sprite/missing.png"`)
+          lines.push(`# [缺失] image ${charVarName(char.charId)} ${expr.id} = "images/sprite/missing.png"`)
           continue
         }
-        lines.push(`image ${char.charId} ${expr.id} = "images/sprite/${asset.fileName}"`)
+        lines.push(`image ${charVarName(char.charId)} ${expr.id} = "images/sprite/${asset.fileName}"`)
       }
     }
     lines.push('')
