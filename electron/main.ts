@@ -1429,12 +1429,66 @@ function stageOriginalUi(gameDir: string): boolean {
       } catch {
         /* ignore */
       }
+      // ---- 兼容性补丁：options.rpy 会被 ScriptWeaver 的 options.rpy 覆盖，导致其中
+      //     定义的 gui.* 变量（如 gui.show_name）丢失 → 主菜单报 AttributeError。
+      //     这里把原工程 options.rpy 里 gui.rpy 未定义的 gui.* 变量提取出来，
+      //     写入独立兼容文件（去重，避免 define 重复报错）。
+      try {
+        const compatLines = extractMissingGuiVars(root, guiRpy)
+        if (compatLines.length > 0) {
+          const compat = ['## 由 ScriptWeaver 生成：补齐原工程 options.rpy 中的 gui 变量定义', ...compatLines, ''].join('\n')
+          fs.writeFileSync(path.join(gameDir, '_sw_gui_compat.rpy'), compat, 'utf-8')
+        }
+      } catch {
+        /* ignore */
+      }
       return true
     } catch {
       return false
     }
   }
   return false
+}
+
+/**
+ * 提取原工程 options.rpy 中 gui.* 变量的定义行（如 define gui.show_name = True），
+ * 跳过 gui.rpy 已定义的变量（避免 define 重复报错）。
+ */
+function extractMissingGuiVars(root: string, guiRpy: string): string[] {
+  const optsPath = path.join(root, 'options.rpy')
+  if (!fs.existsSync(optsPath)) return []
+  const definedInGui = new Set<string>()
+  try {
+    for (const line of fs.readFileSync(guiRpy, 'utf-8').split('\n')) {
+      const m = line.match(/^\s*(?:define|default)\s+(gui\.[A-Za-z_][A-Za-z0-9_]*)/)
+      if (m) definedInGui.add(m[1])
+    }
+  } catch {
+    /* ignore */
+  }
+  const out: string[] = []
+  try {
+    // CRLF 文件的 \r 会让 .*$ 匹配失败（JS 的 . 不匹配 \r），先去掉行尾 \r
+    const allLines = fs.readFileSync(optsPath, 'utf-8').split('\n').map((l) => l.replace(/\r$/, ''))
+    for (let i = 0; i < allLines.length; i++) {
+      const line = allLines[i]
+      const m = line.match(/^\s*(define|default)\s+(gui\.[A-Za-z_][A-Za-z0-9_]*)(\s*=.*)$/)
+      if (!m || definedInGui.has(m[2])) continue
+      definedInGui.add(m[2])
+      out.push(`${m[1]} ${m[2]}${m[3]}`)
+      // 处理多行字符串（如 gui.about = _p(""" 跨多行）：未闭合的 """ 需连后续行一起带出
+      if ((m[3].match(/"""/g) ?? []).length % 2 === 1) {
+        while (i + 1 < allLines.length) {
+          const next = allLines[++i]
+          out.push(next)
+          if (((next.match(/"""/g) ?? []).length) % 2 === 1) break
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return out
 }
 
 /**

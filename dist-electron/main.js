@@ -1271,12 +1271,52 @@ function stageOriginalUi(gameDir) {
         }
       } catch {
       }
+      try {
+        const compatLines = extractMissingGuiVars(root, guiRpy);
+        if (compatLines.length > 0) {
+          const compat = ["## 由 ScriptWeaver 生成：补齐原工程 options.rpy 中的 gui 变量定义", ...compatLines, ""].join("\n");
+          fs.writeFileSync(path.join(gameDir, "_sw_gui_compat.rpy"), compat, "utf-8");
+        }
+      } catch {
+      }
       return true;
     } catch {
       return false;
     }
   }
   return false;
+}
+function extractMissingGuiVars(root, guiRpy) {
+  const optsPath = path.join(root, "options.rpy");
+  if (!fs.existsSync(optsPath)) return [];
+  const definedInGui = /* @__PURE__ */ new Set();
+  try {
+    for (const line of fs.readFileSync(guiRpy, "utf-8").split("\n")) {
+      const m = line.match(/^\s*(?:define|default)\s+(gui\.[A-Za-z_][A-Za-z0-9_]*)/);
+      if (m) definedInGui.add(m[1]);
+    }
+  } catch {
+  }
+  const out = [];
+  try {
+    const allLines = fs.readFileSync(optsPath, "utf-8").split("\n").map((l) => l.replace(/\r$/, ""));
+    for (let i = 0; i < allLines.length; i++) {
+      const line = allLines[i];
+      const m = line.match(/^\s*(define|default)\s+(gui\.[A-Za-z_][A-Za-z0-9_]*)(\s*=.*)$/);
+      if (!m || definedInGui.has(m[2])) continue;
+      definedInGui.add(m[2]);
+      out.push(`${m[1]} ${m[2]}${m[3]}`);
+      if ((m[3].match(/"""/g) ?? []).length % 2 === 1) {
+        while (i + 1 < allLines.length) {
+          const next = allLines[++i];
+          out.push(next);
+          if ((next.match(/"""/g) ?? []).length % 2 === 1) break;
+        }
+      }
+    }
+  } catch {
+  }
+  return out;
 }
 function stageChineseFont(gameDir) {
   if (!activeProjectRoot) return null;
