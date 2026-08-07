@@ -422,6 +422,8 @@ export interface ProjectMeta {
   skipAfterChoices?: boolean
   /** 存档槽数量，默认 20 */
   saveSlots?: number
+  /** 工程基准分辨率（gui.init），导入工程时取自 gui.init(宽, 高)，缺省 1920x1080 */
+  baseResolution?: { width: number; height: number }
   /** CG 画廊是否启用 */
   galleryEnabled?: boolean
   /** CG 画册条目 */

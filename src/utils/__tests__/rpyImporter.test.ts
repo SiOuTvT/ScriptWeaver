@@ -656,7 +656,9 @@ describe('parseRpy：视频背景 Movie 往返（与导出 Movie 一致）', () 
     const r = parseRpy('label start:\n    scene bg = Movie(play="video/op.webm", loop=False)\n    "台词"')
     const states = reduceLines(r.deltas)
     const out = buildBundle(r.deltas, states, [], []).script
-    expect(out).toContain('scene bg = Movie(play="video/op.webm", loop=False)')
+    expect(out).toContain('scene expression Movie(play="video/op.webm", loop=False)')
+    // 入口 label start 不应重复发射（导入的 label 已在 deltas 中）
+    expect(out.match(/label start:/g) ?? []).toHaveLength(1)
   })
 })
 

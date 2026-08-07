@@ -1289,6 +1289,40 @@ function buildMinimalOptions(title: string): string {
   ].join('\n')
 }
 
+/**
+ * 为暂存工程准备中文字体：优先从当前项目根目录拷贝中文字体文件（如 SourceHanSansLite.ttf），
+ * 找不到则返回 null（调用方回退系统字体）。返回拷贝到 game/ 根目录后的字体文件名。
+ * 目的：缺失中文字体时 Ren'Py 默认英文字体不包含汉字字形，台词会显示为空格。
+ */
+function stageChineseFont(gameDir: string): string | null {
+  if (!activeProjectRoot) return null
+  const candidates: string[] = []
+  const fontDirs = [
+    path.resolve(activeProjectRoot, 'game'),
+    path.resolve(activeProjectRoot),
+  ]
+  for (const dir of fontDirs) {
+    try {
+      for (const name of fs.readdirSync(dir)) {
+        if (/\.(ttf|otf|ttc)$/i.test(name)) candidates.push(path.join(dir, name))
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  // 中文字体通常文件名带 CJK / Han / Sans 等关键词，优先取第一个命中的
+  const prefer = candidates.find((c) => /han|cjk|chinese|yahei|hei|song|kai|ming|sc\b/i.test(path.basename(c)))
+  const chosen = prefer ?? candidates[0]
+  if (!chosen) return null
+  try {
+    const dest = path.join(gameDir, path.basename(chosen))
+    copyFile(chosen, dest)
+    return path.basename(chosen)
+  } catch {
+    return null
+  }
+}
+
 // 探测 SDK：渲染进程挂载时调用，给出状态与版本；可传手动指定的 SDK 路径优先探测
 ipcMain.handle('renpy:detectSdk', async (_event, manualPath?: string) => {
   const info = findRenpySdk(typeof manualPath === 'string' && manualPath.trim() ? manualPath : undefined)
@@ -1329,6 +1363,29 @@ ipcMain.handle('renpy:stageProject', async (_event, payload: { bundle: RpyBundle
     if (bundle.ui && bundle.ui.trim()) {
       fs.writeFileSync(path.join(gameDir, 'ui.rpy'), bundle.ui, 'utf-8')
     }
+
+    // ---- 补全工程骨架：分辨率 + 中文字体 ----
+    // 缺失 gui.rpy 时 Ren'Py 用默认 800x600 + 英文字体渲染，
+    // 导致立绘/背景 zoom 比例失衡、中文台词显示为空格。
+    // 这里生成最小 gui.rpy（gui.init 设定基准分辨率 + 中文 fallback 字体）。
+    const resolution = bundle.baseResolution ?? { width: 1920, height: 1080 }
+    const fontFile = await stageChineseFont(gameDir)
+    const guiLines = [
+      '## 由 ScriptWeaver 生成的默认界面配置（分辨率 + 中文字体）',
+      'init python:',
+      `    gui.init(${Math.round(resolution.width)}, ${Math.round(resolution.height)})`,
+    ]
+    if (fontFile) {
+      guiLines.push(`    gui.text_font = "${fontFile}"`)
+      guiLines.push(`    gui.name_text_font = "${fontFile}"`)
+      guiLines.push(`    gui.interface_text_font = "${fontFile}"`)
+    } else {
+      // 无中文字体文件时回退系统字体（微软雅黑），保证中文可见
+      guiLines.push('    gui.text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
+      guiLines.push('    gui.name_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
+      guiLines.push('    gui.interface_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
+    }
+    fs.writeFileSync(path.join(gameDir, 'gui.rpy'), guiLines.join('\n') + '\n', 'utf-8')
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message }
   }

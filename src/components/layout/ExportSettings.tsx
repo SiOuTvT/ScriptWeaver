@@ -324,7 +324,7 @@ export default function ExportSettings() {
           DEFAULT_POSITION_SLOTS,
           scriptLabel,
           variables,
-          projectMeta,
+          { ...projectMeta, baseResolution: useAppStore.getState().baseResolution },
         )
         const stage = await window.electronAPI?.renpyStageProject({ bundle, title: projectMeta.title })
         if (!stage?.success) {

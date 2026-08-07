@@ -1153,6 +1153,32 @@ function buildMinimalOptions(title) {
     ""
   ].join("\n");
 }
+function stageChineseFont(gameDir) {
+  if (!activeProjectRoot) return null;
+  const candidates = [];
+  const fontDirs = [
+    path.resolve(activeProjectRoot, "game"),
+    path.resolve(activeProjectRoot)
+  ];
+  for (const dir of fontDirs) {
+    try {
+      for (const name of fs.readdirSync(dir)) {
+        if (/\.(ttf|otf|ttc)$/i.test(name)) candidates.push(path.join(dir, name));
+      }
+    } catch {
+    }
+  }
+  const prefer = candidates.find((c) => /han|cjk|chinese|yahei|hei|song|kai|ming|sc\b/i.test(path.basename(c)));
+  const chosen = prefer ?? candidates[0];
+  if (!chosen) return null;
+  try {
+    const dest = path.join(gameDir, path.basename(chosen));
+    copyFile(chosen, dest);
+    return path.basename(chosen);
+  } catch {
+    return null;
+  }
+}
 electron.ipcMain.handle("renpy:detectSdk", async (_event, manualPath) => {
   const info = findRenpySdk(typeof manualPath === "string" && manualPath.trim() ? manualPath : void 0);
   if (!info) {
@@ -1186,6 +1212,23 @@ electron.ipcMain.handle("renpy:stageProject", async (_event, payload) => {
     if (bundle.ui && bundle.ui.trim()) {
       fs.writeFileSync(path.join(gameDir, "ui.rpy"), bundle.ui, "utf-8");
     }
+    const resolution = bundle.baseResolution ?? { width: 1920, height: 1080 };
+    const fontFile = await stageChineseFont(gameDir);
+    const guiLines = [
+      "## 由 ScriptWeaver 生成的默认界面配置（分辨率 + 中文字体）",
+      "init python:",
+      `    gui.init(${Math.round(resolution.width)}, ${Math.round(resolution.height)})`
+    ];
+    if (fontFile) {
+      guiLines.push(`    gui.text_font = "${fontFile}"`);
+      guiLines.push(`    gui.name_text_font = "${fontFile}"`);
+      guiLines.push(`    gui.interface_text_font = "${fontFile}"`);
+    } else {
+      guiLines.push('    gui.text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
+      guiLines.push('    gui.name_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
+      guiLines.push('    gui.interface_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
+    }
+    fs.writeFileSync(path.join(gameDir, "gui.rpy"), guiLines.join("\n") + "\n", "utf-8");
   } catch (err) {
     return { success: false, error: err.message };
   }

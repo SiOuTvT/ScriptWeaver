@@ -107,6 +107,8 @@ export interface RpyBundle {
   assets: AssetRef[]
   /** 游戏图标源相对路径（相对项目 assets 根），导出时拷贝为根目录 icon.ico */
   iconSourceRelativePath?: string
+  /** 工程基准分辨率（gui.init），缺失时按 1920x1080 兜底 */
+  baseResolution?: { width: number; height: number }
 }
 
 // ======================= 辅助函数 =======================
@@ -917,9 +919,10 @@ function compileToNodes(
   }
 
   // 入口 label（Ren'Py 游戏起点）。
-  // 若第一条 delta 自身已带该 label（如从 Ren'Py 导入的 `label start:` 解析成 delta.label），
-  // 就不再重复发射，否则会生成两个 label start 导致 Ren'Py「label defined twice」报错。
-  const entryInDeltas = deltas.length > 0 && deltas[0].label?.trim() === scriptLabel
+  // 若 deltas 中已有任何一条带该 label（如从 Ren'Py 导入的 `label start:` 解析成 delta.label，
+  // 可能落在首条也可能落在后续对白条），就不再重复发射入口 label，
+  // 否则会生成两个 label start 导致 Ren'Py「label defined twice」报错。
+  const entryInDeltas = deltas.some((d) => d.label?.trim() === scriptLabel)
   if (!entryInDeltas) nodes.push({ kind: 'label', name: scriptLabel })
   let lastWasLabel = !entryInDeltas // 入口 label 刚推入时，下一行 block 前不加空行；delta 自带则交给下方 label 逻辑
   // 当前代码段是否是被 jump 引用的分支段（决定段尾是否补 return 兜底，避免穿透进下一剧情块）
@@ -1694,6 +1697,8 @@ export function buildBundle(
     ui,
     assets: assetRefs,
     iconSourceRelativePath: iconAsset?.relativePath,
+    // 基准分辨率：meta 优先（可为导入工程的 gui.init 尺寸），否则默认 1920x1080
+    baseResolution: meta.baseResolution ?? { width: 1920, height: 1080 },
   }
 }
 
