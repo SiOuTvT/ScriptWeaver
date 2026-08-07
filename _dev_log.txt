@@ -121,3 +121,4 @@ computing gzip size...
 [sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_3.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/szj_4.jpg | rel= assets/images/background/szj_4.jpg | activeRoot= D:\meihuogu\hlzz\game
 [sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_4.jpg image/jpeg
+错误: 没有找到进程 "30864"。
