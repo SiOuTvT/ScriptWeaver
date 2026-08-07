@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { exportToRpy, exportDefinitionsRpy, buildBundle, resolveLookups, validateExportNames } from '../rpyExporter'
 import { MOUNTABLE_EFFECTS, RENPY_WARPERS } from '@/data/mountableEffects'
 import { reduceLines } from '@/core/reducer'
-import type { LineDelta, ResolvedLineState, CharacterConfig, AssetItem, MountedEffect, GlobalVariable } from '@/core/types'
+import type { LineDelta, ResolvedLineState, CharacterConfig, AssetItem, MountedEffect, GlobalVariable, PositionSlot } from '@/core/types'
 
 const characterConfigs: CharacterConfig[] = [
   {
@@ -792,14 +792,14 @@ describe('rpyExporter · 视频背景 Movie 与舞台镜头 camera（Camera/Vide
   const script = bundle.script
 
   it('视频背景导出为可循环 Movie displayable，play 带 video/ 前缀、loop 为大写布尔', () => {
-    expect(script).toContain('scene bg = Movie(play="video/op.webm", loop=True)')
+    expect(script).toContain('scene expression Movie(play="video/op.webm", loop=True)')
   })
 
   it('movieLoop=false 导出 loop=False', () => {
     const d2 = [baseDelta('V1', { speaker: 'alice', dialogue: 'x', background: { asset_id: 'sw-video:op.webm', movieLoop: false } })]
     const s2 = reduceLines(d2)
     const out = buildBundle(d2, s2, characterConfigs, videoAssets).script
-    expect(out).toContain('scene bg = Movie(play="video/op.webm", loop=False)')
+    expect(out).toContain('scene expression Movie(play="video/op.webm", loop=False)')
   })
 
   it('导入后视频背景用真实素材 id（type=video）也能正确导为 Movie', () => {
@@ -811,7 +811,7 @@ describe('rpyExporter · 视频背景 Movie 与舞台镜头 camera（Camera/Vide
     const d = [baseDelta('V1', { speaker: 'alice', dialogue: 'x', background: { asset_id: 'vid_abc_op.webm', movieLoop: true } })]
     const s = reduceLines(d)
     const out = buildBundle(d, s, characterConfigs, realIdAssets).script
-    expect(out).toContain('scene bg = Movie(play="video/op.webm", loop=True)')
+    expect(out).toContain('scene expression Movie(play="video/op.webm", loop=True)')
   })
 
   it('buildAssetRefs 拷贝视频素材到 game/video', () => {
@@ -834,5 +834,63 @@ describe('rpyExporter · 视频背景 Movie 与舞台镜头 camera（Camera/Vide
     expect(bundle.transforms).toContain('transform sw_custom_t_3d_flip(')
     expect(bundle.transforms).toContain('perspective perspective')
     expect(bundle.transforms).toContain('yrotate 360')
+  })
+})
+
+describe('rpyExporter · 非法标识符与 Movie 语法修复（RenPy 实测回归）', () => {
+  const slotDeltas: LineDelta[] = [
+    baseDelta('S1', { background: { asset_id: 'bg_room' } }),
+  ]
+  const slotStates = reduceLines(slotDeltas)
+  const slotConfigs: CharacterConfig[] = [
+    { charId: 'left-center', variableName: '', displayName: '左', color: '#ffffff', expressions: [{ id: 'default', label: '默认', assetId: 'spr_left' }] },
+    { charId: '???', variableName: '', displayName: '无名', color: '#61afef', expressions: [{ id: 'default', label: '默认', assetId: 'spr_unknown' }] },
+  ]
+  const slotAssets: AssetItem[] = [
+    { id: 'bg_room', type: 'background', name: 'room', fileName: 'room.jpg', relativePath: 'assets/images/background/room.jpg', importedAt: '' },
+    { id: 'spr_left', type: 'sprite', name: 'l', fileName: 'left.png', relativePath: 'assets/images/sprite/left.png', importedAt: '' },
+    { id: 'spr_unknown', type: 'sprite', name: 'u', fileName: 'unknown.png', relativePath: 'assets/images/sprite/unknown.png', importedAt: '' },
+  ]
+  const slotDeltasWithChars: LineDelta[] = [
+    baseDelta('S1', { background: { asset_id: 'bg_room' } }),
+    baseDelta('S2', { speaker: 'left-center', dialogue: '你好', characters: { left: { char_id: 'left-center', sprite_id: 'default', asset_id: 'spr_left', position_slot: 'left-center', scale: 1, action: 'show' } } }),
+    baseDelta('S3', { speaker: '???', dialogue: '嘿', characters: { unknown: { char_id: '???', sprite_id: 'default', asset_id: 'spr_unknown', position_slot: 'center', scale: 1, action: 'show' } } }),
+  ]
+  const slotPositions: PositionSlot[] = [
+    { id: 'left-center', anchor_x: 0.25, anchor_y: 1.0, anchor_point: 'x' },
+    { id: 'center', anchor_x: 0.5, anchor_y: 1.0, anchor_point: 'x' },
+  ]
+  const slotBundle = buildBundle(slotDeltasWithChars, reduceLines(slotDeltasWithChars), slotConfigs, slotAssets, slotPositions)
+
+  it('槽位 id 含连字符时 transform 定义清洗为下划线（left-center → left_center）', () => {
+    const bundle = buildBundle(slotDeltas, slotStates, slotConfigs, slotAssets, slotPositions)
+    // 位置 transform 定义生成在 definitions 中（bundle.transforms 是特效 transform 库）
+    expect(bundle.definitions).toContain('transform left_center:')
+    expect(bundle.definitions).not.toContain('transform left-center:')
+  })
+
+  it('show ... at left-center 引用同步清洗为 left_center（定义与引用闭合）', () => {
+    expect(slotBundle.script).toContain('show left_center default')
+    expect(slotBundle.script).toContain('at left_center')
+    expect(slotBundle.script).not.toContain('at left-center')
+  })
+
+  it('角色 ID 为 "???" 时 define 与台词 speaker 均清洗为合法标识符且一致', () => {
+    expect(slotBundle.definitions).toContain('define unknown_')
+    expect(slotBundle.definitions).toContain('= Character("无名"')
+    // speaker 清洗名必须与 define 名完全一致（用同一清洗规则）
+    const defName = (slotBundle.definitions.match(/define (unknown_[a-z0-9]+) = Character\("无名"/) || [])[1]
+    expect(defName).toBeTruthy()
+    expect(slotBundle.script).toContain(`${defName} "嘿"`)
+    expect(slotBundle.script).not.toContain('??? "')
+  })
+
+  it('立绘 image 声明与 show 的标识符闭合（left-center 槽位角色）', () => {
+    expect(slotBundle.definitions).toContain('image left_center default = "images/sprite/left.png"')
+    expect(slotBundle.script).toContain('show left_center default')
+  })
+
+  it('视频背景导出用 scene expression Movie（非法 scene bg = 写法已废弃）', () => {
+    expect(slotBundle.script).not.toContain('scene bg = Movie')
   })
 })

@@ -10,6 +10,45 @@ import { Readable } from 'stream'
 import { streamChatCompletion, describeAIError, defaultAIConfig, type AIConfig, type ChatMessage } from '../src/utils/aiDirector'
 
 
+// --------------- 数据目录重定向（默认 D 盘，绝不默认 C 盘） ---------------
+// 用户硬性要求：应用的一切数据（缓存/测试运行暂存/构建日志/版本快照/AI 配置等）
+// 一律默认落到 D 盘，不写入 C:\Users\...\AppData\Roaming。
+// 方案：在 app.whenReady() 之前调用 app.setPath('userData', ...)，把 Electron 的
+// userData 目录重定向到 D 盘。此后所有 app.getPath('userData') 调用、以及 Electron
+// 内部的 localStorage / IndexedDB / 缓存 / crashDump 等，都会自动落到该目录。
+//
+// 目录选择优先级：
+//   1. 环境变量 SW_DATA_DIR（高级用户可自定，例如放到非系统盘任意位置）
+//   2. 系统盘之外，找到第一个固定盘（C 盘排除）的根目录下的 ScriptWeaverData
+//      （Windows 下通常为 D:\ScriptWeaverData）
+//   3. 兜底：若找不到非系统盘（极端环境），回退到 D:\ScriptWeaverData
+function resolveDataDir(): string {
+  const fromEnv = process.env.SW_DATA_DIR
+  if (fromEnv && fromEnv.trim()) return fromEnv.trim()
+
+  const systemRoot = process.env.SystemDrive || 'C:'
+  if (process.platform === 'win32') {
+    for (let code = 65; code <= 90; code++) {
+      const drive = `${String.fromCharCode(code)}:\\`
+      try {
+        if (drive.toUpperCase().startsWith(systemRoot.toUpperCase())) continue
+        if (fs.existsSync(drive)) return path.join(drive, 'ScriptWeaverData')
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  // 兜底：D 盘
+  return path.join('D:\\', 'ScriptWeaverData')
+}
+
+const DATA_DIR = resolveDataDir()
+try {
+  app.setPath('userData', DATA_DIR)
+} catch {
+  /* ignore */
+}
+
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 // 托盘常驻模式下，仅当用户通过托盘「退出」或显式 quit 时才真正关闭，

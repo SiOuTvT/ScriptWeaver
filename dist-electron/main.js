@@ -185,6 +185,27 @@ async function streamChatCompletion(config, messages, onToken, signal, opts = {}
     throw new AIRequestError(err.message || "未知错误", 0, "unknown");
   }
 }
+function resolveDataDir() {
+  const fromEnv = process.env.SW_DATA_DIR;
+  if (fromEnv && fromEnv.trim()) return fromEnv.trim();
+  const systemRoot = process.env.SystemDrive || "C:";
+  if (process.platform === "win32") {
+    for (let code = 65; code <= 90; code++) {
+      const drive = `${String.fromCharCode(code)}:\\`;
+      try {
+        if (drive.toUpperCase().startsWith(systemRoot.toUpperCase())) continue;
+        if (fs.existsSync(drive)) return path.join(drive, "ScriptWeaverData");
+      } catch {
+      }
+    }
+  }
+  return path.join("D:\\", "ScriptWeaverData");
+}
+const DATA_DIR = resolveDataDir();
+try {
+  electron.app.setPath("userData", DATA_DIR);
+} catch {
+}
 let mainWindow = null;
 let tray = null;
 let isQuiting = false;

@@ -88,6 +88,14 @@ export default function SettingsHub() {
 
   const [activeSection, setActiveSection] = useState<SectionId>('general')
 
+  // 当前数据目录（默认 D 盘，绝不默认 C 盘；仅供展示，让用户确认存储位置）
+  const [dataDir, setDataDir] = useState('')
+  useEffect(() => {
+    window.electronAPI?.getPath('userData')
+      .then((p) => setDataDir(p || ''))
+      .catch(() => setDataDir(''))
+  }, [])
+
   // AI Config（密钥存于主进程安全区，经 IPC 读写；getConfig 返回已脱敏 apiKey='' + hasApiKey）
   const [apiKey, setApiKey] = useState('')
   const [hasStoredKey, setHasStoredKey] = useState(false)
@@ -428,6 +436,28 @@ export default function SettingsHub() {
           {/* ── 数据与缓存 ───────────────────────────── */}
           {activeSection === 'data' && (
             <div className="space-y-6">
+              <section>
+                <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">存储位置</h3>
+                <div className="px-5 py-5 rounded-xl border border-edge/10 bg-surface-2 shadow-1">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="text-[14px] font-medium text-fg">应用数据目录</div>
+                    <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary">默认不存 C 盘</span>
+                  </div>
+                  <div className="text-[12px] text-fg-muted mt-1 break-all">
+                    缓存、版本快照、AI 配置、测试运行暂存等全部默认保存到 D 盘，不会写入系统盘
+                    {dataDir && (
+                      <span className="mt-2 block font-mono text-[12px] text-fg-subtle bg-surface-3/60 rounded-lg px-3 py-2 border border-edge/10">
+                        {dataDir}
+                      </span>
+                    )}
+                    {!dataDir && <span className="mt-2 block text-[12px] text-fg-subtle">正在读取…</span>}
+                  </div>
+                  <div className="text-[12px] text-fg-faint mt-3">
+                    如需自定义位置，可设置环境变量 SW_DATA_DIR 指向任意目录。
+                  </div>
+                </div>
+              </section>
+
               <section>
                 <h3 className="text-[12px] font-medium text-fg-faint uppercase tracking-[0.08em] mb-4">本地缓存</h3>
                 <div className="px-5 py-5 rounded-xl border border-edge/10 bg-surface-2 shadow-1 flex items-center justify-between gap-4">
