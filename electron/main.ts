@@ -1512,34 +1512,37 @@ ipcMain.handle('renpy:stageProject', async (_event, payload: { bundle: RpyBundle
       fs.writeFileSync(path.join(gameDir, 'ui.rpy'), bundle.ui, 'utf-8')
     }
 
-    // ---- 补全工程骨架：分辨率 + 中文字体 + 对话界面 ----
-    // 缺失 gui.rpy 时 Ren'Py 用默认 800x600 + 英文字体渲染，
-    // 导致立绘/背景 zoom 比例失衡、中文台词显示为空格；
-    // 缺失 screens.rpy 时 Ren'Py 退回极简布局，台词显示在左上角小方格。
-    // 这里生成最小 gui.rpy（gui.init 设定基准分辨率 + 中文 fallback 字体）
-    // 与最小 screens.rpy（say/choice/input 纯代码界面，无图片依赖）。
-    const resolution = bundle.baseResolution ?? { width: 1920, height: 1080 }
-    const fontFile = await stageChineseFont(gameDir)
-    const guiLines = [
-      '## 由 ScriptWeaver 生成的默认界面配置（分辨率 + 中文字体）',
-      'init python:',
-      `    gui.init(${Math.round(resolution.width)}, ${Math.round(resolution.height)})`,
-    ]
-    if (fontFile) {
-      guiLines.push(`    gui.text_font = "${fontFile}"`)
-      guiLines.push(`    gui.name_text_font = "${fontFile}"`)
-      guiLines.push(`    gui.interface_text_font = "${fontFile}"`)
-      guiLines.push('    style.default.font = "' + fontFile + '"')
-    } else {
-      // 无中文字体文件时回退系统字体（微软雅黑），保证中文可见
-      guiLines.push('    gui.text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
-      guiLines.push('    gui.name_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
-      guiLines.push('    gui.interface_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
-      guiLines.push('    style.default.font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
+    // ---- 界面资源：优先复用原工程，缺失才用极简兜底 ----
+    // 若当前项目是从 Ren'Py 工程导入的（根目录有 gui.rpy + screens.rpy），
+    // 直接把原工程的界面整套带进暂存工程（gui.rpy / screens.rpy / gui/ 图片 / 字体），
+    // 使「测试运行」呈现与用户自己在 Ren'Py 中一致的外观（对话框、角色名、字号、颜色、开始界面）。
+    // 仅当原工程没有界面（全新项目）时，才生成最小 gui.rpy（分辨率 + 中文字体）与
+    // 最小 screens.rpy（say/choice/input 纯代码界面），保证能正常显示中文。
+    const originalUiCopied = stageOriginalUi(gameDir)
+    if (!originalUiCopied) {
+      const resolution = bundle.baseResolution ?? { width: 1920, height: 1080 }
+      const fontFile = await stageChineseFont(gameDir)
+      const guiLines = [
+        '## 由 ScriptWeaver 生成的默认界面配置（分辨率 + 中文字体）',
+        'init python:',
+        `    gui.init(${Math.round(resolution.width)}, ${Math.round(resolution.height)})`,
+      ]
+      if (fontFile) {
+        guiLines.push(`    gui.text_font = "${fontFile}"`)
+        guiLines.push(`    gui.name_text_font = "${fontFile}"`)
+        guiLines.push(`    gui.interface_text_font = "${fontFile}"`)
+        guiLines.push('    style.default.font = "' + fontFile + '"')
+      } else {
+        // 无中文字体文件时回退系统字体（微软雅黑），保证中文可见
+        guiLines.push('    gui.text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
+        guiLines.push('    gui.name_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
+        guiLines.push('    gui.interface_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
+        guiLines.push('    style.default.font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
+      }
+      fs.writeFileSync(path.join(gameDir, 'gui.rpy'), guiLines.join('\n') + '\n', 'utf-8')
+      // 对话界面（say/choice/input）——缺失时 Ren'Py 用极简布局导致台词在左上角
+      fs.writeFileSync(path.join(gameDir, 'screens.rpy'), buildMinimalScreens(), 'utf-8')
     }
-    fs.writeFileSync(path.join(gameDir, 'gui.rpy'), guiLines.join('\n') + '\n', 'utf-8')
-    // 对话界面（say/choice/input）——缺失时 Ren'Py 用极简布局导致台词在左上角
-    fs.writeFileSync(path.join(gameDir, 'screens.rpy'), buildMinimalScreens(), 'utf-8')
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message }
   }

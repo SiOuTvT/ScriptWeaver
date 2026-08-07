@@ -421,6 +421,19 @@ function copyFile(src, dest) {
   ensureDir(path.dirname(dest));
   fs.copyFileSync(src, dest);
 }
+function copyDirRecursive(srcDir, destDir) {
+  if (!fs.existsSync(srcDir)) return;
+  ensureDir(destDir);
+  for (const name of fs.readdirSync(srcDir)) {
+    const s = path.join(srcDir, name);
+    const d = path.join(destDir, name);
+    try {
+      if (fs.statSync(s).isDirectory()) copyDirRecursive(s, d);
+      else copyFile(s, d);
+    } catch {
+    }
+  }
+}
 function uuid() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = Math.random() * 16 | 0;
@@ -1237,6 +1250,34 @@ function buildMinimalScreens() {
     ""
   ].join("\n");
 }
+function stageOriginalUi(gameDir) {
+  if (!activeProjectRoot) return false;
+  const rootCandidates = [
+    path.resolve(activeProjectRoot, "game"),
+    path.resolve(activeProjectRoot)
+  ];
+  for (const root of rootCandidates) {
+    const guiRpy = path.join(root, "gui.rpy");
+    const screensRpy = path.join(root, "screens.rpy");
+    if (!fs.existsSync(guiRpy) || !fs.existsSync(screensRpy)) continue;
+    try {
+      copyFile(guiRpy, path.join(gameDir, "gui.rpy"));
+      copyFile(screensRpy, path.join(gameDir, "screens.rpy"));
+      const guiDir = path.join(root, "gui");
+      if (fs.existsSync(guiDir)) copyDirRecursive(guiDir, path.join(gameDir, "gui"));
+      try {
+        for (const name of fs.readdirSync(root)) {
+          if (/\.(ttf|otf|ttc)$/i.test(name)) copyFile(path.join(root, name), path.join(gameDir, name));
+        }
+      } catch {
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
 function stageChineseFont(gameDir) {
   if (!activeProjectRoot) return null;
   const candidates = [];
@@ -1296,26 +1337,29 @@ electron.ipcMain.handle("renpy:stageProject", async (_event, payload) => {
     if (bundle.ui && bundle.ui.trim()) {
       fs.writeFileSync(path.join(gameDir, "ui.rpy"), bundle.ui, "utf-8");
     }
-    const resolution = bundle.baseResolution ?? { width: 1920, height: 1080 };
-    const fontFile = await stageChineseFont(gameDir);
-    const guiLines = [
-      "## 由 ScriptWeaver 生成的默认界面配置（分辨率 + 中文字体）",
-      "init python:",
-      `    gui.init(${Math.round(resolution.width)}, ${Math.round(resolution.height)})`
-    ];
-    if (fontFile) {
-      guiLines.push(`    gui.text_font = "${fontFile}"`);
-      guiLines.push(`    gui.name_text_font = "${fontFile}"`);
-      guiLines.push(`    gui.interface_text_font = "${fontFile}"`);
-      guiLines.push('    style.default.font = "' + fontFile + '"');
-    } else {
-      guiLines.push('    gui.text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
-      guiLines.push('    gui.name_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
-      guiLines.push('    gui.interface_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
-      guiLines.push('    style.default.font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
+    const originalUiCopied = stageOriginalUi(gameDir);
+    if (!originalUiCopied) {
+      const resolution = bundle.baseResolution ?? { width: 1920, height: 1080 };
+      const fontFile = await stageChineseFont(gameDir);
+      const guiLines = [
+        "## 由 ScriptWeaver 生成的默认界面配置（分辨率 + 中文字体）",
+        "init python:",
+        `    gui.init(${Math.round(resolution.width)}, ${Math.round(resolution.height)})`
+      ];
+      if (fontFile) {
+        guiLines.push(`    gui.text_font = "${fontFile}"`);
+        guiLines.push(`    gui.name_text_font = "${fontFile}"`);
+        guiLines.push(`    gui.interface_text_font = "${fontFile}"`);
+        guiLines.push('    style.default.font = "' + fontFile + '"');
+      } else {
+        guiLines.push('    gui.text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
+        guiLines.push('    gui.name_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
+        guiLines.push('    gui.interface_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
+        guiLines.push('    style.default.font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
+      }
+      fs.writeFileSync(path.join(gameDir, "gui.rpy"), guiLines.join("\n") + "\n", "utf-8");
+      fs.writeFileSync(path.join(gameDir, "screens.rpy"), buildMinimalScreens(), "utf-8");
     }
-    fs.writeFileSync(path.join(gameDir, "gui.rpy"), guiLines.join("\n") + "\n", "utf-8");
-    fs.writeFileSync(path.join(gameDir, "screens.rpy"), buildMinimalScreens(), "utf-8");
   } catch (err) {
     return { success: false, error: err.message };
   }
