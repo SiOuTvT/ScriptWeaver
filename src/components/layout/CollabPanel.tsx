@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { useCollabStore } from '@/collab/collabStore'
 import { startHost, joinSession, stopCollab, setPeerPermission, kickPeer } from '@/collab/collabBridge'
+import { setSignalingHost } from '@/collab/CollabManager'
 import type { PeerPermission } from '@/collab/types'
 import { Button } from '@/components/ui'
 import PeerBadge from '@/components/collab/PeerBadge'
@@ -21,6 +22,10 @@ export default function CollabPanel() {
   const [nameInput, setNameInput] = useState(store.myName || '')
   const [inviteInput, setInviteInput] = useState('')
   const [copied, setCopied] = useState(false)
+  // 信令服务器：默认官方 0.peerjs.com，可自定（国内访问不稳时）
+  const [serverInput, setServerInput] = useState(() => {
+    try { return localStorage.getItem('sw-collab-server') || '' } catch { return '' }
+  })
 
   const isHost = store.role === 'host'
   const isConnected = store.status === 'connected'
@@ -33,6 +38,10 @@ export default function CollabPanel() {
   const handleHost = async () => {
     const name = nameInput.trim() || '主机'
     rememberName(name)
+    // 应用信令服务器配置（空 = 官方默认）
+    const host = serverInput.trim()
+    try { localStorage.setItem('sw-collab-server', host) } catch { /* ignore */ }
+    setSignalingHost(host)
     try { await startHost(name) } catch { /* 错误已写入 store.error */ }
   }
 
@@ -129,6 +138,16 @@ export default function CollabPanel() {
                 >
                   {connecting ? '正在连接 P2P 网络...' : '创建协作主机'}
                 </Button>
+                <div className="mt-4 border-t border-edge/8 pt-3">
+                  <div className="mb-1.5 text-[12px] font-medium text-fg-muted">信令服务器（高级）</div>
+                  <input
+                    value={serverInput}
+                    onChange={(e) => setServerInput(e.target.value)}
+                    placeholder="留空使用官方 0.peerjs.com"
+                    className="w-full rounded-lg border border-edge/15 bg-surface-3 px-3 py-2 text-[13px] font-mono text-fg outline-none focus:border-primary/60 transition-colors"
+                  />
+                  <p className="mt-1.5 text-[11px] text-fg-faint">官方服务器在国内部分网络下可能不稳定，可填入自建的 PeerJS 服务器地址。</p>
+                </div>
               </section>
             </div>
 

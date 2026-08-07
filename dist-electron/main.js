@@ -254,14 +254,17 @@ function createWindow() {
       "font-src 'self' data: http://localhost:*;",
       "img-src 'self' data: sw-asset: blob: http://localhost:*;",
       "media-src 'self' data: sw-asset: blob: http://localhost:*;",
-      "connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:*;"
+      // P2P 协作：放行 PeerJS 信令服务器（WebSocket + 备用 HTTP），否则创建主机/加入都被 CSP 拦截
+      "connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* https://0.peerjs.com wss://0.peerjs.com;"
     ].join(" ") : [
       "default-src 'self';",
       "script-src 'self' 'unsafe-inline';",
       "style-src 'self' 'unsafe-inline';",
       "font-src 'self' data:;",
       "img-src 'self' data: sw-asset: blob:;",
-      "media-src 'self' data: sw-asset: blob:;"
+      "media-src 'self' data: sw-asset: blob:;",
+      // P2P 协作：生产模式也放行 PeerJS 信令服务器
+      "connect-src 'self' https://0.peerjs.com wss://0.peerjs.com;"
     ].join(" ");
     callback({
       responseHeaders: {

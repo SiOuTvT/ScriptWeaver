@@ -31,9 +31,15 @@ function autoId(): string {
   return `sw-${Date.now().toString(36)}-${rand}${(++_autoId).toString(36)}`
 }
 
-const PEERJS_HOST = '0.peerjs.com'
+/** 默认 PeerJS 官方信令服务器；可被 setSignalingHost 覆盖（国内访问官方服务器不稳时可自定） */
+let PEERJS_HOST = '0.peerjs.com'
 const PEERJS_PORT = 443
 const PEERJS_SECURE = true
+
+/** 设置自定义信令服务器（传入空字符串恢复官方默认） */
+export function setSignalingHost(host: string): void {
+  PEERJS_HOST = host.trim() || '0.peerjs.com'
+}
 
 export class CollabManager {
   private peer: Peer | null = null
