@@ -1153,6 +1153,90 @@ function buildMinimalOptions(title) {
     ""
   ].join("\n");
 }
+function buildMinimalScreens() {
+  return [
+    "## 由 ScriptWeaver 生成的默认对话界面（纯代码，无外部图片依赖）",
+    "",
+    "screen say(who, what):",
+    "    window:",
+    '        id "window"',
+    "",
+    "        if who is not None:",
+    "            text who:",
+    '                id "who"',
+    "",
+    "        text what:",
+    '            id "what"',
+    "",
+    "",
+    "screen choice(items):",
+    '    style_prefix "choice"',
+    "",
+    "    vbox:",
+    "        for i in items:",
+    "            textbutton i.caption action i.action",
+    "",
+    "",
+    "screen input(prompt):",
+    "    window:",
+    "        vbox:",
+    "            text prompt",
+    '            input id "input"',
+    "",
+    "",
+    "init python:",
+    '    config.character_id_prefixes.append("namebox")',
+    "",
+    "style window is default",
+    "style say_label is default",
+    "style say_dialogue is default",
+    "style say_thought is say_dialogue",
+    "style namebox is default",
+    "style namebox_label is say_label",
+    "",
+    "style window:",
+    "    xalign 0.5",
+    "    xfill True",
+    "    yalign 1.0",
+    "    ysize 320",
+    '    background Solid("#000000DD")',
+    "    xpadding 40",
+    "    ypadding 24",
+    "    xmargin 20",
+    "    ymargin 20",
+    "",
+    "style say_label:",
+    "    xalign 0.0",
+    "    yalign 0.5",
+    '    color "#ffffff"',
+    "    size 28",
+    "    bold True",
+    "",
+    "style say_dialogue:",
+    "    xalign 0.0",
+    "    xsize 1200",
+    "    ypos 0.35",
+    '    color "#ffffff"',
+    "    size 24",
+    "    line_spacing 4",
+    "",
+    "style choice_button_text:",
+    "    size 24",
+    '    color "#ffffff"',
+    "",
+    "style choice_button:",
+    "    xalign 0.5",
+    '    background Solid("#00000099")',
+    "    padding (24, 12)",
+    "    margin (0, 8)",
+    "",
+    "style input:",
+    "    size 24",
+    '    color "#ffffff"',
+    "",
+    ""
+  ].join("\n");
+}
 function stageChineseFont(gameDir) {
   if (!activeProjectRoot) return null;
   const candidates = [];
@@ -1223,12 +1307,15 @@ electron.ipcMain.handle("renpy:stageProject", async (_event, payload) => {
       guiLines.push(`    gui.text_font = "${fontFile}"`);
       guiLines.push(`    gui.name_text_font = "${fontFile}"`);
       guiLines.push(`    gui.interface_text_font = "${fontFile}"`);
+      guiLines.push('    style.default.font = "' + fontFile + '"');
     } else {
       guiLines.push('    gui.text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
       guiLines.push('    gui.name_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
       guiLines.push('    gui.interface_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
+      guiLines.push('    style.default.font = Font("DejaVuSans.ttf").add("MSYH.TTC")');
     }
     fs.writeFileSync(path.join(gameDir, "gui.rpy"), guiLines.join("\n") + "\n", "utf-8");
+    fs.writeFileSync(path.join(gameDir, "screens.rpy"), buildMinimalScreens(), "utf-8");
   } catch (err) {
     return { success: false, error: err.message };
   }

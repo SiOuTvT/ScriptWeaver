@@ -1290,6 +1290,98 @@ function buildMinimalOptions(title: string): string {
 }
 
 /**
+ * 生成最小但完整的对话界面 screens.rpy（纯代码实现，不依赖任何 GUI 图片）。
+ * 缺失 screens.rpy 时 Ren'Py 会退回内置极简布局：台词显示在屏幕左上角、
+ * 不使用自定义字体（这正是「台词变左上角小方格」的根因）。
+ * 这里提供官方标准结构：say（对话窗）、choice（选项）、input（输入）、nvl 等，
+ * 界面用半透明圆角 Frame 而非 png 图片，保证任意工程可运行且中文可读。
+ */
+function buildMinimalScreens(): string {
+  return [
+    '## 由 ScriptWeaver 生成的默认对话界面（纯代码，无外部图片依赖）',
+    '',
+    'screen say(who, what):',
+    '    window:',
+    '        id "window"',
+    '',
+    '        if who is not None:',
+    '            text who:',
+    '                id "who"',
+    '',
+    '        text what:',
+    '            id "what"',
+    '',
+    '',
+    'screen choice(items):',
+    '    style_prefix "choice"',
+    '',
+    '    vbox:',
+    '        for i in items:',
+    '            textbutton i.caption action i.action',
+    '',
+    '',
+    'screen input(prompt):',
+    '    window:',
+    '        vbox:',
+    '            text prompt',
+    '            input id "input"',
+    '',
+    '',
+    'init python:',
+    '    config.character_id_prefixes.append("namebox")',
+    '',
+    'style window is default',
+    'style say_label is default',
+    'style say_dialogue is default',
+    'style say_thought is say_dialogue',
+    'style namebox is default',
+    'style namebox_label is say_label',
+    '',
+    'style window:',
+    '    xalign 0.5',
+    '    xfill True',
+    '    yalign 1.0',
+    '    ysize 320',
+    '    background Solid("#000000DD")',
+    '    xpadding 40',
+    '    ypadding 24',
+    '    xmargin 20',
+    '    ymargin 20',
+    '',
+    'style say_label:',
+    '    xalign 0.0',
+    '    yalign 0.5',
+    '    color "#ffffff"',
+    '    size 28',
+    '    bold True',
+    '',
+    'style say_dialogue:',
+    '    xalign 0.0',
+    '    xsize 1200',
+    '    ypos 0.35',
+    '    color "#ffffff"',
+    '    size 24',
+    '    line_spacing 4',
+    '',
+    'style choice_button_text:',
+    '    size 24',
+    '    color "#ffffff"',
+    '',
+    'style choice_button:',
+    '    xalign 0.5',
+    '    background Solid("#00000099")',
+    '    padding (24, 12)',
+    '    margin (0, 8)',
+    '',
+    'style input:',
+    '    size 24',
+    '    color "#ffffff"',
+    '',
+    '',
+  ].join('\n')
+}
+
+/**
  * 为暂存工程准备中文字体：优先从当前项目根目录拷贝中文字体文件（如 SourceHanSansLite.ttf），
  * 找不到则返回 null（调用方回退系统字体）。返回拷贝到 game/ 根目录后的字体文件名。
  * 目的：缺失中文字体时 Ren'Py 默认英文字体不包含汉字字形，台词会显示为空格。
@@ -1364,10 +1456,12 @@ ipcMain.handle('renpy:stageProject', async (_event, payload: { bundle: RpyBundle
       fs.writeFileSync(path.join(gameDir, 'ui.rpy'), bundle.ui, 'utf-8')
     }
 
-    // ---- 补全工程骨架：分辨率 + 中文字体 ----
+    // ---- 补全工程骨架：分辨率 + 中文字体 + 对话界面 ----
     // 缺失 gui.rpy 时 Ren'Py 用默认 800x600 + 英文字体渲染，
-    // 导致立绘/背景 zoom 比例失衡、中文台词显示为空格。
-    // 这里生成最小 gui.rpy（gui.init 设定基准分辨率 + 中文 fallback 字体）。
+    // 导致立绘/背景 zoom 比例失衡、中文台词显示为空格；
+    // 缺失 screens.rpy 时 Ren'Py 退回极简布局，台词显示在左上角小方格。
+    // 这里生成最小 gui.rpy（gui.init 设定基准分辨率 + 中文 fallback 字体）
+    // 与最小 screens.rpy（say/choice/input 纯代码界面，无图片依赖）。
     const resolution = bundle.baseResolution ?? { width: 1920, height: 1080 }
     const fontFile = await stageChineseFont(gameDir)
     const guiLines = [
@@ -1379,13 +1473,17 @@ ipcMain.handle('renpy:stageProject', async (_event, payload: { bundle: RpyBundle
       guiLines.push(`    gui.text_font = "${fontFile}"`)
       guiLines.push(`    gui.name_text_font = "${fontFile}"`)
       guiLines.push(`    gui.interface_text_font = "${fontFile}"`)
+      guiLines.push('    style.default.font = "' + fontFile + '"')
     } else {
       // 无中文字体文件时回退系统字体（微软雅黑），保证中文可见
       guiLines.push('    gui.text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
       guiLines.push('    gui.name_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
       guiLines.push('    gui.interface_text_font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
+      guiLines.push('    style.default.font = Font("DejaVuSans.ttf").add("MSYH.TTC")')
     }
     fs.writeFileSync(path.join(gameDir, 'gui.rpy'), guiLines.join('\n') + '\n', 'utf-8')
+    // 对话界面（say/choice/input）——缺失时 Ren'Py 用极简布局导致台词在左上角
+    fs.writeFileSync(path.join(gameDir, 'screens.rpy'), buildMinimalScreens(), 'utf-8')
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message }
   }
