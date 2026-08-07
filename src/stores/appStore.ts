@@ -283,11 +283,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   // ---- 选中 ----
   selectedLineIndex: 0,
 
-  // ---- 主题（持久化到 localStorage，默认深色「墨」） ----
+  // ---- 主题（持久化到 localStorage，默认浅色「纸」） ----
   theme:
     (typeof localStorage !== 'undefined' &&
       (localStorage.getItem('sw-theme') as ThemeMode | null)) ||
-    'dark',
+    'light',
 
   // ---- 主题色（持久化，默认紫毫） ----
   accentColor:

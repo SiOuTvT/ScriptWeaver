@@ -10,7 +10,7 @@
       (function () {
         try {
           var t = localStorage.getItem('sw-theme')
-          if (t !== 'light' && t !== 'dark') t = 'dark'
+          if (t !== 'light' && t !== 'dark') t = 'light'
           var el = document.documentElement
           el.setAttribute('data-theme', t)
           el.style.colorScheme = t
