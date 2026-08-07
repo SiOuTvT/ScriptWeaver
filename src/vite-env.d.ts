@@ -171,6 +171,8 @@ interface ElectronAPI {
 
   on: (channel: string, callback: (...args: unknown[]) => void) => void
   off: (channel: string, callback: (...args: unknown[]) => void) => void
+  /** 渲染端完成「退出前自动备份」后回执主进程放行退出 */
+  quitSnapshotDone: () => void
 
   /** 使用系统默认浏览器打开外部 URL */
   openExternal: (url: string) => Promise<void>

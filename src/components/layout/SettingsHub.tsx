@@ -202,11 +202,11 @@ export default function SettingsHub() {
                     onChange={(v) => updateSettings({ autoSaveIntervalMs: v })}
                   />
                   <SliderRow
-                    label="版本快照间隔"
-                    desc="每隔多久自动生成一次版本快照"
+                    label="长会话安全备份间隔"
+                    desc="内容有变化时每隔多久自动备份一次（兜底崩溃断电；退出软件时也会备份，不会频繁建档）"
                     value={settings.snapshotIntervalMin}
                     min={1}
-                    max={60}
+                    max={120}
                     step={1}
                     display={(v) => `每 ${v} 分钟`}
                     onChange={(v) => updateSettings({ snapshotIntervalMin: v })}

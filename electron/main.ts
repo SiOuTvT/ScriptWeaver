@@ -144,10 +144,12 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
-  // 点窗口 X：默认仅隐藏到托盘（进程常驻），避免“窗口又没了”
+  // 点窗口 X：默认仅隐藏到托盘（进程常驻），避免“窗口又没了”。
+  // 隐藏前通知渲染端做一次「变更检测备份」（内容没变则自动跳过）。
   mainWindow.on('close', (e) => {
     if (!isQuiting) {
       e.preventDefault()
+      try { mainWindow?.webContents.send('app:window-close') } catch { /* 忽略 */ }
       mainWindow?.hide()
     }
   })
@@ -329,9 +331,27 @@ function getWebTemplateDir(): string {
 }
 
 
-// 应用退出时只停监听器。素材已统一存储于项目目录 assets/ 下，无需清理。
-app.on('before-quit', () => {
+// 应用退出前：先让渲染端做「变更检测自动备份」（内容没变则不建档），
+// 渲染端回执后放行退出；2 秒内未回执（渲染端异常/卡死）则直接退出，绝不阻塞。
+let allowQuit = false
+let quitBackupAsked = false
+app.on('before-quit', (e) => {
   stopAssetWatch()
+  if (allowQuit) return
+  e.preventDefault()
+  if (quitBackupAsked) return
+  quitBackupAsked = true
+  const win = mainWindow
+  const proceed = () => { allowQuit = true; app.quit() }
+  if (!win || win.isDestroyed()) { proceed(); return }
+  const timer = setTimeout(proceed, 2000)
+  ipcMain.once('app:quit-snapshot-done', () => { clearTimeout(timer); proceed() })
+  try {
+    win.webContents.send('app:before-quit-snapshot')
+  } catch {
+    clearTimeout(timer)
+    proceed()
+  }
 })
 
 // ===================== sw-asset:// 协议 Handler =====================

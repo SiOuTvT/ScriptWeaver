@@ -102,7 +102,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   // 性能与内存优化：自动保存防抖拉长，避免输入时频繁全工程序列化；
   // 撤销历史默认深度调低，每层都持有一份全量克隆，深度越低占用越小。
   autoSaveIntervalMs: 2000,
-  snapshotIntervalMin: 4,
+  // 自动备份改为「变更检测」：内容没变不建档。此间隔只是长会话的安全网
+  //（兜底崩溃/断电），正常退出时也会做一次变更检测备份。
+  snapshotIntervalMin: 30,
   undoMaxDepth: 30,
   timelineSnapPx: 5,
   hwAcceleration: true,

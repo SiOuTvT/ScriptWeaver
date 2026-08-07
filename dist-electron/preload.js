@@ -86,6 +86,8 @@ const api = {
   },
   off(channel, _callback) {
     electron.ipcRenderer.removeAllListeners(channel);
-  }
+  },
+  /** 渲染端完成「退出前自动备份」后回执主进程放行退出 */
+  quitSnapshotDone: () => electron.ipcRenderer.send("app:quit-snapshot-done")
 };
 electron.contextBridge.exposeInMainWorld("electronAPI", api);

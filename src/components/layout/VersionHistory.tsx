@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   listSnapshots, createSnapshot, readSnapshot, removeSnapshot,
 } from '@/utils/cloudSync'
+import { updateSnapshotBaseline } from '@/utils/snapshotBaseline'
 import { restoreProjectFromJson, serializeProject, deserializeProject } from '@/utils/projectFile'
 import { diffDeltas, type LineDiff, type SnapshotDiff } from '@/utils/diffEngine'
 import type { VersionSnapshotMeta } from '@/core/types'
@@ -43,46 +44,6 @@ const fmtSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-// ═══════════════════════════════════════════
-// Hooks
-// ═══════════════════════════════════════════
-
-/** 自动快照定时器：每 AUTO_SNAPSHOT_IDLE_MS 检查是否有新内容需要快照 */
-function useAutoSnapshot() {
-  const timerRef = useRef<ReturnType<typeof setInterval>>()
-  const lastDeltaCount = useRef(0)
-
-  useEffect(() => {
-    // 先创建一次当前状态作为 baseline
-    lastDeltaCount.current = useAppStore.getState().draftDeltas.length
-
-    timerRef.current = setInterval(async () => {
-      const store = useAppStore.getState()
-      const currentCount = store.draftDeltas.length
-
-      // 只有剧本行数增加（或变化）且超过阈值才自动快照
-      if (currentCount >= MIN_DELTA_COUNT_FOR_AUTO && currentCount !== lastDeltaCount.current) {
-        lastDeltaCount.current = currentCount
-        try {
-          const json = serializeProject(store.draftDeltas, store.characterConfigs, store.assets)
-          const ok = await createSnapshot(
-            json,
-            `自动备份 ${new Date().toLocaleString('zh-CN', { hour12: false })}`,
-            true,
-          )
-          if (ok) {
-            console.log(`[VersionHistory] 自动快照已创建 (${currentCount} 行)`)
-          }
-        } catch { /* 静默失败，不打扰用户 */ }
-      }
-    }, AUTO_SNAPSHOT_IDLE_MS)
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [])
 }
 
 // ═══════════════════════════════════════════
@@ -303,9 +264,6 @@ export default function VersionHistory() {
   const [expandedDiffs, setExpandedDiffs] = useState<Set<number>>(new Set())
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  // 启用自动快照定时器
-  useAutoSnapshot()
-
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
@@ -329,13 +287,15 @@ export default function VersionHistory() {
         useAppStore.getState().characterConfigs,
         useAppStore.getState().assets,
       )
-      const ok = await createSnapshot(json, label.trim() || '手动快照', false)
+      const ok = await createSnapshot(json, label.trim() || '手动备份', false)
       if (ok) {
-        toast('已创建版本快照', 'success')
+        // 手动备份成功即把当前内容记为基线：之后关窗口/退出/自动备份若内容没变则跳过
+        updateSnapshotBaseline()
+        toast('已手动备份', 'success')
         setLabel('')
         await refresh()
       } else {
-        toast('创建快照失败，请检查项目是否已保存', 'error')
+        toast('手动备份失败，请检查项目是否已保存', 'error')
       }
     } finally {
       setCreating(false)
@@ -476,7 +436,7 @@ export default function VersionHistory() {
           onClick={() => void handleCreate()}
           disabled={creating}
         >
-          {creating ? '创建中…' : '创建快照'}
+          {creating ? '备份中…' : '手动备份'}
         </Button>
       </div>
 
@@ -495,7 +455,7 @@ export default function VersionHistory() {
               </div>
               <p className="text-[14px] font-medium text-fg-subtle mb-1">还没有任何版本快照</p>
               <p className="text-[13px] text-fg-muted text-center max-w-xs">
-                编辑期间会自动建档；也可以点上方「创建快照」手动留存关键节点。
+                关闭窗口或退出时会自动备份；也可以点上方「手动备份」随时留存关键节点。
               </p>
             </div>
           ) : (

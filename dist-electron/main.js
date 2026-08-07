@@ -292,6 +292,10 @@ function createWindow() {
   mainWindow.on("close", (e) => {
     if (!isQuiting) {
       e.preventDefault();
+      try {
+        mainWindow == null ? void 0 : mainWindow.webContents.send("app:window-close");
+      } catch {
+      }
       mainWindow == null ? void 0 : mainWindow.hide();
     }
   });
@@ -428,8 +432,34 @@ function getWebTemplateDir() {
   }
   return path.join(__dirname, "..", "web-player");
 }
-electron.app.on("before-quit", () => {
+let allowQuit = false;
+let quitBackupAsked = false;
+electron.app.on("before-quit", (e) => {
   stopAssetWatch();
+  if (allowQuit) return;
+  e.preventDefault();
+  if (quitBackupAsked) return;
+  quitBackupAsked = true;
+  const win = mainWindow;
+  const proceed = () => {
+    allowQuit = true;
+    electron.app.quit();
+  };
+  if (!win || win.isDestroyed()) {
+    proceed();
+    return;
+  }
+  const timer = setTimeout(proceed, 2e3);
+  electron.ipcMain.once("app:quit-snapshot-done", () => {
+    clearTimeout(timer);
+    proceed();
+  });
+  try {
+    win.webContents.send("app:before-quit-snapshot");
+  } catch {
+    clearTimeout(timer);
+    proceed();
+  }
 });
 function registerAssetProtocol() {
   electron.protocol.handle("sw-asset", (request) => {

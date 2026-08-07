@@ -30,6 +30,7 @@ import { Sun, Moon, FilePlus, FolderOpen, Save, FileDown, Images, FileText, Acti
 import { Button, IconButton, ConfirmDialog } from '@/components/ui'
 import type { ProjectFile, LineDelta, CharacterConfig, AssetItem, GlobalVariable } from '@/core/types'
 import { createSnapshot } from '@/utils/cloudSync'
+import { isContentChangedSinceBaseline, updateSnapshotBaseline } from '@/utils/snapshotBaseline'
 import VersionHistory from './VersionHistory'
 import CommandPalette from './CommandPalette'
 import DiagnosticsPanel from './DiagnosticsPanel'
@@ -143,23 +144,49 @@ export default function AppLayout() {
   const handleTestRun = useCallback(() => { void runRenpy('run') }, [runRenpy])
   const handleBuild = useCallback(() => { void runRenpy('build') }, [runRenpy])
 
-  // ---- 自动静默备份：编辑停顿 4 分钟后自动建档（防丢稿） ----
-  const autoBackupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // ---- 自动备份：变更检测，不再「动一下备一次」 ----
+  // 原则：内容相对上次备份没变化就不建档；时机有二：
+  // ① 长会话安全网（默认 30 分钟，兜底崩溃/断电）；② 真正退出软件时。
+  const maybeSnapshot = useCallback(async (label: string) => {
+    const s = useAppStore.getState()
+    if (s.draftDeltas.length === 0 && s.assets.length === 0 && s.characterConfigs.length === 0) return
+    if (!isContentChangedSinceBaseline()) return // 内容相对上次备份没变化，不重复建档
+    const json = serializeProject(s.draftDeltas, s.characterConfigs, s.assets)
+    const ok = await createSnapshot(json, label, true)
+    if (ok) updateSnapshotBaseline()
+  }, [])
+
+  // 安全网：按设置间隔定期变更检测（内容无变化自动跳过，不频繁建档）
   useEffect(() => {
-    if (autoBackupTimer.current) clearTimeout(autoBackupTimer.current)
-    autoBackupTimer.current = setTimeout(() => {
-      const s = useAppStore.getState()
-      if (s.draftDeltas.length === 0 && s.assets.length === 0 && s.characterConfigs.length === 0) return
-      void createSnapshot(
-        serializeProject(s.draftDeltas, s.characterConfigs, s.assets),
-        '自动备份',
-        true,
-      )
-    }, settings.snapshotIntervalMin * 60 * 1000)
-    return () => {
-      if (autoBackupTimer.current) clearTimeout(autoBackupTimer.current)
+    if (settings.snapshotIntervalMin <= 0) return
+    const iv = window.setInterval(() => { void maybeSnapshot('自动备份') }, settings.snapshotIntervalMin * 60 * 1000)
+    return () => window.clearInterval(iv)
+  }, [settings.snapshotIntervalMin, maybeSnapshot])
+
+  // 关窗口（隐藏到托盘）与真正退出：都做变更检测备份，内容没变不建档
+  useEffect(() => {
+    const onWindowClose = () => {
+      void maybeSnapshot('窗口关闭备份')
+      // 首次隐藏到托盘给提示，避免用户以为程序退出了
+      let hinted = false
+      try { hinted = localStorage.getItem('sw-tray-hint') === '1' } catch { /* ignore */ }
+      if (!hinted) {
+        toast('已最小化到系统托盘，程序仍在后台运行。要彻底退出请右键托盘图标选择「退出」', 'info')
+        try { localStorage.setItem('sw-tray-hint', '1') } catch { /* ignore */ }
+      }
     }
-  }, [draftDeltas, characterConfigs, assets, projectRoot, settings.snapshotIntervalMin])
+    const onQuit = () => {
+      void maybeSnapshot('退出自动备份').finally(() => {
+        window.electronAPI?.quitSnapshotDone?.()
+      })
+    }
+    window.electronAPI?.on?.('app:window-close', onWindowClose)
+    window.electronAPI?.on?.('app:before-quit-snapshot', onQuit)
+    return () => {
+      window.electronAPI?.off?.('app:window-close', onWindowClose)
+      window.electronAPI?.off?.('app:before-quit-snapshot', onQuit)
+    }
+  }, [maybeSnapshot])
 
 
   // ---- auto-save refs ----
@@ -329,9 +356,12 @@ export default function AppLayout() {
       saveDraft(draftDeltas, characterConfigs, assets, result.projectDir, useAppStore.getState().canvasRatio)
       // 保存后激活项目根：主进程已开启监听，此处扫描合并磁盘素材
       activateProjectRoot(result.projectDir)
-      // 保存即静默建档，防止覆盖式保存丢失历史版本
+      // 保存即静默建档，防止覆盖式保存丢失历史版本（内容没变则跳过）
       try {
-        await createSnapshot(serializeProject(draftDeltas, characterConfigs, assets), '自动备份 保存', true)
+        if (isContentChangedSinceBaseline()) {
+          await createSnapshot(serializeProject(draftDeltas, characterConfigs, assets), '自动备份 保存', true)
+          updateSnapshotBaseline()
+        }
       } catch {
         /* 建档失败不阻断保存 */
       }
@@ -376,13 +406,16 @@ export default function AppLayout() {
     const ok = await restoreProjectFromJson(result.content, root)
     if (!ok) alert('文件格式错误，无法打开')
 
-    // 自动建档：打开即静默备份一份，防止后续误操作丢失
+    // 自动建档：打开即静默备份一份，防止后续误操作丢失（与上次备份一致则跳过）
     try {
-      await createSnapshot(
-        serializeProject(useAppStore.getState().draftDeltas, useAppStore.getState().characterConfigs, useAppStore.getState().assets),
-        '自动备份·打开',
-        true,
-      )
+      if (isContentChangedSinceBaseline()) {
+        await createSnapshot(
+          serializeProject(useAppStore.getState().draftDeltas, useAppStore.getState().characterConfigs, useAppStore.getState().assets),
+          '自动备份·打开',
+          true,
+        )
+        updateSnapshotBaseline()
+      }
     } catch {
       /* 建档失败不阻断 */
     }

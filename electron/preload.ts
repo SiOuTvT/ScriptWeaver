@@ -230,6 +230,9 @@ const api = {
   off(channel: string, _callback: (...args: unknown[]) => void) {
     ipcRenderer.removeAllListeners(channel)
   },
+
+  /** 渲染端完成「退出前自动备份」后回执主进程放行退出 */
+  quitSnapshotDone: (): void => ipcRenderer.send('app:quit-snapshot-done'),
 }
 
 contextBridge.exposeInMainWorld('electronAPI', api)
