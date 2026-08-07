@@ -99,9 +99,11 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  autoSaveIntervalMs: 800,
+  // 性能与内存优化：自动保存防抖拉长，避免输入时频繁全工程序列化；
+  // 撤销历史默认深度调低，每层都持有一份全量克隆，深度越低占用越小。
+  autoSaveIntervalMs: 2000,
   snapshotIntervalMin: 4,
-  undoMaxDepth: 50,
+  undoMaxDepth: 30,
   timelineSnapPx: 5,
   hwAcceleration: true,
   framerateLimit: 60,

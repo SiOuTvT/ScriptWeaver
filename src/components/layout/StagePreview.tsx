@@ -101,6 +101,16 @@ const SPRITE_BASE_HEIGHT = 256
  */
 const naturalSizeCache = new Map<string, { w: number; h: number }>()
 
+/** 图片尺寸缓存上限：超出后按插入顺序淘汰最旧项，防止长会话无界增长 */
+const NATURAL_SIZE_CACHE_MAX = 400
+function cacheNaturalSize(url: string, w: number, h: number): void {
+  if (naturalSizeCache.size >= NATURAL_SIZE_CACHE_MAX) {
+    const first = naturalSizeCache.keys().next()
+    if (!first.done) naturalSizeCache.delete(first.value)
+  }
+  naturalSizeCache.set(url, { w, h })
+}
+
 /** 预载一批图片的原始尺寸，全部就位后返回一个自增版本号触发重绘 */
 function useNaturalSizes(urls: string[]): number {
   const [version, setVersion] = useState(0)
@@ -117,7 +127,7 @@ function useNaturalSizes(urls: string[]): number {
         if (alive && done === pending.length) setVersion((v) => v + 1)
       }
       img.onload = () => {
-        naturalSizeCache.set(u, { w: img.naturalWidth, h: img.naturalHeight })
+        cacheNaturalSize(u, img.naturalWidth, img.naturalHeight)
         finish()
       }
       img.onerror = finish
@@ -1696,7 +1706,7 @@ export default function StagePreview() {
                     onLoad={(e) => {
                       const el = e.currentTarget
                       if (spriteDataUrl && !naturalSizeCache.has(spriteDataUrl) && el.naturalHeight > 0) {
-                        naturalSizeCache.set(spriteDataUrl, { w: el.naturalWidth, h: el.naturalHeight })
+                        cacheNaturalSize(spriteDataUrl, el.naturalWidth, el.naturalHeight)
                         setSpriteMeasureTick((t) => t + 1)
                       }
                       if (spriteErrors.has(spriteKey)) {

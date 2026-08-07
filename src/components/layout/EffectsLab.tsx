@@ -24,6 +24,9 @@ import {
   Timer,
   Aperture,
   Replace,
+  Copy,
+  Check,
+  Download,
   type LucideIcon,
 } from 'lucide-react'
 import { EFFECT_CATEGORIES, ALL_EFFECTS, type EffectItem, type PreviewSpec } from '@/data/renpyEffects'
@@ -39,8 +42,9 @@ import {
 import PreviewStage, { type ActiveSpec } from '../effects/PreviewStage'
 import { Button, IconButton } from '@/components/ui'
 import { useAppStore } from '@/stores/appStore'
+import { toast } from '@/utils/toast'
 import { resolveAssetSrc } from '@/utils/assetSrc'
-import type { AssetItem } from '@/core/types'
+import type { AssetItem, LineDelta } from '@/core/types'
 
 const ICONS: Record<string, LucideIcon> = {
   Sparkles,
@@ -214,6 +218,44 @@ function DetailView({
   const enc = EFFECT_ENCYCLOPEDIA[item.id]
   const companion = buildCompanion(item)
 
+  // ── 一键复制 / 一键插入（拒绝摆设） ──────────────────────────────
+  const [copied, setCopied] = useState(false)
+  const { draftDeltas, setDraftDeltas, selectLine, setActiveNavItem } = useAppStore()
+
+  const buildSnippet = (): string => {
+    const lines = [`# ${item.cn}（${item.name}）`, item.syntax ?? '']
+    if (item.syntax2) lines.push(item.syntax2)
+    return lines.join('\n')
+  }
+
+  const copyCode = async (): Promise<void> => {
+    const code = buildSnippet()
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+      toast(`已复制 ${item.cn} 的 Ren'Py 代码`, 'success')
+    } catch {
+      toast('复制失败，请手动框选代码复制', 'error')
+    }
+  }
+
+  const insertToScript = (): void => {
+    const newDelta: LineDelta = {
+      line_id: `inserted_${Date.now()}`,
+      dialogue: buildSnippet(),
+      speaker: '',
+      background: { asset_id: '' },
+      characters: {},
+      audio: { bgm: null, ambient: null, se: [], voice: null },
+    }
+    const updated = [...draftDeltas, newDelta]
+    setDraftDeltas(updated)
+    selectLine(updated.length - 1)
+    setActiveNavItem('chapters')
+    toast(`已插入：${item.cn}`, 'success')
+  }
+
   // 右侧「本页速览」目录：仅列出当前特效实际存在的板块
   const toc = [
     { id: 'enc-art', label: '剧情用法', show: !!enc?.artGuide },
@@ -366,6 +408,24 @@ function DetailView({
           {/* 💻 板块三：双引擎原生代码示例对照 */}
           {item.syntax && (
             <Section title="Ren'Py 代码示例">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void copyCode()}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-primary/15 bg-primary/5 px-3 py-1.5 text-[12px] text-primary transition-colors hover:bg-primary/10"
+                >
+                  {copied ? <Check size={12} /> : <Copy size={12} />}
+                  {copied ? '已复制' : '复制 .rpy 代码'}
+                </button>
+                <button
+                  type="button"
+                  onClick={insertToScript}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-primary/15 bg-primary/5 px-3 py-1.5 text-[12px] text-primary transition-colors hover:bg-primary/10"
+                >
+                  <Download size={12} />
+                  插入到剧本
+                </button>
+              </div>
               <pre className="overflow-x-auto rounded-xl border border-edge/10 bg-surface p-3 font-mono text-[12px] leading-relaxed text-fg-subtle">
                 {item.syntax}
               </pre>

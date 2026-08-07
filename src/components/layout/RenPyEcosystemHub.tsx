@@ -103,6 +103,20 @@ export default function RenPyEcosystemHub() {
     toast(`已插入：${label}`, 'success')
   }, [draftDeltas, setDraftDeltas, selectLine, setActiveNavItem])
 
+  // ── Copy code ───────────────────────────────────────────────────
+  const copyCode = useCallback(async (code: string, label: string) => {
+    if (!code) {
+      toast('该条目没有可复制的代码', 'info')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(code)
+      toast(`已复制：${label}`, 'success')
+    } catch {
+      toast('复制失败，请手动框选复制', 'error')
+    }
+  }, [])
+
   // ── Helpers ──────────────────────────────────────────────────────
   const togglePlugin = (id: string) => {
     setExpandedPlugins((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
@@ -378,13 +392,22 @@ export default function RenPyEcosystemHub() {
                           <p className="text-[12px] leading-relaxed text-fg-subtle">{plugin.install}</p>
                         </div>
                       )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); insertToScript(plugin.snippet ?? '', plugin.name) }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-primary/15 bg-primary/5 px-3 py-1.5 text-[12px] text-primary transition-colors hover:bg-primary/10"
-                      >
-                        <Download size={12} />
-                        插入到剧本
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); void copyCode(plugin.snippet ?? '', plugin.name) }}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-primary/15 bg-primary/5 px-3 py-1.5 text-[12px] text-primary transition-colors hover:bg-primary/10"
+                        >
+                          <Copy size={12} />
+                          复制代码
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); insertToScript(plugin.snippet ?? '', plugin.name) }}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-primary/15 bg-primary/5 px-3 py-1.5 text-[12px] text-primary transition-colors hover:bg-primary/10"
+                        >
+                          <Download size={12} />
+                          插入到剧本
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

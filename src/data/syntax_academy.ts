@@ -393,17 +393,28 @@ label start:
     icon: '11',
     tags: ['视频', 'movie', '播放', 'cutscene'],
     content: `## 功能作用
-在剧情中播放视频文件，常用于片头动画或关键剧情的过场动画。
+在剧情中播放视频文件，常用于片头动画、关键剧情的过场，也可以把视频当作动态背景（雨夜的窗、闪动的霓虹灯、波光粼粼的水面）。
 
 ## 通俗解释
-在 Ren'Py 中放视频非常简单——用 renpy.movie_cutscene 即可全屏播完再继续剧情。如果要在视频播放过程中允许跳过，可以用 Movie 作为 displayable 加 ATL 控制。
+两种常见用法：
+- 全屏过场：用 renpy.movie_cutscene 播完一整段视频再继续剧情，期间玩家可点击跳过（设置 hard=True 则不可跳过）。
+- 动态背景：用 Movie 作为显示件挂到背景层，配合循环播放，让背景"活"起来。这是做动态 CG、雨夜窗景、剧情演出的常用手法，也是本软件视频背景功能对应的标准写法。
 
 ## 避坑提示
-- 推荐视频格式：WebM（VP8/VP9 + Vorbis）兼容性最好。
-- movie_cutscene 期间玩家可以点击跳过（除非你设置 hard=True）。
-- 打包时视频文件体积很大，建议压缩到合理大小再放入 images 目录。`,
-    codeExample: `label start:
-    "即将播放片头动画……"
+- 推荐视频格式：WebM（VP8/VP9 + Vorbis）兼容性最好；mp4 在部分平台兼容性差。
+- 声明电影用 image 语句，文件名不带扩展名，视频文件放入 images 目录。
+- Movie 默认循环播放，需要只播一次时用 loop=False。
+- movie_cutscene 期间玩家默认可点击跳过，hard=True 可禁止。
+- 视频文件体积大，打包前务必压缩，避免安装包过大。`,
+    codeExample: `# 动态背景：声明电影后当作背景使用，循环播放
+image bg rain = Movie(play="images/rain.webm", loop=True)
+
+label start:
+    scene bg rain                # 雨夜窗景动态背景
+    "窗外下着雨……"
+
+# 全屏过场动画（播完继续，可跳过）
+label intro:
     $ renpy.movie_cutscene("opening.webm")
     "片头播放完毕，游戏正式开始。"
     return`,
