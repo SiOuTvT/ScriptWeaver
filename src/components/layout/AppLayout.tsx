@@ -509,8 +509,8 @@ export default function AppLayout() {
           </Button>
           <span className="mx-0.5 h-4 w-px bg-edge-strong/20" />
           <IconButton
-            icon={theme === 'dark' ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
-            aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+            icon={theme === 'dark' ? <Moon size={16} strokeWidth={1.75} /> : <Sun size={16} strokeWidth={1.75} />}
+            aria-label={theme === 'dark' ? '深色模式' : '浅色模式'}
             onClick={toggleTheme}
             title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
           />

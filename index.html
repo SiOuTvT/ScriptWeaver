@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- CSP 由 Electron 主进程动态注入（Dev 放行 localhost/Vite HMR，生产严格） -->
     <title>ScriptWeaver</title>
+    <script>
+      // 主题预加载：首帧前应用持久化主题，杜绝「先白后黑」闪屏
+      (function () {
+        try {
+          var t = localStorage.getItem('sw-theme')
+          if (t !== 'light' && t !== 'dark') t = 'dark'
+          var el = document.documentElement
+          el.setAttribute('data-theme', t)
+          el.style.colorScheme = t
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body class="overflow-hidden antialiased">
     <div id="root"></div>
