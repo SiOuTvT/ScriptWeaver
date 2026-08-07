@@ -4,7 +4,7 @@
  * 扫描 game 目录下真实图片与音频文件，与脚本引用做匹配。
  */
 
-import type { LineDelta, CharacterConfig, ChoiceItem, VariableOperation, CharacterDelta, TrackValue } from '@/core/types'
+import type { LineDelta, CharacterConfig, ChoiceItem, VariableOperation, CharacterDelta, TrackValue, AssetItem } from '@/core/types'
 import {
   type AtlState,
   parseAtlLine,
@@ -1616,6 +1616,45 @@ export function matchAssets(
   }
 
   return { imageAssets, audioAssets, videoAssets, unmatchedImages, unmatchedAudio }
+}
+
+// ═══════════════════════════════════════════
+// 素材注册规范化
+// ═══════════════════════════════════════════
+
+/**
+ * 将导入返回的素材映射表规范化为「与 assets 数组一致的引用」。
+ *
+ * 背景：fsImport 对已存在（内容相同）的文件会「复用磁盘文件但生成新的 uuid」，
+ * 若直接把这些新条目 push 进 assets，同一 relativePath 会保留旧 id，
+ * 而后续剧本绑定使用的是新 id → deltas 引用的 id 在 assets 中不存在 → 舞台空白。
+ *
+ * 本函数确保：每个 relativePath 只保留一个条目；重复时返回「已在 assets 中的旧条目」，
+ * 使映射表的 value 一定是最终注册进 assets 的真实条目。
+ *
+ * @param maps 导入返回的素材映射表（refName -> AssetItem），会被原地规范化
+ * @param currentAssets 当前 store 中的素材列表
+ * @returns 去重后的新 assets 列表（含原列表与新增条目）
+ */
+export function canonicalizeImportedAssets(
+  maps: Map<string, AssetItem>[],
+  currentAssets: AssetItem[],
+): AssetItem[] {
+  const newAssets: AssetItem[] = [...currentAssets]
+  const relToExisting = new Map(newAssets.map((a) => [a.relativePath, a] as const))
+  const seenRel = new Set(newAssets.map((a) => a.relativePath))
+  const pushUnique = (asset: AssetItem): AssetItem => {
+    const existing = relToExisting.get(asset.relativePath)
+    if (existing) return existing
+    seenRel.add(asset.relativePath)
+    relToExisting.set(asset.relativePath, asset)
+    newAssets.push(asset)
+    return asset
+  }
+  for (const m of maps) {
+    for (const [k, v] of m) m.set(k, pushUnique(v))
+  }
+  return newAssets
 }
 
 // ═══════════════════════════════════════════

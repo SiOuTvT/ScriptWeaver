@@ -9,7 +9,7 @@ import {
   FileDown, Info, BookOpen, FileText, Users, Code, Image, Music, BarChart3,
   ExternalLink, FolderSearch, FileCheck, Upload, ShieldAlert,
 } from 'lucide-react'
-import { importRpyDirectory, normalizeAudioRef, type RpyImportResult } from '@/utils/rpyImporter'
+import { importRpyDirectory, normalizeAudioRef, canonicalizeImportedAssets, type RpyImportResult } from '@/utils/rpyImporter'
 import { useAppStore } from '@/stores/appStore'
 import { createSnapshot } from '@/utils/cloudSync'
 import { serializeProject } from '@/utils/projectFile'
@@ -198,19 +198,14 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
 
       // ── Step 2: 注册素材到 store ──
       // 使用 store.setAssets() 一次性批量替换，避免每 addAsset 都 pushHistory。
-      // 按 relativePath 去重：fsImport 已做内容去重（同名/同内容文件复用），
-      // 这里再兜底一次，杜绝同一文件在素材库里出现两份 AssetItem。
+      // 关键：fsImport 对已存在文件会「复用文件但生成新 uuid」，若重复时丢弃新条目
+      // 会导致 deltas 绑定到的 id 不在 assets 中（舞台空白）。
+      // canonicalizeImportedAssets 保证映射表 value 一定是最终注册进 assets 的真实条目。
       const currentAssets = [...useAppStore.getState().assets]
-      const newAssets: AssetItem[] = [...currentAssets]
-      const seenRel = new Set(newAssets.map(a => a.relativePath))
-      const pushUnique = (asset: AssetItem) => {
-        if (seenRel.has(asset.relativePath)) return
-        seenRel.add(asset.relativePath)
-        newAssets.push(asset)
-      }
-      for (const [, asset] of importedImageMap) pushUnique(asset)
-      for (const [, asset] of importedAudioMap) pushUnique(asset)
-      for (const [, asset] of importedVideoMap) pushUnique(asset)
+      const newAssets = canonicalizeImportedAssets(
+        [importedImageMap, importedAudioMap, importedVideoMap],
+        currentAssets,
+      )
       useAppStore.getState().setAssets(newAssets)
 
       // ── Step 3: 注册角色 ──

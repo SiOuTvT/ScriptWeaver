@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { parseRpy, matchAssets, scanAssetFiles, importRpyDirectory, parseDisplayStatement, normalizeAudioRef, type RpyImageRef } from '../rpyImporter'
+import { parseRpy, matchAssets, scanAssetFiles, importRpyDirectory, parseDisplayStatement, normalizeAudioRef, canonicalizeImportedAssets, type RpyImageRef } from '../rpyImporter'
+import type { AssetItem } from '../../core/types'
 import { reduceLines } from '../../core/reducer'
 import { buildBundle } from '../rpyExporter'
 
@@ -718,5 +719,42 @@ label start:
     }
     for (const [, n] of byFile) expect(n).toBe(1)
     expect(matched.length).toBe(3) // room / happy / sad 各一
+  })
+})
+
+describe('canonicalizeImportedAssets：重复导入时素材 id 必须真实存在（舞台空白修复回归）', () => {
+  const mkAsset = (id: string, rel: string): AssetItem =>
+    ({ id, fileName: rel.split('/').pop() ?? id, relativePath: rel, type: 'background', createdAt: '', updatedAt: '', name: rel }) as AssetItem
+
+  it('第一次导入：新条目全部注册', () => {
+    const m = new Map([['room', mkAsset('new-id-1', 'assets/images/room.png')]])
+    const out = canonicalizeImportedAssets([m], [])
+    expect(out).toHaveLength(1)
+    expect(out[0].id).toBe('new-id-1')
+    // 映射表 value 与最终 assets 一致
+    expect(m.get('room')!.id).toBe('new-id-1')
+  })
+
+  it('重复导入同文件：assets 保留旧 id，映射表回落到旧条目（deltas 绑定不会悬空）', () => {
+    const old = mkAsset('old-id-1', 'assets/images/room.png')
+    // fsImport 复用文件但生成新 uuid
+    const m = new Map([['room', mkAsset('new-id-2', 'assets/images/room.png')]])
+    const out = canonicalizeImportedAssets([m], [old])
+    // 不新增重复条目
+    expect(out).toHaveLength(1)
+    expect(out[0].id).toBe('old-id-1')
+    // 关键：映射表 value 回落到 assets 中真实存在的旧 id
+    expect(m.get('room')!.id).toBe('old-id-1')
+    expect(out.some(a => a.id === m.get('room')!.id)).toBe(true)
+  })
+
+  it('多映射表共用同一套去重：跨表重复也回落', () => {
+    const old = mkAsset('old-bg', 'assets/images/b.png')
+    const bgMap = new Map([['bj1', mkAsset('new-bg', 'assets/images/b.png')]])
+    const sprMap = new Map([['js1', mkAsset('new-spr', 'assets/images/js1.png')]])
+    const out = canonicalizeImportedAssets([bgMap, sprMap], [old])
+    expect(out).toHaveLength(2)
+    expect(bgMap.get('bj1')!.id).toBe('old-bg')
+    expect(sprMap.get('js1')!.id).toBe('new-spr')
   })
 })

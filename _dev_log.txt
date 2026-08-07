@@ -1,8 +1,7 @@
 
-> scriptweaver@1.0.0 dev
+> scriptweaver@1.2.0 dev
 > vite
 
-Re-optimizing dependencies because vite config has changed
 [36mvite v5.4.21 [32mbuilding for development...[36m[39m
 [36m
 watching for file changes...[39m
@@ -14,234 +13,111 @@ build started...[39m
 [36m
 build started...[39m
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m976[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m724[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
 [2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
 [2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
 transforming...
 [32m✓[39m 1 modules transformed.
-transforming...
 rendering chunks...
+transforming...
 computing gzip size...
-[2mdist-electron/[22m[36mpreload.js  [39m[1m[2m4.92 kB[22m[1m[22m[2m │ gzip: 2.31 kB[22m
-[36mbuilt in 985ms.[39m
+[2mdist-electron/[22m[36mpreload.js  [39m[1m[2m5.13 kB[22m[1m[22m[2m │ gzip: 2.42 kB[22m
+[36mbuilt in 686ms.[39m
 [32m✓[39m 2 modules transformed.
 rendering chunks...
 computing gzip size...
-[2mdist-electron/[22m[36mmain.js  [39m[1m[2m47.46 kB[22m[1m[22m[2m │ gzip: 12.69 kB[22m
-[36mbuilt in 1105ms.[39m
+[2mdist-electron/[22m[36mmain.js  [39m[1m[2m52.04 kB[22m[1m[22m[2m │ gzip: 13.92 kB[22m
+[36mbuilt in 820ms.[39m
 
-[26868:0802/013456.477:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[26868:0802/013456.477:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
-[sw-asset] request sw-asset://asset/assets/images/background/cd_2.jpg | rel= assets/images/background/cd_2.jpg | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_2.jpg image/jpeg
+[27680:0807/215602.172:ERROR:CONSOLE(1)] "Request Autofill.enable failed. {"code":-32601,"message":"'Autofill.enable' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[27680:0807/215602.172:ERROR:CONSOLE(1)] "Request Autofill.setAddresses failed. {"code":-32601,"message":"'Autofill.setAddresses' wasn't found"}", source: devtools://devtools/bundled/core/protocol_client/protocol_client.js (1)
+[sw-asset] request sw-asset://asset/assets/images/background/b.png | rel= assets/images/background/b.png | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\b.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/b_1.png | rel= assets/images/background/b_1.png | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\b_1.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/b_2.png | rel= assets/images/background/b_2.png | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\b_2.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/b_3.png | rel= assets/images/background/b_3.png | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\b_3.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/c.jpg | rel= assets/images/background/c.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\c.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/cd.jpg | rel= assets/images/background/cd.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/cd_1.jpg | rel= assets/images/background/cd_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_1.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/cd_2.jpg | rel= assets/images/background/cd_2.jpg | activeRoot= D:\meihuogu\hlzz\game
 [sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_2.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/cd_3.jpg | rel= assets/images/background/cd_3.jpg | activeRoot= D:\meihuogu\hlzz\game
 [sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_3.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/fz_3.jpg | rel= assets/images/background/fz_3.jpg | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz_3.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/x_3.png | rel= assets/images/sprite/x_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\x_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/cd_3.jpg | rel= assets/images/background/cd_3.jpg | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_3.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/background/fz_3.jpg | rel= assets/images/background/fz_3.jpg | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz_3.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/x_3.png | rel= assets/images/sprite/x_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\x_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/fy_3.png | rel= assets/images/sprite/fy_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\fy_3.png image/png
-[sw-asset] request sw-asset://asset/assets/audio/zoulu_3.wav | rel= assets/audio/zoulu_3.wav | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT(range) D:\meihuogu\hlzz\game\assets\audio\zoulu_3.wav 0 - 2043981 / 2043982
-[sw-asset] request sw-asset://asset/assets/audio/zoulu_3.wav | rel= assets/audio/zoulu_3.wav | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT(range) D:\meihuogu\hlzz\game\assets\audio\zoulu_3.wav 0 - 2043981 / 2043982
+[sw-asset] request sw-asset://asset/assets/images/background/cd_4.jpg | rel= assets/images/background/cd_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/c_1.jpg | rel= assets/images/background/c_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\c_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/c_2.jpg | rel= assets/images/background/c_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\c_2.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/c_3.jpg | rel= assets/images/background/c_3.jpg | activeRoot= D:\meihuogu\hlzz\game
 [sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\c_3.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/z-gc_3.png | rel= assets/images/sprite/z-gc_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\z-gc_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/hx-gc_3.png | rel= assets/images/sprite/hx-gc_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\hx-gc_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/b_3.png | rel= assets/images/sprite/b_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\b_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/jb_3.png | rel= assets/images/sprite/jb_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\jb_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/x_3.png | rel= assets/images/sprite/x_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\x_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/fy_3.png | rel= assets/images/sprite/fy_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\fy_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/x_3.png | rel= assets/images/sprite/x_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\x_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/hx_3.png | rel= assets/images/sprite/hx_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\hx_3.png image/png
-[sw-asset] request sw-asset://asset/assets/audio/jida_3.wav | rel= assets/audio/jida_3.wav | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT(range) D:\meihuogu\hlzz\game\assets\audio\jida_3.wav 0 - 59981 / 59982
-[sw-asset] request sw-asset://asset/assets/audio/jida_3.wav | rel= assets/audio/jida_3.wav | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT(range) D:\meihuogu\hlzz\game\assets\audio\jida_3.wav 0 - 59981 / 59982
-[sw-asset] request sw-asset://asset/assets/images/sprite/fy_3.png | rel= assets/images/sprite/fy_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\fy_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/z-gc_3.png | rel= assets/images/sprite/z-gc_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\z-gc_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/hx-gc_3.png | rel= assets/images/sprite/hx-gc_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\hx-gc_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/b_3.png | rel= assets/images/sprite/b_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\b_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/sprite/jb_3.png | rel= assets/images/sprite/jb_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\jb_3.png image/png
+[sw-asset] request sw-asset://asset/assets/images/background/c_4.jpg | rel= assets/images/background/c_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\c_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fz.jpg | rel= assets/images/background/fz.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fz_1.jpg | rel= assets/images/background/fz_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/fz_2.jpg | rel= assets/images/background/fz_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz_2.jpg image/jpeg
 [sw-asset] request sw-asset://asset/assets/images/background/fz_3.jpg | rel= assets/images/background/fz_3.jpg | activeRoot= D:\meihuogu\hlzz\game
 [sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz_3.jpg image/jpeg
-[sw-asset] request sw-asset://asset/assets/images/sprite/fy_3.png | rel= assets/images/sprite/fy_3.png | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\sprite\fy_3.png image/png
-[sw-asset] request sw-asset://asset/assets/images/background/cd_3.jpg | rel= assets/images/background/cd_3.jpg | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_3.jpg image/jpeg
-[2m11:36:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
-[2m11:36:28[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
-[2m11:36:28[22m [31m[1m[vite][22m[39m [31mInternal server error: D:\ScriptWeaver\src\components\layout\StagePreview.tsx: Identifier 'bgDataUrl' has already been declared. (1306:8)
-
-[0m [90m 1304 |[31m   [90m// （此前 useImageLoaded 写在 if (!state) return 之后，导致有/无数据时 hook 数量不一致 → #310）[31m
- [90m 1305 |[31m   [36mconst[31m bgAssetId [33m=[31m state[33m?[31m[33m.[31mbackground[33m?[31m[33m.[31masset_id
-[31m[1m>[22m[31m[90m 1306 |[31m   [36mconst[31m bgDataUrl [33m=[31m resolveBackgroundUrl(bgAssetId[33m,[31m assets)
- [90m      |[31m         [31m[1m^[22m[31m
- [90m 1307 |[31m   [36mconst[31m bgLoaded [33m=[31m useImageLoaded(bgDataUrl)
- [90m 1308 |[31m
- [90m 1309 |[31m   [36mif[31m ([33m![31mstate) {[0m[39m
-  Plugin: [35mvite:react-babel[39m
-  File: [36mD:/ScriptWeaver/src/components/layout/StagePreview.tsx[39m:1306:8
-[33m  1335|      <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm overflow-hidden">
-  1336|        {/* 场景导航头部：上一/下一 + 当前/总数 + 添加场景，键盘 ←/→ 亦可切换 */}
-  1337|        <header className="flex shrink-0 items-center justify-between border-b border-edge/10 px-3 py-1.5">
-     |                                                                                         ^
-  1338|          <span className="text-[13px] font-medium text-fg">场景预览 · {state.line_id}</span>
-  1339|          <div className="flex items-center gap-1">[39m
-      at constructor (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:365:19)
-      at TypeScriptParserMixin.raise (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6616:19)
-      at TypeScriptScopeHandler.checkRedeclarationInScope (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:1619:19)
-      at TypeScriptScopeHandler.declareName (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:1585:12)
-      at TypeScriptScopeHandler.declareName (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4892:11)
-      at TypeScriptParserMixin.declareNameFromIdentifier (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:7584:16)
-      at TypeScriptParserMixin.checkIdentifier (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:7580:12)
-      at TypeScriptParserMixin.checkLVal (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:7517:12)
-      at TypeScriptParserMixin.parseVarId (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13429:10)
-      at TypeScriptParserMixin.parseVarId (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9769:11)
-      at TypeScriptParserMixin.parseVar (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13400:12)
-      at TypeScriptParserMixin.parseVarStatement (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13247:10)
-      at TypeScriptParserMixin.parseVarStatement (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9425:31)
-      at TypeScriptParserMixin.parseStatementContent (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12868:23)
-      at TypeScriptParserMixin.parseStatementContent (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9525:18)
-      at TypeScriptParserMixin.parseStatementLike (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12784:17)
-      at TypeScriptParserMixin.parseStatementListItem (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12764:17)
-      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13333:61)
-      at TypeScriptParserMixin.parseBlockBody (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13326:10)
-      at TypeScriptParserMixin.parseBlock (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13314:10)
-      at TypeScriptParserMixin.parseFunctionBody (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12117:24)
-      at TypeScriptParserMixin.parseFunctionBodyAndFinish (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12103:10)
-      at TypeScriptParserMixin.parseFunctionBodyAndFinish (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9189:18)
-      at D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13462:12
-      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12420:14)
-      at TypeScriptParserMixin.parseFunction (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13461:10)
-      at TypeScriptParserMixin.parseExportDefaultExpression (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13924:19)
-      at TypeScriptParserMixin.parseExportDefaultExpression (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9419:18)
-      at TypeScriptParserMixin.parseExport (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13845:25)
-      at TypeScriptParserMixin.parseExport (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9402:20)
-      at TypeScriptParserMixin.parseStatementContent (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12895:27)
-      at TypeScriptParserMixin.parseStatementContent (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9525:18)
-      at TypeScriptParserMixin.parseStatementLike (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12784:17)
-      at TypeScriptParserMixin.parseModuleItem (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12761:17)
-      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13333:36)
-      at TypeScriptParserMixin.parseBlockBody (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13326:10)
-      at TypeScriptParserMixin.parseProgram (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12639:10)
-      at TypeScriptParserMixin.parseTopLevel (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12629:25)
-      at TypeScriptParserMixin.parse (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:14505:25)
-      at TypeScriptParserMixin.parse (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10143:18)
-      at parse (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:14539:38)
-      at parser (D:\ScriptWeaver\node_modules\@babel\core\lib\parser\index.js:41:34)
-      at parser.next (<anonymous>)
-      at normalizeFile (D:\ScriptWeaver\node_modules\@babel\core\lib\transformation\normalize-file.js:51:37)
-      at normalizeFile.next (<anonymous>)
-      at run (D:\ScriptWeaver\node_modules\@babel\core\lib\transformation\index.js:22:50)
-      at run.next (<anonymous>)
-      at transform (D:\ScriptWeaver\node_modules\@babel\core\lib\transform.js:22:33)
-      at transform.next (<anonymous>)
-      at step (D:\ScriptWeaver\node_modules\gensync\index.js:261:32)
-[2m11:36:28[22m [31m[1m[vite][22m[39m [31mInternal server error: D:\ScriptWeaver\src\components\layout\StagePreview.tsx: Identifier 'bgDataUrl' has already been declared. (1306:8)
-
-[0m [90m 1304 |[31m   [90m// （此前 useImageLoaded 写在 if (!state) return 之后，导致有/无数据时 hook 数量不一致 → #310）[31m
- [90m 1305 |[31m   [36mconst[31m bgAssetId [33m=[31m state[33m?[31m[33m.[31mbackground[33m?[31m[33m.[31masset_id
-[31m[1m>[22m[31m[90m 1306 |[31m   [36mconst[31m bgDataUrl [33m=[31m resolveBackgroundUrl(bgAssetId[33m,[31m assets)
- [90m      |[31m         [31m[1m^[22m[31m
- [90m 1307 |[31m   [36mconst[31m bgLoaded [33m=[31m useImageLoaded(bgDataUrl)
- [90m 1308 |[31m
- [90m 1309 |[31m   [36mif[31m ([33m![31mstate) {[0m[39m
-  Plugin: [35mvite:react-babel[39m
-  File: [36mD:/ScriptWeaver/src/components/layout/StagePreview.tsx[39m:1306:8
-[33m  1335|      <main className="relative flex min-w-0 flex-1 flex-col bg-surface rounded-lg border border-edge/[0.14] shadow-sm overflow-hidden">
-  1336|        {/* 场景导航头部：上一/下一 + 当前/总数 + 添加场景，键盘 ←/→ 亦可切换 */}
-  1337|        <header className="flex shrink-0 items-center justify-between border-b border-edge/10 px-3 py-1.5">
-     |                                                                                         ^
-  1338|          <span className="text-[13px] font-medium text-fg">场景预览 · {state.line_id}</span>
-  1339|          <div className="flex items-center gap-1">[39m
-      at constructor (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:365:19)
-      at TypeScriptParserMixin.raise (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:6616:19)
-      at TypeScriptScopeHandler.checkRedeclarationInScope (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:1619:19)
-      at TypeScriptScopeHandler.declareName (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:1585:12)
-      at TypeScriptScopeHandler.declareName (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:4892:11)
-      at TypeScriptParserMixin.declareNameFromIdentifier (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:7584:16)
-      at TypeScriptParserMixin.checkIdentifier (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:7580:12)
-      at TypeScriptParserMixin.checkLVal (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:7517:12)
-      at TypeScriptParserMixin.parseVarId (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13429:10)
-      at TypeScriptParserMixin.parseVarId (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9769:11)
-      at TypeScriptParserMixin.parseVar (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13400:12)
-      at TypeScriptParserMixin.parseVarStatement (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13247:10)
-      at TypeScriptParserMixin.parseVarStatement (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9425:31)
-      at TypeScriptParserMixin.parseStatementContent (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12868:23)
-      at TypeScriptParserMixin.parseStatementContent (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9525:18)
-      at TypeScriptParserMixin.parseStatementLike (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12784:17)
-      at TypeScriptParserMixin.parseStatementListItem (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12764:17)
-      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13333:61)
-      at TypeScriptParserMixin.parseBlockBody (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13326:10)
-      at TypeScriptParserMixin.parseBlock (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13314:10)
-      at TypeScriptParserMixin.parseFunctionBody (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12117:24)
-      at TypeScriptParserMixin.parseFunctionBodyAndFinish (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12103:10)
-      at TypeScriptParserMixin.parseFunctionBodyAndFinish (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9189:18)
-      at D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13462:12
-      at TypeScriptParserMixin.withSmartMixTopicForbiddingContext (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12420:14)
-      at TypeScriptParserMixin.parseFunction (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13461:10)
-      at TypeScriptParserMixin.parseExportDefaultExpression (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13924:19)
-      at TypeScriptParserMixin.parseExportDefaultExpression (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9419:18)
-      at TypeScriptParserMixin.parseExport (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13845:25)
-      at TypeScriptParserMixin.parseExport (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9402:20)
-      at TypeScriptParserMixin.parseStatementContent (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12895:27)
-      at TypeScriptParserMixin.parseStatementContent (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:9525:18)
-      at TypeScriptParserMixin.parseStatementLike (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12784:17)
-      at TypeScriptParserMixin.parseModuleItem (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12761:17)
-      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13333:36)
-      at TypeScriptParserMixin.parseBlockBody (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:13326:10)
-      at TypeScriptParserMixin.parseProgram (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12639:10)
-      at TypeScriptParserMixin.parseTopLevel (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:12629:25)
-      at TypeScriptParserMixin.parse (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:14505:25)
-      at TypeScriptParserMixin.parse (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:10143:18)
-      at parse (D:\ScriptWeaver\node_modules\@babel\parser\lib\index.js:14539:38)
-      at parser (D:\ScriptWeaver\node_modules\@babel\core\lib\parser\index.js:41:34)
-      at parser.next (<anonymous>)
-      at normalizeFile (D:\ScriptWeaver\node_modules\@babel\core\lib\transformation\normalize-file.js:51:37)
-      at normalizeFile.next (<anonymous>)
-      at run (D:\ScriptWeaver\node_modules\@babel\core\lib\transformation\index.js:22:50)
-      at run.next (<anonymous>)
-      at transform (D:\ScriptWeaver\node_modules\@babel\core\lib\transform.js:22:33)
-      at transform.next (<anonymous>)
-      at step (D:\ScriptWeaver\node_modules\gensync\index.js:261:32)
-[2m11:36:33[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
-[2m11:36:43[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
-[2m11:36:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
-[2m11:37:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/layout/StagePreview.tsx, /src/index.css[22m
-[2m11:37:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/RpyImportDialog.tsx[22m
-[2m11:38:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/RpyImportDialog.tsx[22m
-[2m11:40:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/AppLayout.tsx, /src/components/layout/ExportSettings.tsx[22m
-[2m11:40:56[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/ExportSettings.tsx[22m
-[2m11:41:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/ExportSettings.tsx[22m
-[2m11:42:31[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/RpyImportDialog.tsx[22m
-[2m11:45:46[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/RpyImportDialog.tsx[22m
-[2m11:46:30[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2msrc/utils/__tests__/rpyImporter.test.ts[22m
-[sw-asset] request sw-asset://asset/assets/images/background/cd_3.jpg | rel= assets/images/background/cd_3.jpg | activeRoot= D:\meihuogu\hlzz\game
-[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\cd_3.jpg image/jpeg
-����: û���ҵ����� "26868"��
+[sw-asset] request sw-asset://asset/assets/images/background/fz_4.jpg | rel= assets/images/background/fz_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\fz_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr.jpg | rel= assets/images/background/jjr.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjr.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr_1.jpg | rel= assets/images/background/jjr_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjr_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr_2.jpg | rel= assets/images/background/jjr_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjr_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr_3.jpg | rel= assets/images/background/jjr_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjr_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjr_4.jpg | rel= assets/images/background/jjr_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjr_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs.jpg | rel= assets/images/background/jjs.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjs.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs_1.jpg | rel= assets/images/background/jjs_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjs_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs_2.jpg | rel= assets/images/background/jjs_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjs_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs_3.jpg | rel= assets/images/background/jjs_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjs_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjs_4.jpg | rel= assets/images/background/jjs_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjs_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp.jpg | rel= assets/images/background/jjtp.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjtp.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp_1.jpg | rel= assets/images/background/jjtp_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjtp_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp_2.jpg | rel= assets/images/background/jjtp_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjtp_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp_3.jpg | rel= assets/images/background/jjtp_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjtp_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjtp_4.jpg | rel= assets/images/background/jjtp_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjtp_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy.jpg | rel= assets/images/background/jjy.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjy.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy_1.jpg | rel= assets/images/background/jjy_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjy_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy_2.jpg | rel= assets/images/background/jjy_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjy_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy_3.jpg | rel= assets/images/background/jjy_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjy_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/jjy_4.jpg | rel= assets/images/background/jjy_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\jjy_4.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj.jpg | rel= assets/images/background/szj.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj_1.jpg | rel= assets/images/background/szj_1.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_1.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj_2.jpg | rel= assets/images/background/szj_2.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_2.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj_3.jpg | rel= assets/images/background/szj_3.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_3.jpg image/jpeg
+[sw-asset] request sw-asset://asset/assets/images/background/szj_4.jpg | rel= assets/images/background/szj_4.jpg | activeRoot= D:\meihuogu\hlzz\game
+[sw-asset]  HIT D:\meihuogu\hlzz\game\assets\images\background\szj_4.jpg image/jpeg
