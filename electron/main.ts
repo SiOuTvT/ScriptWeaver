@@ -8,6 +8,13 @@ import zlib from 'zlib'
 import { Readable } from 'stream'
 // AI 编排逻辑（纯函数）由主进程持有：密钥不进渲染进程，渲染端只发 prompt 收文本
 import { streamChatCompletion, describeAIError, defaultAIConfig, type AIConfig, type ChatMessage } from '../src/utils/aiDirector'
+// 资产安全与分类的纯函数（防目录穿越 / 扩展名白名单 / 资产分类）—— 抽出自 main.ts 以便单测
+import {
+  MIME_MAP,
+  SUBDIR_BACKGROUND, SUBDIR_SPRITE, SUBDIR_AUDIO, SUBDIR_VIDEO, SUBDIR_EFFECT,
+  isAllowedAssetExt, isWithinAssetsDir, resolveSubdir, classifyAsset,
+  type AssetKind,
+} from './assetSecurity'
 
 
 // --------------- 数据目录重定向（默认 D 盘，绝不默认 C 盘） ---------------
@@ -57,46 +64,8 @@ let isQuiting = false
 
 // --------------- 资产常量 ---------------
 
-const IMG_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.gif']
-const AUDIO_EXTS = ['.mp3', '.ogg', '.wav', '.flac']
-const VIDEO_EXTS = ['.webm', '.mp4', '.ogv', '.mov', '.mkv', '.avi']
-// 特效预设：可复用 ATL / 转场模板（.rpy/.rpym 片段或自定义 JSON 预设）
-const EFFECT_EXTS = ['.rpy', '.rpym', '.json']
-
-const MIME_MAP: Record<string, string> = {
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.mp3': 'audio/mpeg',
-  '.ogg': 'audio/ogg',
-  '.wav': 'audio/wav',
-  '.flac': 'audio/flac',
-  '.webm': 'video/webm',
-  '.mp4': 'video/mp4',
-  '.ogv': 'video/ogg',
-  '.mov': 'video/quicktime',
-  '.mkv': 'video/x-matroska',
-  '.avi': 'video/x-msvideo',
-  '.rpy': 'text/plain',
-  '.rpym': 'text/plain',
-  '.json': 'application/json',
-}
-
-// 统一目录规范：
-//   assets/images/background   背景
-//   assets/images/sprite       立绘
-//   assets/audio               音频
-//   assets/video               视频过场
-//   assets/effects             特效预设
-const SUBDIR_BACKGROUND = path.join('images', 'background')
-const SUBDIR_SPRITE = path.join('images', 'sprite')
-const SUBDIR_AUDIO = 'audio'
-const SUBDIR_VIDEO = 'video'
-const SUBDIR_EFFECT = 'effects'
-
-type AssetKind = 'background' | 'sprite' | 'audio' | 'video' | 'effect'
+// ⬇️ 以下常量与类型已从 ./assetSecurity 导入（防目录穿越 / 扩展名白名单 / 资产分类的纯函数集合），
+//    此处不再重复定义，避免安全逻辑出现两份实现、行为漂移。
 
 /** 当前活动项目根目录（由渲染进程通过 fs:setActiveProjectRoot 同步） */
 let activeProjectRoot: string | null = null
@@ -349,29 +318,7 @@ function uuid(): string {
   })
 }
 
-/** 依据扩展名与 kind 决定落盘子目录 */
-function resolveSubdir(ext: string, kind?: AssetKind): { subdir: string; type: AssetKind } {
-  if (VIDEO_EXTS.includes(ext)) return { subdir: SUBDIR_VIDEO, type: 'video' }
-  if (EFFECT_EXTS.includes(ext)) return { subdir: SUBDIR_EFFECT, type: 'effect' }
-  if (AUDIO_EXTS.includes(ext)) return { subdir: SUBDIR_AUDIO, type: 'audio' }
-  if (kind === 'background') return { subdir: SUBDIR_BACKGROUND, type: 'background' }
-  if (kind === 'video') return { subdir: SUBDIR_VIDEO, type: 'video' }
-  if (kind === 'effect') return { subdir: SUBDIR_EFFECT, type: 'effect' }
-  return { subdir: SUBDIR_SPRITE, type: 'sprite' }
-}
-
-/** 依据磁盘绝对路径推断资产类型（用于扫描 / 监听） */
-function classifyAsset(abs: string): AssetKind | null {
-  const ext = path.extname(abs).toLowerCase()
-  const normalized = abs.replace(/\\/g, '/')
-  if (VIDEO_EXTS.includes(ext)) return 'video'
-  if (EFFECT_EXTS.includes(ext)) return 'effect'
-  if (AUDIO_EXTS.includes(ext)) return 'audio'
-  if (IMG_EXTS.includes(ext)) {
-    return normalized.includes('/images/background/') ? 'background' : 'sprite'
-  }
-  return null
-}
+/** ⬇️ resolveSubdir / classifyAsset 已从 ./assetSecurity 导入（纯函数，便于单测守护）。 */
 
 // 所有素材统一存储在项目目录下的 assets/ 中（不再使用系统 AppData）。
 // 导入/保存/导出均直接读写 activeProjectRoot/assets/，实现"随删随清、随移随走"。
@@ -447,11 +394,10 @@ function registerAssetProtocol(): void {
           path.resolve(root, 'assets', rel),
         ]
         for (const abs of candidates) {
-          // 防目录穿越：必须在 assets 子树内
-          const inTree = abs === assetsDir || abs.startsWith(assetsDir + path.sep)
+          // 防目录穿越：必须在 assets 子树内（复用 assetSecurity 纯函数，便于单测守护）
+          const inTree = isWithinAssetsDir(assetsDir, abs)
           const ext = path.extname(abs).toLowerCase()
-          const extOk =
-            IMG_EXTS.includes(ext) || AUDIO_EXTS.includes(ext) || VIDEO_EXTS.includes(ext) || EFFECT_EXTS.includes(ext)
+          const extOk = isAllowedAssetExt(ext)
           const exists = fs.existsSync(abs)
           if (!inTree) continue
           if (!extOk) continue
