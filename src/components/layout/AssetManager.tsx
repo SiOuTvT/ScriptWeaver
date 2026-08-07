@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import type { AssetItem, AssetType } from '@/core/types'
+import { auditAssetAdd, auditAssetDelete } from '@/collab/collabBridge'
 import { hashAssetColor } from '@/utils/charColor'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import { setDragCache, DRAG_MIME, type DragAssetData } from '@/utils/assetHelpers'
@@ -279,7 +280,11 @@ export default function AssetManager() {
         toast('未选择任何文件', 'info')
         return
       }
-      for (const f of result.files) addAsset(makeAsset(f))
+      for (const f of result.files) {
+        const asset = makeAsset(f)
+        addAsset(asset)
+        auditAssetAdd(asset.name)
+      }
       toast(`已导入 ${result.files.length} 个素材`, 'success')
     } else {
       fileInputRef.current?.click()
@@ -295,7 +300,11 @@ export default function AssetManager() {
         const kind: AssetType | undefined = cat === 'all' ? undefined : cat
         const res = await api.importFilesFromPaths(real, kind)
         if (res.success && res.files) {
-          for (const f of res.files) addAsset(makeAsset(f))
+          for (const f of res.files) {
+            const asset = makeAsset(f)
+            addAsset(asset)
+            auditAssetAdd(asset.name)
+          }
           toast(`已导入 ${res.files.length} 个素材`, 'success')
         } else {
           toast(res.error || '导入失败，请重试', 'error')
@@ -339,6 +348,7 @@ export default function AssetManager() {
           blobUrl,
           importedAt: now,
         })
+        auditAssetAdd(file.name.replace(/\.[^.]+$/, ''))
       })
       e.target.value = ''
     },
@@ -712,6 +722,8 @@ export default function AssetManager() {
             const res = deleteAsset(pendingDelete.id)
             if (!res.ok) {
               toast(`「${pendingDelete.name}」被 ${res.refs.length} 个角色表情引用，无法删除`, 'error')
+            } else {
+              auditAssetDelete(pendingDelete.name)
             }
           }
           setPendingDelete(null)

@@ -13,7 +13,7 @@ import { CollabManager, type CollabEvent } from './CollabManager'
 import { useCollabStore } from './collabStore'
 import { useAppStore } from '@/stores/appStore'
 import { reduceLines, normalizeDelta } from '@/core/reducer'
-import type { LineDelta } from '@/core/types'
+import type { LineDelta, AssetItem, CharacterConfig, GlobalVariable } from '@/core/types'
 import type { AuditAction, AuditLogEntry, CollabMessage, CollabFullState } from './types'
 
 // ---- 单例 ----
@@ -23,6 +23,10 @@ let manager: CollabManager | null = null
 let applyingRemote = false
 /** 上一次广播时的 deltas 快照（用于 diff） */
 let lastDeltas: LineDelta[] | null = null
+/** 上一次广播时的素材/角色/变量快照（用于 diff，保证两方实时同步这些数据） */
+let lastAssets: AssetItem[] | null = null
+let lastCharacters: CharacterConfig[] | null = null
+let lastVariables: GlobalVariable[] | null = null
 /** appStore 订阅解绑 */
 let unsubscribeStore: (() => void) | null = null
 /** collab 事件解绑 */
@@ -107,6 +111,35 @@ function applyRemoteDeltas(next: LineDelta[]): void {
     })
   } finally {
     lastDeltas = useAppStore.getState().draftDeltas
+    applyingRemote = false
+  }
+}
+
+/** 直接写 assets / characters / variables，不进撤销栈、不触发广播（旁路历史） */
+function applyRemoteAssets(next: AssetItem[]): void {
+  applyingRemote = true
+  try {
+    useAppStore.setState({ assets: next })
+  } finally {
+    lastAssets = useAppStore.getState().assets
+    applyingRemote = false
+  }
+}
+function applyRemoteCharacters(next: CharacterConfig[]): void {
+  applyingRemote = true
+  try {
+    useAppStore.setState({ characterConfigs: next })
+  } finally {
+    lastCharacters = useAppStore.getState().characterConfigs
+    applyingRemote = false
+  }
+}
+function applyRemoteVariables(next: GlobalVariable[]): void {
+  applyingRemote = true
+  try {
+    useAppStore.setState({ variables: next })
+  } finally {
+    lastVariables = useAppStore.getState().variables
     applyingRemote = false
   }
 }
@@ -202,6 +235,70 @@ function auditForLineChange(prev: LineDelta, next: LineDelta, index: number): vo
   } else {
     recordAudit('modify_dialogue', target, `第 ${index + 1} 行属性变更`)
   }
+}
+
+// ---- 素材 / 角色 / 变量 差量消息生成（纯函数，便于测试） ----
+
+/** 素材数组 diff → asset_add / asset_delete 消息列表（按 id 识别增删，id 相同对象变化视为 add 覆盖） */
+export function diffAssetsToMessages(prev: AssetItem[], next: AssetItem[], fromPeerId: string): CollabMessage[] {
+  const msgs: CollabMessage[] = []
+  const prevMap = new Map(prev.map((a) => [a.id, a]))
+  const nextMap = new Map(next.map((a) => [a.id, a]))
+  for (const [id, asset] of nextMap) {
+    if (!prevMap.has(id) || prevMap.get(id) !== asset) {
+      msgs.push({ type: 'asset_add', asset, fromPeerId })
+    }
+  }
+  for (const id of prevMap.keys()) {
+    if (!nextMap.has(id)) {
+      msgs.push({ type: 'asset_delete', assetId: id, fromPeerId })
+    }
+  }
+  return msgs
+}
+
+/** 角色数组 diff → character_add / character_update / character_delete 消息列表 */
+export function diffCharactersToMessages(
+  prev: CharacterConfig[], next: CharacterConfig[], fromPeerId: string,
+): CollabMessage[] {
+  const msgs: CollabMessage[] = []
+  const prevMap = new Map(prev.map((c) => [c.charId, c]))
+  const nextMap = new Map(next.map((c) => [c.charId, c]))
+  for (const [charId, cfg] of nextMap) {
+    if (!prevMap.has(charId)) {
+      msgs.push({ type: 'character_add', config: cfg, fromPeerId })
+    } else if (prevMap.get(charId) !== cfg) {
+      msgs.push({ type: 'character_update', charId, patch: cfg, fromPeerId })
+    }
+  }
+  for (const charId of prevMap.keys()) {
+    if (!nextMap.has(charId)) {
+      msgs.push({ type: 'character_delete', charId, fromPeerId })
+    }
+  }
+  return msgs
+}
+
+/** 变量数组 diff → variable_add / variable_update / variable_delete 消息列表 */
+export function diffVariablesToMessages(
+  prev: GlobalVariable[], next: GlobalVariable[], fromPeerId: string,
+): CollabMessage[] {
+  const msgs: CollabMessage[] = []
+  const prevMap = new Map(prev.map((v) => [v.name, v]))
+  const nextMap = new Map(next.map((v) => [v.name, v]))
+  for (const [name, variable] of nextMap) {
+    if (!prevMap.has(name)) {
+      msgs.push({ type: 'variable_add', variable, fromPeerId })
+    } else if (prevMap.get(name) !== variable) {
+      msgs.push({ type: 'variable_update', name, patch: variable, fromPeerId })
+    }
+  }
+  for (const name of prevMap.keys()) {
+    if (!nextMap.has(name)) {
+      msgs.push({ type: 'variable_delete', name, fromPeerId })
+    }
+  }
+  return msgs
 }
 
 // ============================================================
@@ -305,6 +402,67 @@ function handleRemoteMessage(msg: CollabMessage, sourcePeerId: string): void {
     }
     case 'peer_left_notice': {
       cs.removePeer(msg.peerId)
+      return
+    }
+    case 'asset_add': {
+      const assets = [...app.assets]
+      const i = assets.findIndex((a) => a.id === msg.asset.id)
+      if (i >= 0) assets[i] = msg.asset
+      else assets.push(msg.asset)
+      applyRemoteAssets(assets)
+      recordRemoteAudit(sourcePeerId, 'add_asset', msg.asset.name, '素材新增/更新')
+      return
+    }
+    case 'asset_delete': {
+      const assets = app.assets.filter((a) => a.id !== msg.assetId)
+      if (assets.length !== app.assets.length) {
+        applyRemoteAssets(assets)
+        recordRemoteAudit(sourcePeerId, 'delete_asset', `素材 ${msg.assetId}`, '素材删除')
+      }
+      return
+    }
+    case 'character_add': {
+      const configs = [...app.characterConfigs]
+      const i = configs.findIndex((c) => c.charId === msg.config.charId)
+      if (i >= 0) configs[i] = msg.config
+      else configs.push(msg.config)
+      applyRemoteCharacters(configs)
+      recordRemoteAudit(sourcePeerId, 'add_character', msg.config.displayName, '角色新增/更新')
+      return
+    }
+    case 'character_update': {
+      const configs = app.characterConfigs.map((c) =>
+        c.charId === msg.charId ? { ...c, ...msg.patch } : c,
+      )
+      applyRemoteCharacters(configs)
+      recordRemoteAudit(sourcePeerId, 'modify_character', msg.charId, '角色属性更新')
+      return
+    }
+    case 'character_delete': {
+      const configs = app.characterConfigs.filter((c) => c.charId !== msg.charId)
+      if (configs.length !== app.characterConfigs.length) {
+        applyRemoteCharacters(configs)
+        recordRemoteAudit(sourcePeerId, 'delete_character', msg.charId, '角色删除')
+      }
+      return
+    }
+    case 'variable_add': {
+      const vars = app.variables.some((v) => v.name === msg.variable.name)
+        ? app.variables.map((v) => (v.name === msg.variable.name ? msg.variable : v))
+        : [...app.variables, msg.variable]
+      applyRemoteVariables(vars)
+      return
+    }
+    case 'variable_update': {
+      const vars = app.variables.map((v) =>
+        v.name === msg.name ? { ...v, ...msg.patch } : v,
+      )
+      applyRemoteVariables(vars)
+      return
+    }
+    case 'variable_delete': {
+      const vars = app.variables.filter((v) => v.name !== msg.name)
+      if (vars.length !== app.variables.length) applyRemoteVariables(vars)
       return
     }
     default:
@@ -416,7 +574,11 @@ function handleCollabEvent(event: CollabEvent): void {
 
 function startStoreSubscription(): void {
   stopStoreSubscription()
-  lastDeltas = useAppStore.getState().draftDeltas
+  const st = useAppStore.getState()
+  lastDeltas = st.draftDeltas
+  lastAssets = st.assets
+  lastCharacters = st.characterConfigs
+  lastVariables = st.variables
   lastLockedLine = null
 
   unsubscribeStore = useAppStore.subscribe((state) => {
@@ -432,20 +594,48 @@ function startStoreSubscription(): void {
       useCollabStore.getState().setLocalEditingLine(sel)
     }
 
-    // ---- 编辑差量广播（节流 150ms 合并高频输入） ----
     if (applyingRemote) return
+
+    // ---- 编辑差量广播（剧本行，节流 150ms 合并高频输入） ----
     const current = state.draftDeltas
-    if (current === lastDeltas) return
-    if (diffTimer) clearTimeout(diffTimer)
-    diffTimer = setTimeout(() => {
-      diffTimer = null
-      const prev = lastDeltas
-      const next = useAppStore.getState().draftDeltas
-      lastDeltas = next
-      if (prev && prev !== next && !applyingRemote) {
-        diffAndBroadcast(prev, next)
+    if (current !== lastDeltas) {
+      if (diffTimer) clearTimeout(diffTimer)
+      diffTimer = setTimeout(() => {
+        diffTimer = null
+        const prev = lastDeltas
+        const next = useAppStore.getState().draftDeltas
+        lastDeltas = next
+        if (prev && prev !== next && !applyingRemote) {
+          diffAndBroadcast(prev, next)
+        }
+      }, 150)
+    }
+
+    // ---- 素材 / 角色 / 变量差量广播（离散操作，无需节流） ----
+    // 让协作者实时看到新增/修改/删除的素材、角色与变量，不再只是加入时的一次全量。
+    const cs2 = useCollabStore.getState()
+    if (cs2.status !== 'connected') return
+    if (state.assets !== lastAssets) {
+      const prev = lastAssets
+      lastAssets = state.assets
+      if (prev && manager) {
+        for (const m of diffAssetsToMessages(prev, state.assets, cs2.peerId)) manager.broadcast(m)
       }
-    }, 150)
+    }
+    if (state.characterConfigs !== lastCharacters) {
+      const prev = lastCharacters
+      lastCharacters = state.characterConfigs
+      if (prev && manager) {
+        for (const m of diffCharactersToMessages(prev, state.characterConfigs, cs2.peerId)) manager.broadcast(m)
+      }
+    }
+    if (state.variables !== lastVariables) {
+      const prev = lastVariables
+      lastVariables = state.variables
+      if (prev && manager) {
+        for (const m of diffVariablesToMessages(prev, state.variables, cs2.peerId)) manager.broadcast(m)
+      }
+    }
   })
 }
 
@@ -453,6 +643,9 @@ function stopStoreSubscription(): void {
   if (unsubscribeStore) { unsubscribeStore(); unsubscribeStore = null }
   if (diffTimer) { clearTimeout(diffTimer); diffTimer = null }
   lastDeltas = null
+  lastAssets = null
+  lastCharacters = null
+  lastVariables = null
   lastLockedLine = null
 }
 

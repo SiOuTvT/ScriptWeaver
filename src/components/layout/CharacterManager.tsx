@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useMemo } from 'react'
 import { useAppStore } from '@/stores/appStore'
+import { auditCharacterAdd, auditCharacterDelete } from '@/collab/collabBridge'
 import { Button, IconButton, Input, ConfirmDialog } from '@/components/ui'
 import { resolveAssetSrc } from '@/utils/assetSrc'
 import { hashCharColor } from '@/utils/charColor'
@@ -185,6 +186,7 @@ export default function CharacterManager() {
     setNewCharIdError('')
     setShowNewForm(false)
     setSelectedCharId(newCharId.trim())
+    auditCharacterAdd(newDisplayName.trim())
   }, [newCharId, newDisplayName, addCharacter, validateCharId])
 
   // ---- 复制角色配置 ----
@@ -204,6 +206,7 @@ export default function CharacterManager() {
         defaultSlot: src.defaultSlot,
       })
       setSelectedCharId(newId)
+      auditCharacterAdd(`${src.displayName} 副本`)
     },
     [characterConfigs, addCharacter],
   )
@@ -1140,6 +1143,7 @@ export default function CharacterManager() {
         onConfirm={() => {
           if (pendingDelete) {
             deleteCharacter(pendingDelete)
+            auditCharacterDelete(pendingDelete)
             if (selectedCharId === pendingDelete) setSelectedCharId(null)
           }
           setPendingDelete(null)
