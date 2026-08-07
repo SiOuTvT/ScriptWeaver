@@ -1095,8 +1095,8 @@ function buildMinimalOptions(title) {
     ""
   ].join("\n");
 }
-electron.ipcMain.handle("renpy:detectSdk", async () => {
-  const info = findRenpySdk();
+electron.ipcMain.handle("renpy:detectSdk", async (_event, manualPath) => {
+  const info = findRenpySdk(typeof manualPath === "string" && manualPath.trim() ? manualPath : void 0);
   if (!info) {
     return {
       detected: false,

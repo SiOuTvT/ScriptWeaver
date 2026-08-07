@@ -19,7 +19,7 @@ import type {
 
 // ===================== AIConfig 持久化 =====================
 
-export type AIProvider = 'openai' | 'deepseek' | 'openrouter' | 'custom'
+export type AIProvider = 'openai' | 'deepseek' | 'openrouter' | 'qwen' | 'glm' | 'custom'
 
 export interface AIConfig {
   provider: AIProvider
@@ -39,6 +39,10 @@ export const PROVIDER_PRESETS: Record<Exclude<AIProvider, 'custom'>, { endpoint:
   deepseek: { endpoint: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' },
   // Claude 等通过 OpenRouter 的 OpenAI 兼容接口接入
   openrouter: { endpoint: 'https://openrouter.ai/api/v1/chat/completions', model: 'anthropic/claude-3.5-sonnet' },
+  // 通义千问：阿里云百炼 DashScope 的 OpenAI 兼容接口
+  qwen: { endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-plus' },
+  // 智谱清言 GLM：OpenAI 兼容接口
+  glm: { endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions', model: 'glm-4-flash' },
 }
 
 const STORAGE_KEY = 'scriptweaver_ai_config'

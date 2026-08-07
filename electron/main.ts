@@ -1204,9 +1204,9 @@ function buildMinimalOptions(title: string): string {
   ].join('\n')
 }
 
-// 探测 SDK：渲染进程挂载时调用，给出状态与版本
-ipcMain.handle('renpy:detectSdk', async () => {
-  const info = findRenpySdk()
+// 探测 SDK：渲染进程挂载时调用，给出状态与版本；可传手动指定的 SDK 路径优先探测
+ipcMain.handle('renpy:detectSdk', async (_event, manualPath?: string) => {
+  const info = findRenpySdk(typeof manualPath === 'string' && manualPath.trim() ? manualPath : undefined)
   if (!info) {
     return {
       detected: false,

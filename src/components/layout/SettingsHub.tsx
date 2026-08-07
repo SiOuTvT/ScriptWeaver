@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useAppStore, DEFAULT_SETTINGS } from '../../stores/appStore'
+import { applyPreset, type AIProvider } from '../../utils/aiDirector'
 import { Button } from '@/components/ui'
 import { ClearCacheButton } from './ClearCacheButton'
 import ThemeSettings from './ThemeSettings'
@@ -90,6 +91,7 @@ export default function SettingsHub() {
   // AI Config（密钥存于主进程安全区，经 IPC 读写；getConfig 返回已脱敏 apiKey='' + hasApiKey）
   const [apiKey, setApiKey] = useState('')
   const [hasStoredKey, setHasStoredKey] = useState(false)
+  const [provider, setProvider] = useState<AIProvider>('openai')
   const [apiEndpoint, setApiEndpoint] = useState('https://api.openai.com/v1/chat/completions')
   const [model, setModel] = useState('gpt-4o-mini')
   const [showKey, setShowKey] = useState(false)
@@ -109,6 +111,7 @@ export default function SettingsHub() {
     // 密钥留空 = 保留主进程已存密钥（writeAIConfig 约定），端点/模型始终保存
     ;(window as any).electronAPI?.aiSetConfig?.({
       apiKey,
+      provider,
       endpoint: apiEndpoint,
       model,
     }).then(() => {
@@ -271,6 +274,35 @@ export default function SettingsHub() {
                       <Info size={11} className="inline mr-1" />
                       {hasStoredKey ? '密钥已存于本地安全区，不会回显' : '密钥加密存储在本地'}
                     </p>
+                  </div>
+
+                  {/* Provider 厂商选择 */}
+                  <div className="px-4 py-3 rounded-xl border border-edge/10 bg-surface-2 shadow-1">
+                    <label className="text-[13px] font-medium text-fg block mb-2">厂商（Provider）</label>
+                    <select
+                      value={provider}
+                      onChange={(e) => {
+                        const p = e.target.value as AIProvider
+                        setProvider(p)
+                        if (p !== 'custom') {
+                          const preset = applyPreset(
+                            { provider, endpoint: apiEndpoint, apiKey, model, temperature: 0.7, maxTokens: 2000 },
+                            p,
+                          )
+                          setApiEndpoint(preset.endpoint)
+                          setModel(preset.model)
+                        }
+                      }}
+                      className="w-full rounded-xl border border-edge/10 bg-surface px-3 py-2 text-[13px] text-fg focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    >
+                      <option value="openai">OpenAI</option>
+                      <option value="deepseek">DeepSeek</option>
+                      <option value="qwen">通义千问（阿里云百炼）</option>
+                      <option value="glm">智谱 GLM</option>
+                      <option value="openrouter">OpenRouter（可接 Claude 等）</option>
+                      <option value="custom">自定义（手动填端点）</option>
+                    </select>
+                    <p className="mt-1.5 text-[12px] text-fg-faint">选厂商会自动填入对应端点与模型；也可以选自定义后手动修改</p>
                   </div>
 
                   {/* Endpoint */}

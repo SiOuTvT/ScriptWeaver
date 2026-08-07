@@ -110,8 +110,8 @@ interface ElectronAPI {
   }) => Promise<{ success: boolean; outDir?: string; copied?: number; error?: string }>
 
   // --------------- Ren'Py 引擎对接 ---------------
-  /** 探测本机 Ren'Py SDK（版本、路径） */
-  renpyDetectSdk: () => Promise<{
+  /** 探测本机 Ren'Py SDK（版本、路径）；可传手动指定的 SDK 根目录优先探测 */
+  renpyDetectSdk: (manualPath?: string) => Promise<{
     detected: boolean
     sdkPath?: string
     launcher?: string

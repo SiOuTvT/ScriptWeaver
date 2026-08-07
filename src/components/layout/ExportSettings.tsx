@@ -275,7 +275,8 @@ export default function ExportSettings() {
   const detectSdk = useCallback(async () => {
     setSdkDetecting(true)
     try {
-      const r = await window.electronAPI?.renpyDetectSdk()
+      // 优先用用户手动指定的路径探测，其次自动探测
+      const r = await window.electronAPI?.renpyDetectSdk(manualSdk.trim() || undefined)
       if (r?.detected) {
         setSdkDetected(true)
         setSdkVersion(r.version ?? null)
@@ -292,7 +293,18 @@ export default function ExportSettings() {
     } finally {
       setSdkDetecting(false)
     }
+  }, [manualSdk])
+
+  // 记忆手动指定的 SDK 路径，下次启动自动带上
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('sw-renpy-sdk-path')
+      if (saved) setManualSdk(saved)
+    } catch { /* ignore */ }
   }, [])
+  useEffect(() => {
+    try { localStorage.setItem('sw-renpy-sdk-path', manualSdk) } catch { /* ignore */ }
+  }, [manualSdk])
 
   useEffect(() => {
     detectSdk()
@@ -1036,6 +1048,19 @@ export default function ExportSettings() {
                   placeholder="手动指定 Ren'Py SDK 根目录（可选）"
                   className="flex-1 rounded-md border border-edge/15 bg-surface-3 px-2.5 py-1.5 text-xs text-fg outline-none transition-colors focus:border-signal/60"
                 />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const r = await window.electronAPI?.selectDirectory?.()
+                    if (r?.path) {
+                      setManualSdk(r.path)
+                      await detectSdk()
+                    }
+                  }}
+                  className="shrink-0 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-xs text-primary transition-colors hover:bg-primary/10"
+                >
+                  浏览…
+                </button>
               </div>
 
               {/* 引擎操作 */}
