@@ -69,6 +69,7 @@ type RpyNode =
   | { kind: 'layer_filter'; expr: string | null }
   | { kind: 'camera'; transform: string | null }
   | { kind: 'video_bg'; clip: string; loop: boolean }
+  | { kind: 'cutscene'; clip: string }
   | { kind: 'hide'; charId: string }
   | { kind: 'playMusic'; file: string; fadein?: number; loop: boolean }
   | { kind: 'playAmbient'; file: string; fadein?: number; loop: boolean }
@@ -969,10 +970,15 @@ function compileToNodes(
     if (newBgKey !== currentBgKey) {
       currentBgKey = newBgKey
       if (newBg) {
-        // 视频背景判定：兼容旧约定 sw-video:<文件名> 前缀，也要识别导入后真实视频素材 id（其 type==='video'）。
-        // 导入链路会把 sw-video: 重映射成真实素材 id，仅靠前缀会在导入后把视频背景错当成普通背景导出（缺失背景）。
+        // 视频判定：兼容旧约定 sw-video:/sw-cutscene: 前缀，也要识别导入后真实视频素材 id（其 type==='video'）。
+        // 导入链路会把前缀重映射成真实素材 id，仅靠前缀会在导入后把视频错当成普通背景导出（缺失背景）。
         const bgVideoAsset = st.videoDefs.get(newBg)
-        if (newBg.startsWith('sw-video:') || bgVideoAsset?.type === 'video') {
+        if (newBg.startsWith('sw-cutscene:')) {
+          // 视频过场：全屏播一次，播完自动继续剧情（$ renpy.movie_cutscene("video/<文件>")）。
+          // 与视频背景（无限循环）语义不同，必须区分，否则过场会变成循环背景把剧情卡死。
+          const clip = newBg.slice('sw-cutscene:'.length)
+          block.push({ kind: 'cutscene', clip })
+        } else if (newBg.startsWith('sw-video:') || bgVideoAsset?.type === 'video') {
           // 视频背景：导出为可循环的电影 displayable，挂到 bg 标签（与导入 Movie(play=...) 往返一致）。
           // loop 缺省为 True（背景视频通常循环），由 background.movieLoop 控制；布尔须大写 True/False。
           const clip = newBg.startsWith('sw-video:')
@@ -1261,6 +1267,11 @@ function serializeNode(n: RpyNode): string {
       // 官方写法是 `scene expression Movie(...)` 或先 `image <名> = Movie(...)` 再 scene <名>。
       // 用 expression 形式可直接渲染任意 Movie displayable，且无副作用。
       return `scene expression Movie(play="video/${n.clip}", loop=${n.loop ? 'True' : 'False'})`
+    case 'cutscene':
+      // 视频过场：全屏播放一次，播完自动继续剧情。
+      // 必须用官方 renpy.movie_cutscene（不是 scene Movie，那会无限循环卡死剧情）。
+      // 文件在暂存工程的 video/ 目录，路径相对 game/。
+      return `$ renpy.movie_cutscene("video/${n.clip}")`
     case 'playMusic': {
       let s = `play music "${n.file}"`
       if (n.loop) s += ' loop'

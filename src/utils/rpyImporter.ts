@@ -936,8 +936,9 @@ export function parseRpy(
     }
 
     // ---- 视频过场（renpy.movie_cutscene / renpy.movie_start_displayable）----
-    // 编辑器暂无视频轨，用 sw-video:<文件名> 占位背景标记，舞台渲染占位面板而非留白，
+    // 编辑器暂无视频轨，用 sw-cutscene:<文件名> 占位背景标记，舞台渲染占位面板而非留白，
     // 正片仍回 Ren'Py 播放；导出时还原为 renpy.movie_cutscene 调用，保证往返一致。
+    // 注意与视频背景（sw-video:）区分：过场播完自动继续剧情，背景则无限循环。
     const cutscene = line.match(/renpy\.movie_(?:cutscene|start_displayable)\s*\(\s*(['"])(.+?)\1/)
     if (cutscene) {
       const clip = cutscene[2]
@@ -947,13 +948,13 @@ export function parseRpy(
         cutsceneSeen.add(clip)
         warnings.push(`视频过场 ${clip} 已用占位面板标记，正片仍需回 Ren'Py 播放`)
       }
-      accBackground = { asset_id: `sw-video:${clip}` }
+      accBackground = { asset_id: `sw-cutscene:${clip}` }
       lineId++
       // 直接发占位 delta，但不走 flushAcc：flushAcc 会清空 accAudio.se/voice，
       // 那样会把过场前已排好的音效（如 zoulu.wav）一并吞掉，导致后续 beat 音频丢失。
       emitDelta({
         ...baseDelta(lineId),
-        background: { asset_id: `sw-video:${clip}` },
+        background: { asset_id: `sw-cutscene:${clip}` },
         characters: noChars,
         audio: emptyAudio,
       })

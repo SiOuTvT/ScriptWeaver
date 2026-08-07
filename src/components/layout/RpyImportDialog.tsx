@@ -255,9 +255,10 @@ export default function RpyImportDialog({ onClose, embedded }: Props) {
         const next = { ...d }
         if (next.background?.asset_id) {
           const bgId = next.background.asset_id
-          // 视频背景：sw-video:<文件名> → 导入的视频素材 id
-          if (bgId.startsWith('sw-video:')) {
-            const v = importedVideoMap.get(bgId.slice('sw-video:'.length))
+          // 视频：sw-video:/sw-cutscene:<文件名> → 导入的视频素材 id
+          if (bgId.startsWith('sw-video:') || bgId.startsWith('sw-cutscene:')) {
+            const key = bgId.startsWith('sw-cutscene:') ? bgId.slice('sw-cutscene:'.length) : bgId.slice('sw-video:'.length)
+            const v = importedVideoMap.get(key)
             if (v) next.background = { ...next.background, asset_id: v.id }
           } else {
             // Ren'Py 惯例：声明 image bg room = "..."，使用 scene bg room。
