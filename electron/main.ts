@@ -1163,6 +1163,27 @@ function findRenpySdk(): RenpySdkInfo | null {
   } catch {
     /* ignore */
   }
+  // 各逻辑盘根目录下的 renpy* 文件夹（如 D:\renpy-8.5.2-sdk）
+  if (process.platform === 'win32') {
+    for (let code = 65; code <= 90; code++) {
+      const root = `${String.fromCharCode(code)}:\\`
+      try {
+        if (!fs.existsSync(root)) continue
+        for (const name of fs.readdirSync(root)) {
+          if (/^renpy/i.test(name)) {
+            const full = path.join(root, name)
+            try {
+              if (fs.statSync(full).isDirectory()) bases.push(full)
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
 
   // 逐级探测启动器：候选根 → 一层子目录
   const scan = (base: string): string | null => {
