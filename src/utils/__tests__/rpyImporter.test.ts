@@ -768,6 +768,29 @@ describe('parseRpy：角色识别（界面变量与道具立绘不误判为角�
   })
 })
 
+describe('parseRpy：RenPy 引擎/界面内置变量不导出（避免 default 二次定义）', () => {
+  it('界面变量 quick_menu / page_name_value / ctc 被过滤', () => {
+    const r = parseRpy(
+      'default quick_menu = True\n\ndefault page_name_value = 0\n\ndefault ctc = None\n\nlabel start:\n    "台词"',
+    )
+    const names = r.variables.map((v) => v.name)
+    expect(names).not.toContain('quick_menu')
+    expect(names).not.toContain('page_name_value')
+    expect(names).not.toContain('ctc')
+  })
+
+  it('preferences./gui. 命名空间变量被过滤', () => {
+    const r = parseRpy(
+      'default preferences.text_cps = 0\n\ndefault gui.text_size = 22\n\nlabel start:\n    $ trust = 10\n    "台词"',
+    )
+    const names = r.variables.map((v) => v.name)
+    expect(names).not.toContain('preferences.text_cps')
+    expect(names).not.toContain('gui.text_size')
+    // 剧情变量 trust 仍保留
+    expect(names).toContain('trust')
+  })
+})
+
 describe('canonicalizeImportedAssets：重复导入时素材 id 必须真实存在（舞台空白修复回归）', () => {
   const mkAsset = (id: string, rel: string): AssetItem =>
     ({ id, fileName: rel.split('/').pop() ?? id, relativePath: rel, type: 'background', createdAt: '', updatedAt: '', importedAt: '', name: rel }) as AssetItem

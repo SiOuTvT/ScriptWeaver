@@ -321,6 +321,34 @@ export function parseRpy(
   transforms: RpyTransformDefs
   screen: RpyScreenSize
 } {
+  // Ren'Py 引擎/界面内置变量：由 Ren'Py 或标准模板自带默认值，
+  // 导出时会与引擎定义重复（store.xxx is being given a default a second time）。
+  // 这些变量从不参与剧情逻辑，导入时必须过滤掉。
+  const RENPY_BUILTIN_VARS = new Set([
+    // 界面控制
+    'quick_menu', 'page_name_value', 'ctc',
+    // 偏好（preferences.xxx 由引擎管理，前缀变量也应整体跳过）
+    'preferences',
+    // 主菜单/游戏菜单
+    'main_menu', 'game_menu', 'save_name',
+    // 跳过/自动模式
+    'skipping', 'fast_skipping', 'auto_forward', 'renpy_autosave',
+    // 存档
+    'save_page', 'load_page', 'save_slot', 'autosave_on_choice', 'autosave_on_quit',
+    // 引擎状态
+    '_preferences', '_confirm_quit', '_game_menu_screen', '_main_menu_screen', '_history',
+    '_rollback', '_skipping', '_fast_skipping', '_window', '_dismiss_pause', '_last_say',
+    // 版本与构建
+    'config', 'build', 'gui',
+  ])
+
+  function isBuiltinVar(name: string): boolean {
+    return (
+      RENPY_BUILTIN_VARS.has(name) ||
+      /^(preferences|gui|config|build|style|renpy|_)\b/.test(name)
+    )
+  }
+
   const lines = source.split(/\r?\n/)
   const warnings: string[] = []
   const characters: CharacterConfig[] = []
@@ -459,6 +487,7 @@ export function parseRpy(
   }
 
   function addVar(name: string, value: string) {
+    if (isBuiltinVar(name)) return
     if (!varSet.has(name)) {
       varSet.add(name)
       variableDefs.push({ name, value })
