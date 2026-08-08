@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import path from 'path'
 import {
   isAllowedAssetExt,
   isWithinAssetsDir,
@@ -30,26 +31,27 @@ describe('isAllowedAssetExt（扩展名白名单）', () => {
 })
 
 describe('isWithinAssetsDir（防目录穿越）', () => {
-  const assetsDir = '/proj/assets'
+  // 用 path.join 构造平台原生分隔符路径（与 main.ts 中 path.resolve 的产物一致）
+  const assetsDir = path.join('/proj', 'assets')
 
   it('精确等于 assets 目录本身 → 放行', () => {
-    expect(isWithinAssetsDir(assetsDir, '/proj/assets')).toBe(true)
+    expect(isWithinAssetsDir(assetsDir, assetsDir)).toBe(true)
   })
 
   it('落在 assets 子树内 → 放行', () => {
-    expect(isWithinAssetsDir(assetsDir, '/proj/assets/bg.png')).toBe(true)
-    expect(isWithinAssetsDir(assetsDir, '/proj/assets/sub/deep/x.mp3')).toBe(true)
+    expect(isWithinAssetsDir(assetsDir, path.join(assetsDir, 'bg.png'))).toBe(true)
+    expect(isWithinAssetsDir(assetsDir, path.join(assetsDir, 'sub', 'deep', 'x.mp3'))).toBe(true)
   })
 
-  it('同名前缀陷阱（/assets-evil）一律拒绝', () => {
-    expect(isWithinAssetsDir(assetsDir, '/proj/assets-evil/x.png')).toBe(false)
-    expect(isWithinAssetsDir(assetsDir, '/proj/assets2/x.png')).toBe(false)
+  it('同名前缀陷阱（assets-evil / assets2）一律拒绝', () => {
+    expect(isWithinAssetsDir(assetsDir, path.join('/proj', 'assets-evil', 'x.png'))).toBe(false)
+    expect(isWithinAssetsDir(assetsDir, path.join('/proj', 'assets2', 'x.png'))).toBe(false)
   })
 
   it('兄弟目录 / 父目录 / 完全无关路径 → 拒绝', () => {
-    expect(isWithinAssetsDir(assetsDir, '/proj/other/x.png')).toBe(false)
-    expect(isWithinAssetsDir(assetsDir, '/proj/x.png')).toBe(false)
-    expect(isWithinAssetsDir(assetsDir, '/etc/passwd')).toBe(false)
+    expect(isWithinAssetsDir(assetsDir, path.join('/proj', 'other', 'x.png'))).toBe(false)
+    expect(isWithinAssetsDir(assetsDir, path.join('/proj', 'x.png'))).toBe(false)
+    expect(isWithinAssetsDir(assetsDir, path.join('/etc', 'passwd'))).toBe(false)
   })
 })
 

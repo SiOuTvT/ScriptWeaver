@@ -156,3 +156,21 @@ _*.json
 _*.png
 _*.bak
 *.tmp
+
+# ============ Agent / 工具生成物（绝不进仓库） ============
+# WorkBuddy 工作记忆、生成文档与中间产物
+.workbuddy/
+
+# Agent 在本次项目中生成的报告 / 分析文档（非项目源码，不应入版本库）
+RELEASE_NOTES_*.md
+PROJECT_UNDERSTANDING_REPORT.md
+PHASE2_UI重构成果汇报.md
+findings.md
+
+# 临时截图 / 验收截图目录
+screenshots/
+shots/
+_acceptance_shots/
+
+# Electron 主进程构建产物（由 vite-plugin-electron 生成，含 main/preload）
+dist-electron/

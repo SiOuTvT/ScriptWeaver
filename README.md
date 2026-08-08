@@ -2,7 +2,7 @@
 
 > 智能视觉小说（VN）编辑器——在可视化舞台上演角色、立绘、BGM 与分支剧情，一键导出可运行的 Ren'Py 工程。
 
-**状态**：v0.5.0 · 已发布（提供 Windows 安装包与绿色版，支持自动更新）。
+**状态**：v1.2.0 · 已发布（提供 Windows 安装包与绿色版，支持自动更新）。
 
 ## Why This Exists
 
@@ -19,7 +19,7 @@ npm run dev            # 启动 Vite + Electron 开发环境
 构建发布包：
 
 ```bash
-npm run build:win      # 产出 ScriptWeaver-0.5.0-x64.exe / .zip（自动更新索引 latest.yml）
+npm run build:win      # 产出 ScriptWeaver-1.2.0-x64.exe / .zip（自动更新索引 latest.yml）
 ```
 
 ## 核心概念

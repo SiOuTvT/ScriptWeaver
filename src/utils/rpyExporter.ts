@@ -21,6 +21,7 @@ import {
   WARP_KEY,
   type MountableEffectDef,
 } from '@/data/mountableEffects'
+import { PY_IDENT_RE, PYTHON_KEYWORDS, sanitizeIdent, pyVarName } from './pyIdent'
 
 // ======================= 类型 =======================
 
@@ -166,20 +167,7 @@ const BUILTIN_TRANSITIONS = new Set<string>([
   'vpunch', 'hpunch',
 ])
 
-/** 把任意过渡字符串清洗为合法 Python 标识符（小写、仅 [a-z0-9_]） */
-function sanitizeIdent(t: string): string {
-  return (
-    t
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9_]+/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_+|_+$/g, '') || 'dissolve'
-  )
-}
-
-/** 合法 Python 标识符正则（字母/下划线开头，仅含 [a-zA-Z0-9_]） */
-const PY_IDENT_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+/** 把任意过渡字符串清洗为合法 Python 标识符（小写、仅 [a-z0-9_]）—— 见 utils/pyIdent */
 
 /**
  * 把角色 ID 清洗为合法 Ren'Py / Python 标识符（支持中文等 Unicode 字母）。
@@ -200,23 +188,6 @@ function charVarName(id: string): string {
   let h = 0
   for (const ch of id) h = (h * 31 + (ch.codePointAt(0) ?? 0)) >>> 0
   return `unknown_${h.toString(36)}`
-}
-
-/** Python 关键字（不可用作变量名） */
-const PYTHON_KEYWORDS = new Set([
-  'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 'class',
-  'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global',
-  'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return',
-  'try', 'while', 'with', 'yield',
-])
-
-/**
- * 把变量名安全地用于 Ren'Py 代码生成：合法标识符原样返回；非法名做防御性清洗
- * （与 default / $ 同一处理，保证自洽可编译）。导出前 validateExportNames 已负责报错提示。
- */
-function pyVarName(name: string): string {
-  if (PY_IDENT_RE.test(name)) return name
-  return sanitizeIdent(name)
 }
 
 /**
