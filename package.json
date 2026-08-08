@@ -26,7 +26,6 @@
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@fontsource/noto-sans": "^5.2.10",
     "@fontsource/noto-sans-sc": "^5.2.9",
-    "lib0": "^0.2.117",
     "lucide-react": "^1.24.0",
     "peerjs": "^1.5.5",
     "react": "^18.3.1",
@@ -35,8 +34,6 @@
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
-    "y-webrtc": "^10.3.0",
-    "yjs": "^13.6.31",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
