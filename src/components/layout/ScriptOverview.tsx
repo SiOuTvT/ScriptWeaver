@@ -754,6 +754,7 @@ const SceneCard = memo(function SceneCard({
     <button
       onClick={() => onJump(scene.start)}
       data-line={scene.start}
+      style={{ contentVisibility: 'auto', containIntrinsicHeight: '232px' }}
       className={`group relative flex flex-col overflow-hidden rounded-xl border bg-surface-2 p-3.5 text-left shadow-1 outline-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 ${
         isActive ? 'border-signal/40 ring-2 ring-signal/25' : 'border-edge/10'
       }`}
@@ -907,6 +908,7 @@ function OutlineScene({
             key={ln.lineId}
             onClick={() => onJump(ln.index)}
             data-line={ln.index}
+            style={{ contentVisibility: 'auto', containIntrinsicHeight: '37px' }}
             className={`group flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-hover ${
               activeLine === ln.index ? 'signal-bar bg-signal/5' : ''
             }`}

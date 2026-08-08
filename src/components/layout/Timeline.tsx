@@ -14,6 +14,7 @@ import {
 } from '@/utils/assetHelpers'
 import { synthesizeVoice, getAudioDuration } from '@/utils/tts'
 import { toast } from '@/utils/toast'
+import { useVirtualRange } from '@/utils/useVirtualRange'
 
 // ===================== 轨道配置 =====================
 
@@ -549,6 +550,17 @@ export default function Timeline() {
   const zoomIn = useCallback(() => setCellWidth((w) => Math.min(ZOOM_MAX, w + ZOOM_STEP)), [])
   const zoomOut = useCallback(() => setCellWidth((w) => Math.max(ZOOM_MIN, w - ZOOM_STEP)), [])
   const zoomReset = useCallback(() => setCellWidth(120), [])
+
+  // 横向列虚拟化：时间轴以「行」为列、轨道×行数双重全量渲染，只渲染视口内列，
+  // 用前后 spacer 撑出总宽，避免 O(轨道×行数) 的 DOM 节点随剧本长度爆炸。
+  // 色块 / SE / 语音均为绝对定位（按百分比），不参与列渲染，不受影响。
+  const vr = useVirtualRange({
+    count: total,
+    getItemOffset: (i) => i * cellWidth,
+    axis: 'x',
+    scrollRef: timelineScrollRef,
+    overscan: 4,
+  })
 
   // 选中行变化时平滑滚动到视口中央（从剧本总览/节点图谱跳转而来时精准定位）
   useEffect(() => {
@@ -1105,10 +1117,12 @@ export default function Timeline() {
           <div className="relative" style={{ width: `${total * cellWidth}px` }}>
             {/* 行号 + 行操作按钮 */}
             <div className="flex border-b border-edge/10" style={{ height: 48 }}>
-              {resolvedStates.map((s, i) => {
-                const isLast = i === resolvedStates.length - 1
+              {vr.start > 0 && <div style={{ width: vr.start * cellWidth, flexShrink: 0 }} />}
+              {resolvedStates.slice(vr.start, vr.end).map((s, k) => {
+                const i = k + vr.start
+                const isLast = i === total - 1
                 const isFirst = i === 0
-                const onlyOne = resolvedStates.length <= 1
+                const onlyOne = total <= 1
                 const remoteLock = collabLocks.get(i)
                 return (
                   <div
@@ -1210,6 +1224,7 @@ export default function Timeline() {
                   </div>
                 )
               })}
+              {vr.end < total && <div style={{ width: (total - vr.end) * cellWidth, flexShrink: 0 }} />}
             </div>
 
             {/* 轨道行 */}
@@ -1221,10 +1236,15 @@ export default function Timeline() {
                 style={{ height: trackHeight }}
                 onMouseDown={() => { setSelectedSpan(null); setSelectedAudio(null) }}
               >
-                {resolvedStates.map((s, i) => (
-                  <DropCell key={s.line_id} lineIndex={i} trackId={track.id}
-                    acceptType={track.acceptAssetType} isSelected={i === selectedIndex} width={cellWidth} />
-                ))}
+                {vr.start > 0 && <div style={{ width: vr.start * cellWidth, flexShrink: 0 }} />}
+                {resolvedStates.slice(vr.start, vr.end).map((s, k) => {
+                  const i = k + vr.start
+                  return (
+                    <DropCell key={s.line_id} lineIndex={i} trackId={track.id}
+                      acceptType={track.acceptAssetType} isSelected={i === selectedIndex} width={cellWidth} />
+                  )
+                })}
+                {vr.end < total && <div style={{ width: (total - vr.end) * cellWidth, flexShrink: 0 }} />}
 
                 {/* 可拖拽色块 */}
                 {track.spans.map((span, si) => (
