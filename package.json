@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:e2e": "node e2e/smoke.mjs"
+    "test:e2e": "node e2e/smoke.mjs",
+    "build:prewarm": "node scripts/prewarm-electron.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",

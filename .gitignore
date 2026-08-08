@@ -174,3 +174,6 @@ _acceptance_shots/
 
 # Electron 主进程构建产物（由 vite-plugin-electron 生成，含 main/preload）
 dist-electron/
+
+# Electron 运行时 / 打包工具下载缓存（约 111MB，固化避免重复下载；不进版本库）
+.build-cache/

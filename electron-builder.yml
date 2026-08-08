@@ -12,6 +12,15 @@ directories:
   output: release
   buildResources: assets
 asar: true
+
+# ---- Electron 运行时下载缓存固化 ----
+# 将约 111MB 的 Electron 二进制缓存到项目级稳定目录（默认落在易失的
+# %LOCALAPPDATA%，清理后需重复下载）。与 scripts/prewarm-electron.mjs 共用同目录，
+# 可先用 build:prewarm 预热，再 build:win 直接复用，避免打包时卡在网络下载。
+# 镜像加速可选：调用前设 ELECTRON_MIRROR 环境变量（不在此写死，避免镜像不稳定副作用）。
+electronDownload:
+  cache: .build-cache/electron
+
 files:
   - dist/**/*
   - dist-electron/**/*
