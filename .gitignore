@@ -178,3 +178,9 @@ dist-electron/
 
 # Electron 运行时 / 打包工具下载缓存（约 111MB，固化避免重复下载；不进版本库）
 .build-cache/
+
+# 临时构建输出目录（绕沙箱 EPERM 时产生，非最终产物；最终 exe 在 release*/，不进版本库）
+bdist/
+bdist-electron/
+app-dist/
+app-dist-electron/

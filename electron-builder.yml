@@ -22,8 +22,8 @@ electronDownload:
   cache: .build-cache/electron
 
 files:
-  - dist/**/*
-  - dist-electron/**/*
+  - bdist/**/*
+  - bdist-electron/**/*
 
 # Web 导出模板（纯前端播放器）随包进入 resources/web-player，运行时由主进程复制到导出目录
 extraResources:
