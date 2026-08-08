@@ -17,7 +17,8 @@
     "electron": "electron .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:e2e": "node e2e/smoke.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
