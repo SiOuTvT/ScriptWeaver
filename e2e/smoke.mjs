@@ -3,8 +3,38 @@
 // (3) 核心 UI（导航/按钮）渲染出来。用于守护「主进程崩 / 渲染端挂载失败」类回归。
 //
 // 用法：node e2e/smoke.mjs   （会自起渲染端 dev server，无需 Electron GUI）
+// 依赖：playwright-core（npm i -D playwright-core）。本脚本优先裸导入；若未安装，
+//       自动回退到 npx 缓存路径（仅本机验证用，不影响仓库纯净）。
 import { spawn } from 'node:child_process'
-import { chromium } from 'playwright'
+import { pathToFileURL } from 'node:url'
+import path from 'node:path'
+import fs from 'node:fs'
+
+async function loadPlaywrightCore() {
+  try {
+    return await import('playwright-core')
+  } catch {
+    const candidates = []
+    if (process.env.PW_CORE_PATH) candidates.push(process.env.PW_CORE_PATH)
+    const npxRoot = process.env.LOCALAPPDATA
+      ? path.join(process.env.LOCALAPPDATA, 'npm-cache', '_npx')
+      : ''
+    if (npxRoot && fs.existsSync(npxRoot)) {
+      for (const dir of fs.readdirSync(npxRoot)) {
+        candidates.push(path.join(npxRoot, dir, 'node_modules', 'playwright-core'))
+      }
+    }
+    for (const c of candidates) {
+      const idx = path.join(c, 'index.js')
+      if (fs.existsSync(idx)) {
+        return await import(pathToFileURL(idx).href)
+      }
+    }
+    throw new Error('playwright-core 未找到：请运行 `npm i -D playwright-core`')
+  }
+}
+
+const { chromium } = await loadPlaywrightCore()
 
 const PORT = 5199
 const BASE = `http://127.0.0.1:${PORT}/`
