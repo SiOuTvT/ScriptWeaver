@@ -17,6 +17,10 @@ export interface CollabState {
   displayName: string
   inviteCode: string  // Host 的 peer ID = 邀请码
   error: string | null
+  /** 真实数据通道存活数（与 status 解耦：status 只反映信令连接，此字段反映能否真正同步） */
+  liveConns: number
+  /** 离线期间缓冲、待重连补发的编辑消息条数 */
+  pendingEdits: number
 
   // Peer 列表
   peers: RemotePeerInfo[]
@@ -43,6 +47,8 @@ export interface CollabState {
   setDisplayName: (n: string) => void
   setInviteCode: (c: string) => void
   setError: (e: string | null) => void
+  setLiveConns: (n: number) => void
+  setPendingEdits: (n: number) => void
 
   addPeer: (p: RemotePeerInfo) => void
   removePeer: (peerId: string) => void
@@ -66,6 +72,8 @@ export const useCollabStore = create<CollabState>((set, get) => ({
   displayName: '',
   inviteCode: '',
   error: null,
+  liveConns: 0,
+  pendingEdits: 0,
   peers: [],
   locks: new Map(),
   localEditingLine: null,
@@ -79,6 +87,8 @@ export const useCollabStore = create<CollabState>((set, get) => ({
   setDisplayName: (n) => set({ displayName: n }),
   setInviteCode: (c) => set({ inviteCode: c }),
   setError: (e) => set({ error: e }),
+  setLiveConns: (n) => set({ liveConns: n }),
+  setPendingEdits: (n) => set({ pendingEdits: n }),
 
   addPeer: (p) => set((s) => {
     const existing = s.peers.find((x) => x.id === p.id)
@@ -126,6 +136,8 @@ export const useCollabStore = create<CollabState>((set, get) => ({
     peerId: '',
     inviteCode: '',
     error: null,
+    liveConns: 0,
+    pendingEdits: 0,
     peers: [],
     locks: new Map(),
     localEditingLine: null,

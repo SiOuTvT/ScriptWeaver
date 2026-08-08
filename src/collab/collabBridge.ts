@@ -35,6 +35,62 @@ let unsubscribeEvents: (() => void) | null = null
 let lastLockedLine: number | null = null
 /** diff 广播节流计时器 */
 let diffTimer: ReturnType<typeof setTimeout> | null = null
+/** 离线编辑缓冲队列（链路不可达时积攒数据消息，重连后补发） */
+let outbox: CollabMessage[] = []
+
+/** 链路是否真正可达（信令已连 + 至少一条数据通道存活） */
+function linkAlive(): boolean {
+  const cs = useCollabStore.getState()
+  return cs.status === 'connected' && cs.liveConns > 0
+}
+
+/** 判定是否会改变共享状态的数据消息（这类断链时需缓冲；握手/锁/权限/审计等会话消息断链直接丢弃） */
+function isDataMessage(msg: CollabMessage): boolean {
+  switch (msg.type) {
+    case 'delta_set':
+    case 'delta_insert':
+    case 'delta_delete':
+    case 'delta_move':
+    case 'deltas_sync':
+    case 'asset_add':
+    case 'asset_delete':
+    case 'character_add':
+    case 'character_update':
+    case 'character_delete':
+    case 'variable_add':
+    case 'variable_update':
+    case 'variable_delete':
+      return true
+    default:
+      return false
+  }
+}
+
+/** 统一出口：链路可达则广播；会话内但链路不可达则缓冲数据消息；其余（非数据消息/非会话内）丢弃 */
+function sendOut(msg: CollabMessage): void {
+  const cs = useCollabStore.getState()
+  if (cs.status === 'connected' && cs.liveConns > 0) {
+    manager?.broadcast(msg)
+  } else if (isDataMessage(msg) && cs.status === 'connected') {
+    // 会话内但数据通道不可达（如 P2P 断链、仅信令在线）→ 缓冲，待重连后补发
+    outbox.push(msg)
+    cs.setPendingEdits(outbox.length)
+  }
+}
+
+/** 链路恢复时补发离线编辑，并由 Guest 向 Host 请求全量对账（同一数据通道消息有序，Host 先合并本端改动再回 full_sync） */
+function flushOutbox(): void {
+  if (!manager || outbox.length === 0) return
+  const cs = useCollabStore.getState()
+  const buffered = outbox
+  outbox = []
+  cs.setPendingEdits(0)
+  for (const m of buffered) manager.broadcast(m)
+  if (cs.role === 'guest') {
+    manager.broadcast({ type: 'request_full_sync', fromPeerId: cs.peerId })
+  }
+  recordAudit('join', undefined, `重连并补发 ${buffered.length} 条离线编辑`)
+}
 
 let _logId = 0
 function makeLogId(): string {
@@ -170,13 +226,13 @@ function diffAndBroadcast(prev: LineDelta[], next: LineDelta[]): void {
     if (changed.length === 0) return
     if (changed.length <= 3) {
       for (const i of changed) {
-        manager.broadcast({ type: 'delta_set', index: i, delta: next[i], fromPeerId: myId })
+        sendOut({ type: 'delta_set', index: i, delta: next[i], fromPeerId: myId })
         auditForLineChange(prev[i], next[i], i)
       }
       return
     }
     // 变化过多 → 全量
-    manager.broadcast({ type: 'deltas_sync', deltas: next, fromPeerId: myId })
+    sendOut({ type: 'deltas_sync', deltas: next, fromPeerId: myId })
     recordAudit('modify_dialogue', undefined, `批量修改 ${changed.length} 行`)
     return
   }
@@ -191,7 +247,7 @@ function diffAndBroadcast(prev: LineDelta[], next: LineDelta[]): void {
       if (prev[j] !== next[j + 1]) { aligned = false; break }
     }
     if (aligned) {
-      manager.broadcast({ type: 'delta_insert', index: i, delta: next[i], fromPeerId: myId })
+      sendOut({ type: 'delta_insert', index: i, delta: next[i], fromPeerId: myId })
       recordAudit('add_line', `行 ${next[i].line_id}`, `在第 ${i + 1} 行插入`)
       return
     }
@@ -206,14 +262,14 @@ function diffAndBroadcast(prev: LineDelta[], next: LineDelta[]): void {
       if (prev[j + 1] !== next[j]) { aligned = false; break }
     }
     if (aligned) {
-      manager.broadcast({ type: 'delta_delete', index: i, fromPeerId: myId })
+      sendOut({ type: 'delta_delete', index: i, fromPeerId: myId })
       recordAudit('delete_line', `行 ${prev[i].line_id}`, `删除第 ${i + 1} 行`)
       return
     }
   }
 
   // 其他复杂变化（移动/批量）→ 全量同步兜底
-  manager.broadcast({ type: 'deltas_sync', deltas: next, fromPeerId: myId })
+  sendOut({ type: 'deltas_sync', deltas: next, fromPeerId: myId })
   recordAudit('move_line', undefined, `剧本结构调整（${prev.length} → ${next.length} 行）`)
 }
 
@@ -330,6 +386,12 @@ function handleRemoteMessage(msg: CollabMessage, sourcePeerId: string): void {
       // 仅 Guest 接受全量覆盖（Host 的项目是权威源，不接受 Guest 覆盖）
       if (cs.role !== 'guest') return
       applyRemoteState(msg.state)
+      return
+    }
+    case 'request_full_sync': {
+      // 仅 Host 响应：向请求方回送全量状态对账（Guest 离线编辑已先补发，故 full_sync 含其改动）
+      if (cs.role !== 'host') return
+      manager?.sendFullSyncTo(sourcePeerId, collectFullState())
       return
     }
     case 'deltas_sync': {
@@ -518,7 +580,15 @@ function handleCollabEvent(event: CollabEvent): void {
       recordAudit('join', undefined, event.role === 'host' ? '创建协作主机' : '加入协作')
       return
     }
+    case 'link_health': {
+      const prev = cs.liveConns
+      cs.setLiveConns(event.liveConns)
+      // 链路从「全断」恢复 → 补发离线期间累积的编辑并进行对账
+      if (prev === 0 && event.liveConns > 0) flushOutbox()
+      return
+    }
     case 'disconnected': {
+      outbox = []
       cs.reset()
       return
     }
@@ -583,20 +653,20 @@ function startStoreSubscription(): void {
 
   unsubscribeStore = useAppStore.subscribe((state) => {
     const cs = useCollabStore.getState()
-    if (cs.status !== 'connected') return
+    const alive = linkAlive()
 
-    // ---- 编辑锁：选中行变化 → 解锁旧行 + 锁定新行 ----
+    // ---- 编辑锁：选中行变化 → 解锁旧行 + 锁定新行（仅链路存活时有意义） ----
     const sel = state.selectedLineIndex
     if (sel !== lastLockedLine) {
-      if (lastLockedLine !== null) manager?.unlockBlock(lastLockedLine)
-      manager?.lockBlock(sel)
+      if (lastLockedLine !== null && alive) manager?.unlockBlock(lastLockedLine)
+      if (alive) manager?.lockBlock(sel)
       lastLockedLine = sel
       useCollabStore.getState().setLocalEditingLine(sel)
     }
 
     if (applyingRemote) return
 
-    // ---- 编辑差量广播（剧本行，节流 150ms 合并高频输入） ----
+    // ---- 编辑差量广播（剧本行，节流 150ms 合并高频输入；断链时进 outbox 缓冲） ----
     const current = state.draftDeltas
     if (current !== lastDeltas) {
       if (diffTimer) clearTimeout(diffTimer)
@@ -611,29 +681,27 @@ function startStoreSubscription(): void {
       }, 150)
     }
 
-    // ---- 素材 / 角色 / 变量差量广播（离散操作，无需节流） ----
+    // ---- 素材 / 角色 / 变量差量广播（离散操作，断链时缓冲） ----
     // 让协作者实时看到新增/修改/删除的素材、角色与变量，不再只是加入时的一次全量。
-    const cs2 = useCollabStore.getState()
-    if (cs2.status !== 'connected') return
     if (state.assets !== lastAssets) {
       const prev = lastAssets
       lastAssets = state.assets
       if (prev && manager) {
-        for (const m of diffAssetsToMessages(prev, state.assets, cs2.peerId)) manager.broadcast(m)
+        for (const m of diffAssetsToMessages(prev, state.assets, cs.peerId)) sendOut(m)
       }
     }
     if (state.characterConfigs !== lastCharacters) {
       const prev = lastCharacters
       lastCharacters = state.characterConfigs
       if (prev && manager) {
-        for (const m of diffCharactersToMessages(prev, state.characterConfigs, cs2.peerId)) manager.broadcast(m)
+        for (const m of diffCharactersToMessages(prev, state.characterConfigs, cs.peerId)) sendOut(m)
       }
     }
     if (state.variables !== lastVariables) {
       const prev = lastVariables
       lastVariables = state.variables
       if (prev && manager) {
-        for (const m of diffVariablesToMessages(prev, state.variables, cs2.peerId)) manager.broadcast(m)
+        for (const m of diffVariablesToMessages(prev, state.variables, cs.peerId)) sendOut(m)
       }
     }
   })
@@ -647,6 +715,8 @@ function stopStoreSubscription(): void {
   lastCharacters = null
   lastVariables = null
   lastLockedLine = null
+  outbox = []
+  useCollabStore.getState().setPendingEdits(0)
 }
 
 // ============================================================

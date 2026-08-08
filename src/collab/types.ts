@@ -59,6 +59,7 @@ export type CollabMessage =
   | { type: 'handshake'; role: CollabRole; displayName: string; peerId: string }
   | { type: 'handshake_ack'; role: CollabRole; displayName: string; peerId: string; state?: CollabFullState }
   | { type: 'full_sync'; state: CollabFullState }
+  | { type: 'request_full_sync'; fromPeerId: string }
   | { type: 'delta_set'; index: number; delta: LineDelta; fromPeerId: string }
   | { type: 'delta_insert'; index: number; delta: LineDelta; fromPeerId: string }
   | { type: 'delta_delete'; index: number; fromPeerId: string }

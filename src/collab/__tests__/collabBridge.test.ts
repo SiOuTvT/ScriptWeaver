@@ -109,6 +109,8 @@ describe('collabBridge - 本地编辑广播', () => {
     setupBaselineLines()
     await startHost('主机甲')
     fireEvent({ type: 'connected', role: 'host', peerId: 'host-1' })
+    // 模拟真实数据通道存活（新模型：仅 status 连不够，需 liveConns>0 才真正广播）
+    fireEvent({ type: 'link_health', liveConns: 1 })
 
     const before = collabStore.useCollabStore.getState().auditLogs.length
 
@@ -126,6 +128,41 @@ describe('collabBridge - 本地编辑广播', () => {
     expect(deltaSet[0].delta.dialogue).toBe('edited-local')
 
     expect(collabStore.useCollabStore.getState().auditLogs.length).toBeGreaterThan(before)
+  })
+})
+
+describe('collabBridge - 离线编辑缓冲与重连补发', () => {
+  it('链路断开时本地编辑入缓冲，恢复后自动补发', async () => {
+    setupBaselineLines()
+    await startHost('主机甲')
+    fireEvent({ type: 'connected', role: 'host', peerId: 'host-1' })
+    fireEvent({ type: 'link_health', liveConns: 1 })
+
+    // 模拟 P2P 数据通道丢失（信令仍在线，status 仍 connected）
+    fireEvent({ type: 'link_health', liveConns: 0 })
+    expect(collabStore.useCollabStore.getState().liveConns).toBe(0)
+
+    const broadcastMock = manager().broadcast
+    broadcastMock.mockClear()
+
+    // 断链期间本地编辑 → 不应广播，但进入离线缓冲
+    vi.useFakeTimers()
+    appStore.useAppStore.getState().updateDeltaAt(0, (p: any) => ({ ...p, dialogue: 'offline-edit' }))
+    await vi.advanceTimersByTimeAsync(200)
+    vi.useRealTimers()
+
+    expect(broadcastMock).not.toHaveBeenCalled()
+    expect(collabStore.useCollabStore.getState().pendingEdits).toBe(1)
+
+    // 链路恢复 → 自动补发缓冲的 delta_set，缓冲清空
+    broadcastMock.mockClear()
+    fireEvent({ type: 'link_health', liveConns: 1 })
+
+    const calls = broadcastMock.mock.calls
+    const deltaSet = calls.find((c: any) => c[0]?.type === 'delta_set')
+    expect(deltaSet).toBeTruthy()
+    expect(deltaSet[0].delta.dialogue).toBe('offline-edit')
+    expect(collabStore.useCollabStore.getState().pendingEdits).toBe(0)
   })
 })
 

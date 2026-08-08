@@ -16,6 +16,7 @@ import type {
 export type CollabEvent =
   | { type: 'connected'; role: CollabRole; peerId: string }
   | { type: 'disconnected' }
+  | { type: 'link_health'; liveConns: number }
   | { type: 'error'; message: string }
   | { type: 'peer_joined'; peer: RemotePeerInfo }
   | { type: 'peer_left'; peerId: string }
@@ -49,6 +50,10 @@ export class CollabManager {
   private displayName = ''
   private peerId = ''
   private destroyed = false
+  /** 真实数据通道存活数（与信令连接解耦，用于链路健康判断） */
+  private liveConns = 0
+  /** Guest 模式记忆的 Host Peer ID，用于断链后自动重建数据通道 */
+  private hostPeerId: string | null = null
   /** 已完成握手的 Peer（防止 handshake + handshake_ack 双次触发 peer_joined） */
   private greeted = new Set<string>()
 
@@ -93,6 +98,9 @@ export class CollabManager {
 
     conn.on('open', () => {
       if (this.destroyed) return
+      // 数据通道建立 → 链路健康 +1
+      this.liveConns += 1
+      this.fire({ type: 'link_health', liveConns: this.liveConns })
       // Host 主动发 handshake
       if (asHost) {
         conn.send(JSON.stringify({
@@ -116,6 +124,8 @@ export class CollabManager {
       if (this.destroyed) return
       this.conns.delete(remotePeerId)
       this.greeted.delete(remotePeerId)
+      this.liveConns = Math.max(0, this.liveConns - 1)
+      this.fire({ type: 'link_health', liveConns: this.liveConns })
       this.fire({ type: 'peer_left', peerId: remotePeerId })
     })
 
@@ -123,6 +133,8 @@ export class CollabManager {
       if (this.destroyed) return
       this.conns.delete(remotePeerId)
       this.greeted.delete(remotePeerId)
+      this.liveConns = Math.max(0, this.liveConns - 1)
+      this.fire({ type: 'link_health', liveConns: this.liveConns })
       this.fire({ type: 'peer_left', peerId: remotePeerId })
     })
   }
@@ -240,6 +252,7 @@ export class CollabManager {
     this.role = 'guest'
     this.displayName = name || '协作者'
     this.peerId = autoId()
+    this.hostPeerId = hostPeerId
 
     return new Promise((resolve, reject) => {
       this.peer = new Peer(this.peerId, {
@@ -283,8 +296,40 @@ export class CollabManager {
       this.peer.on('disconnected', () => {
         if (this.destroyed) return
         try { this.peer?.reconnect() } catch { /* ignore */ }
+        // Guest：信令恢复后重建到 Host 的数据通道，使离线缓冲能 flush
+        this.scheduleGuestReconnect()
       })
     })
+  }
+
+  /**
+   * Guest 断链后重建与 Host 的数据通道。
+   * 信令重连是异步的，故在 peer 重新 open 后再 connect；用 once 式监听避免重复累积。
+   */
+  private scheduleGuestReconnect(): void {
+    if (this.role !== 'guest' || this.destroyed || !this.hostPeerId) return
+    const peer = this.peer
+    if (!peer) return
+    const attempt = () => {
+      if (this.destroyed || !peer.open || this.conns.has(this.hostPeerId!)) return
+      const conn = peer.connect(this.hostPeerId!, { reliable: true })
+      this.conns.set(this.hostPeerId!, conn)
+      this.setupConn(conn, false)
+      conn.on('open', () => {
+        conn.send(JSON.stringify({
+          type: 'handshake',
+          role: 'guest',
+          displayName: this.displayName,
+          peerId: this.peerId,
+        } satisfies CollabMessage))
+      })
+    }
+    if (peer.open) {
+      attempt()
+    } else {
+      const onOpen = () => { peer.off('open', onOpen); attempt() }
+      peer.on('open', onOpen)
+    }
   }
 
   /** 向指定 Peer 发送完整状态（新成员入场同步） */
@@ -342,6 +387,8 @@ export class CollabManager {
     }
     this.conns.clear()
     this.greeted.clear()
+    this.liveConns = 0
+    this.hostPeerId = null
     if (this.peer) {
       try { this.peer.destroy() } catch { /* ignore */ }
       this.peer = null

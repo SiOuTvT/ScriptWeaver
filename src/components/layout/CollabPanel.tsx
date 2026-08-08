@@ -212,6 +212,36 @@ export default function CollabPanel() {
           </div>
         )}
 
+        {/* ---- 链路健康 / 离线编辑状态 ---- */}
+        {isConnected && (
+          <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
+            store.liveConns === 0
+              ? 'border-warning/20 bg-warning/[0.05]'
+              : store.pendingEdits > 0
+                ? 'border-signal/20 bg-signal/[0.05]'
+                : 'border-primary/15 bg-primary/[0.04]'
+          }`}>
+            {store.liveConns === 0 ? (
+              <AlertTriangle size={16} strokeWidth={1.75} className="shrink-0 text-warning" />
+            ) : store.pendingEdits > 0 ? (
+              <Loader2 size={16} strokeWidth={1.75} className="shrink-0 animate-spin text-signal" />
+            ) : (
+              <Wifi size={16} strokeWidth={1.75} className="shrink-0 text-primary" />
+            )}
+            <div className="text-[13px]">
+              {store.liveConns === 0 ? (
+                <span className="text-fg">
+                  链路已断开{store.pendingEdits > 0 ? `，已暂存 ${store.pendingEdits} 条离线编辑` : ''}，恢复后将自动同步。
+                </span>
+              ) : store.pendingEdits > 0 ? (
+                <span className="text-fg">正在补发 {store.pendingEdits} 条离线编辑…</span>
+              ) : (
+                <span className="text-fg-subtle">已连接 · {store.liveConns} 条数据通道正常</span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ---- 已连接 ---- */}
         {isConnected && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
