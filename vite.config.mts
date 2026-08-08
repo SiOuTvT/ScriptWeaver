@@ -12,7 +12,7 @@ export default defineConfig({
         entry: 'electron/main.ts',
         vite: {
           build: {
-            outDir: 'bdist-electron',
+            outDir: 'dist-electron',
             rollupOptions: {
               external: ['electron'],
             },
@@ -26,7 +26,7 @@ export default defineConfig({
         },
         vite: {
           build: {
-            outDir: 'bdist-electron',
+            outDir: 'dist-electron',
             rollupOptions: {
               external: ['electron'],
             },
@@ -42,7 +42,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'bdist',
-    emptyOutDir: false,
+    outDir: 'dist',
+    assetsDir: 'assets',
   },
 })
